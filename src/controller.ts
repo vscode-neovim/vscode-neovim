@@ -4,6 +4,7 @@ import throttle from "lodash/throttle";
 import { attach, Buffer as NeovimBuffer, NeovimClient } from "neovim";
 import { CommandLineController } from "./command_line";
 import { StatusLineController } from "./status_line";
+import { HighlightProvider } from "./highlight_provider";
 
 interface CursorMode {
     /**
@@ -98,24 +99,14 @@ export class NVIMPluginController implements vscode.Disposable {
     private statusLine: StatusLineController;
 
     /**
-     * Neovim HL group to text decorator
-     * Not all HL groups are supported now
+     * Maps highlight id to highlight group name
      */
-    private highlightIdToDecorator: Map<number, vscode.TextEditorDecorationType> = new Map();
+    private highlightIdToGroupName: Map<number, string> = new Map();
     /**
      * HL group name to text decorator
      * Not all HL groups are supported now
      */
-    // private highlighGroupToDecorator: Map<string, vscode.TextEditorDecorationType> = new Map();
-
-    /**
-     * Track current decoration type at line:col position for specific editor
-     */
-    private lineColDecoration: Map<vscode.TextEditor, Map<string, vscode.TextEditorDecorationType>> = new Map();
-    /**
-     * Tracks all range for a decorator for specific editor
-     */
-    private decoratorToRange: Map<vscode.TextEditor, Map<vscode.TextEditorDecorationType, vscode.Range[]>> = new Map();
+    private highlighGroupToDecorator: Map<string, vscode.TextEditorDecorationType> = new Map();
 
     /**
      * Tracks previous documnet line count before documnet change
@@ -132,7 +123,10 @@ export class NVIMPluginController implements vscode.Disposable {
      */
     private currentModeName: string = "";
 
-    // private backgroundToGroupName: Map<string, string> = new Map();
+    private documentHighlightProvider = new HighlightProvider();
+
+    private nvimAttachWaiter: Promise<any> = Promise.resolve();
+    private isInit = false;
 
     public constructor() {
         this.nvimProc = spawn("C:\\Neovim\\bin\\nvim.exe", ["-u", "NONE", "-N", "--embed"], {});
@@ -146,16 +140,14 @@ export class NVIMPluginController implements vscode.Disposable {
         this.commandLine.onBacksapce = this.onCmdBackspace;
         this.disposables.push(this.commandLine);
         this.disposables.push(this.statusLine);
-        // this.backgroundToGroupName.set("1", "Search");
-        // this.backgroundToGroupName.set("2", "IncSearch");
-        // this.backgroundToGroupName.set("3", "Visual");
     }
 
     public async init(): Promise<void> {
         await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
         await this.client.setOption("shortmess", "filnxtToOFI");
+        await this.client.setOption("wrap", false);
         await this.client.setOption("wildchar", 9);
-        await this.client.uiAttach(160, 70, {
+        this.nvimAttachWaiter = this.client.uiAttach(500, 200, {
             rgb: true,
             // override: true,
             ext_cmdline: true,
@@ -163,14 +155,12 @@ export class NVIMPluginController implements vscode.Disposable {
             ext_hlstate: true,
             ext_messages: true,
             ext_multigrid: true,
-            ext_termcolors: true,
             ext_popupmenu: true,
             ext_tabline: true,
             ext_wildmenu: true,
         } as any);
-        // await this.client.command("hi Search guibg=#000001");
-        // await this.client.command("hi IncSearch guibg=#000002");
-        // await this.client.command("hi Visual guibg=#000003");
+        await this.nvimAttachWaiter;
+        this.isInit = true;
 
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.handleEscapeKey));
         this.disposables.push(vscode.workspace.onDidOpenTextDocument(this.onOpenTextDocument));
@@ -190,6 +180,7 @@ export class NVIMPluginController implements vscode.Disposable {
     }
 
     private onOpenTextDocument = async (e: vscode.TextDocument): Promise<void> => {
+        await this.nvimAttachWaiter;
         const uri = e.uri.toString();
         const buf = await this.client.createBuffer(true, true);
         if (typeof buf === "number") {
@@ -201,6 +192,7 @@ export class NVIMPluginController implements vscode.Disposable {
             this.bufferIdToUri.set(buf.id, uri);
             this.uriToBuffer.set(uri, buf);
             this.uriChanges.set(uri, []);
+            this.documentHighlightProvider.clean(uri);
             // incorrect definition
             this.client.buffer = buf as any;
             // set initial buffer text
@@ -241,6 +233,11 @@ export class NVIMPluginController implements vscode.Disposable {
             this.documentLastChangedVersion.set(uri, textEditor.document.version + 1);
             let endRangeLine = lastLine;
             let endRangePos = 0;
+
+            // since line could be changed/deleted/etc, invalidate them in highlight provider
+            for (let line = firstLine; line <= lastLine; line++) {
+                this.documentHighlightProvider.removeLine(uri, line);
+            }
             // if (endRangeLine >= textEditor.document.lineCount) {
             //     endRangeLine = textEditor.document.lineCount - 1;
             //     endRangePos = textEditor.document.lineAt(endRangeLine).rangeIncludingLineBreak.end.character;
@@ -265,7 +262,8 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     }, 20);
 
-    private onCloseTextDocument = (e: vscode.TextDocument): void => {
+    private onCloseTextDocument = async (e: vscode.TextDocument): Promise<void> => {
+        await this.nvimAttachWaiter;
         const uri = e.uri.toString();
         const buf = this.uriToBuffer.get(uri);
         if (buf) {
@@ -277,11 +275,10 @@ export class NVIMPluginController implements vscode.Disposable {
         this.uriChanges.delete(uri);
         this.documentLastChangedVersion.delete(uri);
         this.documentLines.delete(uri);
-        // this.decoratorToRange.delete(uri);
-        // this.lineColDecoration.delete(uri);
     }
 
-    private onChangeTextDocument = (e: vscode.TextDocumentChangeEvent): void => {
+    private onChangeTextDocument = async (e: vscode.TextDocumentChangeEvent): Promise<void> => {
+        await this.nvimAttachWaiter;
         const uri = e.document.uri.toString();
         const version = e.document.version;
         if (this.documentLastChangedVersion.get(uri) === version) {
@@ -347,23 +344,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private onChangedEdtiors = (e: vscode.TextEditor[]): void => {
         for (const editor of e) {
             this.applyCursorToEditor(editor, this.currentModeName);
-            if (!this.lineColDecoration.has(editor)) {
-                this.lineColDecoration.set(editor, new Map());
-            }
-            if (!this.decoratorToRange.has(editor)) {
-                this.decoratorToRange.set(editor, new Map());
-            }
-        }
-        // remove closed editors from mappings
-        for (const [editor] of this.lineColDecoration) {
-            if (!e.find(visibleEditor => visibleEditor === editor)) {
-                this.lineColDecoration.delete(editor);
-                this.decoratorToRange.delete(editor);
-            }
         }
     }
 
-    private onChangedActiveEditor = (e: vscode.TextEditor | undefined): void => {
+    private onChangedActiveEditor = async (e: vscode.TextEditor | undefined): Promise<void> => {
+        await this.nvimAttachWaiter;
         const buf = e ? this.uriToBuffer.get(e.document.uri.toString()) : undefined;
         if (buf) {
             this.client.buffer = buf as any;
@@ -372,6 +357,9 @@ export class NVIMPluginController implements vscode.Disposable {
 
 
     private onType = (_editor: vscode.TextEditor, edit: vscode.TextEditorEdit, type: { text: string }): void => {
+        if (!this.isInit) {
+            return;
+        }
         if (!this.isInsertMode) {
             this.client.input(type.text);
         } else {
@@ -385,15 +373,15 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         let lastGotoCursorArgs: [number, number] | undefined;
-        let cellHlId: number = 0;
-        for (const [name, args] of events) {
+        for (const [name, ...args] of events) {
+            const firstArg = args[0] || [];
             switch (name) {
                 case "mode_change": {
-                    this.handleModeChange(args[0], args[1]);
+                    this.handleModeChange(firstArg[0], firstArg[1]);
                     break;
                 }
                 case "mode_info_set": {
-                    const [, modes] = args as [string, any[]];
+                    const [, modes] = firstArg as [string, any[]];
                     for (const mode of modes) {
                         if (!mode.name) {
                             continue;
@@ -419,11 +407,11 @@ export class NVIMPluginController implements vscode.Disposable {
                     break;
                 }
                 case "grid_cursor_goto": {
-                    lastGotoCursorArgs = [args[1], args[2]];
+                    lastGotoCursorArgs = [firstArg[1], firstArg[2]];
                     break;
                 }
                 case "cursor_goto": {
-                    lastGotoCursorArgs = args;
+                    lastGotoCursorArgs = firstArg;
                     break;
                 }
                 case "flush": {
@@ -431,10 +419,16 @@ export class NVIMPluginController implements vscode.Disposable {
                     if (lastGotoCursorArgs) {
                         this.updateCursor(...lastGotoCursorArgs);
                     }
+                    // apply highlight
+                    const editor = vscode.window.activeTextEditor;
+                    if (!editor) {
+                        break;
+                    }
+                    this.applyHighlightsToDocument(editor.document);
                     break;
                 }
                 case "cmdline_show": {
-                    const [content, pos, firstc, prompt, indent, level] = args as [[object, string][], number, string, string, number, number];
+                    const [content, pos, firstc, prompt, indent, level] = firstArg as [[object, string][], number, string, string, number, number];
                     const allContent = content.map(([, str]) => str);
                     vscode.commands.executeCommand("setContext", "neovim.cmdLine", true);
                     this.commandLine.show();
@@ -447,120 +441,57 @@ export class NVIMPluginController implements vscode.Disposable {
                     break;
                 }
                 case "cmdline_append": {
-                    const [line] = args as [string];
+                    const [line] = firstArg as [string];
                     this.commandLine.append(line);
                     break;
                 }
-                // case "update_fg":
-                // case "update_bg":
-                // case "update_sp": {
-                //     // console.log(name);
-                //     // console.log(args);
-                //     break;
-                // }
-                // case "hl_group_set": {
-                //     const [name, id] = args;
-                //     // console.log(name);
-                //     break;
-                // }
-                // case "highlight_set": {
-                //     const [attrs] = args as [HighlightSetAttributes];
-                //     decoratorForNextText = undefined;
-                //     if (attrs.background) {
-                //         const color = attrs.background.toString(16);
-                //         console.log(color);
-                //         const group = this.backgroundToGroupName.get(color);
-                //         if (group) {
-                //             if (!this.highlighGroupToDecorator.has(color)) {
-                //                 const decorator = this.createDecorationForHighlightGroup(group);
-                //                 if (decorator) {
-                //                     this.highlighGroupToDecorator.set(color, decorator);
-                //                     decoratorForNextText = decorator;
-                //                 }
-                //             } else {
-                //                 const decorator = this.highlighGroupToDecorator.get(color)!;
-                //                 decoratorForNextText = decorator;
-                //             }
-                //         }
-                //     }
-                //     break;
-                // }
-                // case "put": {
-                //     if (!lastGotoCursorArgs) {
-                //         break;
-                //     }
-                //     const [line, col] = lastGotoCursorArgs;
-                //     const editor = vscode.window.activeTextEditor;
-                //     if (!editor) {
-                //         break;
-                //     }
-
-                //     const uri = editor.document.uri.toString();
-                //     const allUriEditors = vscode.window.visibleTextEditors.filter(e => e.document.uri.toString() === uri);
-                //     for (const editor of allUriEditors) {
-                //         if (decoratorForNextText) {
-                //             console.log(`Putting decorator for: ${line}:${col}`);
-                //             this.removeDecoratorFromLineColumn(editor, line, col);
-                //             this.addDecoratorForLineColumn(editor, line, col, decoratorForNextText);
-                //         } else {
-                //             console.log(`Removing decorator for: ${line}:${col}`);
-                //             console.log(args);
-                //             this.removeDecoratorFromLineColumn(editor, line, col);
-                //         }
-                //     }
-                //     break;
-                // }
                 case "hl_attr_define": {
-                    const [id, uiAttrs, termAttrs, info] = args as [number, never, never, [{ kind: "ui", ui_name: string, hi_name: string }]];
+                    const [id, uiAttrs, termAttrs, info] = firstArg as [number, never, never, [{ kind: "ui", ui_name: string, hi_name: string }]];
                     if (info && info[0] && info[0].hi_name) {
-                        const decor = this.createDecorationForHighlightGroup(info[0].ui_name);
-                        if (decor) {
-                            console.log(`created for: ${info[0].ui_name} - id: ${id}`);
-                            this.highlightIdToDecorator.set(id, decor);
+                        const name = info[0].hi_name;
+                        const decorator = this.createDecorationForHighlightGroup(name);
+                        if (decorator) {
+                            this.highlighGroupToDecorator.set(name, decorator);
+                            this.highlightIdToGroupName.set(id, name);
                         }
                     }
                     break;
                 }
                 case "grid_line": {
-                    const [grid, row, colStart, cells] = args as [number, number, number, [string, number?, number?][]];
-                    let cellIdx = 0;
-                    if (row >= 69) {
-                        break;
-                    }
-                    console.log(`Grid line: ${row}:${colStart}-${cells.length}`);
+                    for (const gridEvent of args) {
+                        const [grid, row, colStart, cells] = gridEvent as [number, number, number, [string, number?, number?]]
+                        let cellIdx = 0;
 
-                    const editor = vscode.window.activeTextEditor;
-                    if (!editor) {
-                        break;
-                    }
-                    const uri = editor.document.uri.toString();
-                    const allUriEditors = vscode.window.visibleTextEditors.filter(e => e.document.uri.toString() === uri);
-                    for (const [text, hlId, repeat] of cells) {
-                        if (hlId) {
-                            cellHlId = hlId;
-                            console.log(hlId);
+                        const editor = vscode.window.activeTextEditor;
+                        if (!editor) {
+                            break;
                         }
-                        for (let i = 0; i < (repeat || 1); i++) {
-                            const col = colStart + cellIdx;
-                            if (this.highlightIdToDecorator.has(cellHlId)) {
-                                console.log(`Applying ${cellHlId} to: ${row}:${col} - ${text}, repeat: ${repeat}`);
-                                for (const editor of allUriEditors) {
-                                    this.removeDecoratorFromLineColumn(editor, row, col);
-                                    this.addDecoratorForLineColumn(editor, row, col, this.highlightIdToDecorator.get(cellHlId)!);
-                                }
-                            } else {
-                                console.log(`Removing: ${row}:${col} - ${text}, repeat: ${repeat}`);
-                                for (const editor of allUriEditors) {
-                                    this.removeDecoratorFromLineColumn(editor, row, col);
-                                }
+                        // non editor row (neovim sends update for modeline/statusline)
+                        if (editor.document.lineCount - 1 < row) {
+                            continue;
+                        }
+                        const uri = editor.document.uri.toString();
+                        let cellHlId: number = 0;
+                        for (const [text, hlId, repeat] of cells as any) {
+                            if (hlId != null) {
+                                cellHlId = hlId;
                             }
-                            cellIdx++;
+                            for (let i = 0; i < (repeat || 1); i++) {
+                                const col = colStart + cellIdx;
+                                const highlightGroup = this.highlightIdToGroupName.get(cellHlId);
+                                if (highlightGroup) {
+                                    this.documentHighlightProvider.add(uri, highlightGroup, row, col);
+                                } else {
+                                    this.documentHighlightProvider.removeAll(uri, row, col);
+                                }
+                                cellIdx++;
+                            }
                         }
                     }
                     break;
                 }
                 case "msg_showcmd": {
-                    const [content] = args;
+                    const [content] = firstArg;
                     let str = "";
                     if (content) {
                         for (const c of content) {
@@ -574,7 +505,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     break;
                 }
                 case "msg_show": {
-                    const [ui, content, replaceLast] = args;
+                    const [ui, content, replaceLast] = firstArg;
                     // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
                     //     this.nextInputBlocking = true;
                     // }
@@ -591,7 +522,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     break;
                 }
                 case "msg_showmode": {
-                    const [content] = args;
+                    const [content] = firstArg;
                     let str = "";
                     if (content) {
                         for (const c of content) {
@@ -617,7 +548,24 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     }
 
+    private applyHighlightsToDocument = throttle((document: vscode.TextDocument) => {
+        const allUriEditors = vscode.window.visibleTextEditors.filter(e => e.document.uri.toString() === document.uri.toString());
+        for (const [, groupName] of this.highlightIdToGroupName) {
+            const ranges = this.documentHighlightProvider.provideDocumentHighlights(document, groupName);
+            const decorator = this.highlighGroupToDecorator.get(groupName);
+            if (!decorator) {
+                continue;
+            }
+            for (const editor of allUriEditors) {
+                editor.setDecorations(decorator, ranges);
+            }
+        }
+    }, 20);
+
     private handleEscapeKey = async () => {
+        if (!this.isInit) {
+            return;
+        }
         if (this.isInsertMode) {
             if (vscode.window.activeTextEditor) {
                 const uri = vscode.window.activeTextEditor.document.uri.toString();
@@ -660,10 +608,6 @@ export class NVIMPluginController implements vscode.Disposable {
                     const currentEditorCharacter = editor.selection.active.character;
                     requests.push(["nvim_win_set_cursor", [0, [currentEditorLine + 1, currentEditorCharacter]]]);
                     await this.client.request("nvim_call_atomic", [requests]);
-                    const buf2 = await this.client.buffer;
-                    const lines = await buf2.lines;
-                    console.log("Lines after change: " + JSON.stringify(lines));
-                    this.uriChanges.set(uri, []);
                 }
             }
         }
@@ -676,7 +620,6 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!vscode.window.activeTextEditor) {
             return;
         }
-        // apply cursor style
         this.applyCursorToEditor(vscode.window.activeTextEditor, modeName);
     }
 
@@ -719,48 +662,6 @@ export class NVIMPluginController implements vscode.Disposable {
                 backgroundColor: new vscode.ThemeColor("editor.selectionBackground"),
             });
         }
-    }
-
-    private removeDecoratorFromLineColumn(editor: vscode.TextEditor, line: number, column: number, all = false): void {
-        const editorDecoratorMap = this.lineColDecoration.get(editor);
-        const editorDecoratorRangeMap = this.decoratorToRange.get(editor);
-        if (!editorDecoratorMap || !editorDecoratorRangeMap) {
-            return;
-        }
-        const decorator = editorDecoratorMap.get(`${line}-${column}`);
-        if (!decorator) {
-            return;
-        }
-        const currentRange = editorDecoratorRangeMap.get(decorator) || [];
-        if (!all) {
-            const newRange = currentRange.filter(r => !(r.start.line === line && r.start.character === column && r.end.line === line && r.end.character === column + 1));
-            editorDecoratorRangeMap.set(decorator, newRange);
-            editorDecoratorMap.delete(`${line}-${column}`);
-            editor.setDecorations(decorator, newRange);
-        } else {
-            for (const range of currentRange) {
-                editorDecoratorMap.delete(`${range.start.line}-${range.start.character}`);
-                editorDecoratorRangeMap.set(decorator, []);
-            }
-            editor.setDecorations(decorator, []);
-            editorDecoratorRangeMap.set(decorator, []);
-        }
-        // editorDecoratorRangeMap.set(decorator, newRange);
-        // editorDecoratorMap.delete(`${line}-${column}`);
-    }
-
-    private addDecoratorForLineColumn(editor: vscode.TextEditor, line: number, column: number, decorator: vscode.TextEditorDecorationType): void {
-        const editorDecoratorMap = this.lineColDecoration.get(editor);
-        const editorDecoratorRangeMap = this.decoratorToRange.get(editor);
-        if (!editorDecoratorMap || !editorDecoratorRangeMap) {
-            return;
-        }
-
-        editorDecoratorMap.set(`${line}-${column}`, decorator);
-        const currentRange = editorDecoratorRangeMap.get(decorator) || [];
-        currentRange.push(new vscode.Range(line, column, line, column + 1));
-        editor.setDecorations(decorator, currentRange);
-        editorDecoratorRangeMap.set(decorator, currentRange);
     }
 
     private onCmdChange = async (e: string) => {
