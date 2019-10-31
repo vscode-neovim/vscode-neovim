@@ -225,6 +225,11 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private onOpenTextDocument = async (e: vscode.TextDocument): Promise<void> => {
         const uri = e.uri.toString();
+        // vscode may open documents which are not visible (WTF?), so don't try to process non visible documents
+        const openedEditors = vscode.window.visibleTextEditors;
+        if (!openedEditors.find(e => e.document.uri.toString() === uri)) {
+            return;
+        }
         this.uriChanges.set(uri, []);
         this.documentHighlightProvider.clean(uri);
         await this.nvimAttachWaiter;
@@ -396,6 +401,10 @@ export class NVIMPluginController implements vscode.Disposable {
         const buf = e ? this.uriToBuffer.get(e.document.uri.toString()) : undefined;
         if (buf) {
             this.client.buffer = buf as any;
+        } else if (e) {
+            // vscode may open documents which are not visible (WTF?), but we're ingoring them in onOpenTextDocument
+            // handle the case when such document becomes visible
+            this.onOpenTextDocument(e.document);
         }
     }
 
