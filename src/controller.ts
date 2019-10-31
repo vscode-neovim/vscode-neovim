@@ -129,6 +129,24 @@ export class NVIMPluginController implements vscode.Disposable {
     private isInit = false;
 
     public constructor() {
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.handleEscapeKey));
+        this.disposables.push(vscode.workspace.onDidOpenTextDocument(this.onOpenTextDocument));
+        this.disposables.push(vscode.workspace.onDidCloseTextDocument(this.onCloseTextDocument));
+        this.disposables.push(vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument));
+        this.disposables.push(vscode.window.onDidChangeVisibleTextEditors(this.onChangedEdtiors))
+        this.disposables.push(vscode.window.onDidChangeActiveTextEditor(this.onChangedActiveEditor));
+        this.disposables.push(vscode.commands.registerTextEditorCommand("type", this.onType));
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.cmdCompletion", this.onCmdCompletion));
+        this.disposables.push(vscode.window.onDidChangeTextEditorSelection(this.onChangeSelection));
+
+        // vscode may not send ondocument opened event, send manually
+        for (const doc of vscode.workspace.textDocuments) {
+            if (doc.isClosed) {
+                continue;
+            }
+            this.onOpenTextDocument(doc);
+        }
+
         this.nvimProc = spawn("C:\\Neovim\\bin\\nvim.exe", ["-u", "NONE", "-N", "--embed"], {});
         this.client = attach({ proc: this.nvimProc });
         this.client.on("notification", this.onNeoVimGlobalNotifcation);
@@ -147,6 +165,7 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.setOption("shortmess", "filnxtToOFI");
         await this.client.setOption("wrap", false);
         await this.client.setOption("wildchar", 9);
+        await this.client.setOption("mouse", "a");
         this.nvimAttachWaiter = this.client.uiAttach(500, 200, {
             rgb: true,
             // override: true,
@@ -154,22 +173,13 @@ export class NVIMPluginController implements vscode.Disposable {
             ext_linegrid: true,
             ext_hlstate: true,
             ext_messages: true,
-            ext_multigrid: true,
+            // ext_multigrid: true,
             ext_popupmenu: true,
             ext_tabline: true,
             ext_wildmenu: true,
         } as any);
         await this.nvimAttachWaiter;
         this.isInit = true;
-
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.handleEscapeKey));
-        this.disposables.push(vscode.workspace.onDidOpenTextDocument(this.onOpenTextDocument));
-        this.disposables.push(vscode.workspace.onDidCloseTextDocument(this.onCloseTextDocument));
-        this.disposables.push(vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument));
-        this.disposables.push(vscode.window.onDidChangeVisibleTextEditors(this.onChangedEdtiors))
-        this.disposables.push(vscode.window.onDidChangeActiveTextEditor(this.onChangedActiveEditor));
-        this.disposables.push(vscode.commands.registerTextEditorCommand("type", this.onType));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.cmdCompletion", this.onCmdCompletion));
     }
 
     public dispose() {
@@ -179,9 +189,45 @@ export class NVIMPluginController implements vscode.Disposable {
         this.client.quit();
     }
 
+    private onChangeSelection = throttle(async (e: vscode.TextEditorSelectionChangeEvent) => {
+        if (!e.kind || e.kind === vscode.TextEditorSelectionChangeKind.Keyboard) {
+            return;
+        }
+        const firstSelection = e.selections[0];
+        if (!firstSelection) {
+            return;
+        }
+        const { start, end } = firstSelection;
+        const doc = e.textEditor.document;
+        if (start.isEqual(end)) {
+            // mouse click or similar
+            // const requests: any[] = [];
+            // requests.push(["nvim_input_mouse", ["left", "press", "", 0, start.line, start.character]]);
+            // requests.push(["nvim_input_mouse", ["left", "release", "", 0, start.line, start.character]]);
+            // await this.client.callAtomic(requests);
+            await this.client.request("nvim_win_set_cursor", [0, [start.line + 1, start.character]]);
+        } else {
+            // const requests: any[] = [];
+
+            // requests.push(["nvim_input_mouse", ["left", "press", "", 0, start.line, start.character]]);
+            // const newStart = new vscode.Position(start.line, start.character);
+            // for (let line = newStart.line; line <= end.line; line++) {
+            //     const lineTextLength = doc.lineAt(line).range.end.character;
+            //     for (let character = line === newStart.line ? newStart.character : 0; line === end.line ? character <= end.character : character <= lineTextLength; character++) {
+            //         requests.push(["nvim_input_mouse", ["left", "drag", "", 0, line, character]]);
+            //     }
+            // }
+
+            // requests.push(["nvim_input_mouse", ["left", "release", "", 0, end.line, end.character]]);
+            // await this.client.callAtomic(requests);
+        }
+    }, 20);
+
     private onOpenTextDocument = async (e: vscode.TextDocument): Promise<void> => {
-        await this.nvimAttachWaiter;
         const uri = e.uri.toString();
+        this.uriChanges.set(uri, []);
+        this.documentHighlightProvider.clean(uri);
+        await this.nvimAttachWaiter;
         const buf = await this.client.createBuffer(true, true);
         if (typeof buf === "number") {
             // 0 is error
@@ -191,8 +237,6 @@ export class NVIMPluginController implements vscode.Disposable {
             // this.lineColDecoration.set(uri, new Map());
             this.bufferIdToUri.set(buf.id, uri);
             this.uriToBuffer.set(uri, buf);
-            this.uriChanges.set(uri, []);
-            this.documentHighlightProvider.clean(uri);
             // incorrect definition
             this.client.buffer = buf as any;
             // set initial buffer text
@@ -369,7 +413,6 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private onNeoVimGlobalNotifcation = (method: string, events: [string, ...any[]]) => {
         if (method !== "redraw") {
-            console.log(`Unhandled method: ${method}`);
             return;
         }
         let lastGotoCursorArgs: [number, number] | undefined;

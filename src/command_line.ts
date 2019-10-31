@@ -12,9 +12,6 @@ export class CommandLineController implements Disposable {
 
 
     public constructor() {
-        // const k = window.createQuickPick();
-        // k.
-        // k.
         this.input = window.createInputBox();
         this.input.ignoreFocusOut = true;
         this.disposables.push(this.input.onDidAccept(this.handleAccept));
