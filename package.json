@@ -2,6 +2,7 @@
 	"name": "vscode-neovim",
 	"displayName": "VSCode Neovim",
 	"description": "Almost complete VIM integration by using Neovim (WIP)",
+	"publisher": "asvetliakov",
 	"version": "0.0.2",
 	"repository": {
 		"type": "git",
@@ -12,7 +13,7 @@
 		"email": "devpieron@gmail.com"
 	},
 	"engines": {
-		"vscode": "^1.39.0"
+		"vscode": "^1.39.2"
 	},
 	"keywords": [
 		"keybindings",
@@ -117,6 +118,7 @@
 		"@types/glob": "^7.1.1",
 		"@types/lodash": "^4.14.144",
 		"@types/mocha": "^5.2.6",
+		"@types/msgpack-lite": "^0.1.7",
 		"@types/node": "^10.12.21",
 		"@types/vscode": "^1.39.0",
 		"glob": "^7.1.4",

@@ -47,6 +47,13 @@
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-5.2.7.tgz#315d570ccb56c53452ff8638738df60726d5b6ea"
   integrity sha512-NYrtPht0wGzhwe9+/idPaBB+TqkY9AhTvOLMkThm0IoEfLaiVQZwBwyJ5puCkO3AUCWrmcoePjp2mbFocKy4SQ==
 
+"@types/msgpack-lite@^0.1.7":
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/@types/msgpack-lite/-/msgpack-lite-0.1.7.tgz#91e7cfa16bda0de7ef433f69060689f5013167ff"
+  integrity sha512-OYPf2ExHl0TKuDn7M/356RDyCiqOQEs8f+SfePpbfHJJ7C8mqgp4ShgeUTuE8W7Tui2txbyVPiRiDPeK3D9PPA==
+  dependencies:
+    "@types/node" "*"
+
 "@types/node@*":
   version "12.11.7"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.11.7.tgz#57682a9771a3f7b09c2497f28129a0462966524a"
