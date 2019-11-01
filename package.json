@@ -21,7 +21,27 @@
 			},
 			{
 				"command": "vscode-neovim.cmdCompletion",
-				"title": "Trigger wildmenu completion"
+				"title": "Neovim: Trigger wildmenu completion"
+			},
+			{
+				"command": "vscode-neovim.scrollUp",
+				"title": "Neovim: scroll up"
+			},
+			{
+				"command": "vscode-neovim.scrollDown",
+				"title": "Neovim: scroll down"
+			},
+			{
+				"command": "vscode-neovim.scrollHalfUp",
+				"title": "Neovim: scroll half up"
+			},
+			{
+				"command": "vscode-neovim.scrollHalfDown",
+				"title": "Neovim: scroll half down"
+			},
+			{
+				"command": "vscode-neovim.redo",
+				"title": "Neovim: scroll half down"
 			}
 		],
 		"keybindings": [
@@ -32,7 +52,32 @@
 			{
 				"command": "vscode-neovim.cmdCompletion",
 				"key": "tab",
-				"when": "!!neovim.cmdLine"
+				"when": "editorFocus && neovim.cmdLine"
+			},
+			{
+				"command": "vscode-neovim.scrollUp",
+				"key": "ctrl+b",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.scrollDown",
+				"key": "ctrl+f",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.scrollHalfUp",
+				"key": "ctrl+u",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.scrollHalfDown",
+				"key": "ctrl+d",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.redo",
+				"key": "ctrl+r",
+				"when": "editorTextFocus && neovim.mode == normal"
 			}
 		]
 	},
