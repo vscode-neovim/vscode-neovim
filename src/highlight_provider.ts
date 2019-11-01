@@ -29,6 +29,20 @@ export class HighlightProvider {
         rowHighlights.add(col);
     }
 
+    public remove(uri: string, row: number, col: number): void {
+        const uriHighlights = this.uriAllHighlights.get(uri);
+        if (!uriHighlights) {
+            return;
+        }
+        for (const [, typeHighlights] of uriHighlights) {
+            const rowHighlights = typeHighlights.get(row);
+            if (!rowHighlights) {
+                continue;
+            }
+            rowHighlights.delete(col);
+        }
+    }
+
     public removeLine(uri: string, row: number): void {
         const uriHighlights = this.uriAllHighlights.get(uri);
         if (!uriHighlights) {

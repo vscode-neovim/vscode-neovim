@@ -6,8 +6,12 @@ import { NVIMPluginController } from './controller';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
-    await vscode.commands.executeCommand("setContext", "vim.cmdLine", false);
-	const plugin = new NVIMPluginController();
+	const settings = vscode.workspace.getConfiguration("vscode-neovim");
+	if (!settings.get("neovimPath")) {
+		vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
+		return;
+	}
+	const plugin = new NVIMPluginController(settings.get("neovimPath", ""));
 	context.subscriptions.push(plugin);
 	await plugin.init();
 }

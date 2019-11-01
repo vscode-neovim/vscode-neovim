@@ -1,19 +1,44 @@
 {
 	"name": "vscode-neovim",
-	"displayName": "Neovim",
-	"description": "VSCode Vim plugin powered by Neovim",
+	"displayName": "VSCode Neovim",
+	"description": "Almost complete VIM integration by using Neovim (WIP)",
 	"version": "0.0.1",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/asvetliakov/vscode-neovim"
+	},
+	"bugs": {
+		"url": "https://github.com/asvetliakov/vscode-neovim/issues",
+		"email": "devpieron@gmail.com"
+	},
 	"engines": {
 		"vscode": "^1.39.0"
 	},
+	"keywords": [
+		"keybindings",
+		"vi",
+		"vim",
+		"neovim"
+	],
 	"categories": [
-		"Other"
+		"Other",
+		"Keymaps"
 	],
 	"activationEvents": [
 		"*"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configuration":{
+			"title": "VSCode Neovim",
+			"properties": {
+				"vscode-neovim.neovimPath": {
+					"type": "string",
+					"default": "",
+					"description": "Full path to Neovim executable"
+				}
+			}
+		},
 		"commands": [
 			{
 				"command": "vscode-neovim.escape",

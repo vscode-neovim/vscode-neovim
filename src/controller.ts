@@ -58,7 +58,7 @@ interface VSCodeLineChange {
 }
 
 export class NVIMPluginController implements vscode.Disposable {
-    public isInsertMode: boolean = false;
+    private isInsertMode: boolean = false;
 
     private nvimProc: ChildProcess;
     private client: NeovimClient;
@@ -136,7 +136,10 @@ export class NVIMPluginController implements vscode.Disposable {
     private bufQueuePromise?: Promise<void>;
     private resolveQueuePromise?: () => void;
 
-    public constructor() {
+    public constructor(neovimPath: string) {
+        if (!neovimPath) {
+            throw new Error("Neovim path is not defined");
+        }
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.handleEscapeKey));
         this.disposables.push(vscode.workspace.onDidOpenTextDocument(this.onOpenTextDocument));
         this.disposables.push(vscode.workspace.onDidCloseTextDocument(this.onCloseTextDocument));
@@ -162,7 +165,8 @@ export class NVIMPluginController implements vscode.Disposable {
         }
 
         // this.nvimProc = spawn("C:\\Neovim\\bin\\nvim.exe", ["-u", "NONE", "-N", "--embed"], {});
-        this.nvimProc = spawn("C:\\Neovim\\bin\\nvim.exe", ["-N", "--embed"], {});
+        // this.nvimProc = spawn("C:\\Neovim\\bin\\nvim.exe", ["-N", "--embed"], {});
+        this.nvimProc = spawn(neovimPath, ["-N", "--embed"], {});
         this.client = attach({ proc: this.nvimProc });
         this.client.on("notification", this.onNeoVimGlobalNotifcation);
         this.commandLine = new CommandLineController();
@@ -491,7 +495,8 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         let updateCursor = false;
-        let lastGotoCursorArgsWinBased: [number, number] | undefined;
+        let updateHighlights = false;
+        const currentScreenHighlights: { [key: string]: { [key: string]: string | "remove" } } = {};
         for (const [name, ...args] of events) {
             const firstArg = args[0] || [];
             switch (name) {
@@ -526,34 +531,17 @@ export class NVIMPluginController implements vscode.Disposable {
                     break;
                 }
                 case "grid_cursor_goto": {
-                    lastGotoCursorArgsWinBased = [firstArg[1], firstArg[2]];
+                    // lastGotoCursorArgsWinBased = [firstArg[1], firstArg[2]];
                     updateCursor = true;
                     break;
                 }
                 case "cursor_goto": {
-                    lastGotoCursorArgsWinBased = firstArg;
+                    // lastGotoCursorArgsWinBased = firstArg;
                     updateCursor = true;
                     break;
                 }
                 case "flush": {
-                    const editor = vscode.window.activeTextEditor;
-                    if (!editor) {
-                        break;
-                    }
-                    // set new cursor position from last obtained cursor position
-                    // if (lastGotoCursorArgsWinBased) {
-                    //     console.log(`Goto cursor: ${lastGotoCursorArgsWinBased[0]}:${lastGotoCursorArgsWinBased[1]}`);
-                    if (updateCursor) {
-                        // get real cursor position in buffer document. it's 1:1 based
-                        // const [, line1based, col1based] = await this.client.callFunction("getcurpos");
-                        // this.nvimRealLinePosition = line1based - 1;
-                        // this.nvimRealColPosition = col1based - 1;
-
-                        this.updateCursorPosInActiveEditor();
-                    }
-                    // }
-                    // apply highlight
-                    this.applyHighlightsToDocument(editor.document);
+                    this.flushUpdate(updateCursor, updateHighlights, currentScreenHighlights);
                     break;
                 }
                 case "cmdline_show": {
@@ -586,33 +574,12 @@ export class NVIMPluginController implements vscode.Disposable {
                     }
                     break;
                 }
-                case "grid_scroll": {
-                    // const [grid, top, bottom, left, right, rows, cols] = firstArg as number[];
-                    // const editor = vscode.window.activeTextEditor;
-                    // if (!editor) {
-                    //     break;
-                    // }
-                    // const scrollState = this.editorScollPositions.get(editor);
-                    // if (!scrollState) {
-                    //     break;
-                    // }
-                    // scrollState.vimScrollOffset += rows;
-                    // if (rows > 0) {
-                    //     for (let i = 0; i < scrollState.vimScrollOffset; i++) {
-                    //         this.documentHighlightProvider.removeLine(editor.document.uri.toString(), i);
-                    //     }
-                    // } else if (rows < 0) {
-                    //     for (let i = scrollState.line + scrollState.vimScrollOffset; i > scrollState.line; i--) {
-                    //         this.documentHighlightProvider.removeLine(editor.document.uri.toString(), i);
-                    //     }
-                    // }
-                    break;
-                }
                 case "grid_line": {
                     for (const gridEvent of args) {
                         const [grid, row, colStart, cells] = gridEvent as [number, number, number, [string, number?, number?]]
                         let cellIdx = 0;
 
+                        updateHighlights = true;
                         const editor = vscode.window.activeTextEditor;
                         if (!editor) {
                             break;
@@ -623,7 +590,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         if (editor.document.lineCount - 1 < finalRow) {
                             continue;
                         }
-                        const uri = editor.document.uri.toString();
+                        // store highlight updates, then apply then after flush()
                         let cellHlId: number = 0;
                         for (const [text, hlId, repeat] of cells as any) {
                             if (hlId != null) {
@@ -632,10 +599,14 @@ export class NVIMPluginController implements vscode.Disposable {
                             for (let i = 0; i < (repeat || 1); i++) {
                                 const col = colStart + cellIdx;
                                 const highlightGroup = this.highlightIdToGroupName.get(cellHlId);
+                                if (!currentScreenHighlights[finalRow]) {
+                                    currentScreenHighlights[finalRow] = {};
+                                }
+                                if (!currentScreenHighlights[finalRow][col]) {
+                                    currentScreenHighlights[finalRow][col] = "remove";
+                                }
                                 if (highlightGroup) {
-                                    this.documentHighlightProvider.add(uri, highlightGroup, finalRow, col);
-                                } else {
-                                    this.documentHighlightProvider.removeAll(uri, finalRow, col);
+                                    currentScreenHighlights[finalRow][col] = highlightGroup;
                                 }
                                 cellIdx++;
                             }
@@ -698,6 +669,47 @@ export class NVIMPluginController implements vscode.Disposable {
                     break;
                 }
             }
+        }
+    }
+
+    private async flushUpdate(updateCursor: boolean, updateHighlights: boolean, highlights: { [key: string]: { [key: string]: string } | "remove" } = {}): Promise<void> {
+        if (updateCursor) {
+            const [, line1based, col1based] = await this.client.callFunction("getcurpos");
+            this.nvimRealLinePosition = line1based - 1;
+            this.nvimRealColPosition = col1based - 1;
+            await this.updateCursorPosInActiveEditor();
+        }
+        if (updateHighlights) {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                return;
+            }
+            // calculate top visitor buffer line. highlight updates are in screen row:col coordinates, but we need to convert them to line based
+            const screenRowPos1based = await this.client.callFunction("screenrow");
+            const topVisibleBufferLine = this.nvimRealLinePosition - (screenRowPos1based - 1);
+            const bottomVisibleBufferLine = topVisibleBufferLine + 99;
+
+            const uri = editor.document.uri.toString();
+
+            for (let i = 0; i < topVisibleBufferLine; i++) {
+                this.documentHighlightProvider.removeLine(uri, i);
+            }
+            // vim screen size may be different than editor size
+            if (bottomVisibleBufferLine < editor.document.lineCount - 1) {
+                for (let i = bottomVisibleBufferLine; i < editor.document.lineCount - 1; i++) {
+                    this.documentHighlightProvider.removeLine(uri, i);
+                }
+            }
+            for (const [lineId, updates] of Object.entries(highlights)) {
+                for (const [colId, group] of Object.entries(updates)) {
+                    if (group === "remove") {
+                        this.documentHighlightProvider.remove(uri, topVisibleBufferLine + parseInt(lineId, 10), parseInt(colId, 10));
+                    } else {
+                        this.documentHighlightProvider.add(uri, group, topVisibleBufferLine + parseInt(lineId, 10), parseInt(colId, 10));
+                    }
+                }
+            }
+            this.applyHighlightsToDocument(editor.document);
         }
     }
 
@@ -779,9 +791,9 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!vscode.window.activeTextEditor) {
             return;
         }
-        const [, line1based, col1based] = await this.client.callFunction("getcurpos");
-        this.nvimRealLinePosition = line1based - 1;
-        this.nvimRealColPosition = col1based - 1;
+        // const [, line1based, col1based] = await this.client.callFunction("getcurpos");
+        // this.nvimRealLinePosition = line1based - 1;
+        // this.nvimRealColPosition = col1based - 1;
 
         // const scrollState = this.editorScollPositions.get(editor);
         // if (!scrollState) {
@@ -798,10 +810,10 @@ export class NVIMPluginController implements vscode.Disposable {
         ];
         if (line < visibleRange.start.line) {
             // vscode.commands.executeCommand("editorScroll", { to: "up", by: "line", value: visibleRange.start.line - line });
-            vscode.commands.executeCommand("revealLine", { lineNumber: line, at: "top" });
+            await vscode.commands.executeCommand("revealLine", { lineNumber: line, at: "top" });
         } else if (line > visibleRange.end.line) {
             // vscode.commands.executeCommand("editorScroll", { to: "down", by: "line", value: line - visibleRange.end.line });
-            vscode.commands.executeCommand("revealLine", { lineNumber: line, at: "bottom" });
+            await vscode.commands.executeCommand("revealLine", { lineNumber: line, at: "bottom" });
         }
     };
 
