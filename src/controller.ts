@@ -244,23 +244,12 @@ export class NVIMPluginController implements vscode.Disposable {
     // };
 
     private onChangeSelection = async (e: vscode.TextEditorSelectionChangeEvent) => {
-        if (e.kind !== vscode.TextEditorSelectionChangeKind.Mouse) {
+        const firstSelection = e.selections[0].active;
+        if (firstSelection.line === this.nvimRealLinePosition && firstSelection.character === this.nvimRealColPosition) {
             return;
         }
-        if (this.isInsertMode) {
-            return;
-        }
-        const firstSelection = e.selections[0];
-        if (!firstSelection) {
-            return;
-        }
-        const { start, end } = firstSelection;
-        // const doc = e.textEditor.document;
-        if (start.isEqual(end) && (start.line !== this.nvimRealLinePosition || start.character !== this.nvimRealColPosition)) {
-            await this.setCursorPositionInNeovim(e.textEditor);
-        } else {
-            // nothing for now
-        }
+
+        await this.setCursorPositionInNeovim(e.textEditor);
     };
 
     private onOpenTextDocument = async (e: vscode.TextDocument): Promise<void> => {
@@ -545,7 +534,6 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private onNeoVimGlobalNotifcation = (method: string, events: [string, ...any[]]) => {
         if (method !== "redraw") {
-            console.log(method);
             return;
         }
         let updateCursor = false;
@@ -788,15 +776,6 @@ export class NVIMPluginController implements vscode.Disposable {
         if (vscode.window.activeTextEditor && this.isInsertMode) {
             await this.setCursorPositionInNeovim(vscode.window.activeTextEditor);
         }
-        if (vscode.window.activeTextEditor) {
-            const uri = vscode.window.activeTextEditor.document.uri.toString();
-            const buf = this.uriToBuffer.get(uri);
-            if (buf) {
-                const lines = await buf.lines;
-                console.log("AFTER CHANGE");
-                console.log(lines);
-            }
-        }
         await this.client.input("<Esc>");
     };
 
@@ -820,20 +799,13 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!vscode.window.activeTextEditor) {
             return;
         }
-        // const [, line1based, col1based] = await this.client.callFunction("getcurpos");
-        // this.nvimRealLinePosition = line1based - 1;
-        // this.nvimRealColPosition = col1based - 1;
-
-        // const scrollState = this.editorScollPositions.get(editor);
-        // if (!scrollState) {
-        //     return;
-        // }
         const visibleRange = vscode.window.activeTextEditor.visibleRanges[0];
-        // const line = scrollState.vimScrollOffset + row;
-        // const char = col;
         const line = this.nvimRealLinePosition;
         const col = this.nvimRealColPosition;
-
+        const currentCursor = vscode.window.activeTextEditor.selections[0].active;
+        if (currentCursor.line === line && currentCursor.character === col) {
+            return;
+        }
         vscode.window.activeTextEditor.selections = [
             new vscode.Selection(line, col, line, col)
         ];
