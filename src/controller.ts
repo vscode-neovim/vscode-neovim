@@ -64,6 +64,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private client: NeovimClient;
 
     private disposables: vscode.Disposable[] = [];
+    private typeHandlerDisplose?: vscode.Disposable;
 
     /**
      * Vscode uri string -> buffer mapping
@@ -80,6 +81,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private uriChanges: Map<string, VSCodeLineChange[]> = new Map();
 
     /**
+     * Skip buffer update from neovim with specified tick
+     */
+    private skipBufferTickUpdate: Map<number, number> = new Map();
+
+    /**
      * Track last changed version. Used to skip neovim update when in insert mode
      */
     private documentLastChangedVersion: Map<string, number> = new Map();
@@ -88,7 +94,7 @@ export class NVIMPluginController implements vscode.Disposable {
      * Vscode doesn't allow to apply multiple edits to the save document without awaiting previous reuslt.
      * So we'll accumulate neovim buffer updates here, then apply
      */
-    private pendingBufChanges: Array<{ buffer: NeovimBuffer, firstLine: number, lastLine: number; data: string[] }> = [];
+    private pendingBufChanges: Array<{ buffer: NeovimBuffer, firstLine: number, lastLine: number; data: string[]; tick: number; }> = [];
 
     /**
      * Simple command line UI
@@ -146,7 +152,7 @@ export class NVIMPluginController implements vscode.Disposable {
         this.disposables.push(vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument));
         this.disposables.push(vscode.window.onDidChangeVisibleTextEditors(this.onChangedEdtiors))
         this.disposables.push(vscode.window.onDidChangeActiveTextEditor(this.onChangedActiveEditor));
-        this.disposables.push(vscode.commands.registerTextEditorCommand("type", this.onType));
+        this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onType);
         this.disposables.push(vscode.window.onDidChangeTextEditorSelection(this.onChangeSelection));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.cmdCompletion", this.onCmdCompletion));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollUp", this.onScrollUpCommand));
@@ -215,6 +221,10 @@ export class NVIMPluginController implements vscode.Disposable {
     public dispose() {
         for (const d of this.disposables) {
             d.dispose();
+        }
+        if (this.typeHandlerDisplose) {
+            this.typeHandlerDisplose.dispose();
+            this.typeHandlerDisplose = undefined;
         }
         this.client.quit();
     }
@@ -289,7 +299,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         // vscode disallow to do multiple edits without awaiting textEditor.edit result
         // so we'll process all changes in slightly throttled function
-        this.pendingBufChanges.push({ buffer, firstLine, lastLine, data: linedata });
+        this.pendingBufChanges.push({ buffer, firstLine, lastLine, data: linedata, tick });
         if (this.resolveQueuePromise) {
             this.resolveQueuePromise();
         }
@@ -314,9 +324,13 @@ export class NVIMPluginController implements vscode.Disposable {
                 this.bufQueuePromise = undefined;
                 this.resolveQueuePromise = undefined;
             } else {
-                const { buffer, data, firstLine, lastLine } = edit;
+                const { buffer, data, firstLine, lastLine, tick } = edit;
                 const uri = this.bufferIdToUri.get(buffer.id);
                 if (!uri) {
+                    continue;
+                }
+                const skipTick = this.skipBufferTickUpdate.get(buffer.id) || 0;
+                if (skipTick >= tick) {
                     continue;
                 }
                 const textEditor = vscode.window.visibleTextEditors.find(e => e.document.uri.toString() === uri);
@@ -378,61 +392,101 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.documentLastChangedVersion.get(uri) === version) {
             return;
         }
-        if (this.isInsertMode) {
-            const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
-            // if (!this.uriChanges.has(uri)) {
-            //     this.uriChanges.set(uri, new Set());
-            // }
-            // const changedLines = this.uriChanges.get(uri)!;
-            const uriChanges = this.uriChanges.get(uri)!;
-            for (const change of e.contentChanges) {
-                const { range, rangeLength, rangeOffset, text } = change;
-                // if true when it's ordinary text change or newline insert
-                if (change.range.isSingleLine) {
-                    const { line, character } = range.start;
-                    if (text === "\n" || text === "\r\n") {
-                        uriChanges.push({
-                            line, mode: character === 0
-                                ? "newlinebefore"
-                                : character === e.document.lineAt(line).rangeIncludingLineBreak.start.character
-                                    ? "newlineafter"
-                                    : "newlinemiddle"
-                        });
-                    } else {
-                        const changedTextByLine = text.split(eol);
-                        const lastChange = uriChanges[uriChanges.length - 1];
-                        if (!lastChange || lastChange.line !== line || lastChange.mode !== "changed") {
-                            uriChanges.push({ line, mode: "changed" });
-                        }
-                        // inserted snippet
-                        if (changedTextByLine.length > 1) {
-                            uriChanges.push({ line, mode: "newlineafter" });
-                            for (let i = 1; i < changedTextByLine.length; i++) {
-                                uriChanges.push({ line: line + i, mode: "changed" });
-                                if (i + 1 < changedTextByLine.length) {
-                                    uriChanges.push({ line: line + i, mode: "newlineafter" });
-                                }
-                            }
-                        }
-                    }
+        const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+        const requests: any[] = [];
+        const buf = this.uriToBuffer.get(uri);
+        if (!buf) {
+            return;
+        }
+        const doc = e.document;
+        const affectedRanges: Array<{ oldRange: vscode.Range, newRange: vscode.Range }> = [];
+        for (const change of e.contentChanges) {
+            const { range, rangeLength, rangeOffset, text } = change;
+            // if true when it's ordinary text change or newline insert
+            if (change.range.isSingleLine) {
+                const { line, character } = range.start;
+                if (text === "\n" || text === "\r\n") {
+                    // newline
+                    affectedRanges.push({
+                        oldRange: new vscode.Range(line, 0, line, 0),
+                        newRange: new vscode.Range(line, 0, line + 1, 0),
+                    });
+
                 } else {
-                    // deleted line/newline
-                    if (text === "") {
-                        uriChanges.push({ mode: "deletedline", line: change.range.start.line, line2: change.range.end.line });
-                    } else {
-                        const currentLineCount = e.document.lineCount;
-                        const prevLineCount = this.documentLines.get(uri) || 0;
-                        // deleted some lines while replacing
-                        if (currentLineCount < prevLineCount) {
-                            uriChanges.push({ mode: "deletedline", line: change.range.end.line, line2: change.range.end.line + (prevLineCount - currentLineCount) });
-                        }
-                        // replaced some text within multineline
-                        uriChanges.push({ mode: "multilinereplace", line: change.range.start.line, line2: change.range.end.line });
-                    }
+                    // vscode may insert snippet or some other mutliline text. In this case the range will be singleLine, but text itself with EOL
+                    const changedTextByEol = text.split(eol);
+                    affectedRanges.push({
+                        oldRange: new vscode.Range(range.start.line, 0, range.end.line, 0),
+                        newRange: new vscode.Range(range.start.line, 0, range.start.line + changedTextByEol.length - 1, 0),
+                    });
+                }
+            } else {
+                // deleted line/newline
+                if (text === "") {
+                    affectedRanges.push({
+                        oldRange: new vscode.Range(range.start.line, 0, range.end.line, 0),
+                        newRange: new vscode.Range(range.start.line, 0, range.start.line, 0),
+                    });
+                } else {
+                    const changedTextByEol = text.split(eol);
+                    affectedRanges.push({
+                        oldRange: new vscode.Range(range.start.line, 0, range.end.line, 0),
+                        newRange: new vscode.Range(range.start.line, 0, range.start.line + changedTextByEol.length - 1, 0),
+                    });
                 }
             }
-            this.documentLines.set(uri, e.document.lineCount);
         }
+        if (!affectedRanges.length) {
+            return;
+        }
+
+        // vscode may send few changes with overlapping ranges, e.g. line 46 grows to 46-47, line 47 grows to 47-48
+        // we need to combine such changes and make one range, e.g. line 46-47 grows to 46-49
+        const newRanges = affectedRanges.sort(({ oldRange: { start: { line: aStartLine } } }, { oldRange: { start: { line: bStartLine }} }) => {
+            return aStartLine < bStartLine ? -1 : aStartLine > bStartLine ? 1 : 0;
+        }).reduce((all, curr) => {
+            const prevRange = all.slice(-1)[0];
+            if (!prevRange) {
+                all.push(curr);
+            } else {
+                if (prevRange.oldRange.start.line <= curr.oldRange.start.line && Math.abs(prevRange.oldRange.end.line - curr.oldRange.start.line) <= 1) {
+                    const prevRangeLineDiff = prevRange.newRange.end.line - prevRange.oldRange.end.line;
+                    const newOldRange = new vscode.Range(prevRange.oldRange.start.line, 0, curr.oldRange.end.line, 0);
+                    const newNewRange = new vscode.Range(prevRange.newRange.start.line, 0, curr.newRange.end.line + prevRangeLineDiff, 0);
+                    all[all.length - 1] = {
+                        oldRange: newOldRange,
+                        newRange: newNewRange,
+                    };
+                } else {
+                    all.push(curr);
+                }
+            }
+            return all;
+        }, [] as typeof affectedRanges);
+        // step2 - go for each range again and increase each next to accumulated line difference
+        // TODO: for some reason call_atomic doesn't work as expected with multiple nvim_buf_set_lines - subsequent calls are using resulted buffer of the previous call
+        // Is it neovim bug?
+        let accumulatedLineDifference = 0;
+        for (const range of newRanges) {
+            range.oldRange = new vscode.Range(range.oldRange.start.line + accumulatedLineDifference, 0, range.oldRange.end.line + accumulatedLineDifference, 0);
+            range.newRange = new vscode.Range(range.newRange.start.line + accumulatedLineDifference, 0, range.newRange.end.line + accumulatedLineDifference, 0);
+            accumulatedLineDifference += (range.newRange.end.line - range.oldRange.end.line);
+        }
+
+        for (const range of newRanges) {
+            const lastLine = doc.lineAt(range.newRange.end.line);
+            let newLines = doc.getText(new vscode.Range(range.newRange.start.line, 0, range.newRange.end.line, lastLine.range.end.character));
+            const splitted = newLines.split(eol);
+            requests.push(["nvim_buf_set_lines", [buf, range.oldRange.start.line, range.oldRange.end.line + 1, false, splitted]]);
+        }
+        if (vscode.window.activeTextEditor) {
+            requests.push(["nvim_call_function", ["cursor", [vscode.window.activeTextEditor.selection.active.line + 1, vscode.window.activeTextEditor.selection.active.character + 1]]]);
+        }
+        this.documentLines.set(uri, e.document.lineCount);
+        const tick = await buf.changedtick;
+        //
+        this.skipBufferTickUpdate.set(buf.id, tick + newRanges.length);
+        await this.client.callAtomic(requests);
     }
 
     private onChangedEdtiors = (editors: vscode.TextEditor[]): void => {
@@ -731,54 +785,29 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!this.isInit) {
             return;
         }
-        if (this.isInsertMode) {
-            if (vscode.window.activeTextEditor) {
-                const uri = vscode.window.activeTextEditor.document.uri.toString();
-                const buf = this.uriToBuffer.get(uri);
-                const changes = this.uriChanges.get(uri)!;
-                if (changes.length && buf) {
-                    const requests: any[] = [];
-                    for (const { mode, line, line2 } of changes) {
-                        try {
-                            if (mode === "changed") {
-                                const text = vscode.window.activeTextEditor.document.lineAt(line).text;
-                                requests.push(["nvim_buf_set_lines", [buf, line, line + 1, false, [text]]]);
-                            } else if (mode === "newlineafter") {
-                                const text = vscode.window.activeTextEditor.document.lineAt(line).text;
-                                requests.push(["nvim_buf_set_lines", [buf, line, line + 1, false, [text, ""]]]);
-                            } else if (mode === "newlinebefore") {
-                                const text = vscode.window.activeTextEditor.document.lineAt(line + 1).text;
-                                requests.push(["nvim_buf_set_lines", [buf, line, line + 1, false, ["", text]]]);
-                            } else if (mode === "newlinemiddle") {
-                                const text1 = vscode.window.activeTextEditor.document.lineAt(line).text;
-                                const text2 = vscode.window.activeTextEditor.document.lineAt(line + 1).text;
-                                requests.push(["nvim_buf_set_lines", [buf, line, line + 1, false, [text1, text2]]]);
-                            } else if (mode === "deletedline" && line2) {
-                                const text = vscode.window.activeTextEditor.document.lineAt(line).text;
-                                requests.push(["nvim_buf_set_lines", [buf, line, line2 + 1, false, [text]]]);
-                            } else if (mode === "multilinereplace" && line2) {
-                                const lines: string[] = [];
-                                for (let i = line; i <= line2; i++) {
-                                    const text = vscode.window.activeTextEditor.document.lineAt(i).text;
-                                    lines.push(text);
-                                }
-                                requests.push(["nvim_buf_set_lines", [buf, line, line2 + 1, false, lines]]);
-                            }
-                        } catch {
-                            // ignore
-                        }
-                    }
-                    const editor = vscode.window.activeTextEditor;
-                    await this.client.request("nvim_call_atomic", [requests]);
-                    await this.setCursorPositionInNeovim(editor);
-                }
+        if (vscode.window.activeTextEditor && this.isInsertMode) {
+            await this.setCursorPositionInNeovim(vscode.window.activeTextEditor);
+        }
+        if (vscode.window.activeTextEditor) {
+            const uri = vscode.window.activeTextEditor.document.uri.toString();
+            const buf = this.uriToBuffer.get(uri);
+            if (buf) {
+                const lines = await buf.lines;
+                console.log("AFTER CHANGE");
+                console.log(lines);
             }
         }
-        this.client.input("<Esc>");
+        await this.client.input("<Esc>");
     };
 
     private handleModeChange = (modeName: string, id: number) => {
         this.isInsertMode = modeName === "insert";
+        if (this.isInsertMode && this.typeHandlerDisplose) {
+            this.typeHandlerDisplose.dispose();
+            this.typeHandlerDisplose = undefined;
+        } else if (!this.isInsertMode && !this.typeHandlerDisplose) {
+            this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onType);
+        }
         this.currentModeName = modeName;
         if (!vscode.window.activeTextEditor) {
             return;

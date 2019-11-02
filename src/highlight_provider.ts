@@ -110,5 +110,4 @@ export class HighlightProvider {
         }
         return ranges;
     }
-
 }
