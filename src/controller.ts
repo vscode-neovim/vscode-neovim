@@ -277,8 +277,7 @@ export class NVIMPluginController implements vscode.Disposable {
             const eol = e.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
             const lines = e.getText().split(eol);
             await buf.replace(lines, 0);
-
-            this.client.buffer.listen("lines", this.onNeovimBufferEvent);
+            buf.listen("lines", this.onNeovimBufferEvent);
         }
     }
 
