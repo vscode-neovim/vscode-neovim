@@ -95,7 +95,7 @@ export class HighlightProvider {
             return;
         }
         const ranges: Range[] = [];
-        const sortedCols = cols.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
+        const sortedCols = cols.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
         for (let i = 0; i < sortedCols.length; i++) {
             const startCol = sortedCols[i];
             let skipCol = startCol;

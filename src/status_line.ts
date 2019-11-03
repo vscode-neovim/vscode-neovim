@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 
 export class StatusLineController implements vscode.Disposable {
-
     private modeItem: vscode.StatusBarItem;
     private commandItem: vscode.StatusBarItem;
     private msgItem: vscode.StatusBarItem;

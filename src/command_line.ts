@@ -1,7 +1,6 @@
-import { Disposable, InputBox, window, Event } from "vscode";
+import { Disposable, InputBox, window } from "vscode";
 
 export class CommandLineController implements Disposable {
-
     private input: InputBox;
 
     private disposables: Disposable[] = [];
@@ -9,7 +8,6 @@ export class CommandLineController implements Disposable {
     private prevInput = "";
 
     private isDisplayed = false;
-
 
     public constructor() {
         this.input = window.createInputBox();
@@ -50,21 +48,21 @@ export class CommandLineController implements Disposable {
     public onCanceled?: () => void;
     public onBacksapce?: () => void;
 
-    public dispose() {
+    public dispose(): void {
         for (const d of this.disposables) {
             d.dispose();
         }
         this.input.dispose();
     }
 
-    private handleAccept = () => {
+    private handleAccept = (): void => {
         if (!this.onAccept) {
             return;
         }
         this.onAccept();
-    }
+    };
 
-    private handleChange = (e: string) => {
+    private handleChange = (e: string): void => {
         if (!this.onChanged) {
             return;
         }
@@ -74,9 +72,9 @@ export class CommandLineController implements Disposable {
         } else {
             this.onChanged(e);
         }
-    }
+    };
 
-    private handleCancel = () => {
+    private handleCancel = (): void => {
         this.isDisplayed = false;
         this.prevInput = "";
         this.input.value = "";
@@ -84,7 +82,5 @@ export class CommandLineController implements Disposable {
             return;
         }
         this.onCanceled();
-    }
-
-
+    };
 }
