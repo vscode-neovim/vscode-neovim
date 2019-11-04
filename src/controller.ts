@@ -180,9 +180,16 @@ export class NVIMPluginController implements vscode.Disposable {
             this.onOpenTextDocument(doc);
         }
 
-        // this.nvimProc = spawn("C:\\Neovim\\bin\\nvim.exe", ["-u", "NONE", "-N", "--embed"], {});
-        // this.nvimProc = spawn("C:\\Neovim\\bin\\nvim.exe", ["-N", "--embed"], {});
-        this.nvimProc = spawn(neovimPath, ["-N", "--embed"], {});
+        const args = ["-N", "--embed"];
+        if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
+            args.push(
+                "-u",
+                "NONE",
+                "--listen",
+                `${process.env.NEOVIM_DEBUG_HOST || "127.0.0.1"}:${process.env.NEOVIM_DEBUG_PORT || 4000}`,
+            );
+        }
+        this.nvimProc = spawn(neovimPath, args, {});
         this.client = attach({ proc: this.nvimProc });
         this.client.on("notification", this.onNeoVimGlobalNotifcation);
         this.commandLine = new CommandLineController();

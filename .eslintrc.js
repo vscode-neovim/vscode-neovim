@@ -70,7 +70,7 @@ module.exports = {
             },
             overrides: [
                 {
-                    files: ["*.spec.ts", "*.spec.tsx", "*.fspec.ts", "*.fspec.tsx"],
+                    files: ["*.spec.ts", "*.test.ts"],
                     rules: {
                         "@typescript-eslint/no-explicit-any": "off",
                         "@typescript-eslint/no-non-null-assertion": "off",

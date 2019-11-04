@@ -113,7 +113,7 @@
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"pretest": "yarn run compile",
-    	"lint": "eslint --ext .ts src",
+		"lint": "eslint --ext .ts src",
 		"test": "node ./out/test/runTest.js"
 	},
 	"devDependencies": {
@@ -132,6 +132,7 @@
 		"glob": "^7.1.4",
 		"mocha": "^6.1.4",
 		"prettier": "^1.18.2",
+		"source-map-support": "^0.5.16",
 		"tslint": "^5.12.1",
 		"typescript": "^3.6.4",
 		"vscode-test": "^1.2.0"

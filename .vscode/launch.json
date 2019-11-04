@@ -25,13 +25,19 @@
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
+				"--disable-extensions",
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/test/**/*.js"
 			],
-			"preLaunchTask": "npm: watch"
+			"preLaunchTask": "npm: watch",
+			"env": {
+				"NEOVIM_DEBUG": "1",
+				"NEOVIM_DEBUG_HOST": "127.0.0.1",
+				"NEOVIM_DEBUG_PORT": "4000",
+			}
 		}
 	]
 }
