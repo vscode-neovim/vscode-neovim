@@ -4,6 +4,10 @@
 
 Although it's more-less working, this is VERY experimental plugin and WIP. Use at your own **risk!**
 
+## Installation
+
+Install [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension
+
 ## Features
 
 * Almost fully feature-complete VIM integration by utilizing neovim
