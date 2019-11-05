@@ -152,7 +152,28 @@ describe("Basic editing and navigation", () => {
         assert.ok(!(await getCurrentBufferName(client)).match(/untitled/));
     });
 
+    it("Editing last line doesnt insert new line in vscode", async () => {
+        await wait();
+        const doc = await vscode.workspace.openTextDocument({
+            content: "1abc\n2abc",
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("jllx");
+        await assertContent(
+            {
+                content: ["1abc", "2ac"],
+                cursor: [1, 2],
+            },
+            client,
+        );
+
+        await closeActiveEditor(client);
+    });
+
     it("Insert mode", async () => {
+        await wait();
         const doc = await vscode.workspace.openTextDocument({});
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
@@ -421,6 +442,93 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
+        await closeActiveEditor(client);
+    });
+
+    it("Ci-ca-etc...", async () => {
+        await wait();
+        const doc = await vscode.workspace.openTextDocument({
+            content:
+                "text (first) text\ntext (second) text\ntext 'third' text\ntext { text\ntext block text\ntext } text\ntext { text\ntext block2 text\ntext } text",
+        });
+
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+        await sendVSCodeKeys("6lci(");
+        await assertContent(
+            {
+                vsCodeCursor: [0, 6],
+                cursorStyle: "line",
+                mode: "i",
+                content: [
+                    "text () text",
+                    "text (second) text",
+                    "text 'third' text",
+                    "text { text",
+                    "text block text",
+                    "text } text",
+                    "text { text",
+                    "text block2 text",
+                    "text } text",
+                ],
+            },
+            client,
+        );
+
+        await sendEscapeKey();
+        await sendVSCodeKeys("j06lca(");
+        await assertContent(
+            {
+                vsCodeCursor: [1, 5],
+                cursorStyle: "line",
+                mode: "i",
+                content: [
+                    "text () text",
+                    "text  text",
+                    "text 'third' text",
+                    "text { text",
+                    "text block text",
+                    "text } text",
+                    "text { text",
+                    "text block2 text",
+                    "text } text",
+                ],
+            },
+            client,
+        );
+
+        await sendEscapeKey();
+        await sendVSCodeKeys("jjj6lca{");
+        await assertContent(
+            {
+                vsCodeCursor: [3, 5],
+                cursorStyle: "line",
+                mode: "i",
+                content: [
+                    "text () text",
+                    "text  text",
+                    "text 'third' text",
+                    "text  text",
+                    "text { text",
+                    "text block2 text",
+                    "text } text",
+                ],
+            },
+            client,
+        );
+
+        await sendEscapeKey();
+        await sendVSCodeKeys("j07lci{");
+        await assertContent(
+            {
+                vsCodeCursor: [4, 6],
+                cursorStyle: "line",
+                mode: "i",
+                content: ["text () text", "text  text", "text 'third' text", "text  text", "text {} text"],
+            },
+            client,
+        );
+
         await closeActiveEditor(client);
     });
 });
