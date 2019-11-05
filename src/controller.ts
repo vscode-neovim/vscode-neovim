@@ -609,6 +609,11 @@ export class NVIMPluginController implements vscode.Disposable {
                             const newLine = lines.pop()!.slice(0, -1);
                             lines.push(newLine);
                         }
+                        // handle when change is overflow through editor lines. E.g. pasting on last line.
+                        // Without newline it will append to the current one
+                        if (firstLine >= textEditor.document.lineCount) {
+                            lines.unshift("\n");
+                        }
                         builder.replace(new vscode.Range(firstLine, 0, endRangeLine, endRangePos), lines.join(""));
                     }
                 });

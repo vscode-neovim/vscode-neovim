@@ -205,10 +205,11 @@ export async function sendEscapeKey(waitTimeout = 300): Promise<void> {
     await wait(waitTimeout);
 }
 
-export function setSelection(
+export async function setSelection(
     selections: Array<{ anchorPos: [number, number]; cursorPos: [number, number] }>,
+    waitTimeout = 100,
     editor?: TextEditor,
-): void {
+): Promise<void> {
     if (!editor) {
         editor = window.activeTextEditor;
     }
@@ -219,8 +220,12 @@ export function setSelection(
     editor.selections = selections.map(
         s => new Selection(s.anchorPos[0], s.anchorPos[1], s.cursorPos[0], s.cursorPos[1]),
     );
+    await wait(waitTimeout);
 }
 
+export async function setCursor(line: number, char: number, waitTimeout = 100, editor?: TextEditor): Promise<void> {
+    await setSelection([{ anchorPos: [line, char], cursorPos: [line, char] }], waitTimeout, editor);
+}
 export async function copyVSCodeSelection(): Promise<void> {
     if (!window.activeTextEditor) {
         throw new Error("No editor");
@@ -245,4 +250,14 @@ export async function closeActiveEditor(client: NeovimClient, escape = true): Pr
     await sendNeovimKeys(client, "ggdG");
     await commands.executeCommand("workbench.action.closeActiveEditor");
     await wait();
+}
+
+export async function closeAllActiveEditors(client: NeovimClient, escape = true): Promise<void> {
+    if (escape) {
+        await sendEscapeKey();
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const _e of window.visibleTextEditors) {
+        await closeActiveEditor(client, false);
+    }
 }
