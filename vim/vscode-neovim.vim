@@ -31,5 +31,13 @@ function! VSCodeInsertAfter()
     startinsert
 endfunction
 
+function! VSCodeClearUndo()
+    let oldlevels = &undolevels
+    set undolevels=-1
+    exe "normal a \<BS>\<Esc>"
+    let &undolevels = oldlevels
+    unlet oldlevels
+endfunction
+
 nnoremap <silent> O :call VSCodeInsertBefore()<CR>
 nnoremap <silent> o :call VSCodeInsertAfter()<CR>

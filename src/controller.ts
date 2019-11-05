@@ -277,6 +277,7 @@ export class NVIMPluginController implements vscode.Disposable {
             requests.push(["nvim_buf_set_name", [buf, uri]]);
             requests.push(["nvim_buf_set_lines", [buf, 0, 1, false, lines]]);
             requests.push(["nvim_win_set_buf", [0, buf]]);
+            requests.push(["nvim_call_function", ["VSCodeClearUndo", []]]);
             await this.client.callAtomic(requests);
             this.bufferIdToUri.set(buf.id, uri);
             this.uriToBuffer.set(uri, buf);
