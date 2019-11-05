@@ -201,30 +201,31 @@ describe("Basic editing and navigation", () => {
 
         // basic editing
         await sendVSCodeKeys("blah");
+        await sendEscapeKey();
         await assertContent(
             {
-                cursor: [0, 4],
-                mode: "i",
-                cursorStyle: "line",
+                cursor: [0, 3],
                 content: ["blah"],
             },
             client,
         );
 
         // deleting single char
+        await sendVSCodeKeys("a");
         await sendVSCodeSpecialKey("backspace");
+        await sendEscapeKey();
         await assertContent(
             {
-                cursor: [0, 3],
-                mode: "i",
-                cursorStyle: "line",
+                cursor: [0, 2],
                 content: ["bla"],
             },
             client,
         );
 
         // insert newline after
+        await sendVSCodeKeys("a");
         await sendVSCodeKeys("\n");
+        await sendEscapeKey();
         await assertContent(
             {
                 cursor: [1, 0],
@@ -234,75 +235,90 @@ describe("Basic editing and navigation", () => {
         );
 
         // editing newline
+        await sendVSCodeKeys("a");
         await sendVSCodeKeys("test");
+        await sendEscapeKey();
         await assertContent(
             {
-                cursor: [1, 4],
+                cursor: [1, 3],
                 content: ["bla", "test"],
             },
             client,
         );
 
         // cursor navigation in the insert mode
+        await sendVSCodeKeys("a");
         await sendVSCodeSpecialKey("cursorLeft");
         await sendVSCodeSpecialKey("cursorLeft");
         await sendVSCodeSpecialKey("cursorLeft");
         await sendVSCodeSpecialKey("cursorLeft");
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [1, 0],
+                cursor: [1, 0],
                 content: ["bla", "test"],
             },
             client,
         );
 
         // inserting newline before
+        await sendVSCodeKeys("i");
         await sendVSCodeKeys("\n");
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [2, 0],
+                cursor: [2, 0],
                 content: ["bla", "", "test"],
             },
             client,
         );
 
         // deleting newline
+        await sendVSCodeKeys("i");
         await sendVSCodeSpecialKey("backspace");
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [1, 0],
+                cursor: [1, 0],
                 content: ["bla", "test"],
             },
             client,
         );
 
         // insert newline in the middle of the word
+        await sendVSCodeKeys("i");
         await sendVSCodeSpecialKey("cursorRight");
         await sendVSCodeKeys("\n");
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [2, 0],
+                cursor: [2, 0],
                 content: ["bla", "t", "est"],
             },
             client,
         );
 
         // deleting few lines in insert mode by selecting them
+        await sendVSCodeKeys("i");
         await sendVSCodeKeys("\n");
         await sendVSCodeKeys("\n");
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [4, 0],
+                cursor: [4, 0],
                 content: ["bla", "t", "", "", "est"],
             },
             client,
         );
+
+        await sendVSCodeKeys("i");
         setSelection([{ anchorPos: [0, 3], cursorPos: [4, 0] }]);
         await sendVSCodeSpecialKey("backspace");
+        await sendEscapeKey();
 
         await assertContent(
             {
-                vsCodeCursor: [0, 3],
+                cursor: [0, 2],
                 content: ["blaest"],
             },
             client,
@@ -310,12 +326,14 @@ describe("Basic editing and navigation", () => {
 
         // replacing multiple lines
         // switch to end of line
+        await sendVSCodeKeys("a");
         await sendVSCodeSpecialKey("cursorRight");
         await sendVSCodeSpecialKey("cursorRight");
         await sendVSCodeSpecialKey("cursorRight");
         await sendVSCodeSpecialKey("cursorRight");
 
         await sendVSCodeKeys("\nline2\nline3\n\na\nb\nc");
+        await sendEscapeKey();
         await assertContent(
             {
                 content: ["blaest", "line2", "line3", "", "a", "b", "c"],
@@ -323,51 +341,59 @@ describe("Basic editing and navigation", () => {
             client,
         );
         // copy - lines increased
+        await sendVSCodeKeys("i");
         setSelection([{ anchorPos: [0, 0], cursorPos: [2, 5] }]);
         await copyVSCodeSelection();
         setSelection([{ anchorPos: [4, 0], cursorPos: [6, 0] }]);
         await pasteVSCode();
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [6, 5],
+                cursor: [6, 4],
                 content: ["blaest", "line2", "line3", "", "blaest", "line2", "line3c"],
             },
             client,
         );
 
         // copy - lines decreased
+        await sendVSCodeKeys("i");
         setSelection([{ anchorPos: [1, 0], cursorPos: [3, 0] }]);
         await copyVSCodeSelection();
         setSelection([{ anchorPos: [3, 0], cursorPos: [6, 6] }]);
         await pasteVSCode();
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [5, 0],
+                cursor: [5, 0],
                 content: ["blaest", "line2", "line3", "line2", "line3", ""],
             },
             client,
         );
 
         // multiline paste into single line
+        await sendVSCodeKeys("i");
         setSelection([{ anchorPos: [0, 0], cursorPos: [2, 0] }]);
         await copyVSCodeSelection();
         setSelection([{ anchorPos: [2, 0], cursorPos: [2, 0] }]);
         await pasteVSCode();
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [4, 0],
+                cursor: [4, 0],
                 content: ["blaest", "line2", "blaest", "line2", "line3", "line2", "line3", ""],
             },
             client,
         );
 
         // snippet inserting
+        await sendVSCodeKeys("i");
         setSelection([{ anchorPos: [7, 0], cursorPos: [7, 0] }]);
         await vscode.window.activeTextEditor!.insertSnippet(new vscode.SnippetString("while ($1) {\n$2\n}"));
         await wait();
+        await sendEscapeKey();
         await assertContent(
             {
-                vsCodeCursor: [7, 7],
+                cursor: [7, 6],
                 content: ["blaest", "line2", "blaest", "line2", "line3", "line2", "line3", "while () {", "", "}"],
             },
             client,
@@ -380,6 +406,48 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
+        await closeActiveEditor(client);
+    });
+
+    it("Mutliline edits in insert mode", async () => {
+        await wait();
+        const doc = await vscode.workspace.openTextDocument({});
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("i");
+        await sendVSCodeKeys("first\nsecond\nthird");
+        // delete "d" in third
+        await sendVSCodeSpecialKey("backspace");
+        // move to th
+        await sendVSCodeSpecialKey("cursorLeft");
+        await sendVSCodeSpecialKey("cursorLeft");
+        // delete "i"
+        await sendVSCodeSpecialKey("delete");
+        // move to "second" line
+        await sendVSCodeSpecialKey("cursorLeft");
+        await sendVSCodeSpecialKey("cursorLeft");
+        await sendVSCodeSpecialKey("cursorLeft");
+
+        // remove line 2 completely
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["first", "thr"],
+                cursor: [0, 4],
+            },
+            client,
+        );
+
         await closeActiveEditor(client);
     });
 

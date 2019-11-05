@@ -200,7 +200,7 @@ export async function assertContent(
     }
 }
 
-export async function sendEscapeKey(waitTimeout = 300): Promise<void> {
+export async function sendEscapeKey(waitTimeout = 500): Promise<void> {
     await commands.executeCommand("vscode-neovim.escape");
     await wait(waitTimeout);
 }
@@ -249,7 +249,7 @@ export async function closeActiveEditor(client: NeovimClient, escape = true): Pr
     }
     await sendNeovimKeys(client, "ggdG");
     await commands.executeCommand("workbench.action.closeActiveEditor");
-    await wait();
+    await wait(1000);
 }
 
 export async function closeAllActiveEditors(client: NeovimClient, escape = true): Promise<void> {

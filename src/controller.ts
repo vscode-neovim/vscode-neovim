@@ -92,6 +92,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private documentLastChangedVersion: Map<string, number> = new Map();
 
     /**
+     * Tracks changes in insert mode. We can send them to neovim immediately but this will break undo stack
+     */
+    private bufferChangesInInsertMode: Map<string, Array<[string, VimValue[]]>> = new Map();
+
+    /**
      * Vscode doesn't allow to apply multiple edits to the save document without awaiting previous reuslt.
      * So we'll accumulate neovim buffer updates here, then apply
      */
@@ -273,7 +278,7 @@ export class NVIMPluginController implements vscode.Disposable {
             const eol = e.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
             const lines = e.getText().split(eol);
 
-            const requests: VimValue[] = [];
+            const requests: [string, VimValue[]][] = [];
             requests.push(["nvim_buf_set_name", [buf, uri]]);
             requests.push(["nvim_buf_set_lines", [buf, 0, 1, false, lines]]);
             requests.push(["nvim_win_set_buf", [0, buf]]);
@@ -293,7 +298,7 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
-        const requests: VimValue[] = [];
+        const requests: [string, VimValue[]][] = [];
         const buf = this.uriToBuffer.get(uri);
         if (!buf) {
             return;
@@ -421,26 +426,32 @@ export class NVIMPluginController implements vscode.Disposable {
                 [buf, range.oldRange.start.line, range.oldRange.end.line + 1, false, splitted],
             ]);
         }
-        // !Note: Must be here
-        // Neovim tries to preserve current active position when text is being changed by nonvim side
-        // the problem comes with calling vscode insertLineBefore/insertLineAbove commands from neovim - the cursor position is messed
-        // due async buffer request
-        if (vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.uri.toString() === uri) {
-            requests.push([
-                "nvim_win_set_cursor",
-                [
-                    0,
-                    [
-                        vscode.window.activeTextEditor.selection.active.line + 1,
-                        vscode.window.activeTextEditor.selection.active.character,
-                    ],
-                ],
-            ]);
-        }
         this.documentLines.set(uri, e.document.lineCount);
-        const tick = await buf.changedtick;
-        this.skipBufferTickUpdate.set(buf.id, tick + newRanges.length);
-        await this.client.callAtomic(requests);
+        if (this.isInsertMode) {
+            const uriChanges = this.bufferChangesInInsertMode.get(uri) || [];
+            uriChanges.push(...requests);
+            this.bufferChangesInInsertMode.set(uri, uriChanges);
+        } else {
+            // !Note: Must be here
+            // Neovim tries to preserve current active position when text is being changed by nonvim side
+            // the problem comes with calling vscode insertLineBefore/insertLineAbove commands from neovim - the cursor position is messed
+            // due async buffer request
+            if (vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.uri.toString() === uri) {
+                requests.push([
+                    "nvim_win_set_cursor",
+                    [
+                        0,
+                        [
+                            vscode.window.activeTextEditor.selection.active.line + 1,
+                            vscode.window.activeTextEditor.selection.active.character,
+                        ],
+                    ],
+                ]);
+            }
+            const tick = await buf.changedtick;
+            this.skipBufferTickUpdate.set(buf.id, tick + newRanges.length);
+            await this.client.callAtomic(requests);
+        }
     };
 
     private onCloseTextDocument = async (e: vscode.TextDocument): Promise<void> => {
@@ -452,6 +463,7 @@ export class NVIMPluginController implements vscode.Disposable {
             await this.client.command(`bd${buf.id}`);
             this.bufferIdToUri.delete(buf.id);
         }
+        this.bufferChangesInInsertMode.delete(uri);
         this.uriToBuffer.delete(uri);
         this.documentLastChangedVersion.delete(uri);
         this.documentLines.delete(uri);
@@ -1043,9 +1055,35 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!this.isInit) {
             return;
         }
-        if (vscode.window.activeTextEditor && this.isInsertMode) {
-            // since we're not sending cursor updates in insert mode, update now
-            await this.setCursorPositionInNeovim(vscode.window.activeTextEditor);
+        if (this.isInsertMode) {
+            const requests: [string, VimValue[]][] = [];
+            for (const [uri, changes] of this.bufferChangesInInsertMode) {
+                const buf = this.uriToBuffer.get(uri);
+                if (!buf) {
+                    continue;
+                }
+
+                // neovim will send _lines event for every nvim_buf_set_lines call
+                // since we did changes on vscode we're not intersted in them
+                const bufTick = this.skipBufferTickUpdate.get(buf.id) || 0;
+                this.skipBufferTickUpdate.set(buf.id, bufTick + changes.length);
+                requests.push(...changes);
+            }
+            this.bufferChangesInInsertMode.clear();
+            // update cursor
+            if (vscode.window.activeTextEditor) {
+                requests.push([
+                    "nvim_win_set_cursor",
+                    [
+                        0,
+                        [
+                            vscode.window.activeTextEditor.selection.active.line + 1,
+                            vscode.window.activeTextEditor.selection.active.character,
+                        ],
+                    ],
+                ]);
+            }
+            await this.client.callAtomic(requests);
         }
         await this.client.input("<Esc>");
     };
