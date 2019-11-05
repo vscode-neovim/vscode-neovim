@@ -1,21 +1,22 @@
 import vscode from "vscode";
+import { NeovimClient } from "neovim";
 
-import {
-    attachTestNvimClient,
-    sendVSCodeKeys,
-    assertContent,
-    wait,
-    closeAllActiveEditors,
-    closeActiveEditor,
-    setCursor,
-} from "../utils";
+import { attachTestNvimClient, sendVSCodeKeys, assertContent, wait, closeAllActiveEditors, setCursor } from "../utils";
 
 describe("Yanking and pasting", () => {
-    vscode.window.showInformationMessage("Yank & paste test");
-    const client = attachTestNvimClient();
+    let client: NeovimClient;
+    before(async () => {
+        client = await attachTestNvimClient();
+    });
+    after(async () => {
+        client.quit();
+    });
+
+    afterEach(async () => {
+        await closeAllActiveEditors();
+    });
 
     it("Yank and paste works", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "some line\notherline",
         });
@@ -42,11 +43,9 @@ describe("Yanking and pasting", () => {
             },
             client,
         );
-        await closeActiveEditor(client);
     });
 
     it("Pasting into document with single line", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "some line\notherline",
         });
@@ -78,7 +77,5 @@ describe("Yanking and pasting", () => {
             },
             client,
         );
-
-        await closeAllActiveEditors(client);
     });
 });

@@ -2,22 +2,24 @@ import path from "path";
 import { strict as assert } from "assert";
 
 import vscode from "vscode";
+import { NeovimClient } from "neovim";
 
-import {
-    attachTestNvimClient,
-    assertContent,
-    wait,
-    setCursor,
-    closeActiveEditor,
-    sendVSCodeKeys,
-    closeAllActiveEditors,
-} from "../utils";
+import { attachTestNvimClient, assertContent, wait, setCursor, sendVSCodeKeys, closeAllActiveEditors } from "../utils";
 
 describe("VSCode integration specific stuff", () => {
-    const client = attachTestNvimClient();
+    let client: NeovimClient;
+    before(async () => {
+        client = await attachTestNvimClient();
+    });
+    after(async () => {
+        client.quit();
+    });
+
+    afterEach(async () => {
+        await closeAllActiveEditors();
+    });
 
     it("Doesnt move cursor on peek definition", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: 'declare function test(a: number): void;\n\ntest("")\n',
             language: "typescript",
@@ -35,11 +37,9 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
-        await closeActiveEditor(client);
     });
 
     it("Moves on cursor on go definition", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: 'declare function test(a: number): void;\n\ntest("")\n',
             language: "typescript",
@@ -56,11 +56,9 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
-        await closeActiveEditor(client);
     });
 
     it("Editor cursor revealing", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument(
             path.join(__dirname, "../../../test_fixtures/scrolltest.txt"),
         );
@@ -76,13 +74,9 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("40k");
         range = vscode.window.activeTextEditor!.visibleRanges[0];
         assert.ok(range.start.line <= 89);
-
-        await closeActiveEditor(client);
     });
 
     it("Go to definition in other file - cursor is ok", async () => {
-        await wait();
-
         const doc2 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
         await wait();
@@ -107,6 +101,5 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
-        await closeAllActiveEditors(client);
     });
 });

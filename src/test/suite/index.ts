@@ -10,7 +10,7 @@ export async function run(): Promise<void> {
         ui: "bdd",
         timeout: 35000,
         bail: false,
-        slow: 9000,
+        slow: 20000,
         fullStackTrace: true,
     });
     mocha.useColors(true);

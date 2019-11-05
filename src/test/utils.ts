@@ -28,17 +28,15 @@ export async function wait(timeout = 100): Promise<void> {
     await new Promise(res => setTimeout(res, timeout));
 }
 
-export function attachTestNvimClient(): NeovimClient {
+export async function attachTestNvimClient(): Promise<NeovimClient> {
     const NV_HOST = process.env.NEOVIM_DEBUG_HOST || "127.0.0.1";
     const NV_PORT = process.env.NEOVIM_DEBUG_PORT || 4000;
 
     // actually socket option is being passed to net.createConnection() so it's allowed to use tcp instead ipc
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const client = attach({ socket: { port: NV_PORT, host: NV_HOST } as any });
-    // const uis = client.uis;
-    // if (!uis.length) {
-    // throw new Error("There should be one connect UI from vscode-neovim");
-    // }
+    // wait for connection
+    await client.channelId;
     return client;
 }
 
@@ -242,22 +240,21 @@ export async function pasteVSCode(): Promise<void> {
     await wait();
 }
 
-export async function closeActiveEditor(client: NeovimClient, escape = true): Promise<void> {
+export async function closeActiveEditor(escape = true): Promise<void> {
     // need to clear to prevent vscode asking to save changes. works only with untitled editors
     if (escape) {
         await sendEscapeKey();
     }
-    await sendNeovimKeys(client, "ggdG");
     await commands.executeCommand("workbench.action.closeActiveEditor");
-    await wait(1000);
 }
 
-export async function closeAllActiveEditors(client: NeovimClient, escape = true): Promise<void> {
+export async function closeAllActiveEditors(escape = true): Promise<void> {
     if (escape) {
         await sendEscapeKey();
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for (const _e of window.visibleTextEditors) {
-        await closeActiveEditor(client, false);
+        await closeActiveEditor(false);
     }
+    await wait(1000);
 }

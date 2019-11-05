@@ -1,10 +1,8 @@
-import { strict as assert } from "assert";
-
 import vscode from "vscode";
+import { NeovimClient } from "neovim";
 
 import {
     attachTestNvimClient,
-    getCurrentBufferName,
     sendVSCodeKeys,
     assertContent,
     sendEscapeKey,
@@ -13,23 +11,28 @@ import {
     setSelection,
     copyVSCodeSelection,
     pasteVSCode,
-    closeActiveEditor,
+    closeAllActiveEditors,
 } from "../utils";
 
 describe("Basic editing and navigation", () => {
-    vscode.window.showInformationMessage("Start basic editing & navigation test");
-    const client = attachTestNvimClient();
+    let client: NeovimClient;
+    before(async () => {
+        client = await attachTestNvimClient();
+    });
+    after(async () => {
+        client.quit();
+    });
+
+    afterEach(async () => {
+        await closeAllActiveEditors();
+    });
 
     it("Normal mode", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "1abc\n\n2abc blah\n3abc blah blah\n4abc",
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        assert.ok(
-            (await getCurrentBufferName(client)).match(/untitled/),
-            "Buffer name from vscode uri - contains untitled",
-        );
+        await wait();
 
         await assertContent(
             {
@@ -122,7 +125,7 @@ describe("Basic editing and navigation", () => {
 
         // test o, O
         await sendVSCodeKeys("o");
-        await wait(500);
+        await wait(1000);
         await assertContent(
             {
                 content: ["1abc", "", "3abc blah blah", "", "4abc"],
@@ -136,7 +139,7 @@ describe("Basic editing and navigation", () => {
         await sendVSCodeKeys("k");
 
         await sendVSCodeKeys("O");
-        await wait();
+        await wait(1000);
         await assertContent(
             {
                 content: ["1abc", "", "", "3abc blah blah", "", "4abc"],
@@ -147,13 +150,9 @@ describe("Basic editing and navigation", () => {
             client,
         );
         await sendEscapeKey();
-
-        await closeActiveEditor(client);
-        assert.ok(!(await getCurrentBufferName(client)).match(/untitled/));
     });
 
     it("Editing last line doesnt insert new line in vscode", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "1abc\n2abc",
         });
@@ -168,12 +167,9 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
-
-        await closeActiveEditor(client);
     });
 
     it("Insert mode", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({});
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
@@ -406,11 +402,9 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
-        await closeActiveEditor(client);
     });
 
     it("Mutliline edits in insert mode", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({});
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
@@ -447,12 +441,9 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
-
-        await closeActiveEditor(client);
     });
 
     it("Keys changing mode to the insert mode", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "1abc",
         });
@@ -491,6 +482,7 @@ describe("Basic editing and navigation", () => {
 
         await sendEscapeKey();
         await sendVSCodeKeys("O");
+        await wait(1000);
         await assertContent(
             {
                 cursor: [0, 0],
@@ -503,6 +495,7 @@ describe("Basic editing and navigation", () => {
 
         await sendEscapeKey();
         await sendVSCodeKeys("o");
+        await wait(1000);
         await assertContent(
             {
                 cursor: [1, 0],
@@ -512,12 +505,9 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
-        await sendEscapeKey(300);
-        await closeActiveEditor(client);
     });
 
     it("Ci-ca-etc...", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             // adding "end" to the end of doc because of newline bug. Pretty minor
             content:
@@ -603,7 +593,5 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
-
-        await closeActiveEditor(client);
     });
 });

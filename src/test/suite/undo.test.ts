@@ -1,13 +1,29 @@
 import vscode from "vscode";
+import { NeovimClient } from "neovim";
 
-import { attachTestNvimClient, sendVSCodeKeys, assertContent, wait, closeActiveEditor, sendEscapeKey } from "../utils";
+import {
+    attachTestNvimClient,
+    sendVSCodeKeys,
+    assertContent,
+    wait,
+    sendEscapeKey,
+    closeAllActiveEditors,
+} from "../utils";
 
 describe("Undo", () => {
-    vscode.window.showInformationMessage("Undo test");
-    const client = attachTestNvimClient();
+    let client: NeovimClient;
+    before(async () => {
+        client = await attachTestNvimClient();
+    });
+    after(async () => {
+        client.quit();
+    });
+
+    afterEach(async () => {
+        await closeAllActiveEditors();
+    });
 
     it("U in new buffer doesnt undo initial content", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "some line\notherline",
         });
@@ -20,12 +36,9 @@ describe("Undo", () => {
             },
             client,
         );
-
-        await closeActiveEditor(client);
     });
 
     it("Undo points are correct after the insert mode", async () => {
-        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "some line\notherline",
         });
@@ -61,7 +74,5 @@ describe("Undo", () => {
             },
             client,
         );
-
-        await closeActiveEditor(client);
     });
 });
