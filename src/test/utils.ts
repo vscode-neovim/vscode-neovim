@@ -153,6 +153,7 @@ export async function assertContent(
     },
     client: NeovimClient,
     editor?: TextEditor,
+    stack = new Error().stack,
 ): Promise<void> {
     if (!editor) {
         editor = window.activeTextEditor;
@@ -160,34 +161,42 @@ export async function assertContent(
     if (!editor) {
         throw new Error("No active editor");
     }
-    if (options.cursor) {
-        assert.deepEqual(
-            getVScodeCursor(editor),
-            options.cursor,
-            `Cursor position in vscode - ${options.cursor[0]}:${options.cursor[1]}`,
-        );
-        assert.deepEqual(
-            await getNeovimCursor(client),
-            options.cursor,
-            `Cursor position in neovim - ${options.cursor[0]}:${options.cursor[1]}`,
-        );
-    }
-    if (options.vsCodeCursor) {
-        assert.deepEqual(
-            getVScodeCursor(editor),
-            options.vsCodeCursor,
-            `Cursor position in vscode - ${options.vsCodeCursor[0]}:${options.vsCodeCursor[1]}`,
-        );
-    }
-    if (options.content) {
-        assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");
-        assert.deepEqual(getVSCodeContent(), options.content, "VSCode content is wrong");
-    }
-    if (options.cursorStyle) {
-        assert.ok(hasVSCodeCursorStyle(options.cursorStyle), `VSCode cursor style should be: ${options.cursorStyle}`);
-    }
-    if (options.mode) {
-        assert.equal(options.mode, await getCurrentNeovimMode(client), `Neovim mode should be: ${options.mode}`);
+    try {
+        if (options.cursor) {
+            assert.deepEqual(
+                getVScodeCursor(editor),
+                options.cursor,
+                `Cursor position in vscode - ${options.cursor[0]}:${options.cursor[1]}`,
+            );
+            assert.deepEqual(
+                await getNeovimCursor(client),
+                options.cursor,
+                `Cursor position in neovim - ${options.cursor[0]}:${options.cursor[1]}`,
+            );
+        }
+        if (options.vsCodeCursor) {
+            assert.deepEqual(
+                getVScodeCursor(editor),
+                options.vsCodeCursor,
+                `Cursor position in vscode - ${options.vsCodeCursor[0]}:${options.vsCodeCursor[1]}`,
+            );
+        }
+        if (options.content) {
+            assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");
+            assert.deepEqual(getVSCodeContent(), options.content, "VSCode content is wrong");
+        }
+        if (options.cursorStyle) {
+            assert.ok(
+                hasVSCodeCursorStyle(options.cursorStyle),
+                `VSCode cursor style should be: ${options.cursorStyle}`,
+            );
+        }
+        if (options.mode) {
+            assert.equal(options.mode, await getCurrentNeovimMode(client), `Neovim mode should be: ${options.mode}`);
+        }
+    } catch (e) {
+        e.stack = stack;
+        throw e;
     }
 }
 

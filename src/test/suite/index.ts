@@ -11,6 +11,7 @@ export async function run(): Promise<void> {
         timeout: 15000,
         bail: false,
         slow: 9000,
+        fullStackTrace: true,
     });
     mocha.useColors(true);
     const testsRoot = path.resolve(__dirname, "..");
