@@ -10,7 +10,7 @@ import {
     setCursor,
 } from "../utils";
 
-describe.only("Yanking and pasting", () => {
+describe("Yanking and pasting", () => {
     vscode.window.showInformationMessage("Yank & paste test");
     const client = attachTestNvimClient();
 
