@@ -517,6 +517,12 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.isInsertMode) {
             return;
         }
+        // !Important: ignore selection of non active editor.
+        // !For peek definition and similar stuff vscode opens another editor and updates selections here
+        // !We must ignore it otherwise the cursor will just "jump"
+        if (e.textEditor !== vscode.window.activeTextEditor) {
+            return;
+        }
 
         await this.setCursorPositionInNeovim(e.textEditor);
     };
