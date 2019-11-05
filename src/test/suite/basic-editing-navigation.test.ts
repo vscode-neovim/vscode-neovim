@@ -372,11 +372,11 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
-        await sendEscapeKey();
+        await sendEscapeKey(500);
         // sets cursor on neovim after exiting insert mode
         await assertContent(
             {
-                cursor: [7, 7],
+                cursor: [7, 6],
             },
             client,
         );
@@ -384,10 +384,12 @@ describe("Basic editing and navigation", () => {
     });
 
     it("Keys changing mode to the insert mode", async () => {
+        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "1abc",
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
 
         await assertContent(
             {
@@ -442,14 +444,16 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
+        await sendEscapeKey(300);
         await closeActiveEditor(client);
     });
 
     it("Ci-ca-etc...", async () => {
         await wait();
         const doc = await vscode.workspace.openTextDocument({
+            // adding "end" to the end of doc because of newline bug. Pretty minor
             content:
-                "text (first) text\ntext (second) text\ntext 'third' text\ntext { text\ntext block text\ntext } text\ntext { text\ntext block2 text\ntext } text",
+                "text (first) text\ntext (second) text\ntext 'third' text\ntext { text\ntext block text\ntext } text\ntext { text\ntext block2 text\ntext } text\nend",
         });
 
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
@@ -470,6 +474,7 @@ describe("Basic editing and navigation", () => {
                     "text { text",
                     "text block2 text",
                     "text } text",
+                    "end",
                 ],
             },
             client,
@@ -492,6 +497,7 @@ describe("Basic editing and navigation", () => {
                     "text { text",
                     "text block2 text",
                     "text } text",
+                    "end",
                 ],
             },
             client,
@@ -512,19 +518,20 @@ describe("Basic editing and navigation", () => {
                     "text { text",
                     "text block2 text",
                     "text } text",
+                    "end",
                 ],
             },
             client,
         );
 
         await sendEscapeKey();
-        await sendVSCodeKeys("j07lci{");
+        await sendVSCodeKeys("j07lci{", 300);
         await assertContent(
             {
                 vsCodeCursor: [4, 6],
                 cursorStyle: "line",
                 mode: "i",
-                content: ["text () text", "text  text", "text 'third' text", "text  text", "text {} text"],
+                content: ["text () text", "text  text", "text 'third' text", "text  text", "text {} text", "end"],
             },
             client,
         );

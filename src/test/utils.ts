@@ -200,7 +200,7 @@ export async function assertContent(
     }
 }
 
-export async function sendEscapeKey(waitTimeout = 100): Promise<void> {
+export async function sendEscapeKey(waitTimeout = 300): Promise<void> {
     await commands.executeCommand("vscode-neovim.escape");
     await wait(waitTimeout);
 }
@@ -237,8 +237,11 @@ export async function pasteVSCode(): Promise<void> {
     await wait();
 }
 
-export async function closeActiveEditor(client: NeovimClient): Promise<void> {
+export async function closeActiveEditor(client: NeovimClient, escape = true): Promise<void> {
     // need to clear to prevent vscode asking to save changes. works only with untitled editors
+    if (escape) {
+        await sendEscapeKey();
+    }
     await sendNeovimKeys(client, "ggdG");
     await commands.executeCommand("workbench.action.closeActiveEditor");
     await wait();

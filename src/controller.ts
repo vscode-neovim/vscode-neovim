@@ -595,15 +595,21 @@ export class NVIMPluginController implements vscode.Disposable {
                 // LAST LINE is exclusive and can be out of the last editor line
                 await textEditor.edit(builder => {
                     if (firstLine !== lastLine && data.length === 1 && data[0] === "") {
-                        builder.replace(new vscode.Range(firstLine, 0, endRangeLine, endRangePos), "\n");
-                    } else if (firstLine !== lastLine && (!data.length || (data.length === 1 && data[0] === ""))) {
-                        builder.replace(new vscode.Range(firstLine, 0, endRangeLine, endRangePos), "");
-                    } else {
-                        // FIXME: creates new empty line here if editing last line
                         builder.replace(
                             new vscode.Range(firstLine, 0, endRangeLine, endRangePos),
-                            data.map((d: string) => d + "\n").join(""),
+                            endRangeLine >= textEditor.document.lineCount ? "" : "\n",
                         );
+                    } else if (firstLine !== lastLine && (!data.length || (data.length === 1 && data[0] === ""))) {
+                        // FIXME: {\n} - ci{ adding line
+                        builder.replace(new vscode.Range(firstLine, 0, endRangeLine, endRangePos), "");
+                    } else {
+                        const lines = data.map((d: string) => d + "\n");
+                        // remove last "\n" if end range is greather than existing ranges. otherwise vscode will insert new line
+                        if (endRangeLine >= textEditor.document.lineCount && lines.length) {
+                            const newLine = lines.pop()!.slice(0, -1);
+                            lines.push(newLine);
+                        }
+                        builder.replace(new vscode.Range(firstLine, 0, endRangeLine, endRangePos), lines.join(""));
                     }
                 });
                 this.documentLines.set(uri, textEditor.document.lineCount);
@@ -1025,11 +1031,11 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!this.isInit) {
             return;
         }
-        await this.client.input("<Esc>");
         if (vscode.window.activeTextEditor && this.isInsertMode) {
             // since we're not sending cursor updates in insert mode, update now
             await this.setCursorPositionInNeovim(vscode.window.activeTextEditor);
         }
+        await this.client.input("<Esc>");
     };
 
     private onCmdChange = async (e: string): Promise<void> => {
