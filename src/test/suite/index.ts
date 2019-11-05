@@ -7,8 +7,10 @@ import "source-map-support/register";
 export async function run(): Promise<void> {
     // Create the mocha test
     const mocha = new Mocha({
-        ui: "tdd",
+        ui: "bdd",
         timeout: 15000,
+        bail: false,
+        slow: 9000,
     });
     mocha.useColors(true);
     const testsRoot = path.resolve(__dirname, "..");

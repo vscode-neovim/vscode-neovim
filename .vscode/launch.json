@@ -17,12 +17,14 @@
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "npm: watch"
+			"preLaunchTask": "npm: watch",
+			"smartStep": true,
 		},
 		{
 			"name": "Extension Tests",
 			"type": "extensionHost",
 			"request": "launch",
+			"smartStep": true,
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--disable-extensions",

@@ -13,7 +13,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
         return;
     }
-    const plugin = new NVIMPluginController(neovimPath);
+    const plugin = new NVIMPluginController(neovimPath, context.extensionPath);
     context.subscriptions.push(plugin);
     await plugin.init();
 }

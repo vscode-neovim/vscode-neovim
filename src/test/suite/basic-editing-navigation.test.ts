@@ -7,19 +7,21 @@ import {
     getCurrentBufferName,
     sendVSCodeKeys,
     assertContent,
-    callEscapeKey,
+    sendEscapeKey,
     wait,
     sendVSCodeSpecialKey,
     setSelection,
     copyVSCodeSelection,
     pasteVSCode,
+    closeActiveEditor,
 } from "../utils";
 
-suite("Basic editing and navigation", () => {
-    vscode.window.showInformationMessage("Start all tests.");
+describe("Basic editing and navigation", () => {
+    vscode.window.showInformationMessage("Start basic editing & navigation test");
     const client = attachTestNvimClient();
 
-    test("Normal mode", async () => {
+    it("Normal mode", async () => {
+        await wait();
         const doc = await vscode.workspace.openTextDocument({
             content: "1abc\n\n2abc blah\n3abc blah blah\n4abc",
         });
@@ -88,7 +90,6 @@ suite("Basic editing and navigation", () => {
             client,
         );
 
-        // FIXME: Currently failing
         await sendVSCodeKeys("O");
         await assertContent(
             {
@@ -100,7 +101,7 @@ suite("Basic editing and navigation", () => {
             client,
         );
 
-        await callEscapeKey();
+        await sendEscapeKey();
         await assertContent(
             {
                 content: ["1abc", "", "3abc blah blah", "4abc"],
@@ -119,7 +120,9 @@ suite("Basic editing and navigation", () => {
             client,
         );
 
+        // test o, O
         await sendVSCodeKeys("o");
+        await wait(500);
         await assertContent(
             {
                 content: ["1abc", "", "3abc blah blah", "", "4abc"],
@@ -129,13 +132,27 @@ suite("Basic editing and navigation", () => {
             },
             client,
         );
+        await sendEscapeKey();
+        await sendVSCodeKeys("k");
 
-        await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+        await sendVSCodeKeys("O");
         await wait();
+        await assertContent(
+            {
+                content: ["1abc", "", "", "3abc blah blah", "", "4abc"],
+                cursor: [2, 0],
+                mode: "i",
+                cursorStyle: "line",
+            },
+            client,
+        );
+        await sendEscapeKey();
+
+        await closeActiveEditor(client);
         assert.ok(!(await getCurrentBufferName(client)).match(/untitled/));
     });
 
-    test("Insert mode", async () => {
+    it("Insert mode", async () => {
         const doc = await vscode.workspace.openTextDocument({});
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
@@ -212,7 +229,7 @@ suite("Basic editing and navigation", () => {
         await sendVSCodeSpecialKey("cursorLeft");
         await assertContent(
             {
-                cursor: [1, 0],
+                vsCodeCursor: [1, 0],
                 content: ["bla", "test"],
             },
             client,
@@ -222,7 +239,7 @@ suite("Basic editing and navigation", () => {
         await sendVSCodeKeys("\n");
         await assertContent(
             {
-                cursor: [2, 0],
+                vsCodeCursor: [2, 0],
                 content: ["bla", "", "test"],
             },
             client,
@@ -232,7 +249,7 @@ suite("Basic editing and navigation", () => {
         await sendVSCodeSpecialKey("backspace");
         await assertContent(
             {
-                cursor: [1, 0],
+                vsCodeCursor: [1, 0],
                 content: ["bla", "test"],
             },
             client,
@@ -243,7 +260,7 @@ suite("Basic editing and navigation", () => {
         await sendVSCodeKeys("\n");
         await assertContent(
             {
-                cursor: [2, 0],
+                vsCodeCursor: [2, 0],
                 content: ["bla", "t", "est"],
             },
             client,
@@ -254,7 +271,7 @@ suite("Basic editing and navigation", () => {
         await sendVSCodeKeys("\n");
         await assertContent(
             {
-                cursor: [4, 0],
+                vsCodeCursor: [4, 0],
                 content: ["bla", "t", "", "", "est"],
             },
             client,
@@ -264,7 +281,7 @@ suite("Basic editing and navigation", () => {
 
         await assertContent(
             {
-                cursor: [0, 3],
+                vsCodeCursor: [0, 3],
                 content: ["blaest"],
             },
             client,
@@ -291,7 +308,7 @@ suite("Basic editing and navigation", () => {
         await pasteVSCode();
         await assertContent(
             {
-                cursor: [6, 5],
+                vsCodeCursor: [6, 5],
                 content: ["blaest", "line2", "line3", "", "blaest", "line2", "line3c"],
             },
             client,
@@ -304,7 +321,7 @@ suite("Basic editing and navigation", () => {
         await pasteVSCode();
         await assertContent(
             {
-                cursor: [5, 0],
+                vsCodeCursor: [5, 0],
                 content: ["blaest", "line2", "line3", "line2", "line3", ""],
             },
             client,
@@ -317,7 +334,7 @@ suite("Basic editing and navigation", () => {
         await pasteVSCode();
         await assertContent(
             {
-                cursor: [4, 0],
+                vsCodeCursor: [4, 0],
                 content: ["blaest", "line2", "blaest", "line2", "line3", "line2", "line3", ""],
             },
             client,
@@ -329,10 +346,81 @@ suite("Basic editing and navigation", () => {
         await wait();
         await assertContent(
             {
-                cursor: [7, 7],
+                vsCodeCursor: [7, 7],
                 content: ["blaest", "line2", "blaest", "line2", "line3", "line2", "line3", "while () {", "", "}"],
             },
             client,
         );
+        await sendEscapeKey();
+        // sets cursor on neovim after exiting insert mode
+        await assertContent(
+            {
+                cursor: [7, 7],
+            },
+            client,
+        );
+        await closeActiveEditor(client);
+    });
+
+    it("Keys changing mode to the insert mode", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: "1abc",
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+
+        await assertContent(
+            {
+                content: ["1abc"],
+                cursor: [0, 0],
+                cursorStyle: "block",
+                mode: "n",
+            },
+            client,
+        );
+        await sendVSCodeKeys("A");
+        await assertContent(
+            {
+                cursor: [0, 4],
+                cursorStyle: "line",
+                mode: "i",
+            },
+            client,
+        );
+
+        await sendEscapeKey();
+        await sendVSCodeKeys("I");
+        await assertContent(
+            {
+                cursor: [0, 0],
+                cursorStyle: "line",
+                mode: "i",
+            },
+            client,
+        );
+
+        await sendEscapeKey();
+        await sendVSCodeKeys("O");
+        await assertContent(
+            {
+                cursor: [0, 0],
+                cursorStyle: "line",
+                mode: "i",
+                content: ["", "1abc"],
+            },
+            client,
+        );
+
+        await sendEscapeKey();
+        await sendVSCodeKeys("o");
+        await assertContent(
+            {
+                cursor: [1, 0],
+                cursorStyle: "line",
+                mode: "i",
+                content: ["", "", "1abc"],
+            },
+            client,
+        );
+        await closeActiveEditor(client);
     });
 });

@@ -71,8 +71,8 @@ export function getVSCodeContent(editor?: TextEditor): string[] {
  * @param client
  */
 export async function getNeovimCursor(client: NeovimClient): Promise<[number, number]> {
-    const [, line1based, col1based] = await client.callFunction("getcurpos");
-    return [line1based - 1, col1based - 1];
+    const [line1based, col0based] = await client.request("nvim_win_get_cursor", [0]);
+    return [line1based - 1, col0based];
 }
 
 export async function getCurrentNeovimMode(client: NeovimClient): Promise<string> {
@@ -146,6 +146,7 @@ export async function sendVSCodeSpecialKey(
 export async function assertContent(
     options: {
         cursor?: [number, number];
+        vsCodeCursor?: [number, number];
         content?: string[];
         cursorStyle?: "block" | "underline" | "line";
         mode?: string;
@@ -171,6 +172,13 @@ export async function assertContent(
             `Cursor position in neovim - ${options.cursor[0]}:${options.cursor[1]}`,
         );
     }
+    if (options.vsCodeCursor) {
+        assert.deepEqual(
+            getVScodeCursor(editor),
+            options.vsCodeCursor,
+            `Cursor position in vscode - ${options.vsCodeCursor[0]}:${options.vsCodeCursor[1]}`,
+        );
+    }
     if (options.content) {
         assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");
         assert.deepEqual(getVSCodeContent(), options.content, "VSCode content is wrong");
@@ -183,7 +191,7 @@ export async function assertContent(
     }
 }
 
-export async function callEscapeKey(waitTimeout = 100): Promise<void> {
+export async function sendEscapeKey(waitTimeout = 100): Promise<void> {
     await commands.executeCommand("vscode-neovim.escape");
     await wait(waitTimeout);
 }
@@ -217,5 +225,12 @@ export async function pasteVSCode(): Promise<void> {
         throw new Error("No editor");
     }
     await commands.executeCommand("editor.action.clipboardPasteAction");
+    await wait();
+}
+
+export async function closeActiveEditor(client: NeovimClient): Promise<void> {
+    // need to clear to prevent vscode asking to save changes. works only with untitled editors
+    await sendNeovimKeys(client, "ggdG");
+    await commands.executeCommand("workbench.action.closeActiveEditor");
     await wait();
 }
