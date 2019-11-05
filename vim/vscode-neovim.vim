@@ -9,6 +9,11 @@ set nowb
 set noswapfile
 set noautoread
 
+" do not hide buffers
+set nohidden
+" do not attempt autowrite any buffers
+set noautowrite
+
 let s:eventName = "vscode-neovim"
 
 function! VSCodeCall(cmd, ...)
@@ -38,6 +43,8 @@ function! VSCodeClearUndo()
     let &undolevels = oldlevels
     unlet oldlevels
 endfunction
+
+autocmd BufWinEnter,WinNew,WinEnter * :only
 
 nnoremap <silent> O :call VSCodeInsertBefore()<CR>
 nnoremap <silent> o :call VSCodeInsertAfter()<CR>
