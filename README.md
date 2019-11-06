@@ -48,5 +48,5 @@ See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues)
 * When opening a some file, a scratch buffer is created in nvim and being init with initial text content
 * Normal/visual mode commands are being sent directly to neovim. The extension listens for buffer events and applies edits from neovim
 * When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to vscode (no neovim communication is being performed here)
-* After pressing escape key from the insert mode, extension sends changes in the insert mode to neovim
+* After pressing escape key from the insert mode, extension sends changes stored from the insert mode to neovim
 * Scrolling is owned by vscode side
