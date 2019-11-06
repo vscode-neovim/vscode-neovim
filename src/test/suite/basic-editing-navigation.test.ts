@@ -12,6 +12,7 @@ import {
     copyVSCodeSelection,
     pasteVSCode,
     closeAllActiveEditors,
+    closeNvimClient,
 } from "../utils";
 
 describe("Basic editing and navigation", () => {
@@ -20,7 +21,7 @@ describe("Basic editing and navigation", () => {
         client = await attachTestNvimClient();
     });
     after(async () => {
-        client.quit();
+        await closeNvimClient(client);
     });
 
     afterEach(async () => {

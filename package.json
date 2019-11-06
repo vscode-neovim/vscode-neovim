@@ -67,8 +67,12 @@
 				"title": "Neovim: scroll half down"
 			},
 			{
-				"command": "vscode-neovim.redo",
-				"title": "Neovim: scroll half down"
+				"command": "vscode-neovim.ctrl-r",
+				"title": "Neovim: Ctrl-r"
+			},
+			{
+				"command": "vscode-neovim.ctrl-v",
+				"title": "Neovim: Ctrl-v"
 			}
 		],
 		"keybindings": [
@@ -102,9 +106,14 @@
 				"when": "editorTextFocus && neovim.mode != insert"
 			},
 			{
-				"command": "vscode-neovim.redo",
+				"command": "vscode-neovim.ctrl-r",
 				"key": "ctrl+r",
-				"when": "editorTextFocus && neovim.mode == normal"
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.ctrl-v",
+				"key": "ctrl-v",
+				"when": "editorTextFocus && neovim.mode != insert"
 			}
 		]
 	},

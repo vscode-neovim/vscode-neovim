@@ -8,6 +8,7 @@ import {
     wait,
     sendEscapeKey,
     closeAllActiveEditors,
+    closeNvimClient,
 } from "../utils";
 
 describe("Undo", () => {
@@ -16,7 +17,7 @@ describe("Undo", () => {
         client = await attachTestNvimClient();
     });
     after(async () => {
-        client.quit();
+        await closeNvimClient(client);
     });
 
     afterEach(async () => {

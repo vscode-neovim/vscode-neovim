@@ -1,4 +1,5 @@
 import { strict as assert } from "assert";
+import net from "net";
 
 import { NeovimClient, attach } from "neovim";
 import { TextEditor, window, TextEditorCursorStyle, commands, Range, EndOfLine, Selection } from "vscode";
@@ -31,13 +32,23 @@ export async function wait(timeout = 100): Promise<void> {
 export async function attachTestNvimClient(): Promise<NeovimClient> {
     const NV_HOST = process.env.NEOVIM_DEBUG_HOST || "127.0.0.1";
     const NV_PORT = process.env.NEOVIM_DEBUG_PORT || 4000;
+    const conn = net.createConnection({ port: parseInt(NV_PORT as string, 10), host: NV_HOST });
 
-    // actually socket option is being passed to net.createConnection() so it's allowed to use tcp instead ipc
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = attach({ socket: { port: NV_PORT, host: NV_HOST } as any });
+    // const client = attach({ socket: { port: NV_PORT, host: NV_HOST } as any });
+    const client = attach({ writer: conn, reader: conn });
     // wait for connection
     await client.channelId;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (client as any).testConn = conn;
     return client;
+}
+
+export async function closeNvimClient(client: NeovimClient): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const conn: net.Socket = (client as any).testConn;
+    conn.destroy();
+    // client.quit();
+    await wait(1000);
 }
 
 export async function getCurrentBufferName(client: NeovimClient): Promise<string> {
@@ -148,6 +159,7 @@ export async function assertContent(
         content?: string[];
         cursorStyle?: "block" | "underline" | "line";
         mode?: string;
+        vsCodeSelections?: Selection[];
     },
     client: NeovimClient,
     editor?: TextEditor,
@@ -171,6 +183,9 @@ export async function assertContent(
                 options.cursor,
                 `Cursor position in neovim - ${options.cursor[0]}:${options.cursor[1]}`,
             );
+        }
+        if (options.vsCodeSelections) {
+            assert.deepEqual(editor.selections, options.vsCodeSelections, "Selections in vscode are not correct");
         }
         if (options.vsCodeCursor) {
             assert.deepEqual(

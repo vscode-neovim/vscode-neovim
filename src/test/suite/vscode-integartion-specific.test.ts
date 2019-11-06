@@ -4,7 +4,16 @@ import { strict as assert } from "assert";
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
-import { attachTestNvimClient, assertContent, wait, setCursor, sendVSCodeKeys, closeAllActiveEditors } from "../utils";
+import {
+    attachTestNvimClient,
+    assertContent,
+    wait,
+    setCursor,
+    sendVSCodeKeys,
+    closeAllActiveEditors,
+    sendEscapeKey,
+    closeNvimClient,
+} from "../utils";
 
 describe("VSCode integration specific stuff", () => {
     let client: NeovimClient;
@@ -12,7 +21,7 @@ describe("VSCode integration specific stuff", () => {
         client = await attachTestNvimClient();
     });
     after(async () => {
-        client.quit();
+        await closeNvimClient(client);
     });
 
     afterEach(async () => {
@@ -98,6 +107,54 @@ describe("VSCode integration specific stuff", () => {
                     "export function someFunc(): void;",
                     "",
                 ],
+            },
+            client,
+        );
+    });
+
+    it("Preserving cursor style when switching between editors", async () => {
+        const doc1 = await vscode.workspace.openTextDocument({
+            content: "blah1",
+        });
+        await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        const doc2 = await vscode.workspace.openTextDocument({
+            content: "blah2",
+        });
+        await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two);
+
+        await sendVSCodeKeys("i");
+        await assertContent(
+            {
+                content: ["blah2"],
+                cursorStyle: "line",
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
+        await wait();
+
+        await assertContent(
+            {
+                content: ["blah1"],
+                cursorStyle: "line",
+            },
+            client,
+        );
+        await sendEscapeKey();
+        await assertContent(
+            {
+                cursorStyle: "block",
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("workbench.action.focusSecondEditorGroup");
+        await wait();
+        await assertContent(
+            {
+                content: ["blah2"],
+                cursorStyle: "block",
             },
             client,
         );
