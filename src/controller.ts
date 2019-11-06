@@ -991,6 +991,7 @@ export class NVIMPluginController implements vscode.Disposable {
             this.currentVisualMode = visualMode === "V" ? "line" : visualMode === "v" ? "single" : "block";
         }
         if (prevModeName === "visual") {
+            this.visualModeStartPosition = undefined;
             // discard all selections after exiting visual mode
             for (const editor of vscode.window.visibleTextEditors) {
                 this.resetEditorSelections(editor);
