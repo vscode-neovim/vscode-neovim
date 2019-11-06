@@ -99,7 +99,7 @@ export class HighlightProvider {
         for (let i = 0; i < sortedCols.length; i++) {
             const startCol = sortedCols[i];
             let skipCol = startCol;
-            // skip until range won't overlop, e.g. if there are 1, 2, 3, 5, 6, 7, we'll skil 2 and 6
+            // skip until range won't overlap, e.g. if there are 1, 2, 3, 5, 6, 7, we'll skil 2 and 6
             while (skipCol + 1 === sortedCols[i + 1]) {
                 skipCol = sortedCols[i + 1];
                 i++;
