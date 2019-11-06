@@ -25,15 +25,15 @@ function! VSCodeNotify(cmd, ...)
 endfunction
 
 function! VSCodeInsertBefore()
-    call VSCodeCall("editor.action.insertLineBefore")
+    " Need to start insert mode first to prevent cursor updating
     startinsert
+    call VSCodeCall("editor.action.insertLineBefore")
 endfunction
 
 function! VSCodeInsertAfter()
-    let currpos = getcurpos()
-    call VSCodeCall("editor.action.insertLineAfter")
-    call cursor(currpos[1] + 1, 99999)
+    " Need to start insert mode first to prevent cursor updating
     startinsert
+    call VSCodeCall("editor.action.insertLineAfter")
 endfunction
 
 function! VSCodeClearUndo()
