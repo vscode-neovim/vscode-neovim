@@ -1092,73 +1092,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (currentCursor.line === newLine && currentCursor.character === newCol && this.currentModeName !== "visual") {
             return;
         }
-        if (this.currentModeName === "visual") {
-            // const test: [string, VimValue[]][] = [
-            //     ["nvim_call_function", ["mode", []]],
-            //     ["nvim_input", ["o"]],
-            //     ["nvim_win_get_cursor", [0]],
-            //     ["nvim_input", ["o"]],
-            // ];
-            // const blah = await this.client.request("nvim_buf_get_mark", [0, "<"]);
-            // // const res = await this.client.callAtomic(test);
-            // if (!this.visualModeStartPosition) {
-            // const r = [["nvim_input", ["o"]], ["nvim_win_get_cursor", [0]], ["nvim_input", ["o"]]];
-            // const blah = await this.client.callFunction("getpos", ["'<"]);
-            this.probingVisualSelection = false;
-            // const [results] = await this.client.callAtomic(r);
-            // const [, [row1based, col0based]] = results;
-            // console.log(row1based + "." + col0based);
-            this.visualModeStartPosition = editor.selection.active;
-            // this.visualModeStartPosition = new vscode.Position(row1based - 1 >= 0 ? row1based - 1 : 0, col0based);
-            // // this.probingVisualSelection = false;
-            // }
-            if (this.currentVisualMode === "single") {
-                // const currAnchor = edtior.selection.anchor;
-                const currAnchor = this.visualModeStartPosition;
-                editor.selections = [new vscode.Selection(currAnchor, new vscode.Position(newLine, newCol))];
-            } else if (this.currentVisualMode === "line") {
-                // this block is highlighting visual line as currently implemented in VIM
-                if (newLine <= this.visualModeStartPosition.line) {
-                    editor.selections = [
-                        new vscode.Selection(newLine, 0, newLine, newCol),
-                        new vscode.Selection(this.visualModeStartPosition.line, 999999, newLine, newCol),
-                    ];
-                } else {
-                    editor.selections = [
-                        new vscode.Selection(this.visualModeStartPosition.line, 0, newLine, newCol),
-                        new vscode.Selection(newLine, 999999, newLine, newCol),
-                    ];
-                }
-                // this block is creating new cursor for each line + movable cursor on last/first line
-                /*const newSelections: vscode.Selection[] = [];
-                for (let i = 0; i <= Math.abs(this.visualModeStartPosition.line - line); i++) {
-                    const currLine =
-                        line >= this.visualModeStartPosition.line
-                            ? this.visualModeStartPosition.line + i
-                            : this.visualModeStartPosition.line - i;
-                    if (currLine === line) {
-                        newSelections.push(
-                            new vscode.Selection(currLine, 0, currLine, col),
-                            new vscode.Selection(currLine, 9999999, currLine, col),
-                        );
-                    } else {
-                        newSelections.push(new vscode.Selection(currLine, 9999999, currLine, 0));
-                    }
-                }
-                edtior.selections = newSelections;*/
-            } else if (this.currentVisualMode === "block") {
-                const newSelections: vscode.Selection[] = [];
-
-                const { line: startLine, character: startPos } = this.visualModeStartPosition;
-                for (let i = 0; i <= Math.abs(startLine - newLine); i++) {
-                    const currLine = newLine >= startLine ? startLine + i : startLine - i;
-                    newSelections.push(new vscode.Selection(currLine, startPos, currLine, newCol));
-                }
-                editor.selections = newSelections;
-            }
-        } else {
-            editor.selections = [new vscode.Selection(newLine, newCol, newLine, newCol)];
-        }
+        editor.selections = [new vscode.Selection(newLine, newCol, newLine, newCol)];
         if (newLine < visibleRange.start.line) {
             // vscode.commands.executeCommand("editorScroll", { to: "up", by: "line", value: visibleRange.start.line - line });
             vscode.commands.executeCommand("revealLine", { lineNumber: newLine, at: "top" });
@@ -1205,9 +1139,9 @@ export class NVIMPluginController implements vscode.Disposable {
                 borderColor: new vscode.ThemeColor("editor.findMatchBorder"),
             });
         } else if (groupName === "Visual" || groupName === "VisualNOS") {
-            // return vscode.window.createTextEditorDecorationType({
-            // backgroundColor: new vscode.ThemeColor("editor.selectionBackground"),
-            // });
+            return vscode.window.createTextEditorDecorationType({
+                backgroundColor: new vscode.ThemeColor("editor.selectionBackground"),
+            });
         }
     }
 

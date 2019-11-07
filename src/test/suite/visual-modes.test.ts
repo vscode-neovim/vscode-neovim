@@ -10,7 +10,8 @@ import {
     closeNvimClient,
 } from "../utils";
 
-describe("Visual modes test", () => {
+// Not possible to test decorator ranges and currently vscode selection is not used for visual modes due to difficultes
+describe.skip("Visual modes test", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
@@ -75,6 +76,23 @@ describe("Visual modes test", () => {
                 // todo: creates empty line
                 // content: ["blah ", ""],
                 vsCodeSelections: [new vscode.Selection(0, 4, 0, 4)],
+            },
+            client,
+        );
+    });
+
+    it("vi-va", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: "first\n{\na\nb\nc\n}\nlast",
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("jjj");
+        await sendVSCodeKeys("vi{");
+        await assertContent(
+            {
+                cursor: [4, 0],
             },
             client,
         );

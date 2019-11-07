@@ -23,9 +23,9 @@ Neovim 0.4.2 or greater
 
 ## VSCode specific features and differences
 
-* Multiple vscode cursors work in the insert mode. Visual block (Ctrl-v) mode also spawns multiple cursors. It's also possible to spawn multiple cursors with visual line mode, but i don't know yet if it will be much useful
+* Multiple vscode cursors work in the insert mode.
 * O, o keys mapped to vscode ```editor.action.insertLineBefore/insertLineAfter``` command thus doesn't support <count> prefix
-* Visual modes produce VSCode selections. By design
+* Visual modes don't produce real vscode selections right now
 * After deleting some text in visual mode the cursor position may be slightly different than in vim. see #20
 * It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
 * Mouse scrolling is not supported yet
