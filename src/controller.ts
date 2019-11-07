@@ -287,6 +287,7 @@ export class NVIMPluginController implements vscode.Disposable {
             const lines = e.getText().split(eol);
 
             const requests: [string, VimValue[]][] = [];
+            requests.push(["nvim_buf_set_var", [buf, "vscode_controlled", true]]);
             requests.push(["nvim_buf_set_name", [buf, uri]]);
             requests.push(["nvim_buf_set_lines", [buf, 0, 1, false, lines]]);
             requests.push(["nvim_win_set_buf", [0, buf]]);
