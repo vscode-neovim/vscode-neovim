@@ -962,7 +962,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (newModeName) {
             this.handleModeChange(newModeName);
         }
-        if (updateCursor) {
+        if (updateCursor || applyHighlights) {
             this.updateCursorPosInActiveEditor(newCursorLine, newCursorCol);
         }
         if (applyHighlights) {
