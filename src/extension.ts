@@ -13,7 +13,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
         return;
     }
-    const plugin = new NVIMPluginController(neovimPath, context.extensionPath);
+    const highlightConfIgnore = settings.get("highlightGroups.ignoreHighlights");
+    const highlightConfHighlights = settings.get("highlightGroups.highlights");
+    const highlightConfUnknown = settings.get("highlightGroups.unknownHighlight");
+    const plugin = new NVIMPluginController(neovimPath, context.extensionPath, {
+        highlights: highlightConfHighlights,
+        ignoreHighlights: highlightConfIgnore,
+        unknownHighlight: highlightConfUnknown,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
     context.subscriptions.push(plugin);
     await plugin.init();
 }

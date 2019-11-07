@@ -32,12 +32,121 @@
 	"main": "./out/extension.js",
 	"contributes": {
 		"configuration": {
-			"title": "VSCode Neovim",
+			"title": "Neovim",
 			"properties": {
 				"vscode-neovim.neovimPath": {
 					"type": "string",
 					"default": "",
 					"description": "Full path to Neovim executable"
+				},
+				"vscode-neovim.highlightGroups.ignoreHighlights": {
+					"type": "array",
+					"title": "Ignore Highlighs Groups",
+					"description": "List of vim highlights groups to ignore",
+					"default": [
+						"SpecialKey",
+						"EndOfBuffer",
+						"TermCursor",
+						"TermCursorNC",
+						"NonText",
+						"ErrorMsg",
+						"MoreMsg",
+						"ModeMsg",
+						"LineNr",
+						"CursorLineNr",
+						"Question",
+						"StatusLine",
+						"StatusLineNC",
+						"VertSplit",
+						"Title",
+						"VisualNC",
+						"WarningMsg",
+						"WildMenu",
+						"^Diff",
+						"Sign",
+						"SignColumn",
+						"^Spell",
+						"^Pmenu",
+						"^Tab",
+						"^Cursor",
+						"ColorColumn",
+						"QuickFixLine",
+						"Whitespace",
+						"NormalNC",
+						"Normal",
+						"NormalFloat",
+						"MsgSeparator",
+						"MsgArea",
+						"^RedrawDebug",
+						"Cursor",
+						"lCursor",
+						"MatchParen",
+						"^Nvim",
+						"Operator",
+						"Delimiter",
+						"Identifier",
+						"SpecialChar",
+						"Number",
+						"Type",
+						"String",
+						"Error",
+						"Comment",
+						"Constant",
+						"Special",
+						"Statement",
+						"PreProc",
+						"Underlined",
+						"Ignore",
+						"Todo",
+						"Character",
+						"Boolean",
+						"Float",
+						"Function",
+						"Conditional",
+						"Repeat",
+						"Label",
+						"Keyword",
+						"Exception",
+						"Include",
+						"Define",
+						"Macro",
+						"PreCondit",
+						"StorageClass",
+						"Structure",
+						"Typedef",
+						"Tag",
+						"SpecialComment",
+						"Debug",
+						"Folded",
+						"FoldColumn"
+					]
+				},
+				"vscode-neovim.highlightGroups.highlights": {
+					"type": "object",
+					"title": "Highlight Groups Configuration",
+					"description": "Define colors for various highlight groups. Can accept either 'vim' to use colors from vim or text decoration properties object",
+					"default": {
+						"Directory": "vim",
+						"IncSearch": {
+							"backgroundColor": "theme.editor.findMatchBackground",
+							"borderColor": "theme.editor.findMatchBorder"
+						},
+						"Search": {
+							"backgroundColor": "theme.editor.findMatchHighlightBackground",
+							"borderColor": "theme.editor.findMatchHighlightBorder"
+						},
+						"Visual": {
+							"backgroundColor": "theme.editor.selectionBackground"
+						},
+						"Conceal": "vim",
+						"Substitute": "vim"
+					}
+				},
+				"vscode-neovim.highlightGroups.unknownHighlight": {
+					"type": "object",
+					"title": "Unknown Highlight Groups",
+					"description": "Highlight Configuration for non defined group. Can accept 'vim' to use colors coming from vim or text decoration properties object",
+					"default": "vim"
 				}
 			}
 		},

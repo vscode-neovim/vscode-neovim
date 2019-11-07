@@ -1,12 +1,189 @@
-import { TextDocument, Range } from "vscode";
+import {
+    TextDocument,
+    Range,
+    TextEditorDecorationType,
+    ThemableDecorationRenderOptions,
+    ThemeColor,
+    window,
+} from "vscode";
 
 type Cols = Set<number>;
 type ColHiglights = Map<number, Cols>;
 type TypeHighlights = Map<string, ColHiglights>;
 type UriHighlights = Map<string, TypeHighlights>;
 
+export interface VimHighlightUIAttributes {
+    foreground?: number;
+    background?: number;
+    special?: number;
+    reverse?: boolean;
+    italic?: boolean;
+    bold?: boolean;
+    strikethrough?: boolean;
+    // has special color
+    underline?: boolean;
+    // has special color
+    undercurl?: boolean;
+    blend?: number;
+}
+
+export interface HighlightConfiguration {
+    /**
+     * Ignore highlights
+     */
+    ignoreHighlights: string[];
+    /**
+     * What to do on unknown highlights. Either accept vim or use vscode decorator configuration
+     */
+    unknownHighlight: "vim" | ThemableDecorationRenderOptions;
+    /**
+     * Map specific highlight to use either vim configuration or use vscode decorator configuration
+     */
+    highlights: {
+        [key: string]: "vim" | ThemableDecorationRenderOptions;
+    };
+}
+
+/**
+ * Convert VIM HL attributes to vscode text decoration attributes
+ * @param uiAttrs VIM UI attribute
+ * @param vimSpecialColor Vim special color
+ */
+function vimHighlightToVSCodeOptions(
+    uiAttrs: VimHighlightUIAttributes,
+    vimSpecialColor: string,
+): ThemableDecorationRenderOptions {
+    const options: ThemableDecorationRenderOptions = {};
+    // for absent color keys default color should be used
+    options.backgroundColor = uiAttrs.background
+        ? "#" + uiAttrs.background.toString(16)
+        : new ThemeColor("editor.background");
+    options.color = uiAttrs.foreground ? "#" + uiAttrs.foreground.toString(16) : new ThemeColor("editor.foreground");
+    const specialColor = uiAttrs.special ? "#" + uiAttrs.special.toString(16) : vimSpecialColor;
+
+    if (uiAttrs.reverse) {
+        options.backgroundColor = new ThemeColor("editor.foreground");
+        options.color = new ThemeColor("editor.background");
+    }
+    if (uiAttrs.italic) {
+        options.fontStyle = "italic";
+    }
+    if (uiAttrs.bold) {
+        options.fontWeight = "bold";
+    }
+    if (uiAttrs.strikethrough) {
+        options.textDecoration = "line-through solid";
+    }
+    if (uiAttrs.underline) {
+        options.textDecoration = `underline ${specialColor} solid`;
+    }
+    if (uiAttrs.undercurl) {
+        options.textDecoration = `underline ${specialColor} wavy`;
+    }
+    return options;
+}
+
+function isEditorThemeColor(s: string | ThemeColor | undefined): s is string {
+    return typeof s === "string" && s.startsWith("theme.");
+}
+
+function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): ThemableDecorationRenderOptions {
+    const newConfig: ThemableDecorationRenderOptions = {
+        ...config,
+        after: config.after ? { ...config.after } : undefined,
+        before: config.before ? { ...config.before } : undefined,
+    };
+    if (isEditorThemeColor(newConfig.backgroundColor)) {
+        newConfig.backgroundColor = new ThemeColor(newConfig.backgroundColor.slice(6));
+    }
+    if (isEditorThemeColor(newConfig.borderColor)) {
+        newConfig.borderColor = new ThemeColor(newConfig.borderColor.slice(6));
+    }
+    if (isEditorThemeColor(newConfig.color)) {
+        newConfig.borderColor = new ThemeColor(newConfig.color.slice(6));
+    }
+    if (isEditorThemeColor(newConfig.outlineColor)) {
+        newConfig.outlineColor = new ThemeColor(newConfig.outlineColor.slice(6));
+    }
+    if (isEditorThemeColor(newConfig.overviewRulerColor)) {
+        newConfig.overviewRulerColor = new ThemeColor(newConfig.overviewRulerColor.slice(6));
+    }
+    if (newConfig.after) {
+        if (isEditorThemeColor(newConfig.after.backgroundColor)) {
+            newConfig.after.backgroundColor = new ThemeColor(newConfig.after.backgroundColor.slice(6));
+        }
+        if (isEditorThemeColor(newConfig.after.borderColor)) {
+            newConfig.after.borderColor = new ThemeColor(newConfig.after.borderColor.slice(6));
+        }
+        if (isEditorThemeColor(newConfig.after.color)) {
+            newConfig.after.color = new ThemeColor(newConfig.after.color.slice(6));
+        }
+    }
+    if (newConfig.before) {
+        if (isEditorThemeColor(newConfig.before.backgroundColor)) {
+            newConfig.before.backgroundColor = new ThemeColor(newConfig.before.backgroundColor.slice(6));
+        }
+        if (isEditorThemeColor(newConfig.before.borderColor)) {
+            newConfig.before.borderColor = new ThemeColor(newConfig.before.borderColor.slice(6));
+        }
+        if (isEditorThemeColor(newConfig.before.color)) {
+            newConfig.before.color = new ThemeColor(newConfig.before.color.slice(6));
+        }
+    }
+    return newConfig;
+}
+
 export class HighlightProvider {
+    /**
+     * Stores current highlights from various groups for document uri
+     */
     private uriAllHighlights: UriHighlights = new Map();
+    /**
+     * Maps highlight id to highlight group name
+     */
+    private highlightIdToGroupName: Map<number, string> = new Map();
+    /**
+     * HL group name to text decorator
+     * Not all HL groups are supported now
+     */
+    private highlighGroupToDecorator: Map<string, TextEditorDecorationType> = new Map();
+
+    private configuration: HighlightConfiguration;
+
+    private specialColor = "orange";
+
+    public constructor(conf: HighlightConfiguration) {
+        this.configuration = conf;
+        if (this.configuration.unknownHighlight !== "vim") {
+            this.configuration.unknownHighlight = normalizeDecorationConfig(this.configuration.unknownHighlight);
+        }
+        for (const [key, config] of Object.entries(this.configuration.highlights)) {
+            if (config !== "vim") {
+                this.configuration.highlights[key] = normalizeDecorationConfig(config);
+            }
+        }
+    }
+
+    public addHighlightGroup(id: number, name: string, vimUiAttrs: VimHighlightUIAttributes): void {
+        if (
+            this.configuration.ignoreHighlights.includes(name) ||
+            this.configuration.ignoreHighlights.find(i =>
+                i.startsWith("^") || i.endsWith("$") ? new RegExp(i).test(name) : false,
+            )
+        ) {
+            return;
+        }
+
+        const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
+        const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs, this.specialColor) : options;
+        const decorator = window.createTextEditorDecorationType(conf);
+        this.highlightIdToGroupName.set(id, name);
+        this.highlighGroupToDecorator.set(name, decorator);
+    }
+
+    public getHighlightGroup(id: number): string | undefined {
+        return this.highlightIdToGroupName.get(id);
+    }
 
     public add(uri: string, type: string, row: number, col: number): void {
         let uriTypeHighlights = this.uriAllHighlights.get(uri);
@@ -71,23 +248,32 @@ export class HighlightProvider {
         this.uriAllHighlights.delete(uri);
     }
 
-    public provideDocumentHighlights(document: TextDocument, type: string): Range[] {
+    public provideDocumentHighlights(document: TextDocument): [TextEditorDecorationType, Range[]][] {
         const docHighlights = this.uriAllHighlights.get(document.uri.toString());
         if (!docHighlights) {
             return [];
         }
-        const typeHighlights = docHighlights.get(type);
-        if (!typeHighlights) {
-            return [];
-        }
-        const ranges: Range[] = [];
-        for (const [row, cols] of typeHighlights) {
-            const rowRanges = this.createRangeFromCols(row, [...cols]);
-            if (rowRanges) {
-                ranges.push(...rowRanges);
+
+        const result: [TextEditorDecorationType, Range[]][] = [];
+        for (const [groupName, decorator] of this.highlighGroupToDecorator) {
+            if (!decorator) {
+                continue;
             }
+
+            const typeHighlights = docHighlights.get(groupName);
+            if (!typeHighlights) {
+                continue;
+            }
+            const ranges: Range[] = [];
+            for (const [row, cols] of typeHighlights) {
+                const rowRanges = this.createRangeFromCols(row, [...cols]);
+                if (rowRanges) {
+                    ranges.push(...rowRanges);
+                }
+            }
+            result.push([decorator, ranges]);
         }
-        return ranges;
+        return result;
     }
 
     private createRangeFromCols(row: number, cols: number[]): Range[] | undefined {

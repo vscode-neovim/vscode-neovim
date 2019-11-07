@@ -8,7 +8,7 @@ import { VimValue } from "neovim/lib/types/VimValue";
 
 import { CommandLineController } from "./command_line";
 import { StatusLineController } from "./status_line";
-import { HighlightProvider } from "./highlight_provider";
+import { HighlightProvider, HighlightConfiguration } from "./highlight_provider";
 
 interface CursorMode {
     /**
@@ -133,16 +133,6 @@ export class NVIMPluginController implements vscode.Disposable {
     private statusLine: StatusLineController;
 
     /**
-     * Maps highlight id to highlight group name
-     */
-    private highlightIdToGroupName: Map<number, string> = new Map();
-    /**
-     * HL group name to text decorator
-     * Not all HL groups are supported now
-     */
-    private highlighGroupToDecorator: Map<string, vscode.TextEditorDecorationType> = new Map();
-
-    /**
      * Tracks previous documnet line count before documnet change
      * In multiline replace there is no way to know if the operation reduced total number of lines or not
      */
@@ -156,7 +146,7 @@ export class NVIMPluginController implements vscode.Disposable {
      * Current vim mode
      */
     private currentModeName = "";
-    private documentHighlightProvider = new HighlightProvider();
+    private documentHighlightProvider: HighlightProvider;
 
     private nvimAttachWaiter: Promise<void> = Promise.resolve();
     private isInit = false;
@@ -166,10 +156,11 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private neovimExtensionsPath: string;
 
-    public constructor(neovimPath: string, extensionPath: string) {
+    public constructor(neovimPath: string, extensionPath: string, highlightsConfiguration: HighlightConfiguration) {
         if (!neovimPath) {
             throw new Error("Neovim path is not defined");
         }
+        this.documentHighlightProvider = new HighlightProvider(highlightsConfiguration);
         this.neovimExtensionsPath = path.join(extensionPath, "vim", "*.vim");
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(vscode.workspace.onDidOpenTextDocument(this.onOpenTextDocument));
@@ -779,7 +770,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         }
                         case "hl_attr_define": {
                             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                            const [id, uiAttrs, termAttrs, info] = firstArg as [
+                            const [id, uiAttrs, , info] = firstArg as [
                                 number,
                                 never,
                                 never,
@@ -787,11 +778,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             ];
                             if (info && info[0] && info[0].hi_name) {
                                 const name = info[0].hi_name;
-                                const decorator = this.createDecorationForHighlightGroup(name);
-                                if (decorator) {
-                                    this.highlighGroupToDecorator.set(name, decorator);
-                                    this.highlightIdToGroupName.set(id, name);
-                                }
+                                this.documentHighlightProvider.addHighlightGroup(id, name, uiAttrs);
                             }
                             break;
                         }
@@ -912,7 +899,9 @@ export class NVIMPluginController implements vscode.Disposable {
                                     }
                                     for (let i = 0; i < (repeat || 1); i++) {
                                         const col = colStart + cellIdx;
-                                        const highlightGroup = this.highlightIdToGroupName.get(cellHlId);
+                                        const highlightGroup = this.documentHighlightProvider.getHighlightGroup(
+                                            cellHlId,
+                                        );
                                         if (!currentScreenHighlights[finalRow]) {
                                             currentScreenHighlights[finalRow] = {};
                                         }
@@ -1011,13 +1000,12 @@ export class NVIMPluginController implements vscode.Disposable {
         const allUriEditors = vscode.window.visibleTextEditors.filter(
             e => e.document.uri.toString() === document.uri.toString(),
         );
-        for (const [, groupName] of this.highlightIdToGroupName) {
-            const ranges = this.documentHighlightProvider.provideDocumentHighlights(document, groupName);
-            const decorator = this.highlighGroupToDecorator.get(groupName);
-            if (!decorator) {
-                continue;
-            }
-            for (const editor of allUriEditors) {
+        const highlights = this.documentHighlightProvider.provideDocumentHighlights(document);
+        if (!highlights.length) {
+            return;
+        }
+        for (const editor of allUriEditors) {
+            for (const [decorator, ranges] of highlights) {
                 editor.setDecorations(decorator, ranges);
             }
         }
@@ -1090,24 +1078,6 @@ export class NVIMPluginController implements vscode.Disposable {
             } else {
                 editor.options.cursorStyle = vscode.TextEditorCursorStyle.Line;
             }
-        }
-    }
-
-    private createDecorationForHighlightGroup(groupName: string): vscode.TextEditorDecorationType | undefined {
-        if (groupName === "Search") {
-            return vscode.window.createTextEditorDecorationType({
-                backgroundColor: new vscode.ThemeColor("editor.findMatchHighlightBackground"),
-                borderColor: new vscode.ThemeColor("editor.findMatchHighlightBorder"),
-            });
-        } else if (groupName === "IncSearch") {
-            return vscode.window.createTextEditorDecorationType({
-                backgroundColor: new vscode.ThemeColor("editor.findMatchBackground"),
-                borderColor: new vscode.ThemeColor("editor.findMatchBorder"),
-            });
-        } else if (groupName === "Visual" || groupName === "VisualNOS") {
-            return vscode.window.createTextEditorDecorationType({
-                backgroundColor: new vscode.ThemeColor("editor.selectionBackground"),
-            });
         }
     }
 
