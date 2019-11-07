@@ -685,7 +685,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private onNeovimNotification = (method: string, events: [string, ...any[]]): void => {
-        if (method === "vscode-neovim") {
+        if (method === "vscode-command") {
             const [vscodeCommand, ...commandArgs] = events;
             this.runVSCodeCommand(vscodeCommand, ...commandArgs);
             return;
@@ -1091,7 +1091,7 @@ export class NVIMPluginController implements vscode.Disposable {
         eventArgs: [string, ...unknown[]],
         response: RequestResponse,
     ): Promise<void> => {
-        if (eventName !== "vscode-neovim") {
+        if (eventName !== "vscode-command") {
             return;
         }
         const [vscodeCommand, ...commandArgs] = eventArgs;

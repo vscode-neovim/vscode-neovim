@@ -2,7 +2,7 @@ set shortmess="filnxtToOFI"
 set nowrap
 set wildchar=9
 set mouse=a
-set cmdheight=0
+set cmdheight=1
 
 set nobackup
 set nowb
@@ -14,14 +14,14 @@ set nohidden
 " do not attempt autowrite any buffers
 set noautowrite
 
-let s:eventName = "vscode-neovim"
+let s:vscodeCommandEventName = "vscode-command"
 
 function! VSCodeCall(cmd, ...)
-    call rpcrequest(g:vscode_channel, s:eventName, a:cmd, a:000)
+    call rpcrequest(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
 endfunction
 
 function! VSCodeNotify(cmd, ...)
-    call rpcnotify(g:vscode_channel, s:eventName, a:cmd, a:000)
+    call rpcnotify(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
 endfunction
 
 function! VSCodeInsertBefore()
@@ -44,7 +44,16 @@ function! VSCodeClearUndo()
     unlet oldlevels
 endfunction
 
+function! VSCodeOnBufCreated()
+    if exists("b:vscode_controlled")
+        echo "Controlled"
+    else
+        echo "Non controlled"
+    endif
+endfunction
+
 autocmd BufWinEnter,WinNew,WinEnter * :only
+autocmd BufCreate * :call VSCodeOnBufCreated()
 
 nnoremap <silent> O :call VSCodeInsertBefore()<CR>
 nnoremap <silent> o :call VSCodeInsertAfter()<CR>
