@@ -61,6 +61,9 @@ interface RedrawHighlightsUpdates {
     [key: string]: { [key: string]: string | "remove" };
 }
 
+const NVIM_WIN_HEIGHT = 100;
+const NVIM_WIN_WIDTH = 9999;
+
 export class NVIMPluginController implements vscode.Disposable {
     private isInsertMode = false;
 
@@ -220,7 +223,7 @@ export class NVIMPluginController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.nvimAttachWaiter = this.client.uiAttach(9999, 100, {
+        this.nvimAttachWaiter = this.client.uiAttach(NVIM_WIN_WIDTH, NVIM_WIN_HEIGHT, {
             rgb: true,
             // override: true,
             /* eslint-disable @typescript-eslint/camelcase */
@@ -770,15 +773,16 @@ export class NVIMPluginController implements vscode.Disposable {
                         }
                         case "hl_attr_define": {
                             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                            const [id, uiAttrs, , info] = firstArg as [
+                            for (const [id, uiAttrs, , info] of args as [
                                 number,
                                 never,
                                 never,
                                 [{ kind: "ui"; ui_name: string; hi_name: string }],
-                            ];
-                            if (info && info[0] && info[0].hi_name) {
-                                const name = info[0].hi_name;
-                                this.documentHighlightProvider.addHighlightGroup(id, name, uiAttrs);
+                            ][]) {
+                                if (info && info[0] && info[0].hi_name) {
+                                    const name = info[0].hi_name;
+                                    this.documentHighlightProvider.addHighlightGroup(id, name, uiAttrs);
+                                }
                             }
                             break;
                         }
@@ -941,7 +945,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (updateCursor || applyHighlights) {
             const response = await this.client.callAtomic([
                 ["nvim_win_get_cursor", [0]],
-                ["nvim_call_function", ["screenrow", []]],
+                ["nvim_call_function", ["winline", []]],
             ]);
             const [[[realLine1based, realCol], screenRow1based]] = response;
             currentScreenRow = screenRow1based - 1;
