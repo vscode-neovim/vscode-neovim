@@ -156,12 +156,6 @@ export class NVIMPluginController implements vscode.Disposable {
      * Current vim mode
      */
     private currentModeName = "";
-    /**
-     * Current visual mode
-     */
-    private currentVisualMode?: "single" | "line" | "block";
-    private visualModeStartPosition?: vscode.Position;
-
     private documentHighlightProvider = new HighlightProvider();
 
     private nvimAttachWaiter: Promise<void> = Promise.resolve();
@@ -171,7 +165,6 @@ export class NVIMPluginController implements vscode.Disposable {
     private nvimRealColPosition = 0;
 
     private neovimExtensionsPath: string;
-    private probingVisualSelection = false;
 
     public constructor(neovimPath: string, extensionPath: string) {
         if (!neovimPath) {
@@ -967,9 +960,7 @@ export class NVIMPluginController implements vscode.Disposable {
             newCursorCol = realCol;
         }
         if (newModeName) {
-            const visualMode = await this.client.callFunction("visualmode");
-            const visualModeName = visualMode === "V" ? "line" : visualMode === "v" ? "single" : "block";
-            this.handleModeChange(newModeName, visualModeName);
+            this.handleModeChange(newModeName);
         }
         if (updateCursor) {
             this.updateCursorPosInActiveEditor(newCursorLine, newCursorCol);
@@ -1032,7 +1023,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     }, 20);
 
-    private handleModeChange = (modeName: string, visualMode?: "line" | "single" | "block"): void => {
+    private handleModeChange = (modeName: string): void => {
         this.isInsertMode = modeName === "insert";
         if (this.isInsertMode && this.typeHandlerDisplose) {
             this.typeHandlerDisplose.dispose();
@@ -1040,16 +1031,7 @@ export class NVIMPluginController implements vscode.Disposable {
         } else if (!this.isInsertMode && !this.typeHandlerDisplose) {
             this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
         }
-        const prevModeName = this.currentModeName;
         this.currentModeName = modeName;
-        this.currentVisualMode = visualMode;
-        if (prevModeName === "visual") {
-            this.visualModeStartPosition = undefined;
-            // discard all selections after exiting visual mode
-            for (const editor of vscode.window.visibleTextEditors) {
-                this.resetEditorSelections(editor);
-            }
-        }
         if (!vscode.window.activeTextEditor) {
             return;
         }
@@ -1101,15 +1083,6 @@ export class NVIMPluginController implements vscode.Disposable {
             vscode.commands.executeCommand("revealLine", { lineNumber: newLine, at: "bottom" });
         }
     };
-
-    private resetEditorSelections(editor: vscode.TextEditor): void {
-        const selections = editor.selections;
-        if (selections.length === 1 && selections[0].active.isEqual(selections[0].anchor)) {
-            return;
-        }
-        const first = editor.selections[0];
-        editor.selections = [new vscode.Selection(first.active, first.active)];
-    }
 
     private applyCursorStyleToEditor(editor: vscode.TextEditor, modeName: string): void {
         const mode = this.vimModes.get(modeName);
