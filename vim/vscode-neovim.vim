@@ -2,7 +2,7 @@ set shortmess="filnxtToOFI"
 set nowrap
 set wildchar=9
 set mouse=a
-set cmdheight=1
+set cmdheight=0
 
 set nobackup
 set nowb
