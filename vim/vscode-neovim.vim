@@ -2,7 +2,7 @@ set shortmess="filnxtToOFI"
 set nowrap
 set wildchar=9
 set mouse=a
-set cmdheight=1
+" set cmdheight=1
 
 set nobackup
 set nowb
@@ -45,6 +45,20 @@ function! VSCodeClearUndo()
     unlet oldlevels
 endfunction
 
+function! VSCodeGetCursorPositions()
+    return [0, 0]
+endfunction
+
+function! VSCodeNotifyBlockingAndCursorPositions()
+    let cursor = nvim_win_get_cursor(0)
+    let winline = winline()
+    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "notify-blocking", 1, cursor, winline)
+endfunction
+
+function! VSCodeNotifyBlockingEnd()
+    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "notify-blocking", 0)
+endfunction
+
 " This is called by extension when created new buffer
 function! VSCodeOnBufWinEnter(name, id)
     let controlled = getbufvar(a:id, "vscode_controlled")
@@ -55,6 +69,8 @@ endfunction
 
 autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufWinEnter * :call VSCodeOnBufWinEnter(expand('<afile>'), expand('<abuf>'))
+autocmd CmdlineEnter * :call VSCodeNotifyBlockingAndCursorPositions()
+autocmd CmdlineLeave * :call VSCodeNotifyBlockingEnd()
 
 nnoremap <silent> O :call VSCodeInsertBefore()<CR>
 nnoremap <silent> o :call VSCodeInsertAfter()<CR>

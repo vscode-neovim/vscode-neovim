@@ -75,11 +75,6 @@ export class NVIMPluginController implements vscode.Disposable {
     private typeHandlerDisplose?: vscode.Disposable;
 
     /**
-     * External buffer ids managed by vim, not vscode
-     */
-    private externalBufferIds: Set<number> = new Set();
-
-    /**
      * Vscode uri string -> buffer mapping
      */
     private uriToBuffer: Map<string, NeovimBuffer> = new Map();
@@ -162,6 +157,9 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private nvimRealLinePosition = 0;
     private nvimRealColPosition = 0;
+    private nvimLastScreenPosition = 0;
+
+    private nvimIsCmdLine = false;
 
     private neovimExtensionsPath: string;
 
@@ -582,7 +580,7 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         if (!this.isInsertMode) {
-            this.client.input(type.text);
+            this.client.input(type.text === "\n" ? "<CR>" : type.text);
         } else {
             vscode.commands.executeCommand("default:type", { text: type.text });
         }
@@ -622,10 +620,10 @@ export class NVIMPluginController implements vscode.Disposable {
                     this.resolveBufQueuePromise = res;
                     timeout = setTimeout(res, 100);
                 });
+                await this.bufQueuePromise;
                 if (timeout) {
                     clearTimeout(timeout);
                 }
-                await this.bufQueuePromise;
                 this.bufQueuePromise = undefined;
                 this.resolveBufQueuePromise = undefined;
             } else {
@@ -726,16 +724,16 @@ export class NVIMPluginController implements vscode.Disposable {
         while (true) {
             const batch = this.pendingRedrawNotificationsQueue.shift();
             if (!batch) {
-                // wait 50ms for next tick. can be resolved earlier by notifying from onNeovimNotification()
+                // wait 100ms for next tick. can be resolved earlier by notifying from onNeovimNotification()
                 let timeout: NodeJS.Timeout | undefined;
                 this.redrawQueuePromise = new Promise(res => {
                     this.resolveRedrawQueuePromise = res;
-                    timeout = setTimeout(res, 50);
+                    timeout = setTimeout(res, 100);
                 });
+                await this.redrawQueuePromise;
                 if (timeout) {
                     clearTimeout(timeout);
                 }
-                await this.redrawQueuePromise;
                 this.redrawQueuePromise = undefined;
                 this.resolveRedrawQueuePromise = undefined;
             } else {
@@ -743,6 +741,9 @@ export class NVIMPluginController implements vscode.Disposable {
                 let newModeName: string | undefined;
                 let shouldUpdateCursor = false;
                 let shouldUpdateHighlights = false;
+                // since neovim sets cmdheight=0 internally various vim plugins like easymotion are working incorrect and awaiting hitting enter
+                // this is frustruating
+                let acceptPrompt = false;
                 const currentScreenHighlights: RedrawHighlightsUpdates = {};
                 for (const [name, ...args] of batch) {
                     const firstArg = args[0] || [];
@@ -821,7 +822,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         }
                         case "msg_showcmd": {
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const [content] = firstArg as [any[]];
+                            const [content] = firstArg as [string, any[]];
                             let str = "";
                             if (content) {
                                 for (const c of content) {
@@ -835,17 +836,21 @@ export class NVIMPluginController implements vscode.Disposable {
                             break;
                         }
                         case "msg_show": {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const [, content] = firstArg as [never, any[], never];
-                            // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
-                            //     this.nextInputBlocking = true;
-                            // }
                             let str = "";
-                            if (content) {
-                                for (const c of content) {
-                                    const [, cmdStr] = c;
-                                    if (cmdStr) {
-                                        str += cmdStr;
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            for (const [type, content] of args as [string, any[], never][]) {
+                                // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
+                                //     this.nextInputBlocking = true;
+                                // }
+                                if (type === "return_prompt") {
+                                    acceptPrompt = true;
+                                }
+                                if (content) {
+                                    for (const c of content) {
+                                        const [, cmdStr] = c;
+                                        if (cmdStr) {
+                                            str += cmdStr;
+                                        }
                                     }
                                 }
                             }
@@ -930,12 +935,18 @@ export class NVIMPluginController implements vscode.Disposable {
                         }
                     }
                 }
-                await this.applyRedrawUpdate(
-                    newModeName,
-                    shouldUpdateCursor,
-                    shouldUpdateHighlights,
-                    currentScreenHighlights,
-                );
+                try {
+                    await this.applyRedrawUpdate(
+                        newModeName,
+                        shouldUpdateCursor,
+                        shouldUpdateHighlights,
+                        currentScreenHighlights,
+                        acceptPrompt,
+                    );
+                } catch (e) {
+                    // ignore for now
+                    e;
+                }
             }
         }
     };
@@ -945,25 +956,42 @@ export class NVIMPluginController implements vscode.Disposable {
         updateCursor: boolean,
         applyHighlights: boolean,
         highlightUpdates: RedrawHighlightsUpdates,
+        acceptPrompt: boolean,
     ): Promise<void> => {
         let currentScreenRow = 0;
         let newCursorLine = 0;
         let newCursorCol = 0;
         if (updateCursor || applyHighlights) {
-            const response = await this.client.callAtomic([
-                ["nvim_win_get_cursor", [0]],
-                ["nvim_call_function", ["winline", []]],
-            ]);
-            const [[[realLine1based, realCol], screenRow1based]] = response;
-            currentScreenRow = screenRow1based - 1;
-            newCursorLine = realLine1based - 1;
-            newCursorCol = realCol;
+            // todo: investigate if it's possible to not call nvim_win_get_cursor()/winline(). This probably will require cursor tracking (what to do when where won't be grid_scroll event?)
+            // we need to know if current mode is blocking otherwise nvim_win_get_cursor/nvim_call_function will stuck until unblock
+            const mode = await this.client.mode;
+            if (!this.nvimIsCmdLine && !mode.blocking) {
+                const response = await this.client.callAtomic([
+                    ["nvim_win_get_cursor", [0]],
+                    ["nvim_call_function", ["winline", []]],
+                ]);
+                // const resp = await this.client.callFunction("VSCodeGetCursorPositions");
+                const [[[realLine1based, realCol], screenRow1based]] = response;
+                // const [[[realLine1based, realCol], screenRow1based]] = response;
+                currentScreenRow = screenRow1based - 1;
+                // currentScreenRow = 1 - 1;
+                newCursorLine = realLine1based - 1;
+                // newCursorLine = 1 - 1;
+                newCursorCol = realCol;
+                // newCursorCol = 0;
+            } else {
+                // if cursor currently is in cmd line, functions will block, so we send RPC request to vscode from neovim side
+                // with cursor positions after entering cmd line mode
+                currentScreenRow = this.nvimLastScreenPosition;
+                newCursorLine = this.nvimRealLinePosition;
+                newCursorCol = this.nvimRealColPosition;
+            }
         }
         if (newModeName) {
             this.handleModeChange(newModeName);
         }
         if (updateCursor || applyHighlights) {
-            this.updateCursorPosInActiveEditor(newCursorLine, newCursorCol);
+            this.updateCursorPosInActiveEditor(newCursorLine, newCursorCol, currentScreenRow);
         }
         if (applyHighlights) {
             const editor = vscode.window.activeTextEditor;
@@ -1004,6 +1032,9 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
             }
             this.applyHighlightsToDocument(editor.document);
+        }
+        if (acceptPrompt) {
+            await this.client.input("<CR>");
         }
     };
 
@@ -1061,13 +1092,14 @@ export class NVIMPluginController implements vscode.Disposable {
         ]);
     };
 
-    private updateCursorPosInActiveEditor = (newLine: number, newCol: number): void => {
+    private updateCursorPosInActiveEditor = (newLine: number, newCol: number, screenRow: number): void => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             return;
         }
         this.nvimRealLinePosition = newLine;
         this.nvimRealColPosition = newCol;
+        this.nvimLastScreenPosition = screenRow;
         const currentCursor = editor.selections[0].active;
         if (currentCursor.line === newLine && currentCursor.character === newCol && this.currentModeName !== "visual") {
             return;
@@ -1156,6 +1188,16 @@ export class NVIMPluginController implements vscode.Disposable {
                     const [name, id] = commandArgs as [string, string];
                     await this.attachNeovimExternalBuffer(name, parseInt(id, 10));
                     result = "";
+                } else if (command === "notify-blocking") {
+                    const [isBlocking, bufCursor, screenRow] = commandArgs as [number, [number, number], number];
+                    if (isBlocking) {
+                        this.nvimRealLinePosition = bufCursor[0] - 1;
+                        this.nvimRealColPosition = bufCursor[1];
+                        this.nvimLastScreenPosition = screenRow - 1;
+                        this.nvimIsCmdLine = true;
+                    } else {
+                        this.nvimIsCmdLine = false;
+                    }
                 }
             }
             response.send(result || "", false);
