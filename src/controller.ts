@@ -5,6 +5,7 @@ import vscode from "vscode";
 import throttle from "lodash/throttle";
 import { attach, Buffer as NeovimBuffer, NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
+import { ATTACH } from "neovim/lib/api/Buffer";
 
 import { CommandLineController } from "./command_line";
 import { StatusLineController } from "./status_line";
@@ -72,6 +73,11 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private disposables: vscode.Disposable[] = [];
     private typeHandlerDisplose?: vscode.Disposable;
+
+    /**
+     * External buffer ids managed by vim, not vscode
+     */
+    private externalBufferIds: Set<number> = new Set();
 
     /**
      * Vscode uri string -> buffer mapping
@@ -1086,20 +1092,73 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     }
 
+    private async attachNeovimExternalBuffer(name: string, id: number): Promise<void> {
+        // already processed
+        if (this.bufferIdToUri.has(id)) {
+            const uri = this.bufferIdToUri.get(id)!;
+            const buf = this.uriToBuffer.get(uri);
+            if (!buf) {
+                return;
+            }
+            const doc = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri);
+            if (doc) {
+                // vim may send two requests, for example for :help - first it opens buffer with empty content in new window
+                // then read file and reload the buffer
+                const lines = await buf.lines;
+                const editor = await vscode.window.showTextDocument(doc);
+                // using replace produces ugly selection effect, try to avoid it by using insert
+                editor.edit(b => b.insert(new vscode.Position(0, 0), lines.join("\n")));
+            }
+            return;
+        }
+        // if (!name) {
+        // return;
+        // }
+
+        const buffers = await this.client.buffers;
+        // get buffer handle
+        const buf = buffers.find(b => b.id === id);
+        if (!buf) {
+            return;
+        }
+        // we want to send initial buffer content with nvim_buf_lines event but listen("lines") doesn't support it
+        const p = buf[ATTACH](true);
+        this.client.attachBuffer(buf, "lines", this.onNeovimBufferEvent);
+        await p;
+        // buf.listen("lines", this.onNeovimBufferEvent);
+        const lines = await buf.lines;
+        // will trigger onOpenTextDocument but it's fine since the doc is not yet displayed and we won't process it
+        const doc = await vscode.workspace.openTextDocument({
+            content: lines.join("\n"),
+        });
+        const uri = doc.uri.toString();
+        this.uriToBuffer.set(uri, buf);
+        this.bufferIdToUri.set(id, uri);
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active, false);
+    }
+
     private handleCustomRequest = async (
         eventName: string,
         eventArgs: [string, ...unknown[]],
         response: RequestResponse,
     ): Promise<void> => {
-        if (eventName !== "vscode-command") {
-            return;
-        }
-        const [vscodeCommand, ...commandArgs] = eventArgs;
         try {
-            const res = await this.runVSCodeCommand(vscodeCommand, ...commandArgs);
-            // slightly delay sending response. Seems awaiting executeCommand doesn't garantue it was done
-            await new Promise(res => setTimeout(res, 20));
-            response.send(res, false);
+            let result: unknown;
+            if (eventName === "vscode-command") {
+                const [vscodeCommand, ...commandArgs] = eventArgs;
+                const res = await this.runVSCodeCommand(vscodeCommand, ...commandArgs);
+                // slightly delay sending response. Seems awaiting executeCommand doesn't garantue it was done
+                await new Promise(res => setTimeout(res, 20));
+                result = res;
+            } else if (eventName === "vscode-neovim") {
+                const [command, ...commandArgs] = eventArgs;
+                if (command === "external-buffer") {
+                    const [name, id] = commandArgs as [string, string];
+                    await this.attachNeovimExternalBuffer(name, parseInt(id, 10));
+                    result = "";
+                }
+            }
+            response.send(result || "", false);
         } catch (e) {
             response.send(e.message, true);
         }

@@ -15,6 +15,7 @@ set nohidden
 set noautowrite
 
 let s:vscodeCommandEventName = "vscode-command"
+let s:vscodePluginEventName = "vscode-neovim"
 
 function! VSCodeCall(cmd, ...)
     call rpcrequest(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
@@ -44,16 +45,16 @@ function! VSCodeClearUndo()
     unlet oldlevels
 endfunction
 
-function! VSCodeOnBufCreated()
-    if exists("b:vscode_controlled")
-        echo "Controlled"
-    else
-        echo "Non controlled"
+" This is called by extension when created new buffer
+function! VSCodeOnBufWinEnter(name, id)
+    let controlled = getbufvar(a:id, "vscode_controlled")
+    if !controlled
+        call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "external-buffer", a:name, a:id)
     endif
 endfunction
 
 autocmd BufWinEnter,WinNew,WinEnter * :only
-autocmd BufCreate * :call VSCodeOnBufCreated()
+autocmd BufWinEnter * :call VSCodeOnBufWinEnter(expand('<afile>'), expand('<abuf>'))
 
 nnoremap <silent> O :call VSCodeInsertBefore()<CR>
 nnoremap <silent> o :call VSCodeInsertAfter()<CR>
