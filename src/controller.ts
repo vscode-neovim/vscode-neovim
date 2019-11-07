@@ -1069,19 +1069,12 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         this.nvimRealLinePosition = newLine;
         this.nvimRealColPosition = newCol;
-        const visibleRange = editor.visibleRanges[0];
         const currentCursor = editor.selections[0].active;
         if (currentCursor.line === newLine && currentCursor.character === newCol && this.currentModeName !== "visual") {
             return;
         }
         editor.selections = [new vscode.Selection(newLine, newCol, newLine, newCol)];
-        if (newLine < visibleRange.start.line) {
-            // vscode.commands.executeCommand("editorScroll", { to: "up", by: "line", value: visibleRange.start.line - line });
-            vscode.commands.executeCommand("revealLine", { lineNumber: newLine, at: "top" });
-        } else if (newLine > visibleRange.end.line) {
-            // vscode.commands.executeCommand("editorScroll", { to: "down", by: "line", value: line - visibleRange.end.line });
-            vscode.commands.executeCommand("revealLine", { lineNumber: newLine, at: "bottom" });
-        }
+        editor.revealRange(editor.selection, vscode.TextEditorRevealType.Default);
     };
 
     private applyCursorStyleToEditor(editor: vscode.TextEditor, modeName: string): void {

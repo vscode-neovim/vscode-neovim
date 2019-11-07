@@ -83,6 +83,8 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("40k");
         range = vscode.window.activeTextEditor!.visibleRanges[0];
         assert.ok(range.start.line <= 89);
+
+        // horizontal visible ranges are not supported yet
     });
 
     it("Go to definition in other file - cursor is ok", async () => {
