@@ -12,7 +12,7 @@ This is WIP extension. Use with caution!
 ## Features
 
 * Almost fully feature-complete VIM integration by utilizing neovim
-* First-class VSCode insert mode. The plugin unbinds self from ```type``` event in insert mode, so no typing lag anymore. Neovim is not used for the insert mode.
+* First-class VSCode insert mode. The plugin unbounds self from ```type``` event in the insert mode, so no typing lag anymore.
 
 ## Requirements
 
@@ -24,9 +24,9 @@ Neovim 0.4.2 or greater
 ## VSCode specific features and differences
 
 * Multiple vscode cursors work in the insert mode.
-* O, o keys mapped to vscode ```editor.action.insertLineBefore/insertLineAfter``` command thus doesn't support <count> prefix
+* O, o keys mapped to vscode ```editor.action.insertLineBefore/insertLineAfter``` command thus dont support count prefix
 * Visual modes don't produce real vscode selections right now
-* After deleting some text in visual mode the cursor position may be slightly different than in vim. see #20
+* After deleting some text in visual mode the cursor position may be slightly different than in vim
 * It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
 * Mouse scrolling is not supported yet
 
@@ -44,9 +44,9 @@ See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues)
 
 ## How it works
 
-* VScode connectes to nvim instance
-* When opening a some file, a scratch buffer is created in nvim and being init with initial text content
+* VScode connects to neovim instance
+* When opening a some file, a scratch buffer is created in nvim and being init with text content from vscode
 * Normal/visual mode commands are being sent directly to neovim. The extension listens for buffer events and applies edits from neovim
 * When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to vscode (no neovim communication is being performed here)
-* After pressing escape key from the insert mode, extension sends changes stored from the insert mode to neovim
+* After pressing escape key from the insert mode, extension sends changes obtained from the insert mode to neovim
 * Scrolling is owned by vscode side
