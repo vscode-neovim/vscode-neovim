@@ -75,6 +75,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private typeHandlerDisplose?: vscode.Disposable;
 
     /**
+     * All buffers ids originated from vscode
+     */
+    private managedBufferIds: Set<number> = new Set();
+
+    /**
      * Vscode uri string -> buffer mapping
      */
     private uriToBuffer: Map<string, NeovimBuffer> = new Map();
@@ -152,6 +157,8 @@ export class NVIMPluginController implements vscode.Disposable {
     private currentModeName = "";
     private documentHighlightProvider: HighlightProvider;
 
+    private editorVisibleLines: WeakMap<vscode.TextEditor, number> = new WeakMap();
+
     private nvimAttachWaiter: Promise<void> = Promise.resolve();
     private isInit = false;
 
@@ -162,6 +169,13 @@ export class NVIMPluginController implements vscode.Disposable {
     private nvimIsCmdLine = false;
 
     private neovimExtensionsPath: string;
+    private neovimLastHeight = 0;
+
+    /**
+     * When opening external buffers , like :PlugStatus they often comes with empty content and without name and receives text updates later
+     * Don't want to clutter vscode by opening empty documents, so track them here and open only once when receiving some text
+     */
+    private externalBuffersShowOnNextChange: Set<number> = new Set();
 
     public constructor(neovimPath: string, extensionPath: string, highlightsConfiguration: HighlightConfiguration) {
         if (!neovimPath) {
@@ -176,15 +190,14 @@ export class NVIMPluginController implements vscode.Disposable {
         this.disposables.push(vscode.window.onDidChangeVisibleTextEditors(this.onChangedEdtiors));
         this.disposables.push(vscode.window.onDidChangeActiveTextEditor(this.onChangedActiveEditor));
         this.disposables.push(vscode.window.onDidChangeTextEditorSelection(this.onChangeSelection));
+        this.disposables.push(vscode.window.onDidChangeTextEditorVisibleRanges(this.onChangeVisibleRange));
         this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
 
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.cmdCompletion", this.onCmdCompletion));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollUp", this.onScrollUpCommand));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollDown", this.onScrollDownCommand));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollHalfUp", this.onHalfScollUpCommand));
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.scrollHalfDown", this.onHalfScrollDownCommand),
-        );
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollUp", this.onCtrlB));
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollDown", this.onCtrlF));
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollHalfUp", this.onCtrlU));
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollHalfDown", this.onCtrlD));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-r", this.onCtrlR));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-v", this.onCtrlV));
 
@@ -287,6 +300,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (typeof buf === "number") {
             // 0 is error
         } else {
+            this.managedBufferIds.add(buf.id);
             const eol = e.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
             const lines = e.getText().split(eol);
 
@@ -475,6 +489,7 @@ export class NVIMPluginController implements vscode.Disposable {
             buf.unlisten("lines", this.onNeovimBufferEvent);
             await this.client.command(`bd${buf.id}`);
             this.bufferIdToUri.delete(buf.id);
+            this.managedBufferIds.delete(buf.id);
         }
         this.bufferChangesInInsertMode.delete(uri);
         this.uriToBuffer.delete(uri);
@@ -507,22 +522,41 @@ export class NVIMPluginController implements vscode.Disposable {
             await this.updateCursorPositionInNeovim(e);
             // set buffer tab related options
             await this.setBufferTabOptions(e);
+            const visibleLines = e.visibleRanges[0].end.line - e.visibleRanges[0].start.line;
+            await this.updateNeovimWinHeight(visibleLines);
         }
     };
 
-    // unfortunately it's messing with cursor navigation
-    // private onChangeVisibleRange = async (e: vscode.TextEditorVisibleRangesChangeEvent) => {
-    //     if (e.textEditor !== vscode.window.activeTextEditor) {
-    //         return;
-    //     }
-    //     const range = e.visibleRanges[0];
-    //     if (this.nvimRealLinePosition < range.start.line) {
-    //         // scolled down
-    //         await this.client.inputMouse("wheel", "down", "", 0, 0, 0);
-    //     } else if (this.nvimRealLinePosition > range.end.line) {
-    //         await this.client.inputMouse("wheel", "up", "", 0, 0, 0);
-    //     }
-    // };
+    private onChangeVisibleRange = async (e: vscode.TextEditorVisibleRangesChangeEvent): Promise<void> => {
+        if (e.textEditor !== vscode.window.activeTextEditor) {
+            return;
+        }
+        // unfortunately it's messing with cursor navigation
+        // const range = e.visibleRanges[0];
+        // if (this.nvimRealLinePosition < range.start.line) {
+        // scolled down
+        // await this.client.inputMouse("wheel", "down", "", 0, 0, 0);
+        // } else if (this.nvimRealLinePosition > range.end.line) {
+        // await this.client.inputMouse("wheel", "up", "", 0, 0, 0);
+        // }
+
+        if (!e.visibleRanges[0]) {
+            return;
+        }
+        const visibleLines = e.visibleRanges[0].end.line - e.visibleRanges[0].start.line;
+        const prevHeight = this.editorVisibleLines.get(e.textEditor) || 0;
+
+        if (prevHeight === visibleLines) {
+            return;
+        }
+        this.editorVisibleLines.set(e.textEditor, visibleLines);
+        // if we'll send win height update with insert the neovim will try to update cursor position but it don't know the correct one
+        // until we exit the insert mode
+        if (this.isInsertMode) {
+            return;
+        }
+        await this.updateNeovimWinHeight(visibleLines);
+    };
 
     /**
      * Handle vscode selection change. This includes everything touching selection or cursor position, includes custom commands and selection = [] assignment
@@ -636,7 +670,13 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (skipTick >= tick) {
                     continue;
                 }
-                const textEditor = vscode.window.visibleTextEditors.find(e => e.document.uri.toString() === uri);
+                let textEditor: vscode.TextEditor | undefined;
+                if (this.externalBuffersShowOnNextChange.has(buffer.id)) {
+                    this.externalBuffersShowOnNextChange.delete(buffer.id);
+                    textEditor = await vscode.window.showTextDocument(vscode.Uri.parse(uri));
+                } else {
+                    textEditor = vscode.window.visibleTextEditors.find(e => e.document.uri.toString() === uri);
+                }
                 if (!textEditor) {
                     continue;
                 }
@@ -662,7 +702,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     if (firstLine !== lastLine && data.length === 1 && data[0] === "") {
                         builder.replace(
                             new vscode.Range(firstLine, 0, endRangeLine, endRangePos),
-                            endRangeLine >= textEditor.document.lineCount ? "" : "\n",
+                            endRangeLine >= textEditor!.document.lineCount ? "" : "\n",
                         );
                     } else if (firstLine !== lastLine && (!data.length || (data.length === 1 && data[0] === ""))) {
                         // FIXME: {\n} - ci{ adding line
@@ -670,13 +710,13 @@ export class NVIMPluginController implements vscode.Disposable {
                     } else {
                         const lines = data.map((d: string) => d + "\n");
                         // remove last "\n" if end range is greather than existing ranges. otherwise vscode will insert new line
-                        if (endRangeLine >= textEditor.document.lineCount && lines.length) {
+                        if (endRangeLine >= textEditor!.document.lineCount && lines.length) {
                             const newLine = lines.pop()!.slice(0, -1);
                             lines.push(newLine);
                         }
                         // handle when change is overflow through editor lines. E.g. pasting on last line.
                         // Without newline it will append to the current one
-                        if (firstLine >= textEditor.document.lineCount) {
+                        if (firstLine >= textEditor!.document.lineCount) {
                             lines.unshift("\n");
                         }
                         builder.replace(new vscode.Range(firstLine, 0, endRangeLine, endRangePos), lines.join(""));
@@ -885,6 +925,10 @@ export class NVIMPluginController implements vscode.Disposable {
                             shouldUpdateCursor = true;
                             break;
                         }
+                        case "grid_scroll": {
+                            shouldUpdateCursor = true;
+                            break;
+                        }
                         case "grid_line": {
                             for (const gridEvent of args) {
                                 const [, row, colStart, cells] = gridEvent as [
@@ -1085,6 +1129,20 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.callAtomic(requests);
     };
 
+    private updateNeovimWinHeight = async (visibleLines: number): Promise<void> => {
+        if (visibleLines < 10) {
+            visibleLines = 10;
+        }
+        // const visibleLineRange = editor.visibleRanges[0].end.line - editor.visibleRanges[0].start.line;
+        // add one line for cmdheight
+        if (this.neovimLastHeight === visibleLines) {
+            return;
+        }
+        this.neovimLastHeight = visibleLines;
+        // there are 2 empty lines (statusline, commandline ?) after editor area. we don't need them
+        await this.client.request("nvim_ui_try_resize", [NVIM_WIN_WIDTH, visibleLines + 2]);
+    };
+
     private updateCursorPositionInNeovim = async (editor: vscode.TextEditor): Promise<void> => {
         await this.client.call("nvim_win_set_cursor", [
             0,
@@ -1092,20 +1150,49 @@ export class NVIMPluginController implements vscode.Disposable {
         ]);
     };
 
+    /**
+     * Update cursor in active editor. Coords are zero based
+     */
     private updateCursorPosInActiveEditor = (newLine: number, newCol: number, screenRow: number): void => {
+        // if (this.isInsertMode) {
+        // return;
+        // }
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             return;
         }
         this.nvimRealLinePosition = newLine;
         this.nvimRealColPosition = newCol;
-        this.nvimLastScreenPosition = screenRow;
         const currentCursor = editor.selections[0].active;
-        if (currentCursor.line === newLine && currentCursor.character === newCol && this.currentModeName !== "visual") {
+        if (
+            currentCursor.line === newLine &&
+            currentCursor.character === newCol &&
+            screenRow === this.nvimLastScreenPosition
+        ) {
+            // store last screen position anyway
+            this.nvimLastScreenPosition = screenRow;
             return;
         }
+        this.nvimLastScreenPosition = screenRow;
         editor.selections = [new vscode.Selection(newLine, newCol, newLine, newCol)];
-        editor.revealRange(editor.selection, vscode.TextEditorRevealType.Default);
+        // editor.revealRange(editor.selection, vscode.TextEditorRevealType.Default);
+        const topScreenRow = newLine - screenRow;
+        // vscode sometimes changes ranges from and back by 1 line and the condition often fail. Apply 1 tolerance row
+        const topVisibleLine = editor.visibleRanges[0].start.line;
+        if (
+            topVisibleLine === topScreenRow ||
+            topVisibleLine - 1 === topScreenRow ||
+            topVisibleLine + 1 === topScreenRow
+        ) {
+            editor.revealRange(editor.selection, vscode.TextEditorRevealType.Default);
+        } else {
+            // align viewport with vim viewport
+            // otherwise screenrow position may be broken and plugins like easymotion won't work correctly
+            editor.revealRange(
+                new vscode.Range(newLine - screenRow, newCol, newLine - screenRow, newCol),
+                vscode.TextEditorRevealType.AtTop,
+            );
+        }
     };
 
     private applyCursorStyleToEditor(editor: vscode.TextEditor, modeName: string): void {
@@ -1166,7 +1253,11 @@ export class NVIMPluginController implements vscode.Disposable {
         const uri = doc.uri.toString();
         this.uriToBuffer.set(uri, buf);
         this.bufferIdToUri.set(id, uri);
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active, false);
+        if (!lines.length || lines.every(l => !l.length)) {
+            this.externalBuffersShowOnNextChange.add(buf.id);
+        } else {
+            await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active, false);
+        }
     }
 
     /**
@@ -1175,9 +1266,6 @@ export class NVIMPluginController implements vscode.Disposable {
      * @param decorations Text decorations, the format is [[lineNum, [colNum, text][]]]
      */
     private applyTextDecorations(hlGroupName: string, decorations: [string, [number, string][]][]): void {
-        console.log(hlGroupName);
-        console.log(decorations);
-
         const decorator = this.documentHighlightProvider.getDecoratorForHighlightGroup(hlGroupName);
         if (!decorator) {
             return;
@@ -1223,8 +1311,11 @@ export class NVIMPluginController implements vscode.Disposable {
             } else if (eventName === "vscode-neovim") {
                 const [command, ...commandArgs] = eventArgs;
                 if (command === "external-buffer") {
-                    const [name, id] = commandArgs as [string, string];
-                    await this.attachNeovimExternalBuffer(name, parseInt(id, 10));
+                    const [name, idStr] = commandArgs as [string, string];
+                    const id = parseInt(idStr, 10);
+                    if (!this.managedBufferIds.has(id)) {
+                        await this.attachNeovimExternalBuffer(name, id);
+                    }
                 } else if (command === "notify-blocking") {
                     const [isBlocking, bufCursor, screenRow] = commandArgs as [number, [number, number], number];
                     if (isBlocking) {
@@ -1283,6 +1374,11 @@ export class NVIMPluginController implements vscode.Disposable {
                         ],
                     ],
                 ]);
+                // Send height update if visible lines were changed in insert mode
+                const lines = this.editorVisibleLines.get(vscode.window.activeTextEditor);
+                if (lines && lines !== this.neovimLastHeight) {
+                    requests.push(["nvim_ui_try_resize", [NVIM_WIN_WIDTH, lines + 2]]);
+                }
             }
             await this.client.callAtomic(requests);
         }
@@ -1302,63 +1398,35 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.input("<Esc>");
     };
 
-    private onCmdAccept = async (): Promise<void> => {
-        await this.client.input("<CR>");
+    private onCmdAccept = (): void => {
+        this.client.input("<CR>");
     };
 
-    private onCmdCompletion = async (): Promise<void> => {
-        await this.client.input("<Tab>");
+    private onCmdCompletion = (): void => {
+        this.client.input("<Tab>");
     };
 
-    private onHalfScollUpCommand = async (): Promise<void> => {
-        await vscode.commands.executeCommand("editorScroll", {
-            to: "up",
-            by: "halfPage",
-            revealCursor: true,
-        });
-        if (vscode.window.activeTextEditor) {
-            await this.updateCursorPositionInNeovim(vscode.window.activeTextEditor);
-        }
+    private onCtrlU = (): void => {
+        this.client.input("<C-u>");
     };
 
-    private onHalfScrollDownCommand = async (): Promise<void> => {
-        await vscode.commands.executeCommand("editorScroll", {
-            to: "down",
-            by: "halfPage",
-            revealCursor: true,
-        });
-        if (vscode.window.activeTextEditor) {
-            await this.updateCursorPositionInNeovim(vscode.window.activeTextEditor);
-        }
+    private onCtrlD = (): void => {
+        this.client.input("<C-d>");
     };
 
-    private onScrollUpCommand = async (): Promise<void> => {
-        await vscode.commands.executeCommand("editorScroll", {
-            to: "up",
-            by: "page",
-            revealCursor: true,
-        });
-        if (vscode.window.activeTextEditor) {
-            await this.updateCursorPositionInNeovim(vscode.window.activeTextEditor);
-        }
+    private onCtrlB = (): void => {
+        this.client.input("<C-b>");
     };
 
-    private onScrollDownCommand = async (): Promise<void> => {
-        await vscode.commands.executeCommand("editorScroll", {
-            to: "down",
-            by: "page",
-            revealCursor: true,
-        });
-        if (vscode.window.activeTextEditor) {
-            await this.updateCursorPositionInNeovim(vscode.window.activeTextEditor);
-        }
+    private onCtrlF = (): void => {
+        this.client.input("<C-f>");
     };
 
-    private onCtrlR = async (): Promise<void> => {
-        await this.client.input("<C-r>");
+    private onCtrlR = (): void => {
+        this.client.input("<C-r>");
     };
 
-    private onCtrlV = async (): Promise<void> => {
-        await this.client.input("<C-v>");
+    private onCtrlV = (): void => {
+        this.client.input("<C-v>");
     };
 }

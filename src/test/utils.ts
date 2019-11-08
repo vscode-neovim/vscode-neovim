@@ -160,6 +160,7 @@ export async function assertContent(
         cursorStyle?: "block" | "underline" | "line";
         mode?: string;
         vsCodeSelections?: Selection[];
+        vsCodeVisibleRange?: { top?: number; bottom?: number };
     },
     client: NeovimClient,
     editor?: TextEditor,
@@ -193,6 +194,27 @@ export async function assertContent(
                 options.vsCodeCursor,
                 `Cursor position in vscode - ${options.vsCodeCursor[0]}:${options.vsCodeCursor[1]}`,
             );
+        }
+        if (options.vsCodeVisibleRange) {
+            const range = editor.visibleRanges[0];
+            const top = range.start.line;
+            const bottom = range.end.line;
+            if (options.vsCodeVisibleRange.top) {
+                assert.ok(
+                    top === options.vsCodeVisibleRange.top ||
+                        top === options.vsCodeVisibleRange.top - 1 ||
+                        top === options.vsCodeVisibleRange.top + 1,
+                    "Top visible range is wrong",
+                );
+            }
+            if (options.vsCodeVisibleRange.bottom) {
+                assert.ok(
+                    bottom === options.vsCodeVisibleRange.bottom ||
+                        bottom === options.vsCodeVisibleRange.bottom - 1 ||
+                        bottom === options.vsCodeVisibleRange.bottom + 1,
+                    "Bottom visible range is wrong",
+                );
+            }
         }
         if (options.content) {
             assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");

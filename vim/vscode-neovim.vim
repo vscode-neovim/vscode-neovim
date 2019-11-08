@@ -2,7 +2,7 @@ set shortmess="filnxtToOFI"
 set nowrap
 set wildchar=9
 set mouse=a
-" set cmdheight=1
+set cmdheight=1
 
 set nobackup
 set nowb
@@ -61,6 +61,7 @@ endfunction
 
 " This is called by extension when created new buffer
 function! VSCodeOnBufWinEnter(name, id)
+    " Sometimes doesn't work, although on extensions we handle such buffers
     let controlled = getbufvar(a:id, "vscode_controlled")
     if !controlled
         call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "external-buffer", a:name, a:id)

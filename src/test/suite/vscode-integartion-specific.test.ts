@@ -1,5 +1,4 @@
 import path from "path";
-import { strict as assert } from "assert";
 
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
@@ -36,9 +35,11 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
         await setCursor(2, 1);
+        await wait();
 
         // peek definition opens another editor. make sure the cursor won't be leaked into primary editor
         await vscode.commands.executeCommand("editor.action.peekDefinition", doc.uri, new vscode.Position(2, 1));
+        await wait();
 
         await assertContent(
             {
@@ -72,19 +73,16 @@ describe("VSCode integration specific stuff", () => {
             path.join(__dirname, "../../../test_fixtures/scrolltest.txt"),
         );
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
 
-        await sendVSCodeKeys("130j");
-        await assertContent({ cursor: [130, 0] }, client);
+        await sendVSCodeKeys("90j", 2000);
+        await assertContent({ cursor: [90, 0], vsCodeVisibleRange: { bottom: 90 } }, client);
 
-        let range = vscode.window.activeTextEditor!.visibleRanges[0];
-        assert.ok(range.start.line <= 129);
+        await sendVSCodeKeys("zt", 2000);
+        await assertContent({ cursor: [90, 0], vsCodeVisibleRange: { top: 90 } }, client);
 
-        await sendVSCodeKeys("40k");
-        range = vscode.window.activeTextEditor!.visibleRanges[0];
-        assert.ok(range.start.line <= 89);
-
-        // horizontal visible ranges are not supported yet
+        // await sendVSCodeKeys("40k", 1000);
+        // await assertContent({ cursor: [90, 0], vsCodeVisibleRange: { bottom: 50 } }, client);
     });
 
     it("Go to definition in other file - cursor is ok", async () => {
