@@ -1,7 +1,7 @@
 {
 	"name": "vscode-neovim",
-	"displayName": "VSCode Neovim",
-	"description": "Almost complete VIM integration by using Neovim (WIP)",
+	"displayName": "VS Code Neovim",
+	"description": "Almost complete VIM emulation by using Neovim",
 	"publisher": "asvetliakov",
 	"extensionKind": "ui",
 	"version": "0.0.10",
