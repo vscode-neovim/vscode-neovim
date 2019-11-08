@@ -37,6 +37,9 @@ Neovim 0.4.2 or greater
 * Almost all Ctrl keys are missing and not being sent to vim/are used in the input mode. This will be fixed in a coming days
 * The extension works by creating scratch buffers in neovim. Use save command from vs code. again, later ```:w``` will be rebinded to vscode built-in save command
 
+## Easymotion
+
+Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-easymotion) works fine and as expected... except one thing: it really replaces your text with markers then restores back. It may work for VIM but for VS Code it leads to broken text and many errors reported while you're jumping. For this reason i created the special [vim-easymotion fork](https://github.com/asvetliakov/vim-easymotion) which doesn't touch your text and instead use vscode text decorations. Just add my fork to your ```vim-plug``` block or by using your favorite vim plugin installer and delete original vim-easymotion. Also overwin motion won't work (obviously). Happy jumping!
 
 ## Known Issues
 

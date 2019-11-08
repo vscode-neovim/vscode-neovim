@@ -1169,6 +1169,44 @@ export class NVIMPluginController implements vscode.Disposable {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active, false);
     }
 
+    /**
+     *
+     * @param hlGroupName VIM HL Group name
+     * @param decorations Text decorations, the format is [[lineNum, [colNum, text][]]]
+     */
+    private applyTextDecorations(hlGroupName: string, decorations: [string, [number, string][]][]): void {
+        console.log(hlGroupName);
+        console.log(decorations);
+
+        const decorator = this.documentHighlightProvider.getDecoratorForHighlightGroup(hlGroupName);
+        if (!decorator) {
+            return;
+        }
+        const conf = this.documentHighlightProvider.getDecoratorOptions(decorator);
+        const options: vscode.DecorationOptions[] = [];
+        for (const [lineStr, cols] of decorations) {
+            const line = parseInt(lineStr, 10) - 1;
+
+            for (const [colNum, text] of cols) {
+                const col = colNum - 1;
+                const opt: vscode.DecorationOptions = {
+                    range: new vscode.Range(line, col, line, col),
+                    renderOptions: {
+                        before: {
+                            ...conf,
+                            ...conf.before,
+                            contentText: text,
+                        },
+                    },
+                };
+                options.push(opt);
+            }
+        }
+        if (vscode.window.activeTextEditor) {
+            vscode.window.activeTextEditor.setDecorations(decorator, options);
+        }
+    }
+
     private handleCustomRequest = async (
         eventName: string,
         eventArgs: [string, ...unknown[]],
@@ -1187,7 +1225,6 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (command === "external-buffer") {
                     const [name, id] = commandArgs as [string, string];
                     await this.attachNeovimExternalBuffer(name, parseInt(id, 10));
-                    result = "";
                 } else if (command === "notify-blocking") {
                     const [isBlocking, bufCursor, screenRow] = commandArgs as [number, [number, number], number];
                     if (isBlocking) {
@@ -1198,6 +1235,10 @@ export class NVIMPluginController implements vscode.Disposable {
                     } else {
                         this.nvimIsCmdLine = false;
                     }
+                } else if (command === "text-decorations") {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const [hlName, cols] = commandArgs as any;
+                    this.applyTextDecorations(hlName, cols);
                 }
             }
             response.send(result || "", false);

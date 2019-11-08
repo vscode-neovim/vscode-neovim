@@ -147,6 +147,10 @@ export class HighlightProvider {
      * Not all HL groups are supported now
      */
     private highlighGroupToDecorator: Map<string, TextEditorDecorationType> = new Map();
+    /**
+     * Store configuration per decorator
+     */
+    private decoratorConfigurations: Map<TextEditorDecorationType, ThemableDecorationRenderOptions> = new Map();
 
     private configuration: HighlightConfiguration;
 
@@ -159,7 +163,10 @@ export class HighlightProvider {
         }
         for (const [key, config] of Object.entries(this.configuration.highlights)) {
             if (config !== "vim") {
-                this.configuration.highlights[key] = normalizeDecorationConfig(config);
+                const options = normalizeDecorationConfig(config);
+                this.configuration.highlights[key] = options;
+                // precreate groups if configuration was defined
+                this.createDecoratorForHighlightGroup(key, options);
             }
         }
     }
@@ -173,16 +180,34 @@ export class HighlightProvider {
         ) {
             return;
         }
-
-        const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
-        const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs, this.specialColor) : options;
-        const decorator = window.createTextEditorDecorationType(conf);
         this.highlightIdToGroupName.set(id, name);
-        this.highlighGroupToDecorator.set(name, decorator);
+        if (this.highlighGroupToDecorator.has(name)) {
+            // we have already precreated decorator
+            return;
+        } else {
+            const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
+            const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs, this.specialColor) : options;
+            this.createDecoratorForHighlightGroup(name, conf);
+        }
     }
 
     public getHighlightGroup(id: number): string | undefined {
         return this.highlightIdToGroupName.get(id);
+    }
+
+    public getDecoratorForHighlightGroup(name: string): TextEditorDecorationType | undefined {
+        let dec = this.highlighGroupToDecorator.get(name);
+        if (!dec && name.endsWith("Default")) {
+            dec = this.highlighGroupToDecorator.get(name.slice(0, -7));
+        }
+        if (!dec) {
+            dec = this.highlighGroupToDecorator.get(name + "Default");
+        }
+        return dec;
+    }
+
+    public getDecoratorOptions(decorator: TextEditorDecorationType): ThemableDecorationRenderOptions {
+        return this.decoratorConfigurations.get(decorator)!;
     }
 
     public add(uri: string, type: string, row: number, col: number): void {
@@ -295,5 +320,11 @@ export class HighlightProvider {
             ranges.push(new Range(row, startCol, row, endCol + 1));
         }
         return ranges;
+    }
+
+    private createDecoratorForHighlightGroup(groupName: string, options: ThemableDecorationRenderOptions): void {
+        const decorator = window.createTextEditorDecorationType(options);
+        this.decoratorConfigurations.set(decorator, options);
+        this.highlighGroupToDecorator.set(groupName, decorator);
     }
 }

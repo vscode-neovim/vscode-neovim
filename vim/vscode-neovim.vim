@@ -67,6 +67,10 @@ function! VSCodeOnBufWinEnter(name, id)
     endif
 endfunction
 
+function! VSCodeSetTextDecorations(hlName, rowsCols)
+    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "text-decorations", a:hlName, a:rowsCols)
+endfunction
+
 autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufWinEnter * :call VSCodeOnBufWinEnter(expand('<afile>'), expand('<abuf>'))
 autocmd CmdlineEnter * :call VSCodeNotifyBlockingAndCursorPositions()
