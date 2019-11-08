@@ -75,6 +75,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private typeHandlerDisplose?: vscode.Disposable;
 
     /**
+     * Enable visual mode selection by mouse
+     */
+    private mouseSelectionEnabled = false;
+
+    /**
      * All buffers ids originated from vscode
      */
     private managedBufferIds: Set<number> = new Set();
@@ -157,7 +162,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private currentModeName = "";
     private documentHighlightProvider: HighlightProvider;
 
-    private editorVisibleLines: WeakMap<vscode.TextEditor, number> = new WeakMap();
+    private editorVisibleLines: WeakMap<vscode.TextEditor, { lines: number; topLine: number }> = new WeakMap();
 
     private nvimAttachWaiter: Promise<void> = Promise.resolve();
     private isInit = false;
@@ -177,10 +182,16 @@ export class NVIMPluginController implements vscode.Disposable {
      */
     private externalBuffersShowOnNextChange: Set<number> = new Set();
 
-    public constructor(neovimPath: string, extensionPath: string, highlightsConfiguration: HighlightConfiguration) {
+    public constructor(
+        neovimPath: string,
+        extensionPath: string,
+        highlightsConfiguration: HighlightConfiguration,
+        mouseSelection: boolean,
+    ) {
         if (!neovimPath) {
             throw new Error("Neovim path is not defined");
         }
+        this.mouseSelectionEnabled = mouseSelection;
         this.documentHighlightProvider = new HighlightProvider(highlightsConfiguration);
         this.neovimExtensionsPath = path.join(extensionPath, "vim", "*.vim");
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
@@ -531,25 +542,47 @@ export class NVIMPluginController implements vscode.Disposable {
         if (e.textEditor !== vscode.window.activeTextEditor) {
             return;
         }
-        // unfortunately it's messing with cursor navigation
-        // const range = e.visibleRanges[0];
-        // if (this.nvimRealLinePosition < range.start.line) {
-        // scolled down
-        // await this.client.inputMouse("wheel", "down", "", 0, 0, 0);
-        // } else if (this.nvimRealLinePosition > range.end.line) {
-        // await this.client.inputMouse("wheel", "up", "", 0, 0, 0);
-        // }
 
         if (!e.visibleRanges[0]) {
             return;
         }
-        const visibleLines = e.visibleRanges[0].end.line - e.visibleRanges[0].start.line;
-        const prevHeight = this.editorVisibleLines.get(e.textEditor) || 0;
 
-        if (prevHeight === visibleLines) {
+        const visibleLines = e.visibleRanges[0].end.line - e.visibleRanges[0].start.line;
+        const topVisible = e.visibleRanges[0].start.line;
+        const prevVisible = this.editorVisibleLines.get(e.textEditor) || { lines: 0, topLine: 0 };
+
+        // const cursorPos = e.textEditor.selection.active;
+
+        // vscode may change visible ranges often by 1 and turn back, add + 1 row tolerance
+        if (
+            prevVisible.lines === visibleLines ||
+            prevVisible.lines === visibleLines + 1 ||
+            prevVisible.lines === visibleLines - 1
+        ) {
             return;
         }
-        this.editorVisibleLines.set(e.textEditor, visibleLines);
+
+        /*if (
+            prevVisible.lines === visibleLines ||
+            prevVisible.lines === visibleLines + 1 ||
+            prevVisible.lines === visibleLines - 1
+        ) {
+            // if cursor pos is same but top visible range is not then it's scrolling
+            if (
+                this.nvimRealLinePosition == cursorPos.line &&
+                this.nvimRealColPosition === cursorPos.character &&
+                topVisible !== prevVisible.topLine
+            ) {
+                if (topVisible > prevVisible.topLine) {
+                    await this.client.inputMouse("wheel", "down", "", 0, cursorPos.line, cursorPos.character);
+                } else if (topVisible < prevVisible.topLine) {
+                    await this.client.inputMouse("wheel", "up", "", 0, cursorPos.line, cursorPos.character);
+                }
+                this.editorVisibleLines.set(e.textEditor, { lines: visibleLines, topLine: topVisible });
+            }
+            return;
+        }*/
+        this.editorVisibleLines.set(e.textEditor, { lines: visibleLines, topLine: topVisible });
         // if we'll send win height update with insert the neovim will try to update cursor position but it don't know the correct one
         // until we exit the insert mode
         if (this.isInsertMode) {
@@ -592,7 +625,8 @@ export class NVIMPluginController implements vscode.Disposable {
         // support mouse visual selection
         if (
             e.kind === vscode.TextEditorSelectionChangeKind.Mouse &&
-            (e.selections.length > 1 || !e.selections[0].active.isEqual(e.selections[0].anchor))
+            (e.selections.length > 1 || !e.selections[0].active.isEqual(e.selections[0].anchor)) &&
+            this.mouseSelectionEnabled
         ) {
             const requests: [string, VimValue[]][] = [];
             if (this.currentModeName !== "visual") {
@@ -1375,9 +1409,9 @@ export class NVIMPluginController implements vscode.Disposable {
                     ],
                 ]);
                 // Send height update if visible lines were changed in insert mode
-                const lines = this.editorVisibleLines.get(vscode.window.activeTextEditor);
-                if (lines && lines !== this.neovimLastHeight) {
-                    requests.push(["nvim_ui_try_resize", [NVIM_WIN_WIDTH, lines + 2]]);
+                const visibleLines = this.editorVisibleLines.get(vscode.window.activeTextEditor);
+                if (visibleLines && visibleLines.lines !== this.neovimLastHeight) {
+                    requests.push(["nvim_ui_try_resize", [NVIM_WIN_WIDTH, visibleLines.lines + 2]]);
                 }
             }
             await this.client.callAtomic(requests);

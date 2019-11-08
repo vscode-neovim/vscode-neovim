@@ -16,12 +16,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const highlightConfIgnore = settings.get("highlightGroups.ignoreHighlights");
     const highlightConfHighlights = settings.get("highlightGroups.highlights");
     const highlightConfUnknown = settings.get("highlightGroups.unknownHighlight");
-    const plugin = new NVIMPluginController(neovimPath, context.extensionPath, {
-        highlights: highlightConfHighlights,
-        ignoreHighlights: highlightConfIgnore,
-        unknownHighlight: highlightConfUnknown,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    const mouseVisualSelection = settings.get("mouseSelectionVisualMode", false);
+    const plugin = new NVIMPluginController(
+        neovimPath,
+        context.extensionPath,
+        {
+            highlights: highlightConfHighlights,
+            ignoreHighlights: highlightConfIgnore,
+            unknownHighlight: highlightConfUnknown,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
+        mouseVisualSelection,
+    );
     context.subscriptions.push(plugin);
     await plugin.init();
 }

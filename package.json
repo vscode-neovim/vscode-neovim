@@ -37,7 +37,14 @@
 				"vscode-neovim.neovimPath": {
 					"type": "string",
 					"default": "",
+					"title": "Neovim path",
 					"description": "Full path to Neovim executable"
+				},
+				"vscode-neovim.mouseSelectionVisualMode": {
+					"type": "boolean",
+					"title": "Mouse selection starting visual mode",
+					"description": "When true selecting by mouse will start vim visual mode",
+					"default": false
 				},
 				"vscode-neovim.highlightGroups.ignoreHighlights": {
 					"type": "array",
