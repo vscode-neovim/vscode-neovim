@@ -34,8 +34,7 @@ describe("VSCode integration specific stuff", () => {
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
-        await setCursor(2, 1);
-        await wait();
+        await setCursor(2, 1, 1000);
 
         // peek definition opens another editor. make sure the cursor won't be leaked into primary editor
         await vscode.commands.executeCommand("editor.action.peekDefinition", doc.uri, new vscode.Position(2, 1));
