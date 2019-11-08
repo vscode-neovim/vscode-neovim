@@ -176,6 +176,8 @@ export class NVIMPluginController implements vscode.Disposable {
     private neovimExtensionsPath: string;
     private neovimLastHeight = 0;
 
+    private skipNeovimRevealUntilLine? = 0;
+
     /**
      * When opening external buffers , like :PlugStatus they often comes with empty content and without name and receives text updates later
      * Don't want to clutter vscode by opening empty documents, so track them here and open only once when receiving some text
@@ -639,7 +641,11 @@ export class NVIMPluginController implements vscode.Disposable {
             ]);
             await this.client.callAtomic(requests);
         } else {
-            await this.updateCursorPositionInNeovim(e.textEditor);
+            const screenRow =
+                e.kind === vscode.TextEditorSelectionChangeKind.Mouse
+                    ? firstSelection.line - e.textEditor.visibleRanges[0].start.line - 1
+                    : undefined;
+            await this.updateCursorPositionInNeovim(e.textEditor, screenRow);
         }
     };
 
@@ -1177,11 +1183,15 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.request("nvim_ui_try_resize", [NVIM_WIN_WIDTH, visibleLines + 2]);
     };
 
-    private updateCursorPositionInNeovim = async (editor: vscode.TextEditor): Promise<void> => {
-        await this.client.call("nvim_win_set_cursor", [
-            0,
-            [editor.selection.active.line + 1, editor.selection.active.character],
-        ]);
+    private updateCursorPositionInNeovim = async (
+        editor: vscode.TextEditor,
+        forceScreenRow?: number,
+    ): Promise<void> => {
+        const cursor = editor.selection.active;
+        if (typeof forceScreenRow !== "undefined") {
+            this.skipNeovimRevealUntilLine = forceScreenRow;
+        }
+        await this.client.call("nvim_win_set_cursor", [0, [cursor.line + 1, cursor.character]]);
     };
 
     /**
@@ -1208,6 +1218,16 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         this.nvimLastScreenPosition = screenRow;
+        if (this.skipNeovimRevealUntilLine && screenRow !== this.skipNeovimRevealUntilLine) {
+            if (screenRow > this.skipNeovimRevealUntilLine) {
+                this.client.input("<C-e>");
+            } else {
+                this.client.input("<C-y>");
+            }
+            return;
+        } else if (this.skipNeovimRevealUntilLine) {
+            this.skipNeovimRevealUntilLine = undefined;
+        }
         editor.selections = [new vscode.Selection(newLine, newCol, newLine, newCol)];
         // editor.revealRange(editor.selection, vscode.TextEditorRevealType.Default);
         const topScreenRow = newLine - screenRow;
