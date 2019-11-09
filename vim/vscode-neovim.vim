@@ -15,14 +15,23 @@ set nohidden
 set noautowrite
 
 let s:vscodeCommandEventName = "vscode-command"
+let s:vscodeRangeCommandEventName = "vscode-range-command"
 let s:vscodePluginEventName = "vscode-neovim"
 
 function! VSCodeCall(cmd, ...)
     call rpcrequest(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
 endfunction
 
+function! VSCodeCallRange(cmd, line1, line2, ...)
+    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:000)
+endfunction
+
 function! VSCodeNotify(cmd, ...)
     call rpcnotify(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
+endfunction
+
+function! VSCodeNotifyRange(cmd, line1, line2, ...)
+    call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:000)
 endfunction
 
 function! VSCodeInsertBefore()
@@ -45,10 +54,6 @@ function! VSCodeClearUndo()
     unlet oldlevels
 endfunction
 
-function! VSCodeGetCursorPositions()
-    return [0, 0]
-endfunction
-
 function! VSCodeNotifyBlockingAndCursorPositions()
     let cursor = nvim_win_get_cursor(0)
     let winline = winline()
@@ -68,9 +73,29 @@ function! VSCodeOnBufWinEnter(name, id)
     endif
 endfunction
 
+" Set text decorations for given ranges. Used in easymotion
 function! VSCodeSetTextDecorations(hlName, rowsCols)
     call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "text-decorations", a:hlName, a:rowsCols)
 endfunction
+
+function! s:vscode_commentary(...) abort
+    if !a:0
+        let &operatorfunc = matchstr(expand('<sfile>'), '[^. ]*$')
+        return 'g@'
+    elseif a:0 > 1
+        let [line1, line2] = [a:1, a:2]
+    else
+        let [line1, line2] = [line("'["), line("']")]
+    endif
+
+    call VSCodeCallRange("editor.action.commentLine", line1, line2)
+endfunction
+
+command! -range -bar VSCodeCommentary call s:vscode_commentary(<line1>, <line2>)
+
+xnoremap <expr> <Plug>VSCodeCommentary <SID>vscode_commentary()
+nnoremap <expr> <Plug>VSCodeCommentary <SID>vscode_commentary()
+nnoremap <expr> <Plug>VSCodeCommentaryLine <SID>vscode_commentary() . '_'
 
 autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufWinEnter * :call VSCodeOnBufWinEnter(expand('<afile>'), expand('<abuf>'))

@@ -181,6 +181,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private scrollingFromNeovim = false;
 
     /**
+     * Special flag to ignore mouse selection and don't send cursor event to neovim. Used for vscode-range-command RPC commands
+     */
+    private shouldIgnoreMouseSelection = false;
+
+    /**
      * When opening external buffers , like :PlugStatus they often comes with empty content and without name and receives text updates later
      * Don't want to clutter vscode by opening empty documents, so track them here and open only once when receiving some text
      */
@@ -555,6 +560,10 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
 
+        if (this.shouldIgnoreMouseSelection) {
+            return;
+        }
+
         const visibleLines = e.visibleRanges[0].end.line - e.visibleRanges[0].start.line;
         const topVisible = e.visibleRanges[0].start.line;
         const bottomVisible = e.visibleRanges[0].end.line;
@@ -644,6 +653,9 @@ export class NVIMPluginController implements vscode.Disposable {
         // !For peek definition and similar stuff vscode opens another editor and updates selections here
         // !We must ignore it otherwise the cursor will just "jump"
         if (e.textEditor !== vscode.window.activeTextEditor) {
+            return;
+        }
+        if (this.shouldIgnoreMouseSelection) {
             return;
         }
         // support mouse visual selection
@@ -1160,7 +1172,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private applyHighlightsToDocument = throttle((document: vscode.TextDocument) => {
+    private applyHighlightsToDocument = (document: vscode.TextDocument): void => {
         const allUriEditors = vscode.window.visibleTextEditors.filter(
             e => e.document.uri.toString() === document.uri.toString(),
         );
@@ -1173,7 +1185,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 editor.setDecorations(decorator, ranges);
             }
         }
-    }, 20);
+    };
 
     private handleModeChange = (modeName: string): void => {
         this.isInsertMode = modeName === "insert";
@@ -1280,6 +1292,7 @@ export class NVIMPluginController implements vscode.Disposable {
             // align viewport with vim viewport
             // otherwise screenrow position may be broken and plugins like easymotion won't work correctly
             this.scrollingFromNeovim = true;
+            // await vscode.commands.executeCommand("revealLine", { lineNumber: newLine - screenRow, at: "top" });
             editor.revealRange(
                 new vscode.Range(newLine - screenRow, newCol, newLine - screenRow, newCol),
                 vscode.TextEditorRevealType.AtTop,
@@ -1292,7 +1305,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private async waitUntilScrolled(editor: vscode.TextEditor, requiredTopLine: number): Promise<void> {
         let topLine = editor.visibleRanges[0].start.line;
         while (topLine !== requiredTopLine) {
-            await new Promise(res => setTimeout(res, 50));
+            await new Promise(res => setTimeout(res, 20));
             // same top line - break
             const newTopLine = editor.visibleRanges[0].start.line;
             if (newTopLine === topLine) {
@@ -1415,6 +1428,19 @@ export class NVIMPluginController implements vscode.Disposable {
                 // slightly delay sending response. Seems awaiting executeCommand doesn't garantue it was done
                 await new Promise(res => setTimeout(res, 20));
                 result = res;
+            } else if (eventName === "vscode-range-command") {
+                const [vscodeCommand, line1, line2, ...commandArgs] = eventArgs;
+                if (vscode.window.activeTextEditor) {
+                    this.shouldIgnoreMouseSelection = true;
+                    const prevSelections = [...vscode.window.activeTextEditor.selections];
+                    vscode.window.activeTextEditor.selections = [
+                        new vscode.Selection(line2 as number, 0, ((line1 as number) - 1) as number, 0),
+                    ];
+                    const res = await this.runVSCodeCommand(vscodeCommand, ...commandArgs);
+                    vscode.window.activeTextEditor.selections = prevSelections;
+                    this.shouldIgnoreMouseSelection = false;
+                    result = res;
+                }
             } else if (eventName === "vscode-neovim") {
                 const [command, ...commandArgs] = eventArgs;
                 if (command === "external-buffer") {

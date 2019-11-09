@@ -44,6 +44,19 @@ Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-e
 
 ![easymotion](/images/easy-motion-vscode.png)
 
+## Vim-commentary
+You can use [vim-commentary](https://github.com/tpope/vim-commentary) if you like it. But vscode already has such functionality so why don't use it? Add to your init.vim/init.nvim
+
+```
+xmap gc  <Plug>VSCodeCommentary
+nmap gc  <Plug>VSCodeCommentary
+omap gc  <Plug>VSCodeCommentary
+nmap gcc <Plug>VSCodeCommentaryLine
+```
+
+Similar to vim-commentary, gcc is comment line (accept count), use gc with motion/in visual mode. ```VSCodeCommentary``` is just a simple function which calls ```editor.action.commentLine```
+
+
 ## Known Issues
 
 See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues)
