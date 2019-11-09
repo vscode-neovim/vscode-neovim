@@ -535,7 +535,10 @@ export class NVIMPluginController implements vscode.Disposable {
             // reapply cursor style
             this.applyCursorStyleToEditor(e, this.currentModeName);
             const cursor = e.selection.active;
-            await this.updateCursorPositionInNeovim(cursor.line, cursor.character);
+            const visible = e.visibleRanges[0];
+            const cursorScreenRow = cursor.line - visible.start.line;
+            this.skipNeovimRevealUntilLine = undefined;
+            await this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
             // set buffer tab related options
             await this.setBufferTabOptions(e);
             const visibleLines = e.visibleRanges[0].end.line - e.visibleRanges[0].start.line;
