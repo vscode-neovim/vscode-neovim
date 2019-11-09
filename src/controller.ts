@@ -597,16 +597,20 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private commitScrolling = throttle(() => {
-        this.isScrolling = false;
-        if (!vscode.window.activeTextEditor) {
-            return;
-        }
-        const visible = vscode.window.activeTextEditor.visibleRanges[0];
-        const cursor = vscode.window.activeTextEditor.selection.active;
-        const cursorScreenRow = cursor.line - visible.start.line;
-        this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
-    }, 1000);
+    private commitScrolling = throttle(
+        () => {
+            this.isScrolling = false;
+            if (!vscode.window.activeTextEditor) {
+                return;
+            }
+            const visible = vscode.window.activeTextEditor.visibleRanges[0];
+            const cursor = vscode.window.activeTextEditor.selection.active;
+            const cursorScreenRow = cursor.line - visible.start.line;
+            this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
+        },
+        1000,
+        { leading: false },
+    );
 
     /**
      * Handle vscode selection change. This includes everything touching selection or cursor position, includes custom commands and selection = [] assignment
