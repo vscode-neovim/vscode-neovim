@@ -28,7 +28,6 @@ Neovim 0.4.2 or greater
 * Visual modes don't produce real vscode selections right now
 * After deleting some text in visual mode the cursor position may be slightly different than in vim
 * It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
-* Mouse scrolling is not supported yet
 
 
 ## Important
@@ -37,11 +36,11 @@ Neovim 0.4.2 or greater
 
 * **DO NOT** use vim buffers, tab or window management. The plugin assumes that these tasks will be performed by VSCode side. Later i'll rebind ```:vsplit``` commands and such to call vscode commands instead
 * Almost all Ctrl keys are missing and not being sent to vim/are used in the input mode. This will be fixed in a coming days
-* The extension works by creating scratch buffers in neovim. Use save command from vs code. again, later ```:w``` will be rebinded to vscode built-in save command
+* The extension works by creating scratch buffers in neovim. Use save command from vs code. again, later ```:w``` will be rebound to vscode built-in save command
 
 ## Vim-easymotion
 
-Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-easymotion) works fine and as expected... except one thing: it really replaces your text with markers then restores back. It may work for VIM but for VS Code it leads to broken text and many errors reported while you're jumping. For this reason i created the special [vim-easymotion fork](https://github.com/asvetliakov/vim-easymotion) which doesn't touch your text and instead use vscode text decorations. Just add my fork to your ```vim-plug``` block or by using your favorite vim plugin installer and delete original vim-easymotion. Also overwin motions won't work (obviously). Happy jumping!
+Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-easymotion) works fine and as expected... except one thing: it really replaces your text with markers then restores back. It may work for VIM but for VS Code it leads to broken text and many errors reported while you're jumping. For this reason i created the special [vim-easymotion fork](https://github.com/asvetliakov/vim-easymotion) which doesn't touch your text and instead use vscode text decorations. Just add my fork to your ```vim-plug``` block or by using your favorite vim plugin installer and delete original vim-easymotion. Also overwin motions won't work (obviously) so don't use them. Happy jumping!
 
 ![easymotion](/images/easy-motion-vscode.png)
 
