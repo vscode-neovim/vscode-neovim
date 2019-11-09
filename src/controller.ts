@@ -680,11 +680,22 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         if (!this.isInsertMode) {
-            this.client.input(type.text === "\n" ? "<CR>" : type.text);
+            this.client.input(this.normalizeKey(type.text));
         } else {
             vscode.commands.executeCommand("default:type", { text: type.text });
         }
     };
+
+    private normalizeKey(key: string): string {
+        switch (key) {
+            case "\n":
+                return "<CR>";
+            case "<":
+                return "<LT>";
+            default:
+                return key;
+        }
+    }
 
     private onNeovimBufferEvent = (
         buffer: NeovimBuffer,
@@ -1509,7 +1520,7 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private onCmdChange = async (e: string): Promise<void> => {
-        await this.client.input(e.slice(-1));
+        await this.client.input(this.normalizeKey(e.slice(-1)));
     };
 
     private onCmdBackspace = async (): Promise<void> => {
@@ -1526,7 +1537,7 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private onCmdCompletion = (): void => {
-        this.client.input("<Tab>");
+        this.client.input("<tab>");
     };
 
     private onCtrlU = (): void => {
