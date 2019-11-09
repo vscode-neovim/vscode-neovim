@@ -10,6 +10,7 @@ import { ATTACH } from "neovim/lib/api/Buffer";
 import { CommandLineController } from "./command_line";
 import { StatusLineController } from "./status_line";
 import { HighlightProvider, HighlightConfiguration } from "./highlight_provider";
+import { CommandsController } from "./commands_controller";
 
 interface CursorMode {
     /**
@@ -135,23 +136,20 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private redrawQueuePromise?: Promise<void>;
     private resolveRedrawQueuePromise?: () => void;
-
+    private commandsController: CommandsController;
     /**
      * Simple command line UI
      */
     private commandLine: CommandLineController;
-
     /**
      * Status var UI
      */
     private statusLine: StatusLineController;
-
     /**
      * Tracks previous documnet line count before documnet change
      * In multiline replace there is no way to know if the operation reduced total number of lines or not
      */
     private documentLines: Map<string, number> = new Map();
-
     /**
      * Vim modes
      */
@@ -214,12 +212,6 @@ export class NVIMPluginController implements vscode.Disposable {
         this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
 
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.cmdCompletion", this.onCmdCompletion));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollUp", this.onCtrlB));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollDown", this.onCtrlF));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollHalfUp", this.onCtrlU));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.scrollHalfDown", this.onCtrlD));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-r", this.onCtrlR));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-v", this.onCtrlV));
 
         const args = ["-N", "--embed", "-c", `source ${this.neovimExtensionsPath}`];
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
@@ -234,12 +226,14 @@ export class NVIMPluginController implements vscode.Disposable {
         this.client = attach({ proc: this.nvimProc });
         this.commandLine = new CommandLineController();
         this.statusLine = new StatusLineController();
+        this.commandsController = new CommandsController(this.client);
         this.commandLine.onAccept = this.onCmdAccept;
         this.commandLine.onChanged = this.onCmdChange;
         this.commandLine.onCanceled = this.onCmdCancel;
         this.commandLine.onBacksapce = this.onCmdBackspace;
         this.disposables.push(this.commandLine);
         this.disposables.push(this.statusLine);
+        this.disposables.push(this.commandsController);
 
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.handleCustomRequest);
@@ -1538,29 +1532,5 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private onCmdCompletion = (): void => {
         this.client.input("<tab>");
-    };
-
-    private onCtrlU = (): void => {
-        this.client.input("<C-u>");
-    };
-
-    private onCtrlD = (): void => {
-        this.client.input("<C-d>");
-    };
-
-    private onCtrlB = (): void => {
-        this.client.input("<C-b>");
-    };
-
-    private onCtrlF = (): void => {
-        this.client.input("<C-f>");
-    };
-
-    private onCtrlR = (): void => {
-        this.client.input("<C-r>");
-    };
-
-    private onCtrlV = (): void => {
-        this.client.input("<C-v>");
     };
 }

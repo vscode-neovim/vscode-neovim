@@ -78,6 +78,24 @@ function! VSCodeSetTextDecorations(hlName, rowsCols)
     call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "text-decorations", a:hlName, a:rowsCols)
 endfunction
 
+" Used for ctrl-a insert command
+function! VSCodeGetLastInsertText()
+    let line1 = line("'[")
+    let line2 = line("']")
+    if (line1 == 0)
+        return []
+    endif
+    let lines = []
+    for i in range(line1, line2)
+        call add(lines, getline(i))
+    endfor
+    return lines
+endfunction
+
+function! VSCodeGetRegister(reg)
+    return getreg(a:reg)
+endfunction
+
 function! s:vscode_commentary(...) abort
     if !a:0
         let &operatorfunc = matchstr(expand('<sfile>'), '[^. ]*$')

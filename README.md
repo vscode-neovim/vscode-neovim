@@ -38,6 +38,41 @@ Neovim 0.4.2 or greater
 * Almost all Ctrl keys are missing and not being sent to vim/are used in the input mode. This will be fixed in a coming days
 * The extension works by creating scratch buffers in neovim. Use save command from vs code. again, later ```:w``` will be rebound to vscode built-in save command
 
+
+## Insert mode special keys
+
+Enabled by ```useCtrlKeysForInsertMode = true``` (default true)
+
+Key | Desc | Status
+--- | ---- | ------
+```CTRL-r [0-9,a-z,"%#*+:.-=]``` | Paste from register | Works, simulated
+```CTRL-a``` | Paste previous inserted content | Works, simulated
+```CTRL-u``` | Delete all text till begining of line, if empty - delete newline | Bound to VSCode key
+```CTRL-w``` | Delete word left | Bound to VSCode key
+```CTRL-h``` | Delete character left | Bound to VSCode key
+```CTRL-t``` | Indent lines right | Bound to VSCode indent line
+```CTRL-d``` | Indent lines left | Bound to VSCode outindent line
+```CTRL-j``` | Insert line | Bound to VSCode insert line after
+```Esc```, ```CTRL-[```, ```CTRL-c``` | Escape insert mode | Use configured escape key (send as ```Esc``` to vim)
+```CTRL-@``` | Insert previously inserted content and exit insert | Not supported
+```CTRL-i``` | Insert tab | Not supported. Same as ```<Tab>```
+```CTRL-m``` | Insert new line | Not supported. Same as ```Enter``` or ```CTRL-j```
+```CTRK-k``` | Enter digrpah | Not supported
+```CTRL-n/CTRL-p``` | Find next/prev keyword | Not supported
+```CTRL-r CTRL-r [reg]```, ```CTRL-r CTRL-0 [reg]```, ```CTRL-r CTRL-p [reg]``` | Additional paste from register keys | Not supported
+```0 CTRL-d``` | Delete all indent | Not supported
+```^ CTRL-d``` | Delete all indent & restore indent at next line | Not supported
+```CTRL-v/CTRL-q``` | Insert next non-digit literally | Not supported
+```CTRL-x``` | Enter Ctrl-x mode | Not supported
+```CTRL-e``` | Insert the character which is below the cursor | Not supported
+```CTRL-y``` | Insert the character which is above the cursor | Not supported
+```CTRL-_``` | Switch between languages | Not supported
+```CTRL-^``` | Toggle the use of typing language characters | Not supported
+```CTRL-]``` | Trigger abbreviation, without inserting a character | Not supported
+```Insert``` | Toggle between Insert and Replace mode | Not supported
+
+
+
 ## Vim-easymotion
 
 Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-easymotion) works fine and as expected... except one thing: it really replaces your text with markers then restores back. It may work for VIM but for VS Code it leads to broken text and many errors reported while you're jumping. For this reason i created the special [vim-easymotion fork](https://github.com/asvetliakov/vim-easymotion) which doesn't touch your text and instead use vscode text decorations. Just add my fork to your ```vim-plug``` block or by using your favorite vim plugin installer and delete original vim-easymotion. Also overwin motions won't work (obviously) so don't use them. Happy jumping!

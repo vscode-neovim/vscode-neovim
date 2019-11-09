@@ -17,6 +17,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const highlightConfHighlights = settings.get("highlightGroups.highlights");
     const highlightConfUnknown = settings.get("highlightGroups.unknownHighlight");
     const mouseVisualSelection = settings.get("mouseSelectionVisualMode", false);
+    const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
+    const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
+    vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
+    vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
     const plugin = new NVIMPluginController(
         neovimPath,
         context.extensionPath,
