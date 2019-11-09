@@ -246,17 +246,7 @@ export class NVIMPluginController implements vscode.Disposable {
     }
 
     public async init(): Promise<void> {
-        await this.client.setClientInfo(
-            "vscode-neovim",
-            { major: 0, minor: 1, patch: 0 },
-            "embedder",
-            {},
-            {
-                testmethod: {
-                    async: true,
-                },
-            },
-        );
+        await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
