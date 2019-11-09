@@ -91,6 +91,19 @@ function! s:vscode_commentary(...) abort
     call VSCodeCallRange("editor.action.commentLine", line1, line2)
 endfunction
 
+function! s:vscode_format(...) abort
+    if !a:0
+        let &operatorfunc = matchstr(expand('<sfile>'), '[^. ]*$')
+        return 'g@'
+    elseif a:0 > 1
+        let [line1, line2] = [a:1, a:2]
+    else
+        let [line1, line2] = [line("'["), line("']")]
+    endif
+
+    call VSCodeCallRange("editor.action.formatSelection", line1, line2)
+endfunction
+
 command! -range -bar VSCodeCommentary call s:vscode_commentary(<line1>, <line2>)
 
 xnoremap <expr> <Plug>VSCodeCommentary <SID>vscode_commentary()
@@ -104,3 +117,8 @@ autocmd CmdlineLeave * :call VSCodeNotifyBlockingEnd()
 
 nnoremap <silent> O :call VSCodeInsertBefore()<CR>
 nnoremap <silent> o :call VSCodeInsertAfter()<CR>
+
+" Bind format to vscode format selection
+xnoremap <expr> = <SID>vscode_format()
+nnoremap <expr> = <SID>vscode_format()
+nnoremap <expr> == <SID>vscode_format() . '_'
