@@ -298,6 +298,11 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!openedEditors.find(e => e.document.uri.toString() === uri)) {
             return;
         }
+        await this.initBuffer(e);
+    };
+
+    private async initBuffer(e: vscode.TextDocument, cursor?: { line: number; char: number }): Promise<void> {
+        const uri = e.uri.toString();
         if (this.uriToBuffer.has(uri)) {
             return;
         }
@@ -313,17 +318,20 @@ export class NVIMPluginController implements vscode.Disposable {
             const lines = e.getText().split(eol);
 
             const requests: [string, VimValue[]][] = [];
+            requests.push(["nvim_win_set_buf", [0, buf]]);
+            requests.push(["nvim_buf_set_lines", [buf, 0, 1, false, lines]]);
+            if (cursor) {
+                requests.push(["nvim_win_set_cursor", [0, [cursor.line + 1, cursor.char]]]);
+            }
             requests.push(["nvim_buf_set_var", [buf, "vscode_controlled", true]]);
             requests.push(["nvim_buf_set_name", [buf, uri]]);
-            requests.push(["nvim_buf_set_lines", [buf, 0, 1, false, lines]]);
-            requests.push(["nvim_win_set_buf", [0, buf]]);
             requests.push(["nvim_call_function", ["VSCodeClearUndo", []]]);
             await this.client.callAtomic(requests);
             this.bufferIdToUri.set(buf.id, uri);
             this.uriToBuffer.set(uri, buf);
             buf.listen("lines", this.onNeovimBufferEvent);
         }
-    };
+    }
 
     private onChangeTextDocument = async (e: vscode.TextDocumentChangeEvent): Promise<void> => {
         await this.nvimAttachWaiter;
@@ -518,14 +526,19 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.nvimAttachWaiter;
         const buf = e ? this.uriToBuffer.get(e.document.uri.toString()) : undefined;
         if (buf) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await this.client.request("nvim_win_set_buf", [0, buf]);
+            // !important: need to update cursor in atomic operation
+            const requests = [
+                ["nvim_win_set_buf", [0, buf]],
+                ["nvim_win_set_cursor", [0, [e!.selection.active.line + 1, e!.selection.active.character]]],
+            ];
+            await this.client.callAtomic(requests);
+            // await this.client.request("nvim_win_set_buf", [0, buf]);
             this.currentNeovimBuffer = buf;
             // this.client.buffer = buf as any;
         } else if (e) {
             // vscode may open documents which are not visible (WTF?), but we're ingoring them in onOpenTextDocument
             // handle the case when such document becomes visible
-            await this.onOpenTextDocument(e.document);
+            await this.initBuffer(e.document, { line: e.selection.active.line, char: e.selection.active.character });
         }
         // set correct scroll position & tab options in neovim buffer
         if (e) {
@@ -1207,7 +1220,13 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private updateNeovimHeight = async (height: number): Promise<void> => {
-        await this.client.request("nvim_win_set_height", [0, height + 2]);
+        if (height < 10) {
+            height = 10;
+        } else {
+            // add additional height to compenstate statusline/cmdline
+            height += 2;
+        }
+        await this.client.request("nvim_win_set_height", [0, height]);
     };
 
     /**
