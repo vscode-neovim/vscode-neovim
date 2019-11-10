@@ -13,6 +13,8 @@ set noautoread
 set nohidden
 " do not attempt autowrite any buffers
 set noautowrite
+" Disable shada session storing
+" set shada=
 
 let s:vscodeCommandEventName = "vscode-command"
 let s:vscodeRangeCommandEventName = "vscode-range-command"
@@ -158,4 +160,7 @@ xnoremap <expr> z- VSCodeReveal("bottom", 1)
 nnoremap <expr> zb VSCodeReveal("bottom", 0)
 xnoremap <expr> zb VSCodeReveal("bottom", 0)
 
-
+" Override jumplist to vscode jumplist for now
+nnoremap <expr> <C-o> VSCodeCall("workbench.action.navigateBack")
+nnoremap <expr> <C-i> VSCodeCall("workbench.action.navigateForward")
+nnoremap <expr> <Tab> VSCodeCall("workbench.action.navigateForward")
