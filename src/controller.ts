@@ -86,6 +86,12 @@ export class NVIMPluginController implements vscode.Disposable {
     private managedBufferIds: Set<number> = new Set();
 
     /**
+     * Map of pending buffers which should become managed by vscode buffers. These are usually coming from jumplist
+     * Since vim already created buffer for it, we must reuse it instead of creating new one
+     */
+    private pendingBuffers: Map<string, number> = new Map();
+
+    /**
      * Vscode uri string -> buffer mapping
      */
     private uriToBuffer: Map<string, NeovimBuffer> = new Map();
@@ -308,29 +314,40 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         this.documentHighlightProvider.clean(uri);
         await this.nvimAttachWaiter;
-        const buf = await this.client.createBuffer(true, true);
-        if (typeof buf === "number") {
-            // 0 is error
+        let buf: NeovimBuffer | undefined;
+        if (this.pendingBuffers.has(uri)) {
+            const bufId = this.pendingBuffers.get(uri);
+            this.pendingBuffers.delete(uri);
+            const buffers = await this.client.buffers;
+            buf = buffers.find(b => b.id === bufId);
         } else {
-            this.currentNeovimBuffer = buf;
-            this.managedBufferIds.add(buf.id);
-            const eol = e.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
-            const lines = e.getText().split(eol);
-
-            const requests: [string, VimValue[]][] = [];
-            requests.push(["nvim_win_set_buf", [0, buf]]);
-            requests.push(["nvim_buf_set_lines", [buf, 0, 1, false, lines]]);
-            if (cursor) {
-                requests.push(["nvim_win_set_cursor", [0, [cursor.line + 1, cursor.char]]]);
+            const bbuf = await this.client.createBuffer(true, true);
+            if (typeof bbuf === "number") {
+                return;
             }
-            requests.push(["nvim_buf_set_var", [buf, "vscode_controlled", true]]);
-            requests.push(["nvim_buf_set_name", [buf, uri]]);
-            requests.push(["nvim_call_function", ["VSCodeClearUndo", []]]);
-            await this.client.callAtomic(requests);
-            this.bufferIdToUri.set(buf.id, uri);
-            this.uriToBuffer.set(uri, buf);
-            buf.listen("lines", this.onNeovimBufferEvent);
+            buf = bbuf;
         }
+        if (!buf) {
+            return;
+        }
+        this.currentNeovimBuffer = buf;
+        this.managedBufferIds.add(buf.id);
+        const eol = e.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+        const lines = e.getText().split(eol);
+
+        const requests: [string, VimValue[]][] = [];
+        requests.push(["nvim_win_set_buf", [0, buf]]);
+        requests.push(["nvim_buf_set_lines", [buf, 0, 1, false, lines]]);
+        if (cursor) {
+            requests.push(["nvim_win_set_cursor", [0, [cursor.line + 1, cursor.char]]]);
+        }
+        requests.push(["nvim_buf_set_var", [buf, "vscode_controlled", true]]);
+        requests.push(["nvim_buf_set_name", [buf, uri]]);
+        requests.push(["nvim_call_function", ["VSCodeClearUndo", []]]);
+        await this.client.callAtomic(requests);
+        this.bufferIdToUri.set(buf.id, uri);
+        this.uriToBuffer.set(uri, buf);
+        buf.listen("lines", this.onNeovimBufferEvent);
     }
 
     private onChangeTextDocument = async (e: vscode.TextDocumentChangeEvent): Promise<void> => {
@@ -1401,7 +1418,25 @@ export class NVIMPluginController implements vscode.Disposable {
                     const [name, idStr] = commandArgs as [string, string];
                     const id = parseInt(idStr, 10);
                     if (!this.managedBufferIds.has(id)) {
-                        await this.attachNeovimExternalBuffer(name, id);
+                        // Handle when trying to open vscode uri from vim
+                        // todo: naive checking
+                        if (name && /:\/\//.test(name)) {
+                            try {
+                                const uri = vscode.Uri.parse(name, true);
+                                this.pendingBuffers.set(name, id);
+                                const doc = await vscode.workspace.openTextDocument(uri);
+                                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active);
+                            } catch {
+                                // ignore ?
+                            }
+                        } else {
+                            await this.attachNeovimExternalBuffer(name, id);
+                        }
+                    } else {
+                        const uri = this.bufferIdToUri.get(id);
+                        if (uri) {
+                            await vscode.window.showTextDocument(vscode.Uri.parse(uri));
+                        }
                     }
                 } else if (command === "notify-blocking") {
                     const [isBlocking, bufCursor] = commandArgs as [number, [number, number], number];
