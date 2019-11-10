@@ -25,9 +25,12 @@ Neovim 0.4.2 or greater
 
 * Multiple vscode cursors work in the insert mode.
 * O, o keys mapped to vscode ```editor.action.insertLineBefore/insertLineAfter``` command thus dont support count prefix
+* =, == are mapped to ```editor.action.formatSelection```
 * Visual modes don't produce real vscode selections right now
 * After deleting some text in visual mode the cursor position may be slightly different than in vim
 * It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
+* Scrolling is done by VSCode side. ```<C-d>/<C-u>/etc...``` are slighly different
+* Jumplist is mapped to VSCode's ```navigateBack/navigateForward``` commands.
 
 
 ## Important
@@ -35,7 +38,6 @@ Neovim 0.4.2 or greater
 * **TURN OFF** ```editor.scrollBeyondLastLine```. Or don't turn and get funky behavior when trying to scroll by mouse over last line
 
 * **DO NOT** use vim buffers, tab or window management. The plugin assumes that these tasks will be performed by VSCode side. Later i'll rebind ```:vsplit``` commands and such to call vscode commands instead
-* Almost all Ctrl keys are missing and not being sent to vim/are used in the input mode. This will be fixed in a coming days
 * The extension works by creating scratch buffers in neovim. Use save command from vs code. again, later ```:w``` will be rebound to vscode built-in save command
 
 
@@ -45,8 +47,8 @@ Enabled by ```useCtrlKeysForInsertMode = true``` (default true)
 
 Key | Desc | Status
 --- | ---- | ------
-```CTRL-r [0-9,a-z,"%#*+:.-=]``` | Paste from register | Works, simulated
-```CTRL-a``` | Paste previous inserted content | Works, simulated
+```CTRL-r [0-9a-z"%#*+:.-=]``` | Paste from register | Works
+```CTRL-a``` | Paste previous inserted content | Works
 ```CTRL-u``` | Delete all text till begining of line, if empty - delete newline | Bound to VSCode key
 ```CTRL-w``` | Delete word left | Bound to VSCode key
 ```CTRL-h``` | Delete character left | Bound to VSCode key
