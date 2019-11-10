@@ -50,10 +50,10 @@ const insertRegisterNames: string[] = [
 ];
 
 const keyMappings = {
-    "ctrl-b": "<C-b>",
-    "ctrl-f": "<C-f>",
-    "ctrl-u": "<C-u>",
-    "ctrl-d": "<C-d>",
+    // "ctrl-b": "<C-b>",
+    // "ctrl-f": "<C-f>",
+    // "ctrl-u": "<C-u>",
+    // "ctrl-d": "<C-d>",
     "ctrl-r": "<C-r>",
     "ctrl-v": "<C-v>",
 };

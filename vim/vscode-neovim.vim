@@ -96,6 +96,10 @@ function! VSCodeGetRegister(reg)
     return getreg(a:reg)
 endfunction
 
+function! VSCodeReveal(at, resetCursor)
+    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "reveal", a:at, a:resetCursor)
+endfunction
+
 function! s:vscode_commentary(...) abort
     if !a:0
         let &operatorfunc = matchstr(expand('<sfile>'), '[^. ]*$')
@@ -140,3 +144,18 @@ nnoremap <silent> o :call VSCodeInsertAfter()<CR>
 xnoremap <expr> = <SID>vscode_format()
 nnoremap <expr> = <SID>vscode_format()
 nnoremap <expr> == <SID>vscode_format() . '_'
+
+nnoremap <expr> z<CR> VSCodeReveal("top", 1)
+xnoremap <expr> z<CR> VSCodeReveal("top", 1)
+nnoremap <expr> zt VSCodeReveal("top", 0)
+xnoremap <expr> zt VSCodeReveal("top", 0)
+nnoremap <expr> z. VSCodeReveal("center", 1)
+xnoremap <expr> z. VSCodeReveal("center", 1)
+nnoremap <expr> zz VSCodeReveal("center", 0)
+xnoremap <expr> zz VSCodeReveal("center", 0)
+nnoremap <expr> z- VSCodeReveal("bottom", 1)
+xnoremap <expr> z- VSCodeReveal("bottom", 1)
+nnoremap <expr> zb VSCodeReveal("bottom", 0)
+xnoremap <expr> zb VSCodeReveal("bottom", 0)
+
+
