@@ -177,16 +177,64 @@
 				"title": "Neovim: Trigger wildmenu completion"
 			},
 			{
+				"command": "vscode-neovim.backspace",
+				"title": "Neovim: backspace"
+			},
+			{
+				"command": "vscode-neovim.tab",
+				"title": "Neovim: tab"
+			},
+			{
+				"command": "vscode-neovim.backspace",
+				"title": "Neovim: Backspace"
+			},
+			{
+				"command": "vscode-neovim.shift-backspace",
+				"title": "Neovim: Shift-backspace"
+			},
+			{
+				"command": "vscode-neovim.ctrl-backspace",
+				"title": "Neovim: Ctrl-backspace"
+			},
+			{
+				"command": "vscode-neovim.delete",
+				"title": "Neovim: Delete"
+			},
+			{
+				"command": "vscode-neovim.shift-delete",
+				"title": "Neovim: Shift-delete"
+			},
+			{
+				"command": "vscode-neovim.ctrl-delete",
+				"title": "Neovim: Ctrl-delete"
+			},
+			{
+				"command": "vscode-neovim.tab",
+				"title": "Neovim: Tab"
+			},
+			{
+				"command": "vscode-neovim.down",
+				"title": "Neovim: Down"
+			},
+			{
+				"command": "vscode-neovim.up",
+				"title": "Neovim: Up"
+			},
+			{
+				"command": "vscode-neovim.left",
+				"title": "Neovim: Left"
+			},
+			{
+				"command": "vscode-neovim.right",
+				"title": "Neovim: Right"
+			},
+			{
+				"command": "vscode.neovim.ctrl-a",
+				"title": "Neovim: Ctrl-a"
+			},
+			{
 				"command": "vscode-neovim.ctrl-b",
 				"title": "Neovim: ctrl-b"
-			},
-			{
-				"command": "vscode-neovim.ctrl-f",
-				"title": "Neovim: ctrl-f"
-			},
-			{
-				"command": "vscode-neovim.ctrl-u",
-				"title": "Neovim: ctrl-u"
 			},
 			{
 				"command": "vscode-neovim.ctrl-d",
@@ -197,8 +245,44 @@
 				"title": "Neovim: ctrl-e"
 			},
 			{
+				"command": "vscode-neovim.ctrl-f",
+				"title": "Neovim: ctrl-f"
+			},
+			{
+				"command": "vscode-neovim.ctrl-i",
+				"title": "Neovim: ctrl-i"
+			},
+			{
+				"command": "vscode-neovim.ctrl-o",
+				"title": "Neovim: ctrl-o"
+			},
+			{
+				"command": "vscode-neovim.ctrl-r",
+				"title": "Neovim: Ctrl-r"
+			},
+			{
+				"command": "vscode-neovim.ctrl-u",
+				"title": "Neovim: ctrl-u"
+			},
+			{
+				"command": "vscode-neovim.ctrl-v",
+				"title": "Neovim: Ctrl-v"
+			},
+			{
+				"command": "vscode-neovim.ctrl-w",
+				"title": "Neovim: Ctrl-w"
+			},
+			{
+				"command": "vscode.neovim.ctrl-x",
+				"title": "Neovim: Ctrl-x"
+			},
+			{
 				"command": "vscode-neovim.ctrl-y",
 				"title": "Neovim: ctrl-y"
+			},
+			{
+				"command": "vscode-neovim.ctrl-]",
+				"title": "Neovim: ctrl-]"
 			},
 			{
 				"command": "vscode-neovim.shift-m",
@@ -211,14 +295,6 @@
 			{
 				"command": "vscode-neovim:shift-h",
 				"title": "Neovim: shift-h"
-			},
-			{
-				"command": "vscode-neovim.ctrl-r",
-				"title": "Neovim: Ctrl-r"
-			},
-			{
-				"command": "vscode-neovim.ctrl-v",
-				"title": "Neovim: Ctrl-v"
 			},
 			{
 				"command": "vscode-neovim.ctrl-a-insert",
@@ -416,18 +492,68 @@
 				"when": "editorFocus && neovim.cmdLine"
 			},
 			{
+				"command": "vscode-neovim.backspace",
+				"key": "backspace",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.shift-backspace",
+				"key": "shift+backspace",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.ctrl-backspace",
+				"key": "ctrl+backspace",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.delete",
+				"key": "delete",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.shift-delete",
+				"key": "shift+delete",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.ctrl-delete",
+				"key": "ctrl+delete",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.tab",
+				"key": "tab",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.down",
+				"key": "down",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.up",
+				"key": "up",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.left",
+				"key": "left",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.right",
+				"key": "right",
+				"when": "editorTextFocus && neovim.mode != insert"
+			},
+			{
+				"command": "vscode-neovim.ctrl-a",
+				"key": "ctrl-a",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
 				"command": "vscode-neovim.ctrl-b",
 				"key": "ctrl+b",
-				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
-			},
-			{
-				"command": "vscode-neovim.ctrl-f",
-				"key": "ctrl+f",
-				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
-			},
-			{
-				"command": "vscode-neovim.ctrl-u",
-				"key": "ctrl+u",
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
@@ -441,8 +567,58 @@
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
+				"command": "vscode-neovim.ctrl-f",
+				"key": "ctrl+f",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-i",
+				"key": "ctrl+i",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-o",
+				"key": "ctrl+o",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-r",
+				"key": "ctrl+r",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-u",
+				"key": "ctrl+u",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-v",
+				"key": "ctrl-v",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-w",
+				"key": "ctrl-w",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-x",
+				"key": "ctrl-x",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
 				"command": "vscode-neovim.ctrl-y",
 				"key": "ctrl+y",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-z",
+				"key": "ctrl-z",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-]",
+				"key": "ctrl+]",
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
@@ -459,16 +635,6 @@
 				"command": "vscode-neovim.shift-l",
 				"key": "shift+l",
 				"when": "editorTextFocus && neovim.mode != insert"
-			},
-			{
-				"command": "vscode-neovim.ctrl-r",
-				"key": "ctrl+r",
-				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
-			},
-			{
-				"command": "vscode-neovim.ctrl-v",
-				"key": "ctrl-v",
-				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
 				"command": "deleteAllLeft",

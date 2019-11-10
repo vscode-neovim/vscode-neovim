@@ -50,12 +50,31 @@ const insertRegisterNames: string[] = [
 ];
 
 const keyMappings = {
+    "ctrl-a": "<C-a>",
     // "ctrl-b": "<C-b>",
-    // "ctrl-f": "<C-f>",
-    // "ctrl-u": "<C-u>",
     // "ctrl-d": "<C-d>",
+    // "ctrl-e": "<C-e>",
+    // "ctrl-f": "<C-f>",
+    "ctrl-i": "<C-i>",
+    "ctrl-o": "<C-o>",
     "ctrl-r": "<C-r>",
+    // "ctrl-u": "<C-u>",
     "ctrl-v": "<C-v>",
+    "ctrl-w": "<C-w>",
+    "ctrl-x": "<C-x>",
+    "ctrl-y": "<C-y>",
+    "ctrl-]": "<C-]>",
+    backspace: "<BS>",
+    "shift-backspace": "<S-BS>",
+    "ctrl-backspace": "<C-BS>",
+    delete: "<Del>",
+    "shift-delete": "<S-Del>",
+    "ctrl-delete": "<C-Del>",
+    tab: "<Tab>",
+    down: "<Down>",
+    up: "<Up>",
+    left: "<Left>",
+    right: "<Right>",
 };
 
 export class CommandsController implements vscode.Disposable {

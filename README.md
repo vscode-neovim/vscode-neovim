@@ -71,6 +71,29 @@ Key | Desc | Status
 ```CTRL-]``` | Trigger abbreviation, without inserting a character | Not supported
 ```Insert``` | Toggle between Insert and Replace mode | Not supported
 
+## Normal mode control keys
+
+Enabled by ```useCtrlKeysForNormalMode = true``` (default true)
+
+Refer to vim manual to get help what they're doing
+
+* CTRL-a
+* CTRL-b
+* CTRL-c
+* CTRL-d
+* CTRL-e
+* CTRL-f
+* CTRL-i
+* CTRL-o
+* CTRL-r
+* CTRL-u
+* CTRL-v
+* CTRL-w
+* CTRL-x
+* CTRL-y
+* CTRL-]
+
+Other control keys are not being sent
 
 
 ## Vim-easymotion
