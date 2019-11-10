@@ -95,6 +95,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private bufferIdToUri: Map<number, string> = new Map();
 
     /**
+     * Current active buffer in neovim
+     */
+    private currentNeovimBuffer?: NeovimBuffer;
+
+    /**
      * Skip buffer update from neovim with specified tick
      */
     private skipBufferTickUpdate: Map<number, number> = new Map();
@@ -302,6 +307,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (typeof buf === "number") {
             // 0 is error
         } else {
+            this.currentNeovimBuffer = buf;
             this.managedBufferIds.add(buf.id);
             const eol = e.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
             const lines = e.getText().split(eol);
@@ -492,6 +498,9 @@ export class NVIMPluginController implements vscode.Disposable {
             await this.client.command(`bd${buf.id}`);
             this.bufferIdToUri.delete(buf.id);
             this.managedBufferIds.delete(buf.id);
+            if (this.currentNeovimBuffer === buf) {
+                this.currentNeovimBuffer = undefined;
+            }
         }
         this.bufferChangesInInsertMode.delete(uri);
         this.uriToBuffer.delete(uri);
@@ -511,6 +520,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (buf) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await this.client.request("nvim_win_set_buf", [0, buf]);
+            this.currentNeovimBuffer = buf;
             // this.client.buffer = buf as any;
         } else if (e) {
             // vscode may open documents which are not visible (WTF?), but we're ingoring them in onOpenTextDocument
@@ -524,6 +534,7 @@ export class NVIMPluginController implements vscode.Disposable {
             const cursor = e.selection.active;
             const visible = e.visibleRanges[0];
             const cursorScreenRow = cursor.line - visible.start.line;
+            await this.updateNeovimHeight(visible.end.line - visible.start.line);
             await this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
             // set buffer tab related options
             await this.setBufferTabOptions(e);
@@ -549,15 +560,8 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         // const cursor = e.textEditor.selection.active;
 
-        if (
-            prevVisibleLines.lines === currentVisibleLines ||
-            prevVisibleLines.lines === currentVisibleLines + 1 ||
-            prevVisibleLines.lines === currentVisibleLines - 1
-        ) {
-            const cursor = e.textEditor.selection.active;
-            if (visibleRange.contains(cursor)) {
-                this.commitScrolling();
-            }
+        if (prevVisibleLines.lines === currentVisibleLines) {
+            this.commitScrolling();
             // scrolling likely
             /*const diff = Math.abs(visibleRange.start.line - cursor.line);
             if (cursor.line > visibleRange.end.line && diff <= 5) {
@@ -580,6 +584,8 @@ export class NVIMPluginController implements vscode.Disposable {
                 ];
             }*/
             // this.commitScrolling();
+        } else {
+            this.updateNeovimHeight(currentVisibleLines);
         }
     };
 
@@ -592,9 +598,14 @@ export class NVIMPluginController implements vscode.Disposable {
             const visibleRange = e.visibleRanges[0];
             const cursor = e.selection.active;
             const cursorScreenRow = cursor.line - visibleRange.start.line;
+            const uri = e.document.uri.toString();
+            const buf = this.uriToBuffer.get(uri);
+            if (!buf || buf !== this.currentNeovimBuffer) {
+                return;
+            }
             this.alignScreenRowInNeovim(cursorScreenRow);
         },
-        100,
+        1000,
         { leading: false },
     );
 
@@ -638,7 +649,14 @@ export class NVIMPluginController implements vscode.Disposable {
             shouldUpdateNeovimCursor = true;
         }
         if (shouldUpdateNeovimCursor) {
-            const cursorScreenRow = cursor.line - visibleRange.start.line;
+            // when jumping to definition cursor line is new and visible range is old, we'll align neovim screen row after scroll
+            const cursorScreenRow = visibleRange.contains(cursor) ? cursor.line - visibleRange.start.line : undefined;
+            // when navigating to different file the onChangeSelection may come before onChangedTextEditor, so make sure we won't set cursor in the wrong buffer
+            const uri = e.textEditor.document.uri.toString();
+            const buf = this.uriToBuffer.get(uri);
+            if (!buf || buf !== this.currentNeovimBuffer) {
+                return;
+            }
             this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
         }
         // Kind may be undefined when:
@@ -1186,6 +1204,10 @@ export class NVIMPluginController implements vscode.Disposable {
             keys = diff > 1 ? `${diff}<C-y>` : "<C-y>";
         }
         await this.client.input(keys);
+    };
+
+    private updateNeovimHeight = async (height: number): Promise<void> => {
+        await this.client.request("nvim_win_set_height", [0, height + 2]);
     };
 
     /**
