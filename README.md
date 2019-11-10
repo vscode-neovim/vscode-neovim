@@ -1,4 +1,6 @@
-# vscode-neovim
+# Neo Vim
+
+Neovim integration for Visual Studio Code
 
 # Disclaimer
 
