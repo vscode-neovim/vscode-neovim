@@ -573,7 +573,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         // const cursor = e.textEditor.selection.active;
 
-        if (prevVisibleLines.lines === currentVisibleLines) {
+        if (prevVisibleLines.lines === currentVisibleLines && !this.isInsertMode) {
             this.commitScrolling();
             // scrolling likely
             /*const diff = Math.abs(visibleRange.start.line - cursor.line);
@@ -616,7 +616,9 @@ export class NVIMPluginController implements vscode.Disposable {
             if (!buf || buf !== this.currentNeovimBuffer) {
                 return;
             }
-            this.alignScreenRowInNeovim(cursorScreenRow);
+            if (!this.isInsertMode) {
+                this.alignScreenRowInNeovim(cursorScreenRow);
+            }
         },
         1000,
         { leading: false },
@@ -1464,6 +1466,12 @@ export class NVIMPluginController implements vscode.Disposable {
                 ]);
             }
             await this.client.callAtomic(requests);
+            if (vscode.window.activeTextEditor) {
+                const cursorScreenRow =
+                    vscode.window.activeTextEditor.selection.active.line -
+                    vscode.window.activeTextEditor.visibleRanges[0].start.line;
+                await this.alignScreenRowInNeovim(cursorScreenRow);
+            }
         }
         await this.client.input("<Esc>");
     };

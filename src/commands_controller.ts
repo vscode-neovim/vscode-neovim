@@ -62,7 +62,7 @@ const keyMappings = {
     "ctrl-v": "<C-v>",
     "ctrl-w": "<C-w>",
     "ctrl-x": "<C-x>",
-    "ctrl-y": "<C-y>",
+    // "ctrl-y": "<C-y>",
     "ctrl-]": "<C-]>",
     backspace: "<BS>",
     "shift-backspace": "<S-BS>",
