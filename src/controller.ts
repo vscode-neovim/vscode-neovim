@@ -1061,7 +1061,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             }
                             for (let i = 0; i < (repeat || 1); i++) {
                                 const col = colStart + cellIdx;
-                                const highlightGroup = this.documentHighlightProvider.getHighlightGroup(cellHlId);
+                                const highlightGroup = this.documentHighlightProvider.getHighlightGroupName(cellHlId);
                                 if (!currentScreenHighlights[finalRow]) {
                                     currentScreenHighlights[finalRow] = {};
                                 }

@@ -155,6 +155,28 @@ export class HighlightProvider {
     private configuration: HighlightConfiguration;
 
     private specialColor = "orange";
+    /**
+     * Set of ignored HL group ids. They can still be used with force flag (mainly for statusbar color decorations)
+     */
+    private ignoredGroupIds: Set<number> = new Set();
+    /**
+     * List of always ignored groups
+     */
+    private alwaysIgnoreGroups = [
+        "Normal",
+        "NormalNC",
+        "NormalFloat",
+        "NonText",
+        "SpecialKey",
+        "TermCursor",
+        "TermCursorNC",
+        "Cursor",
+        "lCursor",
+        "VisualNC",
+        "Visual",
+        "CursorLineNr",
+        "LineNr",
+    ];
 
     public constructor(conf: HighlightConfiguration) {
         this.configuration = conf;
@@ -178,7 +200,7 @@ export class HighlightProvider {
                 i.startsWith("^") || i.endsWith("$") ? new RegExp(i).test(name) : false,
             )
         ) {
-            return;
+            this.ignoredGroupIds.add(id);
         }
         this.highlightIdToGroupName.set(id, name);
         if (this.highlighGroupToDecorator.has(name)) {
@@ -191,8 +213,15 @@ export class HighlightProvider {
         }
     }
 
-    public getHighlightGroup(id: number): string | undefined {
-        return this.highlightIdToGroupName.get(id);
+    public getHighlightGroupName(id: number, force = false): string | undefined {
+        if (this.ignoredGroupIds.has(id) && !force) {
+            return;
+        }
+        const name = this.highlightIdToGroupName.get(id);
+        if (name && this.alwaysIgnoreGroups.includes(name)) {
+            return;
+        }
+        return name;
     }
 
     public getDecoratorForHighlightGroup(name: string): TextEditorDecorationType | undefined {
