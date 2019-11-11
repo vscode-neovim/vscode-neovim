@@ -20,5 +20,6 @@
 		"node_modules",
 		".vscode-test",
 		"test_fixtures",
-	]
+	],
+	"include": ["src/**/*"]
 }

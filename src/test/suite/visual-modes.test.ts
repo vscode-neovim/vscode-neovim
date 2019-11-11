@@ -11,7 +11,7 @@ import {
     sendEscapeKey,
 } from "../utils";
 
-describe.only("Visual modes test", () => {
+describe("Visual modes test", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
@@ -153,10 +153,10 @@ describe.only("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("V");
+        await sendVSCodeKeys("V", 1000);
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 5, 1, 0), new vscode.Selection(1, 14, 1, 5)],
+                vsCodeSelections: [new vscode.Selection(1, 0, 1, 5), new vscode.Selection(1, 14, 1, 5)],
             },
             client,
         );
@@ -165,7 +165,7 @@ describe.only("Visual modes test", () => {
         await sendVSCodeKeys("w");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 10, 1, 0), new vscode.Selection(1, 14, 1, 10)],
+                vsCodeSelections: [new vscode.Selection(1, 0, 1, 10), new vscode.Selection(1, 14, 1, 10)],
             },
             client,
         );
@@ -174,7 +174,7 @@ describe.only("Visual modes test", () => {
             {
                 vsCodeSelections: [
                     new vscode.Selection(1, 14, 1, 0),
-                    new vscode.Selection(2, 5, 2, 0),
+                    new vscode.Selection(2, 0, 2, 5),
                     new vscode.Selection(2, 14, 2, 5),
                 ],
             },
@@ -185,7 +185,7 @@ describe.only("Visual modes test", () => {
         await assertContent(
             {
                 vsCodeSelections: [
-                    new vscode.Selection(0, 5, 0, 0),
+                    new vscode.Selection(0, 0, 0, 5),
                     new vscode.Selection(0, 14, 0, 5),
                     new vscode.Selection(1, 14, 1, 0),
                 ],
@@ -219,7 +219,7 @@ describe.only("Visual modes test", () => {
         );
 
         await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
-        await wait(1500);
+        await wait(1000);
         await assertContent(
             {
                 vsCodeSelections: [new vscode.Selection(1, 7, 1, 6)],
@@ -284,6 +284,144 @@ describe.only("Visual modes test", () => {
             {
                 vsCodeSelections: [new vscode.Selection(0, 0, 0, 0)],
                 content: ["bc", "bc", "blah3 abc"],
+            },
+            client,
+        );
+    });
+
+    it("Visual line mode - multi cursor editing", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: [" blah1 abc", "  blah2 abc", "blah3 abc"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("V", 1000);
+        await sendVSCodeKeys("jj", 1000);
+
+        await assertContent(
+            {
+                vsCodeSelections: [
+                    new vscode.Selection(0, 0, 0, 1),
+                    new vscode.Selection(0, 10, 0, 1),
+                    new vscode.Selection(1, 0, 1, 2),
+                    new vscode.Selection(1, 11, 1, 2),
+                    new vscode.Selection(2, 9, 2, 0),
+                ],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("I");
+        await assertContent(
+            {
+                mode: "i",
+                vsCodeSelections: [
+                    new vscode.Selection(0, 1, 0, 1),
+                    new vscode.Selection(1, 2, 1, 2),
+                    new vscode.Selection(2, 0, 2, 0),
+                ],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("test");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                mode: "n",
+                content: [" testblah1 abc", "  testblah2 abc", "testblah3 abc"],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("V", 1000);
+        await sendVSCodeKeys("jj", 1000);
+        await sendVSCodeKeys("A");
+
+        await assertContent(
+            {
+                mode: "i",
+                vsCodeSelections: [
+                    new vscode.Selection(0, 14, 0, 14),
+                    new vscode.Selection(1, 15, 1, 15),
+                    new vscode.Selection(2, 13, 2, 13),
+                ],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("test");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                mode: "n",
+                content: [" testblah1 abctest", "  testblah2 abctest", "testblah3 abctest"],
+            },
+            client,
+        );
+    });
+
+    it("Visual block mode - multi cursor editing", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("jw");
+        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await wait(1000);
+        await sendVSCodeKeys("lk");
+
+        await assertContent(
+            {
+                vsCodeSelections: [
+                    new vscode.Selection(0, 6, 0, 7),
+                    new vscode.Selection(0, 8, 0, 7),
+                    new vscode.Selection(1, 6, 1, 7),
+                    new vscode.Selection(1, 8, 1, 7),
+                ],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("I");
+        await assertContent(
+            {
+                mode: "i",
+                vsCodeSelections: [new vscode.Selection(0, 7, 0, 7), new vscode.Selection(1, 7, 1, 7)],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("test");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                mode: "n",
+                content: ["blah1 atestbc", "blah2 atestbc", "blah3 abc"],
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await wait(1000);
+        await sendVSCodeKeys("lj");
+        await sendVSCodeKeys("A");
+        await assertContent(
+            {
+                mode: "i",
+                vsCodeSelections: [new vscode.Selection(0, 12, 0, 12), new vscode.Selection(1, 12, 1, 12)],
+            },
+            client,
+        );
+        await sendVSCodeKeys("test");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                mode: "n",
+                content: ["blah1 atestbtestc", "blah2 atestbtestc", "blah3 abc"],
             },
             client,
         );

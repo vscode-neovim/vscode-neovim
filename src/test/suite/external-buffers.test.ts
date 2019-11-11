@@ -32,14 +32,14 @@ describe("Neovim external buffers", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys(":help");
+        await sendVSCodeKeys(":help", 1000);
         await sendVSCodeKeys("<CR>", 2000);
 
         assert.equal(vscode.workspace.textDocuments.length, 2);
         const text = vscode.window.activeTextEditor!.document.getText();
         assert.ok(text.indexOf("main help file") !== -1);
 
-        await sendVSCodeKeys(":help options");
+        await sendVSCodeKeys(":help options", 1000);
         await sendVSCodeKeys("<CR>", 2000);
 
         assert.equal(vscode.workspace.textDocuments.length, 3);

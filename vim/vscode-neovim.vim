@@ -56,6 +56,23 @@ function! VSCodeClearUndo()
     unlet oldlevels
 endfunction
 
+function! VSCodeAppendOrInsertTextInVisualMode(append)
+    let m = mode()
+    if m == "V" || m == "\<C-v>"
+        " Move cursors to correct positions
+        call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "visual-edit", a:append, m)
+        call wait(20, 0)
+        if a:append
+            let key = "a"
+        else
+            let key = "i"
+        endif
+        " Start insert mode. Normally vscode will clean multiple selections when chaning modes,
+        " but notified it earlier
+        call feedkeys("\<Esc>" . key, 'nt')
+    endif
+endfunction
+
 function! VSCodeNotifyBlockingAndCursorPositions()
     let cursor = nvim_win_get_cursor(0)
     let winline = winline()
@@ -164,3 +181,7 @@ xnoremap <expr> zb VSCodeReveal("bottom", 0)
 nnoremap <expr> <C-o> VSCodeCall("workbench.action.navigateBack")
 nnoremap <expr> <C-i> VSCodeCall("workbench.action.navigateForward")
 nnoremap <expr> <Tab> VSCodeCall("workbench.action.navigateForward")
+
+" Multiple cursors support
+xnoremap <expr> A VSCodeAppendOrInsertTextInVisualMode(1)
+xnoremap <expr> I VSCodeAppendOrInsertTextInVisualMode(0)
