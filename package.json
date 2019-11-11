@@ -4,7 +4,7 @@
 	"description": "Almost complete Vim emulation by using Neovim",
 	"publisher": "asvetliakov",
 	"extensionKind": "ui",
-	"version": "0.0.17",
+	"version": "0.0.18",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/asvetliakov/vscode-neovim"
