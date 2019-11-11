@@ -1528,7 +1528,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 const [vscodeCommand, ...commandArgs] = eventArgs;
                 const res = await this.runVSCodeCommand(vscodeCommand, ...commandArgs);
                 // slightly delay sending response. Seems awaiting executeCommand doesn't garantue it was done
-                await new Promise(res => setTimeout(res, 20));
+                // await new Promise(res => setTimeout(res, 20));
                 result = res;
             } else if (eventName === "vscode-range-command") {
                 const [vscodeCommand, line1, line2, ...commandArgs] = eventArgs;
