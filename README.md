@@ -28,7 +28,6 @@ Neovim 0.4.2 or greater
 * Multiple vscode cursors work in the insert mode.
 * O, o keys mapped to vscode ```editor.action.insertLineBefore/insertLineAfter``` command thus dont support count prefix
 * =, == are mapped to ```editor.action.formatSelection```
-* Visual modes don't produce real vscode selections right now
 * After deleting some text in visual mode the cursor position may be slightly different than in vim
 * It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
 * Scrolling is done by VSCode side. ```<C-d>/<C-u>/etc...``` are slighly different

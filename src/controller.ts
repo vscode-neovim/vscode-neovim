@@ -68,29 +68,29 @@ const NVIM_WIN_WIDTH = 1000;
 
 export class NVIMPluginController implements vscode.Disposable {
     private isInsertMode = false;
+    /**
+     * Current vim mode
+     */
+    private currentModeName = "";
 
     private nvimProc: ChildProcess;
     private client: NeovimClient;
 
     private disposables: vscode.Disposable[] = [];
     private typeHandlerDisplose?: vscode.Disposable;
-
     /**
      * Enable visual mode selection by mouse
      */
     private mouseSelectionEnabled = false;
-
     /**
      * All buffers ids originated from vscode
      */
     private managedBufferIds: Set<number> = new Set();
-
     /**
      * Map of pending buffers which should become managed by vscode buffers. These are usually coming from jumplist
      * Since vim already created buffer for it, we must reuse it instead of creating new one
      */
     private pendingBuffers: Map<string, number> = new Map();
-
     /**
      * Vscode uri string -> buffer mapping
      */
@@ -99,27 +99,22 @@ export class NVIMPluginController implements vscode.Disposable {
      * Buffer id -> vscode uri mapping
      */
     private bufferIdToUri: Map<number, string> = new Map();
-
     /**
      * Current active buffer in neovim
      */
     private currentNeovimBuffer?: NeovimBuffer;
-
     /**
      * Skip buffer update from neovim with specified tick
      */
     private skipBufferTickUpdate: Map<number, number> = new Map();
-
     /**
      * Track last changed version. Used to skip neovim update when in insert mode
      */
     private documentLastChangedVersion: Map<string, number> = new Map();
-
     /**
      * Tracks changes in insert mode. We can send them to neovim immediately but this will break undo stack
      */
     private bufferChangesInInsertMode: Map<string, Array<[string, VimValue[]]>> = new Map();
-
     /**
      * Vscode doesn't allow to apply multiple edits to the save document without awaiting previous reuslt.
      * So we'll accumulate neovim buffer updates here, then apply
@@ -159,10 +154,6 @@ export class NVIMPluginController implements vscode.Disposable {
      * Vim modes
      */
     private vimModes: Map<string, CursorMode | OtherMode> = new Map();
-    /**
-     * Current vim mode
-     */
-    private currentModeName = "";
     private documentHighlightProvider: HighlightProvider;
 
     private editorVisibleLines: WeakMap<vscode.TextEditor, { lines: number; topLine: number }> = new WeakMap();
@@ -1098,6 +1089,7 @@ export class NVIMPluginController implements vscode.Disposable {
         highlightUpdates: RedrawHighlightsUpdates,
         acceptPrompt: boolean,
     ): Promise<void> => {
+        const prevModeName = this.currentModeName;
         if (newModeName) {
             this.handleModeChange(newModeName);
         }
@@ -1106,16 +1098,28 @@ export class NVIMPluginController implements vscode.Disposable {
             // we need to know if current mode is blocking otherwise nvim_win_get_cursor/nvim_call_function will stuck until unblock
             const mode = await this.client.mode;
             if (!this.nvimIsCmdLine && !mode.blocking) {
-                const [realLine1based, realCol] = await this.client.request("nvim_win_get_cursor", [0]);
+                const requests: [string, unknown[]][] = [["nvim_win_get_cursor", [0]]];
+                if (mode.mode === "v" || mode.mode === "V" || mode.mode.charCodeAt(0) === 22) {
+                    requests.push(["nvim_call_function", ["getpos", ["v"]]]);
+                }
+                const [[[realLine1Based, realCol], visualOrCursorPos1Based]] = await this.client.callAtomic(requests);
+                // const [realLine1based, realCol] = await this.client.request("nvim_win_get_cursor", [0]);
                 // const response = await this.client.callAtomic([
                 //     ["nvim_win_get_cursor", [0]],
                 //     ["nvim_call_function", ["winline", []]],
                 // ]);
                 // const [[[realLine1based, realCol], screenRow1based]] = response;
                 // currentScreenRow = screenRow1based - 1;
-                const newCursorLine = realLine1based - 1;
+                const newCursorLine = realLine1Based - 1;
                 const newCursorCol = realCol;
-                this.updateCursorPosInActiveEditor(newCursorLine, newCursorCol);
+                this.updateCursorPosInActiveEditor(
+                    newCursorLine,
+                    newCursorCol,
+                    mode.mode,
+                    visualOrCursorPos1Based,
+                    // force update cursor to clear current selections when going off from the visual modes
+                    prevModeName === "visual" && newModeName !== "visual",
+                );
             }
         }
         if (applyHighlights) {
@@ -1248,10 +1252,20 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.request("nvim_win_set_height", [0, height]);
     };
 
+    private isVisualMode(modeShortName: string): boolean {
+        return modeShortName === "v" || modeShortName === "V" || modeShortName.charCodeAt(0) === 22;
+    }
+
     /**
      * Update cursor in active editor. Coords are zero based
      */
-    private updateCursorPosInActiveEditor = (newLine: number, newCol: number): void => {
+    private updateCursorPosInActiveEditor = (
+        newLine: number,
+        newCol: number,
+        mode: string,
+        visualStart?: [number, number, number, number],
+        forceUpdate = false,
+    ): void => {
         // if (this.isInsertMode) {
         // return;
         // }
@@ -1262,13 +1276,80 @@ export class NVIMPluginController implements vscode.Disposable {
         this.nvimRealLinePosition = newLine;
         this.nvimRealColPosition = newCol;
         const currentCursor = editor.selections[0].active;
-        if (currentCursor.line === newLine && currentCursor.character === newCol) {
+        if (
+            currentCursor.line === newLine &&
+            currentCursor.character === newCol &&
+            !this.isVisualMode(mode) &&
+            !forceUpdate
+        ) {
             return;
         }
         const visibleRange = editor.visibleRanges[0];
-        const newCursor = new vscode.Selection(newLine, newCol, newLine, newCol);
-        // revealing is performed in onChangeSelection()
-        editor.selections = [newCursor];
+        let newCursor = new vscode.Selection(newLine, newCol, newLine, newCol);
+        if (this.isVisualMode(mode) && Array.isArray(visualStart)) {
+            // visual/visual line/visual block (char code = 22) modes
+            // visual start pos is 1.1 based
+            const visualStartLine = visualStart[1] - 1;
+            const visualStartChar = visualStart[2] - 1;
+            if (mode === "v") {
+                // vscode selection is differ than vim selection: in vim the character is selected under the block cursor
+                // but in vscode it's not. workaround it by creating second selection with newCol +- 1
+                if (newCol >= visualStartChar) {
+                    newCursor = new vscode.Selection(visualStartLine, visualStartChar, newLine, newCol);
+                    editor.selections = [newCursor, new vscode.Selection(newLine, newCol + 1, newLine, newCol)];
+                } else {
+                    // backward selection - move anchor to next character
+                    newCursor = new vscode.Selection(visualStartLine, visualStartChar + 1, newLine, newCol);
+                    editor.selections = [newCursor];
+                }
+            } else if (mode === "V") {
+                // for visual line mode we add each selection (with own cursor) for own line, the line with the cursor is broke by
+                // two selections to simulate moving cursor while in visual line mode
+                // for visual line we put cursor at the start, for visual block at the direction
+                const selections: vscode.Selection[] = [];
+                const lineStart = visualStartLine <= newLine ? visualStartLine : newLine;
+                const lineEnd = visualStartLine > newLine ? visualStartLine : newLine;
+                for (let line = lineStart; line <= lineEnd; line++) {
+                    if (line === newLine) {
+                        if (newCol === 0) {
+                            newCursor = new vscode.Selection(line, 99999, line, 0);
+                            selections.push(newCursor);
+                        } else {
+                            newCursor = new vscode.Selection(line, 99999, line, newCol);
+                            selections.push(new vscode.Selection(line, newCol, line, 0), newCursor);
+                        }
+                    } else {
+                        selections.push(new vscode.Selection(line, 99999, line, 0));
+                    }
+                }
+                editor.selections = selections;
+            } else {
+                // visual block mode
+                const selections: vscode.Selection[] = [];
+                const lineStart = visualStartLine <= newLine ? visualStartLine : newLine;
+                const lineEnd = visualStartLine > newLine ? visualStartLine : newLine;
+                for (let line = lineStart; line <= lineEnd; line++) {
+                    // do similar trick as with visual char mode - produce two selections for forward selection
+                    // and increase anchor for backward selection
+                    const lineSelections: vscode.Selection[] = [];
+                    if (newCol >= visualStartChar) {
+                        lineSelections.push(
+                            new vscode.Selection(line, visualStartChar, line, newCol),
+                            new vscode.Selection(line, newCol + 1, line, newCol),
+                        );
+                    } else {
+                        lineSelections.push(new vscode.Selection(line, visualStartChar + 1, line, newCol));
+                    }
+                    selections.push(...lineSelections);
+                    if (line === newLine) {
+                        newCursor = lineSelections[0];
+                    }
+                }
+                editor.selections = selections;
+            }
+        } else {
+            editor.selections = [newCursor];
+        }
 
         const visibleLines = visibleRange.end.line - visibleRange.start.line;
         if (visibleRange.contains(newCursor)) {
