@@ -484,9 +484,12 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         this.documentLines.set(uri, e.document.lineCount);
         if (this.isInsertMode) {
-            const uriChanges = this.bufferChangesInInsertMode.get(uri) || [];
+            // precreating is faster than re-setting
+            if (!this.bufferChangesInInsertMode.has(uri)) {
+                this.bufferChangesInInsertMode.set(uri, []);
+            }
+            const uriChanges = this.bufferChangesInInsertMode.get(uri)!;
             uriChanges.push(...requests);
-            this.bufferChangesInInsertMode.set(uri, uriChanges);
         } else {
             // !Note: Must be here
             // Neovim tries to preserve current active position when text is being changed by nonvim side
