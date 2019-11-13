@@ -595,4 +595,23 @@ describe("Basic editing and navigation", () => {
             client,
         );
     });
+
+    it("Doesn't produce ghost changes when inserting large chunk of text", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["a", "", "b"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("ji");
+        await sendVSCodeKeys("\n".repeat(50));
+        await sendEscapeKey(1000);
+
+        await assertContent(
+            {
+                content: ["a", ..."\n".repeat(50).split("\n"), "b"],
+            },
+            client,
+        );
+    });
 });

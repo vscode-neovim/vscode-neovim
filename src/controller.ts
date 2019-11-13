@@ -1163,7 +1163,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private alignScreenRowInNeovim = async (screenRow: number): Promise<void> => {
+    private alignScreenRowInNeovim = async (screenRow: number, onlyReturn = false): Promise<string | undefined> => {
         const screenRow1Based = await this.client.callFunction("winline");
         const nvimScreenRow0based = (screenRow1Based as number) - 1;
         if (nvimScreenRow0based === screenRow) {
@@ -1178,7 +1178,9 @@ export class NVIMPluginController implements vscode.Disposable {
             // move screenrow down
             keys = diff > 1 ? `${diff}<C-y>` : "<C-y>";
         }
-        // !Important!!! Produces ghost changes
+        if (onlyReturn) {
+            return keys;
+        }
         await this.client.input(keys);
     };
 
@@ -1616,16 +1618,23 @@ export class NVIMPluginController implements vscode.Disposable {
             requests.push(...bufLinesRequests);
         }
         if (updateCursor && vscode.window.activeTextEditor) {
-            requests.push([
-                "nvim_win_set_cursor",
+            const cursorScreenRow =
+                vscode.window.activeTextEditor.selection.active.line -
+                vscode.window.activeTextEditor.visibleRanges[0].start.line;
+            requests.push(
                 [
-                    0,
+                    "nvim_win_set_cursor",
                     [
-                        vscode.window.activeTextEditor.selection.active.line + 1,
-                        vscode.window.activeTextEditor.selection.active.character,
+                        0,
+                        [
+                            vscode.window.activeTextEditor.selection.active.line + 1,
+                            vscode.window.activeTextEditor.selection.active.character,
+                        ],
                     ],
                 ],
-            ]);
+                // should be here in atomic otherwise it will produce "ghost" changes
+                ["nvim_input", [this.alignScreenRowInNeovim(cursorScreenRow, true)]],
+            );
         }
         await this.client.callAtomic(requests);
     };
@@ -1637,12 +1646,12 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.isInsertMode) {
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
-            if (vscode.window.activeTextEditor) {
-                const cursorScreenRow =
-                    vscode.window.activeTextEditor.selection.active.line -
-                    vscode.window.activeTextEditor.visibleRanges[0].start.line;
-                await this.alignScreenRowInNeovim(cursorScreenRow);
-            }
+            // if (vscode.window.activeTextEditor) {
+            //     const cursorScreenRow =
+            //         vscode.window.activeTextEditor.selection.active.line -
+            //         vscode.window.activeTextEditor.visibleRanges[0].start.line;
+            //     await this.alignScreenRowInNeovim(cursorScreenRow);
+            // }
         }
         await this.client.input("<Esc>");
         // const buf = await this.client.buffer;
