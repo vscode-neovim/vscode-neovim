@@ -364,9 +364,10 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!buf) {
             return;
         }
-        const currChanges = this.documentChangesInInsertMode.get(uri)!;
+        const storedChanges = this.documentChangesInInsertMode.get(uri)!;
+        const localChanges: DocumentChange[] = [];
 
-        let lineDiffForNextChange = 0;
+        // !Note changes are not sorted and may come in any order
         for (const change of e.contentChanges) {
             const { range, text } = change;
             let currChange: DocumentChange | undefined;
@@ -386,7 +387,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     const changedTextByEol = text.split(eol);
                     // ignore subsequent changes on same line
                     if (changedTextByEol.length === 1) {
-                        const prevChange = currChanges.slice(-1)[0];
+                        const prevChange = storedChanges.slice(-1)[0];
                         if (
                             prevChange &&
                             prevChange.start === line &&
@@ -429,16 +430,20 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
             }
             if (currChange) {
-                // vscode may send multiple changes with overlapping ranges, e.g. line 46 grows to 46-48, line 47 grows to 48-50
-                // need to accumulate line diff from the prev change and apply it for next
-                currChange.start += lineDiffForNextChange;
-                currChange.end += lineDiffForNextChange;
-                currChange.newStart += lineDiffForNextChange;
-                currChange.newEnd += lineDiffForNextChange;
-                lineDiffForNextChange += currChange.newEnd - currChange.end;
-                currChanges.push(currChange);
+                localChanges.push(currChange);
             }
         }
+        // vscode may send multiple changes with overlapping ranges, e.g. line 46 grows to 46-48, line 47 grows to 48-50
+        // need to accumulate line diff from the prev change and apply it for next
+        let lineDiffForNextChange = 0;
+        for (const change of localChanges.sort((a, b) => (a < b ? -1 : a > b ? 1 : -1))) {
+            change.start += lineDiffForNextChange;
+            change.end += lineDiffForNextChange;
+            change.newStart += lineDiffForNextChange;
+            change.newEnd += lineDiffForNextChange;
+            lineDiffForNextChange += change.newEnd - change.end;
+        }
+        storedChanges.push(...localChanges);
         if (!this.isInsertMode) {
             this.uploadDocumentChangesToNeovim();
         }
