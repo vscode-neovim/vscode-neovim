@@ -364,6 +364,9 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!buf) {
             return;
         }
+        if (!this.managedBufferIds.has(buf.id)) {
+            return;
+        }
         const storedChanges = this.documentChangesInInsertMode.get(uri)!;
         const localChanges: DocumentChange[] = [];
 
