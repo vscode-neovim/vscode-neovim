@@ -513,9 +513,6 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!e.visibleRanges[0]) {
             return;
         }
-        if (this.isInsertMode) {
-            return;
-        }
         const visibleRange = e.visibleRanges[0];
         const currentVisibleLines = visibleRange.end.line - visibleRange.start.line;
         const prevVisibleLines = this.editorVisibleLines.get(e.textEditor) || { lines: 0, topLine: 0 };
@@ -1168,35 +1165,18 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private alignScreenRowInNeovim = async (screenRow: number, onlyReturn = false): Promise<string | undefined> => {
-        const screenRow1Based = await this.client.callFunction("winline");
-        const nvimScreenRow0based = (screenRow1Based as number) - 1;
-        if (nvimScreenRow0based === screenRow) {
-            return;
-        }
-        const diff = Math.abs(nvimScreenRow0based - screenRow);
-        let keys = "";
-        if (screenRow - nvimScreenRow0based < 0) {
-            // move screenrow top
-            keys = diff > 1 ? `${diff}<C-e>` : "<C-e>";
-        } else {
-            // move screenrow down
-            keys = diff > 1 ? `${diff}<C-y>` : "<C-y>";
-        }
-        if (onlyReturn) {
-            return keys;
-        }
-        await this.client.input(keys);
+    private alignScreenRowInNeovim = async (screenRow: number): Promise<void> => {
+        await this.client.callFunction("VSCodeAlignScreenRow", [screenRow + 1]);
     };
 
-    private updateNeovimHeight = async (height: number): Promise<void> => {
-        if (height < 10) {
-            height = 10;
-        } else {
-            // add additional height to compenstate statusline/cmdline
-            height += 2;
-        }
-        await this.client.request("nvim_win_set_height", [0, height]);
+    private updateNeovimHeight = async (_height: number): Promise<void> => {
+        // if (height < 10) {
+        //     height = 10;
+        // } else {
+        //     // add additional height to compenstate statusline/cmdline
+        //     height += 2;
+        // }
+        // await this.client.request("nvim_win_set_height", [0, height]);
     };
 
     private isVisualMode(modeShortName: string): boolean {
@@ -1637,8 +1617,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         ],
                     ],
                 ],
-                // should be here in atomic otherwise it will produce "ghost" changes
-                ["nvim_input", [this.alignScreenRowInNeovim(cursorScreenRow, true)]],
+                ["nvim_call_function", ["VSCodeAlignScreenRow", [cursorScreenRow + 1]]],
             );
         }
         await this.client.callAtomic(requests);
@@ -1651,12 +1630,6 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.isInsertMode) {
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
-            // if (vscode.window.activeTextEditor) {
-            //     const cursorScreenRow =
-            //         vscode.window.activeTextEditor.selection.active.line -
-            //         vscode.window.activeTextEditor.visibleRanges[0].start.line;
-            //     await this.alignScreenRowInNeovim(cursorScreenRow);
-            // }
         }
         await this.client.input("<Esc>");
         // const buf = await this.client.buffer;

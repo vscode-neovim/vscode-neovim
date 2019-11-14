@@ -119,6 +119,26 @@ function! VSCodeReveal(at, resetCursor)
     call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "reveal", a:at, a:resetCursor)
 endfunction
 
+function! VSCodeAlignScreenRow(row)
+    let currentRow = winline()
+    let diff = abs(currentRow - a:row)
+    if diff > 0
+        if (a:row - currentRow) < 0
+            if diff > 1
+                silent! exe "normal! " . diff . "\<C-e>"
+            else
+                silent! exe "normal! \<C-e>"
+            endif
+        else
+            if diff > 1
+                silent! exe "normal! " . diff . "\<C-y>"
+            else
+                silent! exe "normal! \<C-y>"
+            endif
+        endif
+    endif
+endfunction
+
 function! s:vscode_commentary(...) abort
     if !a:0
         let &operatorfunc = matchstr(expand('<sfile>'), '[^. ]*$')
