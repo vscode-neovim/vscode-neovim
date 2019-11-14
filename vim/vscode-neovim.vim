@@ -173,6 +173,8 @@ nnoremap <expr> <Plug>VSCodeCommentaryLine <SID>vscode_commentary() . '_'
 
 autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufWinEnter * :call VSCodeOnBufWinEnter(expand('<afile>'), expand('<abuf>'))
+" Disable syntax highlighting since we don't need it anyway
+autocmd BufWinEnter * :syntax off
 autocmd CmdlineEnter * :call VSCodeNotifyBlockingAndCursorPositions()
 autocmd CmdlineLeave * :call VSCodeNotifyBlockingEnd()
 
