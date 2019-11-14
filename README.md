@@ -15,7 +15,7 @@ This is WIP extension. Use with caution!
 
 * Almost fully feature-complete VIM integration by utilizing neovim
 * First-class VSCode insert mode. The plugin unbounds self from ```type``` event in the insert mode, so no typing lag anymore.
-* Fully working VSCode features - autocomplete/snippets/multiple cursors/etc...
+* Fully working VSCode features - autocompletion/go to definition/snippets/multiple cursors/etc...
 
 ## Requirements
 
