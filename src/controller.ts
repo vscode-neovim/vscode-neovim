@@ -744,9 +744,9 @@ export class NVIMPluginController implements vscode.Disposable {
                 const endRangePos = 0;
 
                 // since line could be changed/deleted/etc, invalidate them in highlight provider
-                for (let line = firstLine; line <= lastLine; line++) {
-                    this.documentHighlightProvider.removeLine(uri, line);
-                }
+                // for (let line = firstLine; line <= lastLine; line++) {
+                //     this.documentHighlightProvider.removeLine(uri, line);
+                // }
                 // if (endRangeLine >= textEditor.document.lineCount) {
                 //     endRangeLine = textEditor.document.lineCount - 1;
                 //     endRangePos = textEditor.document.lineAt(endRangeLine).rangeIncludingLineBreak.end.character;
@@ -1069,17 +1069,16 @@ export class NVIMPluginController implements vscode.Disposable {
                 return;
             }
             const topVisibleLine = editor.visibleRanges[0].start.line;
-            const bottomVisibleLine = editor.visibleRanges[0].end.line;
 
             const uri = editor.document.uri.toString();
 
             // clean highlights from out-viewport range
-            for (let i = 0; i < topVisibleLine; i++) {
-                this.documentHighlightProvider.removeLine(uri, i);
-            }
-            for (let i = bottomVisibleLine + 1; i < editor.document.lineCount - 1; i++) {
-                this.documentHighlightProvider.removeLine(uri, i);
-            }
+            // for (let i = 0; i < topVisibleLine; i++) {
+            // this.documentHighlightProvider.removeLine(uri, i);
+            // }
+            // for (let i = topVisibleLine + NVIM_WIN_HEIGHT; i < editor.document.lineCount - 1; i++) {
+            // this.documentHighlightProvider.removeLine(uri, i);
+            // }
             for (const [lineId, updates] of Object.entries(highlightUpdates)) {
                 for (const [colId, group] of Object.entries(updates)) {
                     if (group === "remove") {
