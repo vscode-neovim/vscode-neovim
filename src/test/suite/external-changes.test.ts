@@ -5,7 +5,14 @@ import fs from "fs";
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
-import { attachTestNvimClient, closeNvimClient, closeAllActiveEditors, assertContent, wait } from "../utils";
+import {
+    attachTestNvimClient,
+    closeNvimClient,
+    closeAllActiveEditors,
+    assertContent,
+    wait,
+    closeActiveEditor,
+} from "../utils";
 
 describe("External changes on file", () => {
     let client: NeovimClient;
@@ -69,6 +76,8 @@ describe("External changes on file", () => {
             },
             client,
         );
+        await closeActiveEditor(true);
+        await wait();
         fs.unlinkSync(filePath);
     });
 });
