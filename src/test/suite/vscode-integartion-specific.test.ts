@@ -1,4 +1,5 @@
 import path from "path";
+import { strict as assert } from "assert";
 
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
@@ -89,9 +90,8 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
         await wait();
 
-        await setCursor(2, 1);
+        await setCursor(3, 1);
 
-        // peek definition opens another editor. make sure the cursor won't be leaked into primary editor
         await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc2.uri, new vscode.Position(2, 1));
         await wait(1500);
 
@@ -154,6 +154,31 @@ describe("VSCode integration specific stuff", () => {
             {
                 content: ["blah2"],
                 cursorStyle: "block",
+            },
+            client,
+        );
+    });
+
+    it("Cursor is ok when go to def into editor in the other pane", async () => {
+        const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
+        await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        await wait();
+
+        const doc2 = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
+        );
+        const editor2 = await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two, true);
+        await wait();
+
+        setCursor(5, 1);
+
+        await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
+        await wait(1500);
+
+        assert.ok(vscode.window.activeTextEditor === editor2);
+        await assertContent(
+            {
+                cursor: [115, 16],
             },
             client,
         );
