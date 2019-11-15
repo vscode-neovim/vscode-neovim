@@ -172,6 +172,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private nvimRealLinePosition = 0;
     private nvimRealColPosition = 0;
+    private nvimLastScreenTopLinePosition = 0;
 
     private nvimIsCmdLine = false;
 
@@ -1070,23 +1071,25 @@ export class NVIMPluginController implements vscode.Disposable {
         if (newModeName) {
             this.handleModeChange(newModeName);
         }
-        if (updateCursor) {
+        // let vimCursorLine = this.nvimRealLinePosition;
+        let vimScreenTopLine = this.nvimLastScreenTopLinePosition;
+        if (updateCursor || applyHighlights) {
             // todo: investigate if it's possible to not call nvim_win_get_cursor()/winline(). This probably will require cursor tracking (what to do when where won't be grid_scroll event?)
             // we need to know if current mode is blocking otherwise nvim_win_get_cursor/nvim_call_function will stuck until unblock
             const mode = await this.client.mode;
             if (!this.nvimIsCmdLine && !mode.blocking) {
-                const requests: [string, unknown[]][] = [["nvim_win_get_cursor", [0]]];
+                const requests: [string, unknown[]][] = [
+                    ["nvim_win_get_cursor", [0]],
+                    ["nvim_call_function", ["line", ["w0"]]],
+                ];
                 if (mode.mode === "v" || mode.mode === "V" || mode.mode.charCodeAt(0) === 22) {
                     requests.push(["nvim_call_function", ["getpos", ["v"]]]);
                 }
-                const [[[realLine1Based, realCol], visualOrCursorPos1Based]] = await this.client.callAtomic(requests);
-                // const [realLine1based, realCol] = await this.client.request("nvim_win_get_cursor", [0]);
-                // const response = await this.client.callAtomic([
-                //     ["nvim_win_get_cursor", [0]],
-                //     ["nvim_call_function", ["winline", []]],
-                // ]);
-                // const [[[realLine1based, realCol], screenRow1based]] = response;
-                // currentScreenRow = screenRow1based - 1;
+                const [
+                    [[realLine1Based, realCol], topScreenLine1Based, visualOrCursorPos1Based],
+                ] = await this.client.callAtomic(requests);
+                vimScreenTopLine = topScreenLine1Based - 1;
+                this.nvimLastScreenTopLinePosition = vimScreenTopLine;
                 const newCursorLine = realLine1Based - 1;
                 const newCursorCol = realCol;
                 this.updateCursorPosInActiveEditor(
@@ -1104,30 +1107,20 @@ export class NVIMPluginController implements vscode.Disposable {
             if (!editor) {
                 return;
             }
-            const topVisibleLine = editor.visibleRanges[0].start.line;
-
             const uri = editor.document.uri.toString();
-
-            // clean highlights from out-viewport range
-            // for (let i = 0; i < topVisibleLine; i++) {
-            // this.documentHighlightProvider.removeLine(uri, i);
-            // }
-            // for (let i = topVisibleLine + NVIM_WIN_HEIGHT; i < editor.document.lineCount - 1; i++) {
-            // this.documentHighlightProvider.removeLine(uri, i);
-            // }
             for (const [lineId, updates] of Object.entries(highlightUpdates)) {
                 for (const [colId, group] of Object.entries(updates)) {
                     if (group === "remove") {
                         this.documentHighlightProvider.remove(
                             uri,
-                            topVisibleLine + parseInt(lineId, 10),
+                            vimScreenTopLine + parseInt(lineId, 10),
                             parseInt(colId, 10),
                         );
                     } else {
                         this.documentHighlightProvider.add(
                             uri,
                             group,
-                            topVisibleLine + parseInt(lineId, 10),
+                            vimScreenTopLine + parseInt(lineId, 10),
                             parseInt(colId, 10),
                         );
                     }
