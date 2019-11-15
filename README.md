@@ -41,8 +41,8 @@ Multiple cursors work in:
 3. Visual block mode
 
 Both visual lines and visual block modes spawn multiple cursors for you. You can switch to insert mode by pressing ```I``` or ```A``` keys. The effect differs:
-* For visual line ```I``` will start insert mode on each selected line on the first non whitespace characeter and ```A``` will on the end on line
-* For visual block line ```I``` will start insert on each selected line before the cursor block and ```A``` after
+* For visual line mode ```I``` will start insert mode on each selected line on the first non whitespace characeter and ```A``` will on the end of line
+* For visual block mode ```I``` will start insert on each selected line before the cursor block and ```A``` after
 
 See gif in action:
 
