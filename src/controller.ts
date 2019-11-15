@@ -192,7 +192,10 @@ export class NVIMPluginController implements vscode.Disposable {
      * Pending cursor update. Indicates that editor should drop all cursor updates from neovim until it got the one indicated in [number, number]
      * We set it when switching the active editor
      */
-    private editorPendingCursor: WeakMap<vscode.TextEditor, [number, number, number]> = new WeakMap();
+    private editorPendingCursor: WeakMap<
+        vscode.TextEditor,
+        { line: number; col: number; screenRow: number; totalSkips: number }
+    > = new WeakMap();
 
     public constructor(
         neovimPath: string,
@@ -508,7 +511,13 @@ export class NVIMPluginController implements vscode.Disposable {
         const cursor = e!.selection.active;
         const visible = e!.visibleRanges[0];
         const cursorScreenRow = cursor.line - visible.start.line;
-        this.editorPendingCursor.set(e!, [cursor.line, cursor.character, cursorScreenRow]);
+        // this.editorPendingCursor.set(e!, [cursor.line, cursor.character, cursorScreenRow]);
+        this.editorPendingCursor.set(e!, {
+            line: cursor.line,
+            col: cursor.character,
+            screenRow: cursorScreenRow,
+            totalSkips: 0,
+        });
         // !important: need to update cursor in atomic operation
         const requests = [
             // ["nvim_call_function", ["setpos", [".", [buf.id, cursor.line + 1, cursor.character + 1, 0]]]],
@@ -547,7 +556,7 @@ export class NVIMPluginController implements vscode.Disposable {
         // const cursor = e.textEditor.selection.active;
 
         if (prevVisibleLines.lines === currentVisibleLines && !this.isInsertMode) {
-            this.commitScrolling();
+            this.commitScrolling(e.textEditor);
             // scrolling likely
             /*const diff = Math.abs(visibleRange.start.line - cursor.line);
             if (cursor.line > visibleRange.end.line && diff <= 5) {
@@ -576,9 +585,12 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private commitScrolling = throttle(
-        () => {
-            const e = vscode.window.activeTextEditor;
-            if (!e) {
+        (e: vscode.TextEditor) => {
+            // const e = vscode.window.activeTextEditor;
+            // if (!e) {
+            //     return;
+            // }
+            if (e !== vscode.window.activeTextEditor) {
                 return;
             }
             const visibleRange = e.visibleRanges[0];
@@ -1225,7 +1237,9 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         const pendingCursor = this.editorPendingCursor.get(editor);
         if (pendingCursor) {
-            if (newLine !== pendingCursor[0] || newCol !== pendingCursor[1]) {
+            // disallow skipping more than 2 cursor requests to prevent failing into some bad state. Not very elegant
+            if ((newLine !== pendingCursor.line || newCol !== pendingCursor.col) && pendingCursor.totalSkips < 2) {
+                pendingCursor.totalSkips++;
                 return;
             } else {
                 this.editorPendingCursor.delete(editor);
