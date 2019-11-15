@@ -1,4 +1,4 @@
-# Neo Vim
+# Neo Vim (VS Code Neovim)
 
 Neovim integration for Visual Studio Code
 
