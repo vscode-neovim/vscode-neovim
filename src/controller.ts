@@ -523,7 +523,7 @@ export class NVIMPluginController implements vscode.Disposable {
         const requests = [
             // ["nvim_call_function", ["setpos", [".", [buf.id, cursor.line + 1, cursor.character + 1, 0]]]],
             ["nvim_win_set_buf", [0, buf.id]],
-            // ["nvim_win_set_cursor", [0, [e!.selection.active.line + 1, e!.selection.active.character]]],
+            ["nvim_win_set_cursor", [0, [e!.selection.active.line + 1, e!.selection.active.character]]],
         ];
         await this.client.callAtomic(requests);
         // await this.client.request("nvim_win_set_buf", [0, buf]);
@@ -532,12 +532,12 @@ export class NVIMPluginController implements vscode.Disposable {
         // set correct scroll position & tab options in neovim buffer
         // reapply cursor style
         this.applyCursorStyleToEditor(e, this.currentModeName);
-        await this.updateNeovimHeightFromEditor(e, true);
         await this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
         // !imporant: seems just nvim_win_set_cursor is not enough, this fixes #30 and #33
         await this.client.callFunction("setpos", [".", [buf!.id, cursor.line + 1, cursor.character + 1, 0]]);
         // set buffer tab related options
         await this.setBufferTabOptions(e);
+        await this.updateNeovimHeightFromEditor(e, true);
     };
 
     private onChangeVisibleRange = async (e: vscode.TextEditorVisibleRangesChangeEvent): Promise<void> => {

@@ -116,10 +116,12 @@ describe("VSCode integration specific stuff", () => {
             content: "blah1",
         });
         await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        await wait();
         const doc2 = await vscode.workspace.openTextDocument({
             content: "blah2",
         });
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two);
+        await wait();
 
         await sendVSCodeKeys("i");
         await assertContent(
