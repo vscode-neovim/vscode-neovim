@@ -72,7 +72,7 @@ interface DocumentChange {
 }
 
 const NVIM_WIN_HEIGHT = 100;
-const NVIM_WIN_WIDTH = 1000;
+const NVIM_WIN_WIDTH = 500;
 
 export class NVIMPluginController implements vscode.Disposable {
     private isInsertMode = false;
