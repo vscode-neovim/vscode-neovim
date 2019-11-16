@@ -1347,6 +1347,8 @@ export class NVIMPluginController implements vscode.Disposable {
         }
 
         const visibleLines = visibleRange.end.line - visibleRange.start.line;
+        // cancel any possible pending scrolling
+        this.commitScrolling.cancel();
         if (visibleRange.contains(revealCursor)) {
             // always try to reveal even if in visible range to reveal horizontal scroll
             editor.revealRange(
