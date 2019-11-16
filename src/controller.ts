@@ -1542,7 +1542,11 @@ export class NVIMPluginController implements vscode.Disposable {
                     } else {
                         const uri = this.bufferIdToUri.get(id);
                         if (uri) {
-                            await vscode.window.showTextDocument(vscode.Uri.parse(uri));
+                            // !Important! This is messing with vscode window management: when you close the editor
+                            // !vscode will display previous one in the same pane, but neovim buffer may be different
+                            // !so active editor will switch to the wrong one
+                            // !Important: this affects vim jumplist, but we use vscode one for now
+                            // await vscode.window.showTextDocument(vscode.Uri.parse(uri));
                         }
                     }
                 } else if (command === "notify-blocking") {
