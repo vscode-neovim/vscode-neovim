@@ -2,9 +2,7 @@
 
 Neovim integration for Visual Studio Code
 
-# Disclaimer
-
-This is WIP extension. Use with caution!
+Please report any issues/suggestions to [vscode-neovim repository](https://github.com/asvetliakov/vscode-neovim)
 
 ## Installation
 
