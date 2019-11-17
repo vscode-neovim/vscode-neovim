@@ -16,9 +16,18 @@ set noautowrite
 " Disable shada session storing
 " set shada=
 
+let s:currDir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
+" Adjust rtp path
+let &runtimepath = &runtimepath . ',' . s:currDir . '/vim-altercmd'
+
+" Used to execute vscode command
 let s:vscodeCommandEventName = "vscode-command"
+" Used to execute vscode command with some range (the specified range will be selected and the command will be executed on this range)
 let s:vscodeRangeCommandEventName = "vscode-range-command"
+" Used for externsion inter-communications
 let s:vscodePluginEventName = "vscode-neovim"
+
+" RPC and global functions
 
 function! VSCodeCall(cmd, ...)
     call rpcrequest(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
@@ -36,18 +45,11 @@ function! VSCodeNotifyRange(cmd, line1, line2, ...)
     call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:000)
 endfunction
 
-function! VSCodeInsertBefore()
-    " Need to start insert mode first to prevent cursor updating
-    startinsert
-    call VSCodeCall("editor.action.insertLineBefore")
+function! VSCodeExtensionCommand(cmd, ...)
+    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
-function! VSCodeInsertAfter()
-    " Need to start insert mode first to prevent cursor updating
-    startinsert
-    call VSCodeCall("editor.action.insertLineAfter")
-endfunction
-
+" Called from extension when opening/creating new file in vscode to reset undo tree
 function! VSCodeClearUndo()
     let oldlevels = &undolevels
     set undolevels=-1
@@ -56,69 +58,7 @@ function! VSCodeClearUndo()
     unlet oldlevels
 endfunction
 
-function! VSCodeAppendOrInsertTextInVisualMode(append)
-    let m = mode()
-    if m == "V" || m == "\<C-v>"
-        " Move cursors to correct positions
-        call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "visual-edit", a:append, m)
-        call wait(20, 0)
-        if a:append
-            let key = "a"
-        else
-            let key = "i"
-        endif
-        " Start insert mode. Normally vscode will clean multiple selections when chaning modes,
-        " but notified it earlier
-        call feedkeys("\<Esc>" . key, 'nt')
-    endif
-endfunction
-
-function! VSCodeNotifyBlockingAndCursorPositions()
-    let cursor = nvim_win_get_cursor(0)
-    let winline = winline()
-    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "notify-blocking", 1, cursor, winline)
-endfunction
-
-function! VSCodeNotifyBlockingEnd()
-    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "notify-blocking", 0)
-endfunction
-
-" This is called by extension when created new buffer
-function! VSCodeOnBufWinEnter(name, id)
-    " Sometimes doesn't work, although on extensions we handle such buffers
-    let controlled = getbufvar(a:id, "vscode_controlled")
-    if !controlled
-        call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "external-buffer", a:name, a:id)
-    endif
-endfunction
-
-" Set text decorations for given ranges. Used in easymotion
-function! VSCodeSetTextDecorations(hlName, rowsCols)
-    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "text-decorations", a:hlName, a:rowsCols)
-endfunction
-
-" Used for ctrl-a insert command
-function! VSCodeGetLastInsertText()
-    let line1 = line("'[")
-    let line2 = line("']")
-    if (line1 == 0)
-        return []
-    endif
-    let lines = []
-    for i in range(line1, line2)
-        call add(lines, getline(i))
-    endfor
-    return lines
-endfunction
-
-function! VSCodeGetRegister(reg)
-    return getreg(a:reg)
-endfunction
-
-function! VSCodeReveal(at, resetCursor)
-    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, "reveal", a:at, a:resetCursor)
-endfunction
-
+" Called from extension to align screen row in neovim after scrolling
 function! VSCodeAlignScreenRow(row)
     let currentRow = winline()
     let diff = abs(currentRow - a:row)
@@ -139,71 +79,60 @@ function! VSCodeAlignScreenRow(row)
     endif
 endfunction
 
-function! s:vscode_commentary(...) abort
-    if !a:0
-        let &operatorfunc = matchstr(expand('<sfile>'), '[^. ]*$')
-        return 'g@'
-    elseif a:0 > 1
-        let [line1, line2] = [a:1, a:2]
-    else
-        let [line1, line2] = [line("'["), line("']")]
-    endif
-
-    call VSCodeCallRange("editor.action.commentLine", line1, line2)
+" Set text decorations for given ranges. Used in easymotion
+function! VSCodeSetTextDecorations(hlName, rowsCols)
+    call VSCodeExtensionCommand('text-decorations', a:hlName, a:rowsCols)
 endfunction
 
-function! s:vscode_format(...) abort
-    if !a:0
-        let &operatorfunc = matchstr(expand('<sfile>'), '[^. ]*$')
-        return 'g@'
-    elseif a:0 > 1
-        let [line1, line2] = [a:1, a:2]
-    else
-        let [line1, line2] = [line("'["), line("']")]
+" Used for ctrl-a insert keybinding
+function! VSCodeGetLastInsertText()
+    let line1 = line("'[")
+    let line2 = line("']")
+    if (line1 == 0)
+        return []
     endif
-
-    call VSCodeCallRange("editor.action.formatSelection", line1, line2)
+    let lines = []
+    for i in range(line1, line2)
+        call add(lines, getline(i))
+    endfor
+    return lines
 endfunction
 
-command! -range -bar VSCodeCommentary call s:vscode_commentary(<line1>, <line2>)
+" Used for ctrl-r [reg] insert keybindings
+function! VSCodeGetRegister(reg)
+    return getreg(a:reg)
+endfunction
 
-xnoremap <expr> <Plug>VSCodeCommentary <SID>vscode_commentary()
-nnoremap <expr> <Plug>VSCodeCommentary <SID>vscode_commentary()
-nnoremap <expr> <Plug>VSCodeCommentaryLine <SID>vscode_commentary() . '_'
+function! s:notifyBlockingModeStart()
+    let cursor = nvim_win_get_cursor(0)
+    let winline = winline()
+    call VSCodeExtensionCommand('notify-blocking', 1, cursor, winline)
+endfunction
+
+function! s:notifyBlockingModeEnd()
+    call VSCodeExtensionCommand('notify-blocking', 0)
+endfunction
+
+" This is called by extension when created new buffer
+function! s:onBufEnter(name, id)
+    " Sometimes doesn't work, although on extensions we handle such buffers
+    let controlled = getbufvar(a:id, "vscode_controlled")
+    if !controlled
+        call VSCodeExtensionCommand('external-buffer', a:name, a:id)
+    endif
+endfunction
+
+
+" Load altercmd first
+execute 'source ' . s:currDir . '/vim-altercmd/plugin/altercmd.vim'
+execute 'source ' . s:currDir . '/vscode-insert.vim'
+execute 'source ' . s:currDir . '/vscode-scrolling.vim'
+execute 'source ' . s:currDir . '/vscode-jumplist.vim'
+execute 'source ' . s:currDir . '/vscode-code-actions.vim'
 
 autocmd BufWinEnter,WinNew,WinEnter * :only
-autocmd BufWinEnter * :call VSCodeOnBufWinEnter(expand('<afile>'), expand('<abuf>'))
+autocmd BufWinEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 " Disable syntax highlighting since we don't need it anyway
 autocmd BufWinEnter * :syntax off
-autocmd CmdlineEnter * :call VSCodeNotifyBlockingAndCursorPositions()
-autocmd CmdlineLeave * :call VSCodeNotifyBlockingEnd()
-
-nnoremap <silent> O :call VSCodeInsertBefore()<CR>
-nnoremap <silent> o :call VSCodeInsertAfter()<CR>
-
-" Bind format to vscode format selection
-xnoremap <expr> = <SID>vscode_format()
-nnoremap <expr> = <SID>vscode_format()
-nnoremap <expr> == <SID>vscode_format() . '_'
-
-nnoremap <expr> z<CR> VSCodeReveal("top", 1)
-xnoremap <expr> z<CR> VSCodeReveal("top", 1)
-nnoremap <expr> zt VSCodeReveal("top", 0)
-xnoremap <expr> zt VSCodeReveal("top", 0)
-nnoremap <expr> z. VSCodeReveal("center", 1)
-xnoremap <expr> z. VSCodeReveal("center", 1)
-nnoremap <expr> zz VSCodeReveal("center", 0)
-xnoremap <expr> zz VSCodeReveal("center", 0)
-nnoremap <expr> z- VSCodeReveal("bottom", 1)
-xnoremap <expr> z- VSCodeReveal("bottom", 1)
-nnoremap <expr> zb VSCodeReveal("bottom", 0)
-xnoremap <expr> zb VSCodeReveal("bottom", 0)
-
-" Override jumplist to vscode jumplist for now
-nnoremap <expr> <C-o> VSCodeCall("workbench.action.navigateBack")
-nnoremap <expr> <C-i> VSCodeCall("workbench.action.navigateForward")
-nnoremap <expr> <Tab> VSCodeCall("workbench.action.navigateForward")
-
-" Multiple cursors support
-xnoremap <expr> A VSCodeAppendOrInsertTextInVisualMode(1)
-xnoremap <expr> I VSCodeAppendOrInsertTextInVisualMode(0)
+autocmd CmdlineEnter * :call <SID>notifyBlockingModeStart()
+autocmd CmdlineLeave * :call <SID>notifyBlockingModeEnd()

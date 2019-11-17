@@ -209,7 +209,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         this.mouseSelectionEnabled = mouseSelection;
         this.documentHighlightProvider = new HighlightProvider(highlightsConfiguration);
-        this.neovimExtensionsPath = path.join(extensionPath, "vim", "*.vim");
+        this.neovimExtensionsPath = path.join(extensionPath, "vim", "vscode-neovim.vim");
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         // this.disposables.push(vscode.workspace.onDidOpenTextDocument(this.onOpenTextDocument));
         this.disposables.push(vscode.workspace.onDidCloseTextDocument(this.onCloseTextDocument));
@@ -1522,7 +1522,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     result = res;
                 }
             } else if (eventName === "vscode-neovim") {
-                const [command, ...commandArgs] = eventArgs;
+                const [command, commandArgs] = eventArgs;
                 if (command === "external-buffer") {
                     const [name, idStr] = commandArgs as [string, string];
                     const id = parseInt(idStr, 10);
