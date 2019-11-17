@@ -171,3 +171,8 @@ See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues)
 * Normal/visual mode commands are being sent directly to neovim. The extension listens for buffer events and applies edits from neovim
 * When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to vscode (no neovim communication is being performed here)
 * After pressing escape key from the insert mode, extension sends changes obtained from the insert mode to neovim
+
+## Credits & External Resources
+
+[vim-altercmd](https://github.com/kana/vim-altercmd) - Used for rebinding default commands to call vscode command
+[neovim nodejs client](https://github.com/neovim/node-client) - NodeJS library for communicating with Neovim
