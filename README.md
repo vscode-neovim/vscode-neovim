@@ -171,6 +171,5 @@ See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues)
 * After pressing escape key from the insert mode, extension sends changes obtained from the insert mode to neovim
 
 ## Credits & External Resources
-
-[vim-altercmd](https://github.com/kana/vim-altercmd) - Used for rebinding default commands to call vscode command
-[neovim nodejs client](https://github.com/neovim/node-client) - NodeJS library for communicating with Neovim
+* [vim-altercmd](https://github.com/kana/vim-altercmd) - Used for rebinding default commands to call vscode command
+* [neovim nodejs client](https://github.com/neovim/node-client) - NodeJS library for communicating with Neovim
