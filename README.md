@@ -27,7 +27,7 @@ Neovim 0.4.2 or greater
 * The extenison for now works best if ```editor.scrollBeyondLastLine``` is disabled.
 * When you type some commands they may be substituted for the another, like ```:write``` will be replaced by ```:Write```. This is normal.
 * **DO NOT** use vim buffers, tab or window management. The plugin assumes that these tasks will be performed by VSCode side. Later i'll rebind ```:vsplit``` commands and such to call vscode commands instead
-* File management (```:w```/```q```/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See [this file](/vim/vscode-file-commands.vim) for reference. **DO NOT** use vim ```:w```, etc, they won't work.
+* File management (```:w```/```q```/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See [this file](/vim/vscode-file-commands.vim) for reference. **DO NOT** use vim ```:w```, etc... in scripts/keybindings, they won't work.
 * It's good idea to backup and move your init.vim file and start with new one until #25 is done
 
 ## VSCode specific features and differences
