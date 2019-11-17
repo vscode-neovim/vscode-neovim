@@ -9,7 +9,7 @@
 - A bunch of development versions. 0.0.23 has the following features
 - Correct editing and the cursor management
 - Control keys in the insert & normal/visual modes
-- Visual mode produces a vscode selections
+- Visual mode produces vscode selections
 - Working VIM highlighting (most of a default VIM HL groups are ignored since they don't make sense in VSCode, but non standard groups are processed, so things like vim-easymotion or vim-highlight are working fine)
 - Scrolling commands (scrolling is done by vscode so things are slighly different here)
 - Special vim-easymotion fork to use vscode text decorators instead of replacing text (as original vim-easymotion does)
