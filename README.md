@@ -21,8 +21,8 @@ This is WIP extension. Use with caution!
 
 Neovim 0.4.2 or greater
 
-* Set neovim path in the extension settings and you're good to go
-* Bind your favorite escape key to ```vscode-neovim.escape``` command. Default ```Ctrl+C```
+* Set neovim path in the extension settings and you're good to go. **Important** you must specify full path to neovim, like ```C:\Neovim\bin\nvim.exe``` or ```/usr/local/bin/nvim```
+* Bind your favorite escape key to ```vscode-neovim.escape``` command. Default ```Ctrl+C```. **Important** this is being sent as ```<Esc>``` to neovim
 
 ## Important
 
