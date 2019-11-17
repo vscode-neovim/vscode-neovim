@@ -27,6 +27,7 @@ Neovim 0.4.2 or greater
 ## Important
 
 * The extenison for now works best if ```editor.scrollBeyondLastLine``` is disabled.
+* When you type some commands they may be substituted for the another, like ```:write``` will be replaced by ```:Write```. This is normal.
 
 ## VSCode specific features and differences
 
@@ -35,7 +36,9 @@ Neovim 0.4.2 or greater
 * It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
 * Scrolling is done by VSCode side. ```<C-d>/<C-u>/etc...``` are slighly different
 * Jumplist is mapped to VSCode's ```navigateBack/navigateForward``` commands.
-* File management commands such as ```e``` / ```w``` / ```q``` etc are mapped to corresponding vscode commands and behavior may different (see below)
+* File management commands such as ```e``` / ```w``` / ```q``` etc are mapped to corresponding vscode commands and behavior may be different (see below)
+* ```gf``` is mapped to ```editor.action.goToTypeDefinition```
+* ```gF``` is mapped to ```editor.action.revealDefinition``` (VSCode shortcut: ```F12```)
 
 
 ## Multiple cursors
@@ -71,6 +74,30 @@ See gif in action:
 
 ```fin[d]```
 * Opens vscode's quick open window. Arguments and count are not supported
+
+```w[rite]```
+* Without bang (```!```) saves current file
+* With bang opens 'save as' dialog
+
+```sav[eas]```
+* Opens 'save as' dialog
+
+```wa[ll]```
+* Saves all files. Bang is not doing anything
+
+```q[uit]```
+* Closes the active editor
+
+```wq```
+* Saves and closes the active editor
+
+```qa[ll]```
+* Closes all editors, but doesn't quit vscode. Acts like ```qall!```, so beware for a nonsaved changes
+
+```wqa[ll]```/```xa[ll]```
+* Saves all editors & close
+
+Keys ```ZZ``` and ```ZQ``` are bound to ```:wq``` and ```q!``` respectively
 
 ## Insert mode special keys
 

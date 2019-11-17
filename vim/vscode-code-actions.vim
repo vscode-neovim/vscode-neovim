@@ -34,3 +34,9 @@ nnoremap <expr> <Plug>VSCodeCommentaryLine <SID>vscodeCommentary() . '_'
 xnoremap <expr> = <SID>vscodeFormat()
 nnoremap <expr> = <SID>vscodeFormat()
 nnoremap <expr> == <SID>vscodeFormat() . '_'
+
+" gf/gF . Map to go to definition for now
+nnoremap <silent> <expr> gf VSCodeCall('editor.action.goToTypeDefinition')
+nnoremap <silent> <expr> gF VSCodeCall('editor.action.revealDefinition')
+xnoremap <silent> <expr> gf VSCodeCall('editor.action.goToTypeDefinition')
+xnoremap <silent> <expr> gF VSCodeCall('editor.action.revealDefinition')
