@@ -1,12 +1,12 @@
 # Change Log
 
-## [0.0.23]
+## [0.0.24]
 
 - File management commands, like ```:w``` or ```:q``` (bound to vscode actions)
 
-## [0.0.1-0.0.22]
+## [0.0.1-0.0.23]
 
-- A bunch of development versions. 0.0.22 has the following features
+- A bunch of development versions. 0.0.23 has the following features
 - Correct editing and the cursor management
 - Control keys in the insert & normal/visual modes
 - Visual mode produces a vscode selections
