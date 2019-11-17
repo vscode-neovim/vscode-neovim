@@ -15,7 +15,7 @@ function! s:vscodeMultipleCursorsVisualMode(append)
     let m = mode()
     if m == "V" || m == "\<C-v>"
         " Move cursors to correct positions
-        call VSCodeExtensionCommand('visual-edit', a:append, m)
+        call VSCodeExtensionCall('visual-edit', a:append, m)
         call wait(20, 0)
         if a:append
             let key = "a"

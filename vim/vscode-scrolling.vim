@@ -1,6 +1,6 @@
 
 function! s:vscodeReveal(at, resetCursor)
-    call VSCodeExtensionCommand('reveal', a:at, a:resetCursor)
+    call VSCodeExtensionNotify('reveal', a:at, a:resetCursor)
 endfunction
 
 nnoremap <silent> <expr> z<CR> <SID>vscodeReveal("top", 1)

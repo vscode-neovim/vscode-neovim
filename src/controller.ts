@@ -827,7 +827,17 @@ export class NVIMPluginController implements vscode.Disposable {
     private onNeovimNotification = (method: string, events: [string, ...any[]]): void => {
         if (method === "vscode-command") {
             const [vscodeCommand, ...commandArgs] = events;
-            this.runVSCodeCommand(vscodeCommand, ...commandArgs);
+            this.handleVSCodeCommand(vscodeCommand, ...commandArgs);
+            return;
+        }
+        if (method === "vscode-range-command") {
+            const [vscodeCommand, line1, line2, ...args] = events;
+            this.handleVSCodeRangeCommand(vscodeCommand, line1, line2, ...args);
+            return;
+        }
+        if (method === "vscode-neovim") {
+            const [command, args] = events;
+            this.handleExtensionRequest(command, args);
             return;
         }
         if (method !== "redraw") {
@@ -1504,81 +1514,131 @@ export class NVIMPluginController implements vscode.Disposable {
             let result: unknown;
             if (eventName === "vscode-command") {
                 const [vscodeCommand, ...commandArgs] = eventArgs;
-                const res = await this.runVSCodeCommand(vscodeCommand, ...commandArgs);
-                // slightly delay sending response. Seems awaiting executeCommand doesn't garantue it was done
-                // await new Promise(res => setTimeout(res, 20));
-                result = res;
+                result = await this.handleVSCodeCommand(vscodeCommand, ...commandArgs);
             } else if (eventName === "vscode-range-command") {
-                const [vscodeCommand, line1, line2, ...commandArgs] = eventArgs;
-                if (vscode.window.activeTextEditor) {
-                    this.shouldIgnoreMouseSelection = true;
-                    const prevSelections = [...vscode.window.activeTextEditor.selections];
-                    vscode.window.activeTextEditor.selections = [
-                        new vscode.Selection(line2 as number, 0, ((line1 as number) - 1) as number, 0),
-                    ];
-                    const res = await this.runVSCodeCommand(vscodeCommand, ...commandArgs);
-                    vscode.window.activeTextEditor.selections = prevSelections;
-                    this.shouldIgnoreMouseSelection = false;
-                    result = res;
-                }
+                const [vscodeCommand, line1, line2, ...commandArgs] = eventArgs as [
+                    string,
+                    number,
+                    number,
+                    ...unknown[],
+                ];
+                result = await this.handleVSCodeRangeCommand(vscodeCommand, line1, line2, ...commandArgs);
             } else if (eventName === "vscode-neovim") {
-                const [command, commandArgs] = eventArgs;
-                if (command === "external-buffer") {
-                    const [name, idStr] = commandArgs as [string, string];
-                    const id = parseInt(idStr, 10);
-                    if (!this.managedBufferIds.has(id)) {
-                        // Handle when trying to open vscode uri from vim
-                        // todo: naive checking
-                        if (name && /:\/\//.test(name)) {
-                            try {
-                                const uri = vscode.Uri.parse(name, true);
-                                this.pendingBuffers.set(name, id);
-                                const doc = await vscode.workspace.openTextDocument(uri);
-                                await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active);
-                            } catch {
-                                // ignore ?
-                            }
-                        } else {
-                            await this.attachNeovimExternalBuffer(name, id);
-                        }
-                    } else {
-                        const uri = this.bufferIdToUri.get(id);
-                        if (uri) {
-                            // !Important! This is messing with vscode window management: when you close the editor
-                            // !vscode will display previous one in the same pane, but neovim buffer may be different
-                            // !so active editor will switch to the wrong one
-                            // !Important: this affects vim jumplist, but we use vscode one for now
-                            // await vscode.window.showTextDocument(vscode.Uri.parse(uri));
-                        }
-                    }
-                } else if (command === "notify-blocking") {
-                    const [isBlocking, bufCursor] = commandArgs as [number, [number, number], number];
-                    if (isBlocking) {
-                        this.nvimRealLinePosition = bufCursor[0] - 1;
-                        this.nvimRealColPosition = bufCursor[1];
-                        this.nvimIsCmdLine = true;
-                    } else {
-                        this.nvimIsCmdLine = false;
-                    }
-                } else if (command === "text-decorations") {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [hlName, cols] = commandArgs as any;
-                    this.applyTextDecorations(hlName, cols);
-                } else if (command === "reveal") {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [at, updateCursor] = commandArgs as any;
-                    this.revealLine(at, !!updateCursor);
-                } else if (command === "visual-edit") {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [append, visualMode] = commandArgs as any;
-                    this.prepareForMultiCursorEditingFromVisualMode(!!append, visualMode);
-                }
+                const [command, commandArgs] = eventArgs as [string, unknown[]];
+                result = await this.handleExtensionRequest(command, commandArgs);
             }
             response.send(result || "", false);
         } catch (e) {
             response.send(e.message, true);
         }
     };
+
+    private async handleVSCodeCommand(command: string, ...args: unknown[]): Promise<unknown> {
+        return await this.runVSCodeCommand(command, ...args);
+    }
+
+    private async handleVSCodeRangeCommand(
+        command: string,
+        line1: number,
+        line2: number,
+        ...args: unknown[]
+    ): Promise<unknown> {
+        if (vscode.window.activeTextEditor) {
+            this.shouldIgnoreMouseSelection = true;
+            const prevSelections = [...vscode.window.activeTextEditor.selections];
+            vscode.window.activeTextEditor.selections = [
+                new vscode.Selection(line2 as number, 0, ((line1 as number) - 1) as number, 0),
+            ];
+            const res = await this.runVSCodeCommand(command, ...args);
+            vscode.window.activeTextEditor.selections = prevSelections;
+            this.shouldIgnoreMouseSelection = false;
+            return res;
+        }
+    }
+
+    private async handleExtensionRequest(command: string, args: unknown[]): Promise<unknown> {
+        switch (command) {
+            case "external-buffer": {
+                const [name, idStr] = args as [string, string];
+                const id = parseInt(idStr, 10);
+                if (!this.managedBufferIds.has(id)) {
+                    // Handle when trying to open vscode uri from vim
+                    // todo: naive checking
+                    if (name && /:\/\//.test(name)) {
+                        try {
+                            const uri = vscode.Uri.parse(name, true);
+                            this.pendingBuffers.set(name, id);
+                            const doc = await vscode.workspace.openTextDocument(uri);
+                            await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active);
+                        } catch {
+                            // ignore ?
+                        }
+                    } else {
+                        await this.attachNeovimExternalBuffer(name, id);
+                    }
+                } else {
+                    const uri = this.bufferIdToUri.get(id);
+                    if (uri) {
+                        // !Important! This is messing with vscode window management: when you close the editor
+                        // !vscode will display previous one in the same pane, but neovim buffer may be different
+                        // !so active editor will switch to the wrong one
+                        // !Important: this affects vim jumplist, but we use vscode one for now
+                        // await vscode.window.showTextDocument(vscode.Uri.parse(uri));
+                    }
+                }
+                break;
+            }
+            case "notify-blocking": {
+                const [isBlocking, bufCursor] = args as [number, [number, number], number];
+                if (isBlocking) {
+                    this.nvimRealLinePosition = bufCursor[0] - 1;
+                    this.nvimRealColPosition = bufCursor[1];
+                    this.nvimIsCmdLine = true;
+                } else {
+                    this.nvimIsCmdLine = false;
+                }
+                break;
+            }
+            case "text-decorations": {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [hlName, cols] = args as any;
+                this.applyTextDecorations(hlName, cols);
+                break;
+            }
+            case "reveal": {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [at, updateCursor] = args as any;
+                this.revealLine(at, !!updateCursor);
+                break;
+            }
+            case "visual-edit": {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [append, visualMode] = args as any;
+                this.prepareForMultiCursorEditingFromVisualMode(!!append, visualMode);
+                break;
+            }
+            case "open-file": {
+                const [fileName, close] = args as [string, number];
+                const currEditor = vscode.window.activeTextEditor;
+                let doc: vscode.TextDocument | undefined;
+                if (fileName === "__vscode_new__") {
+                    doc = await vscode.workspace.openTextDocument();
+                } else {
+                    doc = await vscode.workspace.openTextDocument(fileName);
+                }
+                if (!doc) {
+                    return;
+                }
+                let viewColumn: vscode.ViewColumn | undefined;
+                if (close && currEditor) {
+                    viewColumn = currEditor.viewColumn;
+                    await vscode.commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
+                }
+                await vscode.window.showTextDocument(doc, viewColumn);
+                break;
+            }
+        }
+    }
 
     private runVSCodeCommand = async (commandName: string, ...args: unknown[]): Promise<unknown> => {
         const res = await vscode.commands.executeCommand(commandName, ...args);

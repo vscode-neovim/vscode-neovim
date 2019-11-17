@@ -45,8 +45,12 @@ function! VSCodeNotifyRange(cmd, line1, line2, ...)
     call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:000)
 endfunction
 
-function! VSCodeExtensionCommand(cmd, ...)
+function! VSCodeExtensionCall(cmd, ...)
     call rpcrequest(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
+endfunction
+
+function! VSCodeExtensionNotify(cmd, ...)
+    call rpcnotify(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
 " Called from extension when opening/creating new file in vscode to reset undo tree
@@ -81,7 +85,7 @@ endfunction
 
 " Set text decorations for given ranges. Used in easymotion
 function! VSCodeSetTextDecorations(hlName, rowsCols)
-    call VSCodeExtensionCommand('text-decorations', a:hlName, a:rowsCols)
+    call VSCodeExtensionNotify('text-decorations', a:hlName, a:rowsCols)
 endfunction
 
 " Used for ctrl-a insert keybinding
@@ -106,11 +110,11 @@ endfunction
 function! s:notifyBlockingModeStart()
     let cursor = nvim_win_get_cursor(0)
     let winline = winline()
-    call VSCodeExtensionCommand('notify-blocking', 1, cursor, winline)
+    call VSCodeExtensionCall('notify-blocking', 1, cursor, winline)
 endfunction
 
 function! s:notifyBlockingModeEnd()
-    call VSCodeExtensionCommand('notify-blocking', 0)
+    call VSCodeExtensionCall('notify-blocking', 0)
 endfunction
 
 " This is called by extension when created new buffer
@@ -118,7 +122,7 @@ function! s:onBufEnter(name, id)
     " Sometimes doesn't work, although on extensions we handle such buffers
     let controlled = getbufvar(a:id, "vscode_controlled")
     if !controlled
-        call VSCodeExtensionCommand('external-buffer', a:name, a:id)
+        call VSCodeExtensionCall('external-buffer', a:name, a:id)
     endif
 endfunction
 
@@ -129,6 +133,7 @@ execute 'source ' . s:currDir . '/vscode-insert.vim'
 execute 'source ' . s:currDir . '/vscode-scrolling.vim'
 execute 'source ' . s:currDir . '/vscode-jumplist.vim'
 execute 'source ' . s:currDir . '/vscode-code-actions.vim'
+execute 'source ' . s:currDir . '/vscode-file-commands.vim'
 
 autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufWinEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
