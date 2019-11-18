@@ -140,7 +140,7 @@ Keys ```ZZ``` and ```ZQ``` are bound to ```:wq``` and ```q!``` respectively
 
 ## Buffer/window management commands
 
-*Note*: split size distribution is controlled by ```workbench.editor.splitSizing``` setting. By default it's `distribute`, which is mapped to vim's ```equalalways``` and ```eadirection = 'both'```
+*Note*: split size distribution is controlled by ```workbench.editor.splitSizing``` setting. By default it's `distribute`, which is mapped to vim's ```equalalways``` and ```eadirection = 'both'``` (default)
 
 ```sp[lit]``` or key ```<C-w> s```
 * Split editor horizontally. When argument given opens the specified file in the argument, e.g ```:sp $MYVIMRC```. File must exist
@@ -167,8 +167,8 @@ Keys ```ZZ``` and ```ZQ``` are bound to ```:wq``` and ```q!``` respectively
 ```<C-w> j/k/h/l```
 * Focus group below/above/left/right
 
-```<C-w> <C-j>/<C-k>/<C-h>/<C-l>```
-* Move editor to group below/above/left/right. Vim doesn't have analogue mappings
+```<C-w> <C-j>/<C-i>/<C-h>/<C-l>```
+* Move editor to group below/above/left/right. Vim doesn't have analogue mappings. **Note**: ```<C-w> <C-i>``` moves editor up. Logically it should be ```<C-w> <C-k>``` but vscode has many commands mapped to ```<C-k> [key]``` and doesn't allow to use ```<C-w> <C-k>``` without unbinding them first
 
 ```<C-w> r/R/x```
 * Not supported use ```<C-w> <C-j>``` and similar to move editors
