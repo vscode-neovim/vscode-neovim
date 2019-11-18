@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.26]
+
+- Partially revert #41
+
 ## [0.0.25]
 
 - Tab management commands & keys, like ```gt``` or ```tabo[nly]```
