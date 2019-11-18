@@ -58,6 +58,13 @@ See gif in action:
 
 ![multicursors](/images/multicursor.gif)
 
+## Custom keymaps for scrollign/window/tab/etc... management
+
+* See [vscode-scrolling.vim](/vim/vscode-scrolling.vim) for scrolling commands reference
+* See [vscode-file-commands.vim](/vim/vscode-file-commands.vim) for file commands reference
+* See [vscode-tab-commands.vim](/vim/vscode-tab-commands.vim) for tab commands reference
+* See [vscode-window-commands.vim](/vim/vscode-window-commands.vim) for window commands reference
+
 
 ## File/Tab management commands
 
