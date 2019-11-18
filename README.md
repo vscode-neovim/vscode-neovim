@@ -84,7 +84,7 @@ See gif in action:
 ```wa[ll]```
 * Saves all files. Bang is not doing anything
 
-```q[uit]```
+```q[uit]``` or keys ```<C-w> q``` / ```<C-w> c```
 * Closes the active editor
 
 ```wq```
@@ -131,6 +131,68 @@ See gif in action:
 
 Keys ```ZZ``` and ```ZQ``` are bound to ```:wq``` and ```q!``` respectively
 
+## Buffer/window management commands
+
+*Note*: split size distribution is controlled by ```workbench.editor.splitSizing``` setting. By default it's `distribute`, which is mapped to vim's ```equalalways``` and ```eadirection = 'both'```
+
+```sp[lit]``` or key ```<C-w> s```
+* Split editor horizontally. When argument given opens the specified file in the argument, e.g ```:sp $MYVIMRC```. File must exist
+
+```vs[plit]``` or key ```<C-w> v```
+* Split editor vertically. When argument given opens the specified file in the argument. File must exist
+
+```new``` or key ```<C-w> n```
+* Like ```sp[lit]``` but creates new untitled file if no argument given
+
+```vne[w]```
+* Like ```vs[plit]``` but creates new untitled file if no argument given
+
+```<C-w> ^```
+* Not supported yet
+
+```vert[ical]```/```lefta[bove]```/etc...
+* Not supported yet
+
+```on[ly]``` or key ```<C-w> o```
+* Without bang (```!```) Merges all editor groups into the one. **Doesn't** close editors
+* With bang closes all editors from all groups except current one
+
+```<C-w> j/k/h/l```
+* Focus group below/above/left/right
+
+```<C-w> <C-j>/<C-k>/<C-h>/<C-l>```
+* Move editor to group below/above/left/right. Vim doesn't have analogue mappings
+
+```<C-w> r/R/x```
+* Not supported use ```<C-w> <C-j>``` and similar to move editors
+
+```<C-w> w``` or ```<C-w> <C-w>```
+* Focus next group. The behavior may differ than in vim
+
+```<C-w> W``` or ```<C-w> p```
+* Focus previous group. The behavior may differ than in vim. ```<C-w> p``` is completely different than in vim
+
+```<C-w> t```
+* Focus first editor group (most top-left)
+
+```<C-w> b```
+* Focus last editor group (most bottom-right)
+
+```<C-w> H/K/J/L```
+* Not supported yet
+
+```<C-w> =```
+* Align all editors to have the same width
+
+```[count]<C-w> >``` or ```[count]<C-w> +```
+* Increase editor size by count. Both width & height are increased since in vscode it's not possible to control individual width/height
+
+```[count]<C-w> <``` or ```[count]<C-w> -```
+* Decrease editor size by count. Both width & height are increased since in vscode it's not possible to control individual width/height
+
+```<C-w> _```
+* Toggle maximized editor size. Pressing again will restore the size
+
 ## Insert mode special keys
 
 Enabled by ```useCtrlKeysForInsertMode = true``` (default true)
@@ -169,6 +231,10 @@ Refer to vim manual to get help what they're doing
 * CTRL-x
 * CTRL-y
 * CTRL-]
+* CTRL-j
+* CTRL-k
+* CTRL-l
+* CTRL-h
 
 Other control keys are not being sent (Usually useless with vscode)
 

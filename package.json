@@ -283,6 +283,22 @@
 				"title": "Neovim: ctrl-]"
 			},
 			{
+				"command": "vscode-neovim.ctrl-j",
+				"title": "Neovim: Ctrl-j"
+			},
+			{
+				"command": "vscode-neovim.ctrl-h",
+				"title": "Neovm: Ctrl-h"
+			},
+			{
+				"command": "vscode-neovim.ctrl-l",
+				"title": "Neovim: Ctrl-l"
+			},
+			{
+				"command": "vscode-neovim.ctrl-k",
+				"title": "Neovim: Ctrl-k"
+			},
+			{
 				"command": "vscode-neovim.shift-m",
 				"title": "Neovim: shift-m"
 			},
@@ -617,6 +633,26 @@
 			{
 				"command": "vscode-neovim.ctrl-]",
 				"key": "ctrl+]",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-j",
+				"key": "ctrl+j",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-k",
+				"key": "ctrl+k",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-l",
+				"key": "ctrl+l",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
+			},
+			{
+				"command": "vscode-neovim.ctrl-h",
+				"key": "ctrl+h",
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{

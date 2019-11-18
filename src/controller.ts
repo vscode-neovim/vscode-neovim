@@ -1622,7 +1622,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 break;
             }
             case "open-file": {
-                const [fileName, close] = args as [string, number];
+                const [fileName, close] = args as [string, number | "all"];
                 const currEditor = vscode.window.activeTextEditor;
                 let doc: vscode.TextDocument | undefined;
                 if (fileName === "__vscode_new__") {
@@ -1634,11 +1634,14 @@ export class NVIMPluginController implements vscode.Disposable {
                     return;
                 }
                 let viewColumn: vscode.ViewColumn | undefined;
-                if (close && currEditor) {
+                if (close && close !== "all" && currEditor) {
                     viewColumn = currEditor.viewColumn;
                     await vscode.commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
                 }
                 await vscode.window.showTextDocument(doc, viewColumn);
+                if (close === "all") {
+                    await vscode.commands.executeCommand("workbench.action.closeOtherEditors");
+                }
                 break;
             }
         }
