@@ -3,6 +3,7 @@
 ## [0.0.24]
 
 - File management commands, like ```:w``` or ```:q``` (bound to vscode actions)
+- Fix [#40](https://github.com/asvetliakov/vscode-neovim/issues/40)
 
 ## [0.0.1-0.0.23]
 
