@@ -103,15 +103,13 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
 
-        await vscode.commands.executeCommand("vscode-neovim.shift-l");
-        await wait(1500);
+        await sendVSCodeKeys("L", 1500);
         winline = await client.callFunction("winline", []);
         const lines = editor.visibleRanges[0].end.line - editor.visibleRanges[0].start.line;
         assert.ok(winline <= lines);
         assert.ok(winline >= lines - 3);
 
-        await vscode.commands.executeCommand("vscode-neovim.shift-m");
-        await wait(1500);
+        await sendVSCodeKeys("M", 1500);
         winline = await client.callFunction("winline", []);
         assert.ok(winline <= lines / 2 + 2);
         assert.ok(winline >= lines / 2 - 2);
@@ -119,8 +117,7 @@ describe("VSCode integration specific stuff", () => {
         assert.ok(cursorLine <= editor.visibleRanges[0].start.line + (lines / 2 + 2));
         assert.ok(cursorLine >= editor.visibleRanges[0].start.line + (lines / 2 - 2));
 
-        await vscode.commands.executeCommand("vscode-neovim.shift-h");
-        await wait(2000);
+        await sendVSCodeKeys("H", 1500);
         winline = await client.callFunction("winline", []);
         assert.equal(winline, 1);
         cursorLine = editor.selection.active.line;
