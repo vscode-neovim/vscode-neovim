@@ -221,6 +221,21 @@ export class NVIMPluginController implements vscode.Disposable {
         this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.cmdCompletion", this.onCmdCompletion));
 
+        this.disposables.push(
+            vscode.commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
+        );
+        this.disposables.push(
+            vscode.commands.registerCommand("vscode-neovim.ctrl-b", () => this.scrollPage("page", "up")),
+        );
+        this.disposables.push(
+            vscode.commands.registerCommand("vscode-neovim.ctrl-d", () => this.scrollPage("halfPage", "down")),
+        );
+        this.disposables.push(
+            vscode.commands.registerCommand("vscode-neovim.ctrl-u", () => this.scrollPage("halfPage", "up")),
+        );
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-e", () => this.scrollLine("down")));
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-y", () => this.scrollLine("up")));
+
         const args = ["-N", "--embed", "-c", `source ${this.neovimExtensionsPath}`];
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
