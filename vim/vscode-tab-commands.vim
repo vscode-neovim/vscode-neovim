@@ -1,0 +1,41 @@
+function! s:switchEditor(...)
+    let count = a:1
+    let direction = a:2
+    for i in range(1, count ? count : 1)
+        call VSCodeCall(direction == 'next' ? 'workbench.action.nextEditorInGroup' : 'workbench.action.previousEditorInGroup')
+    endfor
+endfunction
+
+command! -nargs=? Tabedit if <q-args> == '' | call VSCodeCall('workbench.action.quickOpen') | else | call VSCodeExtensionNotify('open-file', expand(<q-args>), 0) | endif
+command! Tabnew call VSCodeExtensionNotify('open-file', '__vscode_new__', 0)
+command! Tabfind call VSCodeCall('workbench.action.quickOpen')
+command! Tab echoerr 'Not supported'
+command! Tabs echoerr 'Not supported'
+command! -bang Tabclose if <q-bang> == '!' | call VSCodeCall('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeCall('workbench.action.closeActiveEditor') | endif
+command! Tabonly call VSCodeCall('workbench.action.closeOtherEditors')
+command! -nargs=? Tabnext call <SID>switchEditor(<q-args>, 'next')
+command! -nargs=? Tabprevious call <SID>switchEditor(<q-args>, 'prev')
+command! Tabfirst call VSCodeCall('workbench.action.firstEditorInGroup')
+command! Tablast call VSCodeCall('workbench.action.lastEditorInGroup')
+command! Tabrewind call VSCodeCall('workbench.action.firstEditorInGroup')
+command! -nargs=? Tabmove echoerr 'Not supported yet'
+
+AlterCommand tabe[dit] Tabedit
+AlterCommand tabnew Tabnew
+AlterCommand tabf[ind] Tabfind
+AlterCommand tab Tab
+AlterCommand tabs Tabs
+AlterCommand tabc[lose] Tabclose
+AlterCommand tabo[nly] Tabonly
+AlterCommand tabn[ext] Tabnext
+AlterCommand tabp[revious] Tabprevious
+AlterCommand tabr[ewind] Tabrewind
+AlterCommand tabfir[st] Tabfirst
+AlterCommand tabl[ast] Tablast
+AlterCommand tabm[ove] Tabmove
+
+" <C-u> is needed to clear prev count
+nnoremap <silent> gt :<C-U>call <SID>switchEditor(v:count, 'next')<CR>
+xnoremap <silent> gt :<C-U>call <SID>switchEditor(v:count, 'next')<CR>
+nnoremap <silent> gT :<C-U>call <SID>switchEditor(v:count, 'prev')<CR>
+xnoremap <silent> gT :<C-U>call <SID>switchEditor(v:count, 'prev')<CR>

@@ -40,3 +40,8 @@ nnoremap <silent> <expr> gf VSCodeCall('editor.action.goToTypeDefinition')
 nnoremap <silent> <expr> gF VSCodeCall('editor.action.revealDefinition')
 xnoremap <silent> <expr> gf VSCodeCall('editor.action.goToTypeDefinition')
 xnoremap <silent> <expr> gF VSCodeCall('editor.action.revealDefinition')
+" <C-w> gf opens definition on the side
+nnoremap <silent> <expr> <C-w>gf VSCodeCall('editor.action.revealDefinitionAside')
+nnoremap <silent> <expr> <C-w>gF VSCodeCall('editor.action.revealDefinitionAside')
+xnoremap <silent> <expr> <C-w>gf VSCodeCall('editor.action.revealDefinitionAside')
+xnoremap <silent> <expr> <C-w>gF VSCodeCall('editor.action.revealDefinitionAside')

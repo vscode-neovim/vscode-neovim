@@ -134,6 +134,7 @@ execute 'source ' . s:currDir . '/vscode-scrolling.vim'
 execute 'source ' . s:currDir . '/vscode-jumplist.vim'
 execute 'source ' . s:currDir . '/vscode-code-actions.vim'
 execute 'source ' . s:currDir . '/vscode-file-commands.vim'
+execute 'source ' . s:currDir . '/vscode-tab-commands.vim'
 
 autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufWinEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))

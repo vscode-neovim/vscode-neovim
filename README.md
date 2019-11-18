@@ -40,6 +40,7 @@ Neovim 0.4.2 or greater
 * File management commands such as ```e``` / ```w``` / ```q``` etc are mapped to corresponding vscode commands and behavior may be different (see below)
 * ```gf``` is mapped to ```editor.action.goToTypeDefinition```
 * ```gF``` is mapped to ```editor.action.revealDefinition``` (VSCode shortcut: ```F12```)
+* ```<C-w>gF``` is mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
 
 
 ## Multiple cursors
@@ -58,7 +59,7 @@ See gif in action:
 ![multicursors](/images/multicursor.gif)
 
 
-## File management commands
+## File/Tab management commands
 
 ```:e[dit]``` or ```ex```
 * ```:e``` without argument and without bang (```!```) - opens quickopen window
@@ -94,6 +95,39 @@ See gif in action:
 
 ```wqa[ll]```/```xa[ll]```
 * Saves all editors & close
+
+```tabe[dit]```
+* Similar to ```e[dit]```. Without argument opens quickopen, with argument opens the file in new tab
+
+```tabnew```
+* Opens new untitled file
+
+```tabf[ind]```
+* Opens quickopen window
+
+```tab```/```tabs```
+* Not supported. Doesn't make sense with vscode
+
+```tabc[lose]```
+* Closes active editor (tab)
+
+```tabo[nly]```
+* Closes other tabs in vscode **group** (pane). This differs from vim where a `tab` is a like a new window, but doesn't make sense in vscode.
+
+```tabn[ext]``` or key ```gt```
+* Switches to next (or ```count``` tabs if argument is given) in the active vscode **group** (pane)
+
+```tabp[revious]``` or key ```gT```
+* Switches to previous (or ```count``` tabs if argument is given) in the active vscode **group** (pane)
+
+```tabfir[st]```
+* Switches to the first tab in the active editor group
+
+```tabl[ast]```
+* Switches to the last tab in the active edtior group
+
+```tabm[ove]```
+* Not supported yet
 
 Keys ```ZZ``` and ```ZQ``` are bound to ```:wq``` and ```q!``` respectively
 
