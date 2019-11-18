@@ -586,30 +586,29 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private commitScrolling = throttle(
-        (e: vscode.TextEditor) => {
-            // const e = vscode.window.activeTextEditor;
-            // if (!e) {
-            //     return;
-            // }
-            if (e !== vscode.window.activeTextEditor) {
-                return;
-            }
-            const visibleRange = e.visibleRanges[0];
-            const cursor = e.selection.active;
-            const cursorScreenRow = cursor.line - visibleRange.start.line;
-            const uri = e.document.uri.toString();
-            const buf = this.uriToBuffer.get(uri);
-            if (!buf || buf !== this.currentNeovimBuffer) {
-                return;
-            }
-            if (!this.isInsertMode) {
-                this.alignScreenRowInNeovim(cursorScreenRow);
-            }
-        },
-        1000,
-        { leading: false },
-    );
+    private updateScreenRowFromScrolling = (e: vscode.TextEditor): void => {
+        // const e = vscode.window.activeTextEditor;
+        // if (!e) {
+        //     return;
+        // }
+        if (e !== vscode.window.activeTextEditor) {
+            return;
+        }
+        const visibleRange = e.visibleRanges[0];
+        const cursor = e.selection.active;
+        const cursorScreenRow = cursor.line - visibleRange.start.line;
+        const uri = e.document.uri.toString();
+        const buf = this.uriToBuffer.get(uri);
+        if (!buf || buf !== this.currentNeovimBuffer) {
+            return;
+        }
+        if (!this.isInsertMode) {
+            this.alignScreenRowInNeovim(cursorScreenRow);
+        }
+    };
+
+    private commitScrolling = throttle(this.updateScreenRowFromScrolling, 1000, { leading: false });
+    private commitScrollingFast = throttle(this.updateScreenRowFromScrolling, 200, { leading: false });
 
     /**
      * Handle vscode selection change. This includes everything touching selection or cursor position, includes custom commands and selection = [] assignment
@@ -1359,6 +1358,7 @@ export class NVIMPluginController implements vscode.Disposable {
         const visibleLines = visibleRange.end.line - visibleRange.start.line;
         // cancel any possible pending scrolling
         this.commitScrolling.cancel();
+        this.commitScrollingFast.cancel();
         if (visibleRange.contains(revealCursor)) {
             // always try to reveal even if in visible range to reveal horizontal scroll
             editor.revealRange(
@@ -1369,10 +1369,14 @@ export class NVIMPluginController implements vscode.Disposable {
             const revealType =
                 visibleRange.start.line - revealCursor.active.line >= visibleLines / 2 ? "center" : "top";
             vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
+            // need to align screenrow
+            this.commitScrollingFast(editor);
         } else if (revealCursor.active.line > visibleRange.end.line) {
             const revealType =
                 revealCursor.active.line - visibleRange.end.line >= visibleLines / 2 ? "center" : "bottom";
             vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
+            // need to align screenrow
+            this.commitScrollingFast(editor);
         }
     };
 
@@ -1838,7 +1842,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         const topVisible = e.visibleRanges[0].start.line;
         const bottomVisible = e.visibleRanges[0].end.line;
-        const middleLine = Math.floor((bottomVisible - topVisible) / 2);
+        const middleLine = Math.floor(topVisible + (bottomVisible - topVisible) / 2);
         const line = e.document.lineAt(middleLine);
         e.selections = [
             new vscode.Selection(

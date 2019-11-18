@@ -85,6 +85,48 @@ describe("VSCode integration specific stuff", () => {
         // await assertContent({ cursor: [90, 0], vsCodeVisibleRange: { bottom: 50 } }, client);
     });
 
+    it("Scrolling actions", async () => {
+        const doc = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/scrolltest.txt"),
+        );
+        const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+        await vscode.commands.executeCommand("vscode-neovim.ctrl-f");
+        await wait(1500);
+
+        let winline = await client.callFunction("winline", []);
+        assert.equal(winline, 1);
+        await assertContent(
+            {
+                cursor: [editor.visibleRanges[0].start.line, 0],
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("vscode-neovim.shift-l");
+        await wait(1500);
+        winline = await client.callFunction("winline", []);
+        const lines = editor.visibleRanges[0].end.line - editor.visibleRanges[0].start.line;
+        assert.ok(winline <= lines);
+        assert.ok(winline >= lines - 3);
+
+        await vscode.commands.executeCommand("vscode-neovim.shift-m");
+        await wait(1500);
+        winline = await client.callFunction("winline", []);
+        assert.ok(winline <= lines / 2 + 2);
+        assert.ok(winline >= lines / 2 - 2);
+        let cursorLine = editor.selection.active.line;
+        assert.ok(cursorLine <= editor.visibleRanges[0].start.line + (lines / 2 + 2));
+        assert.ok(cursorLine >= editor.visibleRanges[0].start.line + (lines / 2 - 2));
+
+        await vscode.commands.executeCommand("vscode-neovim.shift-h");
+        await wait(2000);
+        winline = await client.callFunction("winline", []);
+        assert.equal(winline, 1);
+        cursorLine = editor.selection.active.line;
+        assert.equal(cursorLine, editor.visibleRanges[0].start.line);
+    });
+
     it("Go to definition in other file - cursor is ok", async () => {
         const doc2 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
