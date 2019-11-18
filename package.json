@@ -656,21 +656,6 @@
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
-				"command": "vscode-neovim.shift-h",
-				"key": "shift+h",
-				"when": "editorTextFocus && neovim.mode != insert"
-			},
-			{
-				"command": "vscode-neovim.shift-m",
-				"key": "shift+m",
-				"when": "editorTextFocus && neovim.mode != insert"
-			},
-			{
-				"command": "vscode-neovim.shift-l",
-				"key": "shift+l",
-				"when": "editorTextFocus && neovim.mode != insert"
-			},
-			{
 				"command": "deleteAllLeft",
 				"key": "ctrl-u",
 				"when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert"

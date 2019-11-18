@@ -219,18 +219,6 @@ export class NVIMPluginController implements vscode.Disposable {
         this.disposables.push(vscode.window.onDidChangeTextEditorSelection(this.onChangeSelection));
         this.disposables.push(vscode.window.onDidChangeTextEditorVisibleRanges(this.onChangeVisibleRange));
         this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
-
-        // scroll commands, better to manage them on vscode side
-        // !note: zz, zt, zb and others are being sent from neovim through RPC request
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-d", this.scrollHalfPageDown));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-u", this.scrollHalfPageUp));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-f", this.scrollPageDown));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-b", this.scrollPageUp));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.shift-h", this.goToFirstLine));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.shift-m", this.goToMiddleLine));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.shift-l", this.goToLastLine));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-e", this.scrollLineDownNoReveal));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-y", this.scrollLineUpNoReveal));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.cmdCompletion", this.onCmdCompletion));
 
         const args = ["-N", "--embed", "-c", `source ${this.neovimExtensionsPath}`];
@@ -1615,6 +1603,21 @@ export class NVIMPluginController implements vscode.Disposable {
                 this.revealLine(at, !!updateCursor);
                 break;
             }
+            case "move-cursor": {
+                const [to] = args as ["top" | "middle" | "bottom"];
+                this.goToLine(to);
+                break;
+            }
+            case "scroll": {
+                const [by, to] = args as ["page" | "halfPage", "up" | "down"];
+                this.scrollPage(by, to);
+                break;
+            }
+            case "scroll-line": {
+                const [to] = args as ["up" | "down"];
+                this.scrollLine(to);
+                break;
+            }
             case "visual-edit": {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const [append, visualMode] = args as any;
@@ -1792,83 +1795,33 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     /// SCROLL COMMANDS ///
-    private scrollPageUp = (): void => {
-        // !note vim doesn't move cursor if there is already on first page. somehow aligned to vscode behavior
-        vscode.commands.executeCommand("editorScroll", { to: "up", by: "page", revealCursor: true });
+    private scrollPage = (by: "page" | "halfPage", to: "up" | "down"): void => {
+        vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: true });
     };
 
-    private scrollPageDown = (): void => {
-        // !note vim moves cursor to the last line, aligned with vscode if scrollBeyondlastLine = true
-        vscode.commands.executeCommand("editorScroll", { to: "down", by: "page", revealCursor: true });
+    private scrollLine = (to: "up" | "down"): void => {
+        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: false });
     };
 
-    private scrollHalfPageUp = (): void => {
-        // !note: on first page vim moves cursor to the center, then to the top, vscode doesn't move
-        vscode.commands.executeCommand("editorScroll", { to: "up", by: "halfPage", revealCursor: true });
-    };
-
-    private scrollHalfPageDown = (): void => {
-        // !note: on last page vim cursor to the center, then to the bottom, vscode doesn't move
-        vscode.commands.executeCommand("editorScroll", { to: "down", by: "halfPage", revealCursor: true });
-    };
-
-    private scrollLineUpNoReveal = (): void => {
-        vscode.commands.executeCommand("editorScroll", { to: "up", by: "line", revealCursor: false });
-    };
-
-    private scrollLineDownNoReveal = (): void => {
-        vscode.commands.executeCommand("editorScroll", { to: "down", by: "line", revealCursor: false });
-    };
-
-    // go to first visible line, first non space character
-    private goToFirstLine = (): void => {
-        const e = vscode.window.activeTextEditor;
-        if (!e) {
-            return;
-        }
-        const topVisible = e.visibleRanges[0].start.line;
-        const line = e.document.lineAt(topVisible);
-        e.selections = [
-            new vscode.Selection(
-                topVisible,
-                line.firstNonWhitespaceCharacterIndex,
-                topVisible,
-                line.firstNonWhitespaceCharacterIndex,
-            ),
-        ];
-    };
-
-    private goToMiddleLine = (): void => {
+    private goToLine = (to: "top" | "middle" | "bottom"): void => {
         const e = vscode.window.activeTextEditor;
         if (!e) {
             return;
         }
         const topVisible = e.visibleRanges[0].start.line;
         const bottomVisible = e.visibleRanges[0].end.line;
-        const middleLine = Math.floor(topVisible + (bottomVisible - topVisible) / 2);
-        const line = e.document.lineAt(middleLine);
+        const lineNum =
+            to === "top"
+                ? topVisible
+                : to === "bottom"
+                ? bottomVisible
+                : Math.floor(topVisible + (bottomVisible - topVisible) / 2);
+        const line = e.document.lineAt(lineNum);
         e.selections = [
             new vscode.Selection(
-                middleLine,
+                lineNum,
                 line.firstNonWhitespaceCharacterIndex,
-                middleLine,
-                line.firstNonWhitespaceCharacterIndex,
-            ),
-        ];
-    };
-
-    private goToLastLine = (): void => {
-        const e = vscode.window.activeTextEditor;
-        if (!e) {
-            return;
-        }
-        const bottomVisible = e.visibleRanges[0].end.line - 1; // may scroll without -1
-        const line = e.document.lineAt(bottomVisible);
-        e.selections = [
-            new vscode.Selection(
-                bottomVisible,
-                line.firstNonWhitespaceCharacterIndex,
-                bottomVisible,
+                lineNum,
                 line.firstNonWhitespaceCharacterIndex,
             ),
         ];
