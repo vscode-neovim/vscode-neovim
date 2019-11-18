@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.25]
+
+- Tab management commands, like keys ```gt``` or commands ```tabo[nly]```
+
 ## [0.0.24]
 
 - File management commands, like ```:w``` or ```:q``` (bound to vscode actions)
