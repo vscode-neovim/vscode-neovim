@@ -2,7 +2,9 @@
 
 ## [0.0.25]
 
-- Tab management commands, like keys ```gt``` or commands ```tabo[nly]```
+- Tab management commands & keys, like ```gt``` or ```tabo[nly]```
+- Window management commands & keys like ```sp[lit]```/```vs[plit]``` and ```<C-w> j/k/l/h``` keys
+- Bind scroll commands in neovim instead of vscode extension ([#41](https://github.com/asvetliakov/vscode-neovim/issues/41))
 
 ## [0.0.24]
 
