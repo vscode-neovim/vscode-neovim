@@ -187,7 +187,8 @@ describe("Insert mode and buffer syncronization", () => {
         await wait();
 
         // go to end of blah2
-        await sendVSCodeKeys("jjjA");
+        await sendVSCodeKeys("jjj");
+        await sendVSCodeKeys("A");
         await sendVSCodeKeys("test");
         // go to newline before
         await sendVSCodeSpecialKey("cursorUp");
@@ -221,7 +222,8 @@ describe("Insert mode and buffer syncronization", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("jjjA");
+        await sendVSCodeKeys("jjj");
+        await sendVSCodeKeys("A");
         await sendVSCodeKeys("test");
 
         setSelection([{ anchorPos: [0, 0], cursorPos: [3, 0] }]);
@@ -315,7 +317,8 @@ describe("Insert mode and buffer syncronization", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("jA");
+        await sendVSCodeKeys("j");
+        await sendVSCodeKeys("A");
         await sendVSCodeKeys("1");
         await sendVSCodeSpecialKey("cursorUp");
         await sendVSCodeKeys("1");

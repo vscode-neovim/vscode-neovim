@@ -45,7 +45,9 @@ describe("Undo", () => {
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
-        await sendVSCodeKeys("jjA");
+        // for some reason sending both jA fails
+        await sendVSCodeKeys("j");
+        await sendVSCodeKeys("A");
         await sendVSCodeKeys("\nblah");
         await sendEscapeKey();
 

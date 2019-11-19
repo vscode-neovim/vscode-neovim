@@ -200,6 +200,7 @@ describe("VSCode integration specific stuff", () => {
         );
     });
 
+    // TODO: sometimes it fails
     it("Cursor is ok when go to def into editor in the other pane", async () => {
         const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
         await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
