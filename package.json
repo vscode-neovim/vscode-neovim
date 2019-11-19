@@ -1,7 +1,7 @@
 {
 	"name": "vscode-neovim",
 	"displayName": "Neo Vim",
-	"description": "Almost complete Vim emulation by using Neovim",
+	"description": "Real VIM in your Visual Studio Code",
 	"publisher": "asvetliakov",
 	"extensionKind": "ui",
 	"version": "0.0.27",
