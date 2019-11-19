@@ -217,7 +217,6 @@ export class NVIMPluginController implements vscode.Disposable {
         this.disposables.push(vscode.window.onDidChangeTextEditorSelection(this.onChangeSelection));
         this.disposables.push(vscode.window.onDidChangeTextEditorVisibleRanges(this.onChangeVisibleRange));
         this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.cmdCompletion", this.onCmdCompletion));
 
         this.disposables.push(
             vscode.commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
@@ -248,10 +247,9 @@ export class NVIMPluginController implements vscode.Disposable {
         this.commandLine = new CommandLineController();
         this.statusLine = new StatusLineController();
         this.commandsController = new CommandsController(this.client);
-        this.commandLine.onAccept = this.onCmdAccept;
+        this.commandLine.onAccepted = this.onCmdAccept;
         this.commandLine.onChanged = this.onCmdChange;
         this.commandLine.onCanceled = this.onCmdCancel;
-        this.commandLine.onBacksapce = this.onCmdBackspace;
         this.disposables.push(this.commandLine);
         this.disposables.push(this.statusLine);
         this.disposables.push(this.commandsController);
@@ -716,6 +714,10 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     }
 
+    private normalizeString(str: string): string {
+        return str.replace("\n", "<CR>").replace("<", "<LT>");
+    }
+
     private onNeovimBufferEvent = (
         buffer: NeovimBuffer,
         tick: number,
@@ -934,19 +936,16 @@ export class NVIMPluginController implements vscode.Disposable {
                         number,
                     ];
                     const allContent = content.map(([, str]) => str);
-                    vscode.commands.executeCommand("setContext", "neovim.cmdLine", true);
-                    this.commandLine.show();
-                    this.commandLine.update(`${firstc}${prompt}${allContent}`);
+                    this.commandLine.show(allContent.join(""), firstc, prompt);
+                    break;
+                }
+                case "wildmenu_show": {
+                    const [items] = firstArg as [string[]];
+                    this.commandLine.setCompletionItems(items);
                     break;
                 }
                 case "cmdline_hide": {
-                    vscode.commands.executeCommand("setContext", "neovim.cmdLine", false);
-                    this.commandLine.hide();
-                    break;
-                }
-                case "cmdline_append": {
-                    const [line] = firstArg as [string];
-                    this.commandLine.append(line);
+                    this.commandLine.cancel();
                     break;
                 }
                 case "msg_showcmd": {
@@ -1788,12 +1787,12 @@ export class NVIMPluginController implements vscode.Disposable {
         // console.log("====END====");
     };
 
-    private onCmdChange = async (e: string): Promise<void> => {
-        await this.client.input(this.normalizeKey(e.slice(-1)));
-    };
-
-    private onCmdBackspace = async (): Promise<void> => {
-        await this.client.input("<BS>");
+    private onCmdChange = async (e: string, complete: boolean): Promise<void> => {
+        let keys = "<C-u>" + this.normalizeString(e);
+        if (complete) {
+            keys += "<Tab>";
+        }
+        await this.client.input(keys);
     };
 
     private onCmdCancel = async (): Promise<void> => {
@@ -1803,10 +1802,6 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private onCmdAccept = (): void => {
         this.client.input("<CR>");
-    };
-
-    private onCmdCompletion = (): void => {
-        this.client.input("<tab>");
     };
 
     /// SCROLL COMMANDS ///

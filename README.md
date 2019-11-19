@@ -42,6 +42,11 @@ Neovim 0.4.2 or greater
 * ```gF``` is mapped to ```editor.action.revealDefinition``` (VSCode shortcut: ```F12```)
 * ```<C-w>gF``` is mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
 
+## Wildmenu completion
+
+Command menu has the wildmenu completion on type. The completion options appear after 1.5s (to not bother you when you write ```:w``` or ```:noh```). ```<C-n>/<C-p>``` selects the option and ```<Tab>``` accepts it. See the gif:
+
+![wildmenu](/images/wildmenu.gif)
 
 ## Multiple cursors
 
@@ -244,6 +249,16 @@ Refer to vim manual to get help what they're doing
 * CTRL-h
 
 Other control keys are not being sent (Usually useless with vscode)
+
+## Cmdline control keys (always enabled)
+
+* CTRL-h (delete one character left)
+* CTRL-w (delete word left)
+* CTRL-u (clear line)
+* CTRL-g / CTRL-t (in incsearch mode moves to next/previous result)
+* CTRL-l (add next character under the cursor to incsearch)
+* CTRL-n / CTRL-p (select next/previous wildmenu completion)
+* Tab - Select suggestion
 
 
 ## Vim-easymotion

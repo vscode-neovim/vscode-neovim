@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.0.27]
+
+- Fix incsearch and allow to use ```<C-t>```/```<C-g>``` with it
+- Reworked/Refactored command line. Now with wildmenu completion support. Also keys like ```<C-w>``` or ```<C-u>``` are working fine now in cmdline now
+
 ## [0.0.26]
 
 - Partially revert #41

@@ -1,8 +1,8 @@
 set shortmess="filnxtToOFI"
 set nowrap
-set wildchar=9
 set mouse=a
 set cmdheight=1
+set wildmode=list
 
 set nobackup
 set nowb
@@ -143,3 +143,4 @@ autocmd BufWinEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 autocmd BufWinEnter * :syntax off
 autocmd CmdlineEnter * :call <SID>notifyBlockingModeStart()
 autocmd CmdlineLeave * :call <SID>notifyBlockingModeEnd()
+

@@ -81,9 +81,7 @@ const keyMappings = {
     right: "<Right>",
     "ctrl-g-cmdline": "<C-g>",
     "ctrl-t-cmdline": "<C-t>",
-    "ctrl-u-cmdline": "<C-u>",
     "ctrl-r-cmdline": "<C-r>",
-    "ctrl-w-cmdline": "<C-w>",
     "ctrl-l-cmdline": "<C-l>",
 };
 
