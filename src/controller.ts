@@ -1170,11 +1170,16 @@ export class NVIMPluginController implements vscode.Disposable {
             this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
         }
         this.currentModeName = modeName;
-        if (!vscode.window.activeTextEditor) {
+        const e = vscode.window.activeTextEditor;
+        if (!e) {
             return;
         }
+        const visibleRange = e.visibleRanges[0];
+        const cursor = e.selection.active;
+        const cursorScreenRow = cursor.line - visibleRange.start.line;
+        this.alignScreenRowInNeovim(cursorScreenRow);
         vscode.commands.executeCommand("setContext", "neovim.mode", modeName);
-        this.applyCursorStyleToEditor(vscode.window.activeTextEditor, modeName);
+        this.applyCursorStyleToEditor(e, modeName);
     };
 
     private setBufferTabOptions = async (editor: vscode.TextEditor): Promise<void> => {

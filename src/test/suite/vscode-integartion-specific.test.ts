@@ -224,4 +224,34 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
     });
+
+    it("Cursor is ok for incsearch after scroll", async () => {
+        const doc = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
+        );
+        const e = await vscode.window.showTextDocument(doc);
+        await wait(1000);
+
+        await sendVSCodeKeys("/bla", 1000);
+
+        await assertContent({ cursor: [115, 19] }, client);
+        assert.ok(e.visibleRanges[0].start.line < 115);
+    });
+
+    it("Winline is ok after exiting insearch on result", async () => {
+        const doc = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
+        );
+        const e = await vscode.window.showTextDocument(doc);
+        await wait(1000);
+
+        await sendVSCodeKeys("/blah2", 1000);
+        await sendVSCodeKeys("\n");
+
+        await wait();
+        const screenRow = e.visibleRanges[0].end.line - e.selection.active.line;
+        const winline = await client.callFunction("winline", []);
+
+        assert.ok(screenRow + 1 === winline);
+    });
 });
