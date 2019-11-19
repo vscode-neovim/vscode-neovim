@@ -562,7 +562,7 @@
 			},
 			{
 				"command": "vscode-neovim.ctrl-a",
-				"key": "ctrl-a",
+				"key": "ctrl+a",
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
@@ -607,17 +607,17 @@
 			},
 			{
 				"command": "vscode-neovim.ctrl-v",
-				"key": "ctrl-v",
+				"key": "ctrl+v",
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
 				"command": "vscode-neovim.ctrl-w",
-				"key": "ctrl-w",
+				"key": "ctrl+w",
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
 				"command": "vscode-neovim.ctrl-x",
-				"key": "ctrl-x",
+				"key": "ctrl+x",
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal"
 			},
 			{
