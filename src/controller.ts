@@ -174,8 +174,6 @@ export class NVIMPluginController implements vscode.Disposable {
     private nvimRealColPosition = 0;
     private nvimLastScreenTopLinePosition = 0;
 
-    private nvimIsCmdLine = false;
-
     private neovimExtensionsPath: string;
 
     /**
@@ -1090,7 +1088,7 @@ export class NVIMPluginController implements vscode.Disposable {
             // todo: investigate if it's possible to not call nvim_win_get_cursor()/winline(). This probably will require cursor tracking (what to do when where won't be grid_scroll event?)
             // we need to know if current mode is blocking otherwise nvim_win_get_cursor/nvim_call_function will stuck until unblock
             const mode = await this.client.mode;
-            if (!this.nvimIsCmdLine && !mode.blocking) {
+            if (!mode.blocking) {
                 const requests: [string, unknown[]][] = [
                     ["nvim_win_get_cursor", [0]],
                     ["nvim_call_function", ["line", ["w0"]]],
@@ -1600,9 +1598,6 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (isBlocking) {
                     this.nvimRealLinePosition = bufCursor[0] - 1;
                     this.nvimRealColPosition = bufCursor[1];
-                    this.nvimIsCmdLine = true;
-                } else {
-                    this.nvimIsCmdLine = false;
                 }
                 break;
             }
