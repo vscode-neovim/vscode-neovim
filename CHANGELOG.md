@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.0.28]
+
+- Use non-blocking rpc requests when communicatings with vscode for file management operations (closing, opening, etc...). Should eliminate the issue when vim is 'stuck' and doesn't respond anymore
+- Fix incorrect cursor positions after opening ```:help something``` (#44)
+- Fix visual block selection for single column in multiple rows (#42)
+- Enable VIM syntax highlighting for help files and external buffers like ```:PlugStatus```. It's slow and sometimes buggy but better than nothing in meantime
+
 ## [0.0.27]
 
 - Fix incsearch and allow to use ```<C-t>```/```<C-g>``` with it
