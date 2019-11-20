@@ -122,7 +122,8 @@ function! s:onBufEnter(name, id)
     " Sometimes doesn't work, although on extensions we handle such buffers
     let controlled = getbufvar(a:id, "vscode_controlled")
     if !controlled
-        call VSCodeExtensionCall('external-buffer', a:name, a:id)
+        let tabstop = &tabstop
+        call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop)
     endif
 endfunction
 
@@ -140,7 +141,8 @@ execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 " Disable syntax highlighting since we don't need it anyway
-autocmd BufWinEnter * :syntax off
+" autocmd BufWinEnter * :syntax off
+autocmd BufWinEnter * :set conceallevel=0
 autocmd CmdlineEnter * :call <SID>notifyBlockingModeStart()
 autocmd CmdlineLeave * :call <SID>notifyBlockingModeEnd()
 

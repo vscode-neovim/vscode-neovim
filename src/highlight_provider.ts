@@ -174,8 +174,17 @@ export class HighlightProvider {
         "lCursor",
         "VisualNC",
         "Visual",
+        "Conceal",
+        "CursorLine",
         "CursorLineNr",
+        "ColorColumn",
         "LineNr",
+        "StatusLine",
+        "StatusLineNC",
+        "VertSplit",
+        "Title",
+        "WildMenu",
+        "Whitespace",
     ];
 
     public constructor(conf: HighlightConfiguration) {

@@ -541,9 +541,9 @@ export class NVIMPluginController implements vscode.Disposable {
             await this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
             // !imporant: seems just nvim_win_set_cursor is not enough, this fixes #30 and #33
             await this.client.callFunction("setpos", [".", [buf!.id, cursor.line + 1, cursor.character + 1, 0]]);
+            // set buffer tab related options
+            await this.setBufferTabOptions(e);
         }
-        // set buffer tab related options
-        await this.setBufferTabOptions(e);
         await this.updateNeovimHeightFromEditor(e, true);
     };
 
@@ -1036,6 +1036,9 @@ export class NVIMPluginController implements vscode.Disposable {
                         if (!editor) {
                             break;
                         }
+                        const uri = editor.document.uri.toString();
+                        const buf = this.uriToBuffer.get(uri);
+                        const isExternal = buf && this.managedBufferIds.has(buf.id) ? false : true;
                         // const scrollState = this.editorScollPositions.get(editor);
                         const finalRow = row;
                         // non editor row (neovim sends update for modeline/statusline)
@@ -1051,7 +1054,10 @@ export class NVIMPluginController implements vscode.Disposable {
                             }
                             for (let i = 0; i < (repeat || 1); i++) {
                                 const col = colStart + cellIdx;
-                                const highlightGroup = this.documentHighlightProvider.getHighlightGroupName(cellHlId);
+                                const highlightGroup = this.documentHighlightProvider.getHighlightGroupName(
+                                    cellHlId,
+                                    isExternal,
+                                );
                                 if (!currentScreenHighlights[finalRow]) {
                                     currentScreenHighlights[finalRow] = {};
                                 }
@@ -1438,7 +1444,12 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     }
 
-    private async attachNeovimExternalBuffer(name: string, id: number): Promise<void> {
+    private async attachNeovimExternalBuffer(
+        name: string,
+        id: number,
+        expandTab: boolean,
+        tabStop: number,
+    ): Promise<void> {
         // already processed
         if (this.bufferIdToUri.has(id)) {
             const uri = this.bufferIdToUri.get(id)!;
@@ -1452,8 +1463,12 @@ export class NVIMPluginController implements vscode.Disposable {
                 // then read file and reload the buffer
                 const lines = await buf.lines;
                 const editor = await vscode.window.showTextDocument(doc);
+                // need always to use spaces otherwise col will be different and vim HL will be incorrect
+                editor.options.insertSpaces = true;
+                editor.options.tabSize = tabStop;
                 // using replace produces ugly selection effect, try to avoid it by using insert
                 editor.edit(b => b.insert(new vscode.Position(0, 0), lines.join("\n")));
+                vscode.commands.executeCommand("editor.action.indentationToSpaces");
             }
             return;
         }
@@ -1483,7 +1498,11 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!lines.length || lines.every(l => !l.length)) {
             this.externalBuffersShowOnNextChange.add(buf.id);
         } else {
-            await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active, false);
+            const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active, false);
+            // need always to use spaces otherwise col will be different and vim HL will be incorrect
+            editor.options.insertSpaces = true;
+            editor.options.tabSize = tabStop;
+            vscode.commands.executeCommand("editor.action.indentationToSpaces");
         }
     }
 
@@ -1576,7 +1595,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private async handleExtensionRequest(command: string, args: unknown[]): Promise<unknown> {
         switch (command) {
             case "external-buffer": {
-                const [name, idStr] = args as [string, string];
+                const [name, idStr, expandTab, tabStop] = args as [string, string, number, number];
                 const id = parseInt(idStr, 10);
                 if (!this.managedBufferIds.has(id)) {
                     // Handle when trying to open vscode uri from vim
@@ -1591,7 +1610,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             // ignore ?
                         }
                     } else {
-                        await this.attachNeovimExternalBuffer(name, id);
+                        await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
                     }
                 } else {
                     const uri = this.bufferIdToUri.get(id);
