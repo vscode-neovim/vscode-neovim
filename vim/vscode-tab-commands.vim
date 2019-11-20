@@ -6,18 +6,18 @@ function! s:switchEditor(...)
     endfor
 endfunction
 
-command! -nargs=? Tabedit if <q-args> == '' | call VSCodeCall('workbench.action.quickOpen') | else | call VSCodeExtensionNotify('open-file', expand(<q-args>), 0) | endif
+command! -nargs=? Tabedit if <q-args> == '' | call VSCodeNotify('workbench.action.quickOpen') | else | call VSCodeExtensionNotify('open-file', expand(<q-args>), 0) | endif
 command! Tabnew call VSCodeExtensionNotify('open-file', '__vscode_new__', 0)
-command! Tabfind call VSCodeCall('workbench.action.quickOpen')
+command! Tabfind call VSCodeNotify('workbench.action.quickOpen')
 command! Tab echoerr 'Not supported'
 command! Tabs echoerr 'Not supported'
-command! -bang Tabclose if <q-bang> == '!' | call VSCodeCall('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeCall('workbench.action.closeActiveEditor') | endif
-command! Tabonly call VSCodeCall('workbench.action.closeOtherEditors')
+command! -bang Tabclose if <q-bang> == '!' | call VSCodeNotify('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeNotify('workbench.action.closeActiveEditor') | endif
+command! Tabonly call VSCodeNotify('workbench.action.closeOtherEditors')
 command! -nargs=? Tabnext call <SID>switchEditor(<q-args>, 'next')
 command! -nargs=? Tabprevious call <SID>switchEditor(<q-args>, 'prev')
-command! Tabfirst call VSCodeCall('workbench.action.firstEditorInGroup')
-command! Tablast call VSCodeCall('workbench.action.lastEditorInGroup')
-command! Tabrewind call VSCodeCall('workbench.action.firstEditorInGroup')
+command! Tabfirst call VSCodeNotify('workbench.action.firstEditorInGroup')
+command! Tablast call VSCodeNotify('workbench.action.lastEditorInGroup')
+command! Tabrewind call VSCodeNotify('workbench.action.firstEditorInGroup')
 command! -nargs=? Tabmove echoerr 'Not supported yet'
 
 AlterCommand tabe[dit] Tabedit
