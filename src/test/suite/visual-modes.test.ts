@@ -426,4 +426,34 @@ describe("Visual modes test", () => {
             client,
         );
     });
+
+    it("Visual block mode - selections are ok when selecting one column in multiple rows", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("l");
+        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await wait(1000);
+        await sendVSCodeKeys("jj");
+
+        await assertContent(
+            {
+                vsCodeSelections: [
+                    new vscode.Selection(0, 2, 0, 1),
+                    new vscode.Selection(1, 2, 1, 1),
+                    new vscode.Selection(2, 2, 2, 1),
+                ],
+            },
+            client,
+        );
+
+        // test cursor position by inserting t here
+        await sendVSCodeKeys("I");
+        await sendVSCodeKeys("t");
+        await sendEscapeKey();
+        await assertContent({ content: ["btlah1 abc", "btlah2 abc", "btlah3 abc"] }, client);
+    });
 });

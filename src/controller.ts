@@ -1338,7 +1338,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     // do similar trick as with visual char mode - produce two selections for forward selection
                     // and increase anchor for backward selection
                     const lineSelections: vscode.Selection[] = [];
-                    if (newCol >= visualStartChar) {
+                    if (newCol > visualStartChar) {
                         lineSelections.push(
                             new vscode.Selection(line, visualStartChar, line, newCol),
                             new vscode.Selection(line, newCol + 1, line, newCol),
