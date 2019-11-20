@@ -1101,7 +1101,8 @@ export class NVIMPluginController implements vscode.Disposable {
             // todo: investigate if it's possible to not call nvim_win_get_cursor()/winline(). This probably will require cursor tracking (what to do when where won't be grid_scroll event?)
             // we need to know if current mode is blocking otherwise nvim_win_get_cursor/nvim_call_function will stuck until unblock
             const mode = await this.client.mode;
-            if (!mode.blocking) {
+            // skip command line editing mode ("c") otherwise we can break screenline, see #46
+            if (!mode.blocking && mode.mode !== "c") {
                 const requests: [string, unknown[]][] = [
                     ["nvim_win_get_cursor", [0]],
                     ["nvim_call_function", ["line", ["w0"]]],
