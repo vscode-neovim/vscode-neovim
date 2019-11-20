@@ -138,7 +138,7 @@ execute 'source ' . s:currDir . '/vscode-tab-commands.vim'
 execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 
 autocmd BufWinEnter,WinNew,WinEnter * :only
-autocmd BufWinEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
+autocmd BufEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 " Disable syntax highlighting since we don't need it anyway
 autocmd BufWinEnter * :syntax off
 autocmd CmdlineEnter * :call <SID>notifyBlockingModeStart()

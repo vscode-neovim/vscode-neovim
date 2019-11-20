@@ -10,6 +10,7 @@ import {
     wait,
     sendVSCodeKeys,
     closeActiveEditor,
+    assertContent,
 } from "../utils";
 
 describe("Neovim external buffers", () => {
@@ -45,5 +46,23 @@ describe("Neovim external buffers", () => {
         assert.ok(text2.indexOf("VIM REFERENCE MANUAL") !== -1);
 
         await closeActiveEditor();
+    });
+
+    it("Cursor for external buffers is OK", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: "blah",
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys(":help local-options", 1000);
+        await sendVSCodeKeys("\n", 2000);
+
+        await assertContent(
+            {
+                cursor: [186, 28],
+            },
+            client,
+        );
     });
 });

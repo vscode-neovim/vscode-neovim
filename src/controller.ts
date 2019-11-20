@@ -511,29 +511,37 @@ export class NVIMPluginController implements vscode.Disposable {
         const cursor = e!.selection.active;
         const visible = e!.visibleRanges[0];
         const cursorScreenRow = cursor.line - visible.start.line;
-        // this.editorPendingCursor.set(e!, [cursor.line, cursor.character, cursorScreenRow]);
-        this.editorPendingCursor.set(e!, {
-            line: cursor.line,
-            col: cursor.character,
-            screenRow: cursorScreenRow,
-            totalSkips: 0,
-        });
-        // !important: need to update cursor in atomic operation
-        const requests = [
-            // ["nvim_call_function", ["setpos", [".", [buf.id, cursor.line + 1, cursor.character + 1, 0]]]],
-            ["nvim_win_set_buf", [0, buf.id]],
-            ["nvim_win_set_cursor", [0, [e!.selection.active.line + 1, e!.selection.active.character]]],
-        ];
-        await this.client.callAtomic(requests);
+        if (this.managedBufferIds.has(buf.id)) {
+            // this.editorPendingCursor.set(e!, [cursor.line, cursor.character, cursorScreenRow]);
+            this.editorPendingCursor.set(e!, {
+                line: cursor.line,
+                col: cursor.character,
+                screenRow: cursorScreenRow,
+                totalSkips: 0,
+            });
+            // !important: need to update cursor in atomic operation
+            const requests = [
+                // ["nvim_call_function", ["setpos", [".", [buf.id, cursor.line + 1, cursor.character + 1, 0]]]],
+                ["nvim_win_set_buf", [0, buf.id]],
+                ["nvim_win_set_cursor", [0, [e!.selection.active.line + 1, e!.selection.active.character]]],
+            ];
+            await this.client.callAtomic(requests);
+        } else {
+            // !for external buffer - without set_buf the buffer will disappear when switching to other editor and break vscode editor management
+            // ! alternatively we can close the editor with such buf?
+            await this.client.request("nvim_win_set_buf", [0, buf.id]);
+        }
         // await this.client.request("nvim_win_set_buf", [0, buf]);
         this.currentNeovimBuffer = buf;
         // this.client.buffer = buf as any;
         // set correct scroll position & tab options in neovim buffer
         // reapply cursor style
         this.applyCursorStyleToEditor(e, this.currentModeName);
-        await this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
-        // !imporant: seems just nvim_win_set_cursor is not enough, this fixes #30 and #33
-        await this.client.callFunction("setpos", [".", [buf!.id, cursor.line + 1, cursor.character + 1, 0]]);
+        if (this.managedBufferIds.has(buf.id)) {
+            await this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
+            // !imporant: seems just nvim_win_set_cursor is not enough, this fixes #30 and #33
+            await this.client.callFunction("setpos", [".", [buf!.id, cursor.line + 1, cursor.character + 1, 0]]);
+        }
         // set buffer tab related options
         await this.setBufferTabOptions(e);
         await this.updateNeovimHeightFromEditor(e, true);
