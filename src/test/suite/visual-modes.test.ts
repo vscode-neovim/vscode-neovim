@@ -457,7 +457,7 @@ describe("Visual modes test", () => {
         await assertContent({ content: ["btlah1 abc", "btlah2 abc", "btlah3 abc"] }, client);
     });
 
-    it("Visual line mode - $ is ok for upward selection", async () => {
+    it("Visual mode - $ is ok for upward selection", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n"),
         });
