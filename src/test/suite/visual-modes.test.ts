@@ -456,4 +456,22 @@ describe("Visual modes test", () => {
         await sendEscapeKey();
         await assertContent({ content: ["btlah1 abc", "btlah2 abc", "btlah3 abc"] }, client);
     });
+
+    it("Visual line mode - $ is ok for upward selection", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("jllv");
+        await sendVSCodeKeys("k$");
+        await assertContent(
+            {
+                cursor: [0, 9],
+                vsCodeSelections: [new vscode.Selection(1, 3, 0, 9)],
+            },
+            client,
+        );
+    });
 });

@@ -1305,7 +1305,7 @@ export class NVIMPluginController implements vscode.Disposable {
             if (mode === "v") {
                 // vscode selection is differ than vim selection: in vim the character is selected under the block cursor
                 // but in vscode it's not. workaround it by creating second selection with newCol +- 1
-                if (newCol >= visualStartChar) {
+                if (newCol >= visualStartChar && newLine >= visualStartLine) {
                     revealCursor = new vscode.Selection(visualStartLine, visualStartChar, newLine, newCol);
                     editor.selections = [revealCursor, new vscode.Selection(newLine, newCol + 1, newLine, newCol)];
                 } else {
