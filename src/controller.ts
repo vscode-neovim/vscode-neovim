@@ -292,7 +292,7 @@ export class NVIMPluginController implements vscode.Disposable {
         this.watchAndApplyNeovimEdits();
 
         for (const e of vscode.window.visibleTextEditors) {
-            await this.initBuffer(e.document);
+            await this.initBuffer(e);
         }
         // this.onChangedEdtiors(vscode.window.visibleTextEditors);
         await this.onChangedActiveEditor(vscode.window.activeTextEditor);
@@ -319,8 +319,9 @@ export class NVIMPluginController implements vscode.Disposable {
     //     // await this.initBuffer(e);
     // };
 
-    private async initBuffer(e: vscode.TextDocument): Promise<NeovimBuffer | undefined> {
-        const uri = e.uri.toString();
+    private async initBuffer(e: vscode.TextEditor): Promise<NeovimBuffer | undefined> {
+        const doc = e.document;
+        const uri = doc.uri.toString();
         if (this.uriToBuffer.has(uri)) {
             return;
         }
@@ -346,11 +347,19 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         // this.currentNeovimBuffer = buf;
         this.managedBufferIds.add(buf.id);
-        const eol = e.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
-        const lines = e.getText().split(eol);
+        const eol = doc.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+        const lines = doc.getText().split(eol);
+        const {
+            options: { insertSpaces, tabSize },
+        } = e;
 
         const requests: [string, VimValue[]][] = [];
         requests.push(["nvim_win_set_buf", [0, buf]]);
+        requests.push(["nvim_buf_set_option", [buf, "expandtab", insertSpaces as boolean]]);
+        requests.push(["nvim_buf_set_option", [buf, "tabstop", tabSize as number]]);
+        requests.push(["nvim_buf_set_option", [buf, "shiftwidth", tabSize as number]]);
+        requests.push(["nvim_buf_set_option", [buf, "softtabstop", tabSize as number]]);
+
         requests.push(["nvim_buf_set_lines", [buf, 0, 1, false, lines]]);
         // if (cursor) {
         //     requests.push(["nvim_win_set_cursor", [0, [cursor.line + 1, cursor.char]]]);
@@ -503,7 +512,7 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         if (!buf) {
-            buf = await this.initBuffer(e.document);
+            buf = await this.initBuffer(e);
         }
         if (!buf) {
             return;
@@ -541,8 +550,6 @@ export class NVIMPluginController implements vscode.Disposable {
             await this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
             // !imporant: seems just nvim_win_set_cursor is not enough, this fixes #30 and #33
             await this.client.callFunction("setpos", [".", [buf!.id, cursor.line + 1, cursor.character + 1, 0]]);
-            // set buffer tab related options
-            await this.setBufferTabOptions(e);
         }
         await this.updateNeovimHeightFromEditor(e, true);
     };
@@ -1194,22 +1201,6 @@ export class NVIMPluginController implements vscode.Disposable {
         this.alignScreenRowInNeovim(cursorScreenRow);
         vscode.commands.executeCommand("setContext", "neovim.mode", modeName);
         this.applyCursorStyleToEditor(e, modeName);
-    };
-
-    private setBufferTabOptions = async (editor: vscode.TextEditor): Promise<void> => {
-        const requests: VimValue[] = [];
-        const {
-            options: { insertSpaces, tabSize },
-        } = editor;
-        const buf = this.uriToBuffer.get(editor.document.uri.toString());
-        if (!buf) {
-            return;
-        }
-        requests.push(["nvim_buf_set_option", [buf, "expandtab", insertSpaces]]);
-        requests.push(["nvim_buf_set_option", [buf, "tabstop", tabSize]]);
-        requests.push(["nvim_buf_set_option", [buf, "shiftwidth", tabSize]]);
-        requests.push(["nvim_buf_set_option", [buf, "softtabstop", tabSize]]);
-        await this.client.callAtomic(requests);
     };
 
     private updateCursorPositionInNeovim = async (
