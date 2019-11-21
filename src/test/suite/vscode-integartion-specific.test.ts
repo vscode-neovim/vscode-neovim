@@ -255,4 +255,34 @@ describe("VSCode integration specific stuff", () => {
 
         assert.ok(screenRow + 1 === winline);
     });
+
+    it("Cursor is preserved if same doc is opened in two editor columns", async () => {
+        const doc = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/scrolltest.txt"),
+        );
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+        await sendVSCodeKeys("50j", 1000);
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.Two);
+        await wait(1000);
+        await sendVSCodeKeys("100j", 1000);
+
+        await sendVSCodeKeys("<C-w>h");
+        await sendVSCodeKeys("l");
+        await assertContent(
+            {
+                cursor: [50, 1],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("<C-w>l");
+        await sendVSCodeKeys("l");
+        await assertContent(
+            {
+                cursor: [100, 1],
+            },
+            client,
+        );
+    });
 });

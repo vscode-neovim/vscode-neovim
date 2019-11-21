@@ -196,6 +196,8 @@ export class NVIMPluginController implements vscode.Disposable {
         { line: number; col: number; screenRow: number; totalSkips: number }
     > = new WeakMap();
 
+    private currentVSCodeEditor?: vscode.TextEditor;
+
     public constructor(
         neovimPath: string,
         extensionPath: string,
@@ -500,17 +502,21 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private onChangedActiveEditor = async (e: vscode.TextEditor | undefined): Promise<void> => {
+        // !Note called also when editor changes column
         await this.nvimAttachWaiter;
         if (!e) {
+            this.currentVSCodeEditor = undefined;
             return;
         }
         if (e !== vscode.window.activeTextEditor) {
             return;
         }
-        let buf = this.uriToBuffer.get(e.document.uri.toString());
-        if (buf && buf === this.currentNeovimBuffer) {
+        // changed only column, don't do anything
+        if (e === this.currentVSCodeEditor) {
             return;
         }
+        this.currentVSCodeEditor = e;
+        let buf = this.uriToBuffer.get(e.document.uri.toString());
         if (!buf) {
             buf = await this.initBuffer(e);
         }
