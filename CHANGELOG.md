@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.0.29]
+
+- Fix selection is being reset in visual mode after typing ```vk$``` (#48)
+- Fix not cleaning incsearch highlight after canceling the incsearch (#46)
+- Fix incorrect cursor after switching the editor to the same document but in different editor column (#49)
+
 ## [0.0.28]
 
 - Use non-blocking rpc requests when communicatings with vscode for file management operations (closing, opening, etc...). Should eliminate the issue when vim is 'stuck' and doesn't respond anymore
