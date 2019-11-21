@@ -94,8 +94,8 @@ describe("VSCode integration specific stuff", () => {
         await vscode.commands.executeCommand("vscode-neovim.ctrl-f");
         await wait(1500);
 
-        let winline = await client.callFunction("winline", []);
-        assert.equal(winline, 1);
+        let visibleRange = editor.visibleRanges[0];
+        assert.equal(editor.selection.active.line, visibleRange.start.line);
         await assertContent(
             {
                 cursor: [editor.visibleRanges[0].start.line, 0],
@@ -104,24 +104,35 @@ describe("VSCode integration specific stuff", () => {
         );
 
         await sendVSCodeKeys("L", 1500);
-        winline = await client.callFunction("winline", []);
-        const lines = editor.visibleRanges[0].end.line - editor.visibleRanges[0].start.line;
-        assert.ok(winline <= lines);
-        assert.ok(winline >= lines - 3);
+        visibleRange = editor.visibleRanges[0];
+        assert.equal(editor.selection.active.line, visibleRange.end.line);
+        await assertContent(
+            {
+                cursor: [editor.visibleRanges[0].end.line, 0],
+            },
+            client,
+        );
 
         await sendVSCodeKeys("M", 1500);
-        winline = await client.callFunction("winline", []);
-        assert.ok(winline <= lines / 2 + 2);
-        assert.ok(winline >= lines / 2 - 2);
-        let cursorLine = editor.selection.active.line;
-        assert.ok(cursorLine <= editor.visibleRanges[0].start.line + (lines / 2 + 2));
-        assert.ok(cursorLine >= editor.visibleRanges[0].start.line + (lines / 2 - 2));
+        visibleRange = editor.visibleRanges[0];
+        await assertContent(
+            {
+                cursor: [editor.selection.active.line, 0],
+            },
+            client,
+        );
+        const middleline = visibleRange.start.line + (visibleRange.end.line - visibleRange.start.line) / 2;
+        assert.ok(editor.selection.active.line >= middleline - 1);
+        assert.ok(editor.selection.active.line <= middleline + 1);
 
         await sendVSCodeKeys("H", 1500);
-        winline = await client.callFunction("winline", []);
-        assert.equal(winline, 1);
-        cursorLine = editor.selection.active.line;
-        assert.equal(cursorLine, editor.visibleRanges[0].start.line);
+        visibleRange = editor.visibleRanges[0];
+        await assertContent(
+            {
+                cursor: [visibleRange.start.line, 0],
+            },
+            client,
+        );
     });
 
     it("Go to definition in other file - cursor is ok", async () => {
@@ -239,35 +250,18 @@ describe("VSCode integration specific stuff", () => {
         assert.ok(e.visibleRanges[0].start.line < 115);
     });
 
-    it("Winline is ok after exiting insearch on result", async () => {
-        const doc = await vscode.workspace.openTextDocument(
-            path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
-        );
-        const e = await vscode.window.showTextDocument(doc);
-        await wait(1000);
-
-        await sendVSCodeKeys("/blah2", 1000);
-        await sendVSCodeKeys("\n");
-
-        await wait();
-        const screenRow = e.visibleRanges[0].end.line - e.selection.active.line;
-        const winline = await client.callFunction("winline", []);
-
-        assert.ok(screenRow + 1 === winline);
-    });
-
     it("Cursor is preserved if same doc is opened in two editor columns", async () => {
         const doc = await vscode.workspace.openTextDocument(
             path.join(__dirname, "../../../test_fixtures/scrolltest.txt"),
         );
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait(1000);
-        await sendVSCodeKeys("50j", 1000);
+        await sendVSCodeKeys("50j", 1500);
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.Two);
         await wait(1000);
-        await sendVSCodeKeys("100j", 1000);
+        await sendVSCodeKeys("100j", 1500);
 
-        await sendVSCodeKeys("<C-w>h");
+        await sendVSCodeKeys("<C-w>h", 1000);
         await sendVSCodeKeys("l");
         await assertContent(
             {
@@ -276,7 +270,7 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
 
-        await sendVSCodeKeys("<C-w>l");
+        await sendVSCodeKeys("<C-w>l", 1000);
         await sendVSCodeKeys("l");
         await assertContent(
             {
