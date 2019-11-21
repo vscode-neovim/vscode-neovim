@@ -312,8 +312,8 @@ export class HighlightProvider {
         if (!docHighlights) {
             return;
         }
-        for (const [type] of docHighlights) {
-            docHighlights.delete(type);
+        for (const [, hls] of docHighlights) {
+            hls.clear();
         }
     }
 
@@ -331,7 +331,6 @@ export class HighlightProvider {
 
             const typeHighlights = docHighlights.get(groupName);
             if (!typeHighlights) {
-                result.push([decorator, []]);
                 continue;
             }
             const ranges: Range[] = [];
