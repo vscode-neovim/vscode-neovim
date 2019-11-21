@@ -71,7 +71,10 @@ interface DocumentChange {
     version: number;
 }
 
-const NVIM_WIN_HEIGHT = 100;
+// to not deal with screenrow positioning, we set height to high value and scrolloff to value / 2. so screenrow will be always constant
+// big scrolloff is needed to make sure that editor visible space will be always within virtual vim boundaries, regardless of current
+// cursor positioning
+const NVIM_WIN_HEIGHT = 201;
 const NVIM_WIN_WIDTH = 500;
 
 export class NVIMPluginController implements vscode.Disposable {
@@ -165,14 +168,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private vimModes: Map<string, CursorMode | OtherMode> = new Map();
     private documentHighlightProvider: HighlightProvider;
 
-    private editorVisibleLines: WeakMap<vscode.TextEditor, number> = new WeakMap();
-
     private nvimAttachWaiter: Promise<void> = Promise.resolve();
     private isInit = false;
 
     private nvimRealLinePosition = 0;
     private nvimRealColPosition = 0;
-    private nvimLastScreenTopLinePosition = 0;
 
     private neovimExtensionsPath: string;
 
@@ -553,11 +553,10 @@ export class NVIMPluginController implements vscode.Disposable {
         // reapply cursor style
         this.applyCursorStyleToEditor(e, this.currentModeName);
         if (this.managedBufferIds.has(buf.id)) {
-            await this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
+            await this.updateCursorPositionInNeovim(cursor.line, cursor.character);
             // !imporant: seems just nvim_win_set_cursor is not enough, this fixes #30 and #33
             await this.client.callFunction("setpos", [".", [buf!.id, cursor.line + 1, cursor.character + 1, 0]]);
         }
-        await this.updateNeovimHeightFromEditor(e, true);
     };
 
     private onChangeVisibleRange = async (e: vscode.TextEditorVisibleRangesChangeEvent): Promise<void> => {
@@ -567,68 +566,48 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!e.visibleRanges[0]) {
             return;
         }
-        const visibleRange = e.visibleRanges[0];
-        const currentVisibleLines = visibleRange.end.line - visibleRange.start.line;
-        const prevVisibleLines = this.editorVisibleLines.get(e.textEditor) || NVIM_WIN_HEIGHT;
         if (this.shouldIgnoreMouseSelection) {
             return;
         }
-        // const cursor = e.textEditor.selection.active;
-
-        if (prevVisibleLines === currentVisibleLines && !this.isInsertMode) {
-            this.commitScrolling(e.textEditor);
-            // scrolling likely
-            /*const diff = Math.abs(visibleRange.start.line - cursor.line);
-            if (cursor.line > visibleRange.end.line && diff <= 5) {
-                e.textEditor.selections = [
-                    new vscode.Selection(
-                        visibleRange.end.line,
-                        cursor.character,
-                        visibleRange.end.line,
-                        cursor.character,
-                    ),
-                ];
-            } else if (cursor.line < visibleRange.start.line && diff <= 5) {
-                e.textEditor.selections = [
-                    new vscode.Selection(
-                        visibleRange.start.line,
-                        cursor.character,
-                        visibleRange.start.line,
-                        cursor.character,
-                    ),
-                ];
-            }*/
-            // this.commitScrolling();
-        } else {
-            if (!this.isInsertMode) {
-                this.updateNeovimHeightFromEditor(e.textEditor);
-            }
-        }
-    };
-
-    private updateScreenRowFromScrolling = (e: vscode.TextEditor): void => {
-        // const e = vscode.window.activeTextEditor;
-        // if (!e) {
-        //     return;
-        // }
-        if (e !== vscode.window.activeTextEditor) {
-            return;
-        }
-        const visibleRange = e.visibleRanges[0];
-        const cursor = e.selection.active;
-        const cursorScreenRow = cursor.line - visibleRange.start.line;
-        const uri = e.document.uri.toString();
-        const buf = this.uriToBuffer.get(uri);
-        if (!buf || buf !== this.currentNeovimBuffer) {
-            return;
-        }
         if (!this.isInsertMode) {
-            this.alignScreenRowInNeovim(cursorScreenRow);
+            this.commitScrolling(e.textEditor);
         }
     };
 
-    private commitScrolling = throttle(this.updateScreenRowFromScrolling, 1000, { leading: false });
-    private commitScrollingFast = throttle(this.updateScreenRowFromScrolling, 200, { leading: false });
+    private commitScrolling = throttle(
+        (e: vscode.TextEditor) => {
+            if (vscode.window.activeTextEditor !== e) {
+                return;
+            }
+            const cursor = e.selection.active;
+            const visibleRange = e.visibleRanges[0];
+            if (!visibleRange) {
+                return;
+            }
+            if (cursor.line > visibleRange.end.line) {
+                e.selections = [
+                    new vscode.Selection(
+                        visibleRange.end.line,
+                        cursor.character,
+                        visibleRange.end.line,
+                        cursor.character,
+                    ),
+                ];
+            } else if (cursor.line < visibleRange.start.line) {
+                e.selections = [
+                    new vscode.Selection(
+                        visibleRange.start.line,
+                        cursor.character,
+                        visibleRange.start.line,
+                        cursor.character,
+                    ),
+                ];
+            }
+        },
+        500,
+        { leading: false },
+    );
+    // private commitScrollingFast = throttle(this.updateScreenRowFromScrolling, 200, { leading: false });
 
     /**
      * Handle vscode selection change. This includes everything touching selection or cursor position, includes custom commands and selection = [] assignment
@@ -660,7 +639,7 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }*/
         const cursor = e.selections[0].active;
-        const visibleRange = e.textEditor.visibleRanges[0];
+        // const visibleRange = e.textEditor.visibleRanges[0];
         let shouldUpdateNeovimCursor = false;
 
         if (
@@ -671,14 +650,14 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         if (shouldUpdateNeovimCursor) {
             // when jumping to definition cursor line is new and visible range is old, we'll align neovim screen row after scroll
-            const cursorScreenRow = visibleRange.contains(cursor) ? cursor.line - visibleRange.start.line : undefined;
+            // const cursorScreenRow = visibleRange.contains(cursor) ? cursor.line - visibleRange.start.line : undefined;
             // when navigating to different file the onChangeSelection may come before onChangedTextEditor, so make sure we won't set cursor in the wrong buffer
             const uri = e.textEditor.document.uri.toString();
             const buf = this.uriToBuffer.get(uri);
             if (!buf || buf !== this.currentNeovimBuffer) {
                 return;
             }
-            this.updateCursorPositionInNeovim(cursor.line, cursor.character, cursorScreenRow);
+            this.updateCursorPositionInNeovim(cursor.line, cursor.character);
         }
         // Kind may be undefined when:
         // 1) opening file
@@ -1109,13 +1088,13 @@ export class NVIMPluginController implements vscode.Disposable {
             this.handleModeChange(newModeName);
         }
         // let vimCursorLine = this.nvimRealLinePosition;
-        let vimScreenTopLine = this.nvimLastScreenTopLinePosition;
+        let vimTopLine = 0;
         if (updateCursor || applyHighlights) {
             // todo: investigate if it's possible to not call nvim_win_get_cursor()/winline(). This probably will require cursor tracking (what to do when where won't be grid_scroll event?)
             // we need to know if current mode is blocking otherwise nvim_win_get_cursor/nvim_call_function will stuck until unblock
             const mode = await this.client.mode;
             // skip command line editing mode ("c") otherwise we can break screenline, see #46
-            if (!mode.blocking && mode.mode !== "c") {
+            if (!mode.blocking) {
                 const requests: [string, unknown[]][] = [
                     ["nvim_win_get_cursor", [0]],
                     ["nvim_call_function", ["line", ["w0"]]],
@@ -1124,12 +1103,11 @@ export class NVIMPluginController implements vscode.Disposable {
                     requests.push(["nvim_call_function", ["getpos", ["v"]]]);
                 }
                 const [
-                    [[realLine1Based, realCol], topScreenLine1Based, visualOrCursorPos1Based],
+                    [[realLine1Based, realCol], winTopLine1Based, visualOrCursorPos1Based],
                 ] = await this.client.callAtomic(requests);
-                vimScreenTopLine = topScreenLine1Based - 1;
-                this.nvimLastScreenTopLinePosition = vimScreenTopLine;
                 const newCursorLine = realLine1Based - 1;
                 const newCursorCol = realCol;
+                vimTopLine = winTopLine1Based - 1;
                 if (updateCursor) {
                     this.updateCursorPosInActiveEditor(
                         newCursorLine,
@@ -1153,14 +1131,14 @@ export class NVIMPluginController implements vscode.Disposable {
                     if (group === "remove") {
                         this.documentHighlightProvider.remove(
                             uri,
-                            vimScreenTopLine + parseInt(lineId, 10),
+                            vimTopLine + parseInt(lineId, 10),
                             parseInt(colId, 10),
                         );
                     } else {
                         this.documentHighlightProvider.add(
                             uri,
                             group,
-                            vimScreenTopLine + parseInt(lineId, 10),
+                            vimTopLine + parseInt(lineId, 10),
                             parseInt(colId, 10),
                         );
                     }
@@ -1201,53 +1179,14 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!e) {
             return;
         }
-        const visibleRange = e.visibleRanges[0];
-        const cursor = e.selection.active;
-        const cursorScreenRow = cursor.line - visibleRange.start.line;
-        this.alignScreenRowInNeovim(cursorScreenRow);
         vscode.commands.executeCommand("setContext", "neovim.mode", modeName);
         this.applyCursorStyleToEditor(e, modeName);
     };
 
-    private updateCursorPositionInNeovim = async (
-        line: number,
-        col: number,
-        forceScreenRow?: number,
-    ): Promise<void> => {
+    private updateCursorPositionInNeovim = async (line: number, col: number): Promise<void> => {
         if (this.nvimRealLinePosition !== line || this.nvimRealColPosition !== col) {
             await this.client.request("nvim_win_set_cursor", [0, [line + 1, col]]);
         }
-        if (forceScreenRow) {
-            await this.alignScreenRowInNeovim(forceScreenRow);
-        }
-    };
-
-    private alignScreenRowInNeovim = async (screenRow: number): Promise<void> => {
-        await this.client.callFunction("VSCodeAlignScreenRow", [screenRow + 1]);
-    };
-
-    private updateNeovimHeightFromEditor = async (e: vscode.TextEditor, force = false): Promise<void> => {
-        let currentVisibleLines = e.visibleRanges[0].end.line - e.visibleRanges[0].start.line;
-        // store initial value
-        if (!this.editorVisibleLines.has(e)) {
-            force = true;
-            this.editorVisibleLines.set(
-                e,
-                currentVisibleLines <= e.document.lineCount - 1 ? NVIM_WIN_HEIGHT : currentVisibleLines,
-            );
-        }
-        const prevVisibleLines = this.editorVisibleLines.get(e)!;
-        // for new / small documents visible range will be smaller than editor height
-        // this is checking actually if editor has a scroll
-        if (currentVisibleLines >= e.document.lineCount - 1) {
-            currentVisibleLines = NVIM_WIN_HEIGHT;
-        }
-        if (prevVisibleLines === currentVisibleLines && !force) {
-            return;
-        }
-        this.editorVisibleLines.set(e, currentVisibleLines);
-
-        await this.client.request("nvim_win_set_height", [0, currentVisibleLines]);
     };
 
     private isVisualMode(modeShortName: string): boolean {
@@ -1373,9 +1312,6 @@ export class NVIMPluginController implements vscode.Disposable {
         }
 
         const visibleLines = visibleRange.end.line - visibleRange.start.line;
-        // cancel any possible pending scrolling
-        this.commitScrolling.cancel();
-        this.commitScrollingFast.cancel();
         if (visibleRange.contains(revealCursor)) {
             // always try to reveal even if in visible range to reveal horizontal scroll
             editor.revealRange(
@@ -1386,14 +1322,10 @@ export class NVIMPluginController implements vscode.Disposable {
             const revealType =
                 visibleRange.start.line - revealCursor.active.line >= visibleLines / 2 ? "center" : "top";
             vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
-            // need to align screenrow
-            this.commitScrollingFast(editor);
         } else if (revealCursor.active.line > visibleRange.end.line) {
             const revealType =
                 revealCursor.active.line - visibleRange.end.line >= visibleLines / 2 ? "center" : "bottom";
             vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
-            // need to align screenrow
-            this.commitScrollingFast(editor);
         }
     };
 
@@ -1800,9 +1732,6 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.isInsertMode) {
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
-            if (vscode.window.activeTextEditor) {
-                await this.updateNeovimHeightFromEditor(vscode.window.activeTextEditor);
-            }
         }
         await this.client.input("<Esc>");
         // const buf = await this.client.buffer;
