@@ -308,7 +308,13 @@ export class HighlightProvider {
     }
 
     public clean(uri: string): void {
-        this.uriAllHighlights.delete(uri);
+        const docHighlights = this.uriAllHighlights.get(uri);
+        if (!docHighlights) {
+            return;
+        }
+        for (const [type] of docHighlights) {
+            docHighlights.delete(type);
+        }
     }
 
     public provideDocumentHighlights(document: TextDocument): [TextEditorDecorationType, Range[]][] {
@@ -325,6 +331,7 @@ export class HighlightProvider {
 
             const typeHighlights = docHighlights.get(groupName);
             if (!typeHighlights) {
+                result.push([decorator, []]);
                 continue;
             }
             const ranges: Range[] = [];
