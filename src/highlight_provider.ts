@@ -1,16 +1,9 @@
-import {
-    TextDocument,
-    Range,
-    TextEditorDecorationType,
-    ThemableDecorationRenderOptions,
-    ThemeColor,
-    window,
-} from "vscode";
+import { Range, TextEditorDecorationType, ThemableDecorationRenderOptions, ThemeColor, window } from "vscode";
 
 type Cols = Set<number>;
 type ColHiglights = Map<number, Cols>;
 type TypeHighlights = Map<string, ColHiglights>;
-type UriHighlights = Map<string, TypeHighlights>;
+type GridHighligts = Map<number, TypeHighlights>;
 
 export interface VimHighlightUIAttributes {
     foreground?: number;
@@ -137,7 +130,7 @@ export class HighlightProvider {
     /**
      * Stores current highlights from various groups for document uri
      */
-    private uriAllHighlights: UriHighlights = new Map();
+    private gridHighlights: GridHighligts = new Map();
     /**
      * Maps highlight id to highlight group name
      */
@@ -248,16 +241,16 @@ export class HighlightProvider {
         return this.decoratorConfigurations.get(decorator)!;
     }
 
-    public add(uri: string, type: string, row: number, col: number): void {
-        let uriTypeHighlights = this.uriAllHighlights.get(uri);
-        if (!uriTypeHighlights) {
-            uriTypeHighlights = new Map();
-            this.uriAllHighlights.set(uri, uriTypeHighlights);
+    public add(grid: number, type: string, row: number, col: number): void {
+        let gridHighlights = this.gridHighlights.get(grid);
+        if (!gridHighlights) {
+            gridHighlights = new Map();
+            this.gridHighlights.set(grid, gridHighlights);
         }
-        let typeHighlights = uriTypeHighlights.get(type);
+        let typeHighlights = gridHighlights.get(type);
         if (!typeHighlights) {
             typeHighlights = new Map();
-            uriTypeHighlights.set(type, typeHighlights);
+            gridHighlights.set(type, typeHighlights);
         }
 
         let rowHighlights = typeHighlights.get(row);
@@ -269,12 +262,12 @@ export class HighlightProvider {
         rowHighlights.add(col);
     }
 
-    public remove(uri: string, row: number, col: number): void {
-        const uriHighlights = this.uriAllHighlights.get(uri);
-        if (!uriHighlights) {
+    public remove(grid: number, row: number, col: number): void {
+        const gridHighlights = this.gridHighlights.get(grid);
+        if (!gridHighlights) {
             return;
         }
-        for (const [, typeHighlights] of uriHighlights) {
+        for (const [, typeHighlights] of gridHighlights) {
             const rowHighlights = typeHighlights.get(row);
             if (!rowHighlights) {
                 continue;
@@ -283,43 +276,29 @@ export class HighlightProvider {
         }
     }
 
-    public removeLine(uri: string, row: number): void {
-        const uriHighlights = this.uriAllHighlights.get(uri);
-        if (!uriHighlights) {
+    public removeLine(grid: number, row: number): void {
+        const gridHighlights = this.gridHighlights.get(grid);
+        if (!gridHighlights) {
             return;
         }
-        for (const [, typeHighlights] of uriHighlights) {
+        for (const [, typeHighlights] of gridHighlights) {
             typeHighlights.delete(row);
         }
     }
 
-    public removeAll(uri: string, row: number, col: number): void {
-        const uriHighlights = this.uriAllHighlights.get(uri);
-        if (!uriHighlights) {
+    public clean(grid: number): void {
+        const gridHighlights = this.gridHighlights.get(grid);
+        if (!gridHighlights) {
             return;
         }
-        for (const [, typeHighlights] of uriHighlights) {
-            const rowHighlights = typeHighlights.get(row);
-            if (!rowHighlights) {
-                continue;
-            }
-            rowHighlights.delete(col);
-        }
-    }
-
-    public clean(uri: string): void {
-        const docHighlights = this.uriAllHighlights.get(uri);
-        if (!docHighlights) {
-            return;
-        }
-        for (const [, hls] of docHighlights) {
+        for (const [, hls] of gridHighlights) {
             hls.clear();
         }
     }
 
-    public provideDocumentHighlights(document: TextDocument): [TextEditorDecorationType, Range[]][] {
-        const docHighlights = this.uriAllHighlights.get(document.uri.toString());
-        if (!docHighlights) {
+    public provideGridHighlights(grid: number): [TextEditorDecorationType, Range[]][] {
+        const gridHighlights = this.gridHighlights.get(grid);
+        if (!gridHighlights) {
             return [];
         }
 
@@ -329,7 +308,7 @@ export class HighlightProvider {
                 continue;
             }
 
-            const typeHighlights = docHighlights.get(groupName);
+            const typeHighlights = gridHighlights.get(groupName);
             if (!typeHighlights) {
                 continue;
             }
