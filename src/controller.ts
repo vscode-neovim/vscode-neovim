@@ -595,7 +595,10 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         this.applyCursorStyleToEditor(e, this.currentModeName);
-        await this.client.request("nvim_set_current_win", [winId]);
+        await this.client.callAtomic([
+            ["nvim_win_set_cursor", [winId, [e.selection.active.line + 1, e.selection.active.character]]],
+            ["nvim_set_current_win", [winId]],
+        ]);
     };
 
     // Following lines are enabling vim-style cursor follow on scroll
