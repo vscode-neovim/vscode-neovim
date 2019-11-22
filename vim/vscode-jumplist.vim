@@ -1,5 +1,5 @@
 
 " Override jumplist to vscode jumplist for now
-nnoremap <silent> <expr> <C-o> VSCodeNotify("workbench.action.navigateBack")
-nnoremap <silent> <expr> <C-i> VSCodeNotify("workbench.action.navigateForward")
-nnoremap <silent> <expr> <Tab> VSCodeNotify("workbench.action.navigateForward")
+nnoremap <silent> <C-o> :<C-u>call VSCodeNotify("workbench.action.navigateBack")<CR>
+nnoremap <silent> <C-i> :<C-u>call VSCodeNotify("workbench.action.navigateForward")<CR>
+nnoremap <silent> <Tab> :<C-u>call VSCodeNotify("workbench.action.navigateForward")<CR>

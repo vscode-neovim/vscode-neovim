@@ -38,65 +38,65 @@ AlterCommand new New
 AlterCommand vne[w] Vnew
 AlterCommand on[ly] Only
 
-nnoremap <silent> <expr> <C-w>s <SID>split('h')
-xnoremap <silent> <expr> <C-w>s <SID>split('h')
+nnoremap <silent> <C-w>s :<C-u>call <SID>split('h')<CR>
+xnoremap <silent> <C-w>s :<C-u>call <SID>split('h')<CR>
 
-nnoremap <silent> <expr> <C-w>v <SID>split('v')
-xnoremap <silent> <expr> <C-w>v <SID>split('v')
+nnoremap <silent> <C-w>v :<C-u>call <SID>split('v')<CR>
+xnoremap <silent> <C-w>v :<C-u>call <SID>split('v')<CR>
 
-nnoremap <silent> <expr> <C-w>n <SID>splitNew('h', '__vscode_new__')
-xnoremap <silent> <expr> <C-w>n <SID>splitNew('h', '__vscode_new__')
+nnoremap <silent> <C-w>n :<C-u>call <SID>splitNew('h', '__vscode_new__')<CR>
+xnoremap <silent> <C-w>n :<C-u>call <SID>splitNew('h', '__vscode_new__')<CR>
 
-nnoremap <silent> <expr> <C-w>q VSCodeNotify('workbench.action.closeActiveEditor')
-nnoremap <silent> <expr> <C-w>q VSCodeNotify('workbench.action.closeActiveEditor')
-xnoremap <silent> <expr> <C-w>c VSCodeNotify('workbench.action.closeActiveEditor')
-xnoremap <silent> <expr> <C-w>c VSCodeNotify('workbench.action.closeActiveEditor')
+nnoremap <silent> <C-w>q :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
+nnoremap <silent> <C-w>q :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
+xnoremap <silent> <C-w>c :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
+xnoremap <silent> <C-w>c :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
 
-nnoremap <silent> <expr> <C-w>o VSCodeNotify('workbench.action.joinAllGroups');
-xnoremap <silent> <expr> <C-w>o VSCodeNotify('workbench.action.joinAllGroups');
+nnoremap <silent> <C-w>o :<C-u>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
+xnoremap <silent> <C-w>o :<C-u>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
 
-nnoremap <silent> <expr> <C-w>j VSCodeNotify('workbench.action.focusBelowGroup')
-xnoremap <silent> <expr> <C-w>j VSCodeNotify('workbench.action.focusBelowGroup')
-nnoremap <silent> <expr> <C-w><C-j> VSCodeNotify('workbench.action.moveEditorToBelowGroup')
-xnoremap <silent> <expr> <C-w><C-j> VSCodeNotify('workbench.action.moveEditorToBelowGroup')
-nnoremap <silent> <expr> <C-w>k VSCodeNotify('workbench.action.focusAboveGroup')
-xnoremap <silent> <expr> <C-w>k VSCodeNotify('workbench.action.focusAboveGroup')
-nnoremap <silent> <expr> <C-w><C-i> VSCodeNotify('workbench.action.moveEditorToAboveGroup')
-xnoremap <silent> <expr> <C-w><C-i> VSCodeNotify('workbench.action.moveEditorToAboveGroup')
-nnoremap <silent> <expr> <C-w>h VSCodeNotify('workbench.action.focusLeftGroup')
-xnoremap <silent> <expr> <C-w>h VSCodeNotify('workbench.action.focusLeftGroup')
-nnoremap <silent> <expr> <C-w><C-h> VSCodeNotify('workbench.action.moveEditorToLeftGroup')
-xnoremap <silent> <expr> <C-w><C-h> VSCodeNotify('workbench.action.moveEditorToLeftGroup')
-nnoremap <silent> <expr> <C-w>l VSCodeNotify('workbench.action.focusRightGroup')
-xnoremap <silent> <expr> <C-w>l VSCodeNotify('workbench.action.focusRightGroup')
-nnoremap <silent> <expr> <C-w><C-l> VSCodeNotify('workbench.action.moveEditorToRightGroup')
-xnoremap <silent> <expr> <C-w><C-l> VSCodeNotify('workbench.action.moveEditorToRightGroup')
-nnoremap <silent> <expr> <C-w>w VSCodeNotify('workbench.action.focusNextGroup')
-nnoremap <silent> <expr> <C-w>w VSCodeNotify('workbench.action.focusNextGroup')
-xnoremap <silent> <expr> <C-w><C-w> VSCodeNotify('workbench.action.focusNextGroup')
-xnoremap <silent> <expr> <C-w><C-w> VSCodeNotify('workbench.action.focusNextGroup')
-nnoremap <silent> <expr> <C-w>W VSCodeNotify('workbench.action.focusPreviousGroup')
-xnoremap <silent> <expr> <C-w>W VSCodeNotify('workbench.action.focusPreviousGroup')
-nnoremap <silent> <expr> <C-w>p VSCodeNotify('workbench.action.focusPreviousGroup')
-xnoremap <silent> <expr> <C-w>p VSCodeNotify('workbench.action.focusPreviousGroup')
-nnoremap <silent> <expr> <C-w>t VSCodeNotify('workbench.action.focusFirstEditorGroup')
-xnoremap <silent> <expr> <C-w>t VSCodeNotify('workbench.action.focusFirstEditorGroup')
-nnoremap <silent> <expr> <C-w>b VSCodeNotify('workbench.action.focusLastEditorGroup')
-xnoremap <silent> <expr> <C-w>b VSCodeNotify('workbench.action.focusLastEditorGroup')
+nnoremap <silent> <C-w>j :<C-u>call VSCodeNotify('workbench.action.focusBelowGroup')<CR>
+xnoremap <silent> <C-w>j :<C-u>call VSCodeNotify('workbench.action.focusBelowGroup')<CR>
+nnoremap <silent> <C-w><C-j> :<C-u>call VSCodeNotify('workbench.action.moveEditorToBelowGroup')<CR>
+xnoremap <silent> <C-w><C-j> :<C-u>call VSCodeNotify('workbench.action.moveEditorToBelowGroup')<CR>
+nnoremap <silent> <C-w>k :<C-u>call VSCodeNotify('workbench.action.focusAboveGroup')<CR>
+xnoremap <silent> <C-w>k :<C-u>call VSCodeNotify('workbench.action.focusAboveGroup')<CR>
+nnoremap <silent> <C-w><C-i> :<C-u>call VSCodeNotify('workbench.action.moveEditorToAboveGroup')<CR>
+xnoremap <silent> <C-w><C-i> :<C-u>call VSCodeNotify('workbench.action.moveEditorToAboveGroup')<CR>
+nnoremap <silent> <C-w>h :<C-u>call VSCodeNotify('workbench.action.focusLeftGroup')<CR>
+xnoremap <silent> <C-w>h :<C-u>call VSCodeNotify('workbench.action.focusLeftGroup')<CR>
+nnoremap <silent> <C-w><C-h> :<C-u>call VSCodeNotify('workbench.action.moveEditorToLeftGroup')<CR>
+xnoremap <silent> <C-w><C-h> :<C-u>call VSCodeNotify('workbench.action.moveEditorToLeftGroup')<CR>
+nnoremap <silent> <C-w>l :<C-u>call VSCodeNotify('workbench.action.focusRightGroup')<CR>
+xnoremap <silent> <C-w>l :<C-u>call VSCodeNotify('workbench.action.focusRightGroup')<CR>
+nnoremap <silent> <C-w><C-l> :<C-u>call VSCodeNotify('workbench.action.moveEditorToRightGroup')<CR>
+xnoremap <silent> <C-w><C-l> :<C-u>call VSCodeNotify('workbench.action.moveEditorToRightGroup')<CR>
+nnoremap <silent> <C-w>w :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
+nnoremap <silent> <C-w>w :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
+xnoremap <silent> <C-w><C-w> :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
+xnoremap <silent> <C-w><C-w> :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
+nnoremap <silent> <C-w>W :<C-u>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
+xnoremap <silent> <C-w>W :<C-u>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
+nnoremap <silent> <C-w>p :<C-u>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
+xnoremap <silent> <C-w>p :<C-u>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
+nnoremap <silent> <C-w>t :<C-u>call VSCodeNotify('workbench.action.focusFirstEditorGroup')<CR>
+xnoremap <silent> <C-w>t :<C-u>call VSCodeNotify('workbench.action.focusFirstEditorGroup')<CR>
+nnoremap <silent> <C-w>b :<C-u>call VSCodeNotify('workbench.action.focusLastEditorGroup')<CR>
+xnoremap <silent> <C-w>b :<C-u>call VSCodeNotify('workbench.action.focusLastEditorGroup')<CR>
 
-nnoremap <silent> <expr> <C-w>= VSCodeNotify('workbench.action.evenEditorWidths')
-xnoremap <silent> <expr> <C-w>= VSCodeNotify('workbench.action.evenEditorWidths')
+nnoremap <silent> <C-w>= :<C-u>call VSCodeNotify('workbench.action.evenEditorWidths')<CR>
+xnoremap <silent> <C-w>= :<C-u>call VSCodeNotify('workbench.action.evenEditorWidths')<CR>
 
-nnoremap <silent> <C-w>> :<C-u> call <SID>manageEditorSize(v:count, 'increase')<CR>
-xnoremap <silent> <C-w>> :<C-u> call <SID>manageEditorSize(v:count, 'increase')<CR>
-nnoremap <silent> <C-w>+ :<C-u> call <SID>manageEditorSize(v:count, 'increase')<CR>
-xnoremap <silent> <C-w>+ :<C-u> call <SID>manageEditorSize(v:count, 'increase')<CR>
-nnoremap <silent> <C-w>< :<C-u> call <SID>manageEditorSize(v:count, 'decrease')<CR>
-xnoremap <silent> <C-w>< :<C-u> call <SID>manageEditorSize(v:count, 'decrease')<CR>
-nnoremap <silent> <C-w>- :<C-u> call <SID>manageEditorSize(v:count, 'decrease')<CR>
-xnoremap <silent> <C-w>- :<C-u> call <SID>manageEditorSize(v:count, 'decrease')<CR>
+nnoremap <silent> <C-w>> :<C-u>call <SID>manageEditorSize(v:count, 'increase')<CR>
+xnoremap <silent> <C-w>> :<C-u>call <SID>manageEditorSize(v:count, 'increase')<CR>
+nnoremap <silent> <C-w>+ :<C-u>call <SID>manageEditorSize(v:count, 'increase')<CR>
+xnoremap <silent> <C-w>+ :<C-u>call <SID>manageEditorSize(v:count, 'increase')<CR>
+nnoremap <silent> <C-w>< :<C-u>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+xnoremap <silent> <C-w>< :<C-u>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+nnoremap <silent> <C-w>- :<C-u>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+xnoremap <silent> <C-w>- :<C-u>call <SID>manageEditorSize(v:count, 'decrease')<CR>
 
-nnoremap <silent> <expr> <C-w>_ VSCodeNotify('workbench.action.toggleEditorWidths')
+nnoremap <silent> <C-w>_ :<C-u>call VSCodeNotify('workbench.action.toggleEditorWidths')<CR>
 
 nnoremap <C-w>H :<C-u>echoerr 'Not supported yet'<CR>
 xnoremap <C-w>H :<C-u>echoerr 'Not supported yet'<CR>

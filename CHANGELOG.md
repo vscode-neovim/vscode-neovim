@@ -3,6 +3,7 @@
 ## [0.0.30]
 
 - Implemented nvim's ext_multigrid support. This solves almost all problems with vim highlighting and potentially enables easymotion's overwin motions (they still don't work however). Window management still should be performed by vscode
+- Removed vim-style cursor following on editor scrolling. This totally messed vscode jumplist, so better to have working jumplist than such minor feature.
 
 ## [0.0.29]
 

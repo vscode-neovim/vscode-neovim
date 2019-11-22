@@ -1,12 +1,10 @@
 
 function! s:vscodeInsertBefore()
-    " Need to start insert mode first to prevent cursor updating
     startinsert
     call VSCodeCall('editor.action.insertLineBefore')
 endfunction
 
 function! s:vscodeInsertAfter()
-    " Need to start insert mode first to prevent cursor updating
     startinsert
     call VSCodeCall('editor.action.insertLineAfter')
 endfunction
