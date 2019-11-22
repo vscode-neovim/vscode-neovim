@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.30]
+
+- Implemented nvim's ext_multigrid support. This solves almost all problems with vim highlighting and potentially enables easymotion's overwin motions (they still don't work however). Window management still should be performed by vscode
+
 ## [0.0.29]
 
 - Fix selection is being reset in visual mode after typing ```vk$``` (#48)
