@@ -1,4 +1,6 @@
 import path from "path";
+import os from "os";
+import fs from "fs";
 import { strict as assert } from "assert";
 
 import vscode from "vscode";
@@ -275,6 +277,27 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 cursor: [100, 1],
+            },
+            client,
+        );
+    });
+
+    it("Opens a file through e command", async () => {
+        const filePath = path.join(os.tmpdir(), Math.random().toString());
+        fs.writeFileSync(filePath, ["line 1"].join("\n"), {
+            encoding: "utf8",
+        });
+
+        const doc = await vscode.workspace.openTextDocument({ content: "blah" });
+        await vscode.window.showTextDocument(doc);
+        await wait(1000);
+
+        await sendVSCodeKeys(":e " + filePath, 1000);
+        await sendVSCodeKeys("<CR>", 2000);
+
+        await assertContent(
+            {
+                content: ["line 1"],
             },
             client,
         );

@@ -1809,7 +1809,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (fileName === "__vscode_new__") {
                     doc = await vscode.workspace.openTextDocument();
                 } else {
-                    doc = await vscode.workspace.openTextDocument(fileName);
+                    doc = await vscode.workspace.openTextDocument(fileName.trim());
                 }
                 if (!doc) {
                     return;
