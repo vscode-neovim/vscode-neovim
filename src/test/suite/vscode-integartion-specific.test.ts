@@ -34,7 +34,7 @@ describe("VSCode integration specific stuff", () => {
             language: "typescript",
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
         await setCursor(2, 1, 1000);
 
         // peek definition opens another editor. make sure the cursor won't be leaked into primary editor
@@ -215,13 +215,13 @@ describe("VSCode integration specific stuff", () => {
     it("Cursor is ok when go to def into editor in the other pane", async () => {
         const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
         await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
 
         const doc2 = await vscode.workspace.openTextDocument(
             path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
         );
         const editor2 = await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two, true);
-        await wait();
+        await wait(1000);
 
         setCursor(5, 1);
 
