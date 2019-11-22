@@ -2,7 +2,6 @@ import { spawn, ChildProcess } from "child_process";
 import path from "path";
 
 import vscode from "vscode";
-import throttle from "lodash/throttle";
 import { attach, Buffer as NeovimBuffer, NeovimClient, Window } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
 import { ATTACH } from "neovim/lib/api/Buffer";
@@ -223,7 +222,7 @@ export class NVIMPluginController implements vscode.Disposable {
         this.disposables.push(vscode.window.onDidChangeVisibleTextEditors(this.onChangedEdtiors));
         this.disposables.push(vscode.window.onDidChangeActiveTextEditor(this.onChangedActiveEditor));
         this.disposables.push(vscode.window.onDidChangeTextEditorSelection(this.onChangeSelection));
-        this.disposables.push(vscode.window.onDidChangeTextEditorVisibleRanges(this.onChangeVisibleRange));
+        // this.disposables.push(vscode.window.onDidChangeTextEditorVisibleRanges(this.onChangeVisibleRange));
         this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
 
         this.disposables.push(
@@ -599,71 +598,74 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.request("nvim_set_current_win", [winId]);
     };
 
-    private onChangeVisibleRange = async (e: vscode.TextEditorVisibleRangesChangeEvent): Promise<void> => {
-        if (e.textEditor !== vscode.window.activeTextEditor) {
-            return;
-        }
-        const ranges = e.visibleRanges[0];
-        if (!ranges) {
-            return;
-        }
-        if (this.shouldIgnoreMouseSelection) {
-            return;
-        }
-        const editorRevealLine = this.textEditorsRevealing.get(e.textEditor);
-        if (editorRevealLine) {
-            if (editorRevealLine < ranges.start.line || editorRevealLine > ranges.end.line) {
-                return;
-            }
-            this.textEditorsRevealing.delete(e.textEditor);
-        }
-        if (!this.isInsertMode) {
-            this.commitScrolling(e.textEditor);
-        }
-    };
+    // Following lines are enabling vim-style cursor follow on scroll
+    // although it's working, unfortunately it breaks vscode jumplist when scrolling to definition from outline/etc
+    // I think it's better ot have more-less usable jumplist than such minor feature at this feature request will be implemented (https://github.com/microsoft/vscode/issues/84351)
+    // private onChangeVisibleRange = async (e: vscode.TextEditorVisibleRangesChangeEvent): Promise<void> => {
+    //     if (e.textEditor !== vscode.window.activeTextEditor) {
+    //         return;
+    //     }
+    //     const ranges = e.visibleRanges[0];
+    //     if (!ranges) {
+    //         return;
+    //     }
+    //     if (this.shouldIgnoreMouseSelection) {
+    //         return;
+    //     }
+    //     const editorRevealLine = this.textEditorsRevealing.get(e.textEditor);
+    //     if (editorRevealLine) {
+    //         if (editorRevealLine < ranges.start.line || editorRevealLine > ranges.end.line) {
+    //             return;
+    //         }
+    //         this.textEditorsRevealing.delete(e.textEditor);
+    //     }
+    //     if (!this.isInsertMode) {
+    //         this.commitScrolling(e.textEditor);
+    //     }
+    // };
 
-    private commitScrolling = throttle(
-        (e: vscode.TextEditor) => {
-            if (vscode.window.activeTextEditor !== e) {
-                return;
-            }
-            const cursor = e.selection.active;
-            const visibleRange = e.visibleRanges[0];
-            if (!visibleRange) {
-                return;
-            }
-            let updateCursor = false;
-            if (cursor.line > visibleRange.end.line) {
-                updateCursor = true;
-                e.selections = [
-                    new vscode.Selection(
-                        visibleRange.end.line,
-                        cursor.character,
-                        visibleRange.end.line,
-                        cursor.character,
-                    ),
-                ];
-            } else if (cursor.line < visibleRange.start.line) {
-                updateCursor = true;
-                e.selections = [
-                    new vscode.Selection(
-                        visibleRange.start.line,
-                        cursor.character,
-                        visibleRange.start.line,
-                        cursor.character,
-                    ),
-                ];
-            }
-            if (updateCursor && e.viewColumn) {
-                const winId = this.editorColumnIdToWinId.get(e.viewColumn);
-                if (winId) {
-                    this.updateCursorPositionInNeovim(winId, e.selection.active.line, e.selection.active.character);
-                }
-            }
-        },
-        500,
-        { leading: false },
-    );
+    // private commitScrolling = throttle(
+    //     (e: vscode.TextEditor) => {
+    //         if (vscode.window.activeTextEditor !== e) {
+    //             return;
+    //         }
+    //         const cursor = e.selection.active;
+    //         const visibleRange = e.visibleRanges[0];
+    //         if (!visibleRange) {
+    //             return;
+    //         }
+    //         let updateCursor = false;
+    //         if (cursor.line > visibleRange.end.line) {
+    //             updateCursor = true;
+    //             e.selections = [
+    //                 new vscode.Selection(
+    //                     visibleRange.end.line,
+    //                     cursor.character,
+    //                     visibleRange.end.line,
+    //                     cursor.character,
+    //                 ),
+    //             ];
+    //         } else if (cursor.line < visibleRange.start.line) {
+    //             updateCursor = true;
+    //             e.selections = [
+    //                 new vscode.Selection(
+    //                     visibleRange.start.line,
+    //                     cursor.character,
+    //                     visibleRange.start.line,
+    //                     cursor.character,
+    //                 ),
+    //             ];
+    //         }
+    //         if (updateCursor && e.viewColumn) {
+    //             const winId = this.editorColumnIdToWinId.get(e.viewColumn);
+    //             if (winId) {
+    //                 this.updateCursorPositionInNeovim(winId, e.selection.active.line, e.selection.active.character);
+    //             }
+    //         }
+    //     },
+    //     500,
+    //     { leading: false },
+    // );
     // private commitScrollingFast = throttle(this.updateScreenRowFromScrolling, 200, { leading: false });
 
     /**
@@ -1493,7 +1495,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
 
         const visibleLines = visibleRange.end.line - visibleRange.start.line;
-        this.commitScrolling.cancel();
+        // this.commitScrolling.cancel();
         if (visibleRange.contains(revealCursor)) {
             // always try to reveal even if in visible range to reveal horizontal scroll
             editor.revealRange(
@@ -1503,12 +1505,12 @@ export class NVIMPluginController implements vscode.Disposable {
         } else if (revealCursor.active.line < visibleRange.start.line) {
             const revealType =
                 visibleRange.start.line - revealCursor.active.line >= visibleLines / 2 ? "center" : "top";
-            this.textEditorsRevealing.set(editor, revealCursor.active.line);
+            // this.textEditorsRevealing.set(editor, revealCursor.active.line);
             vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
         } else if (revealCursor.active.line > visibleRange.end.line) {
             const revealType =
                 revealCursor.active.line - visibleRange.end.line >= visibleLines / 2 ? "center" : "bottom";
-            this.textEditorsRevealing.set(editor, revealCursor.active.line);
+            // this.textEditorsRevealing.set(editor, revealCursor.active.line);
             vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
         }
     };
