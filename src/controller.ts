@@ -147,6 +147,12 @@ export class NVIMPluginController implements vscode.Disposable {
      * Save current batch into temp variable
      */
     private currentRedrawBatch: [string, ...unknown[]][] = [];
+    /**
+     * Sync redraw batches queue
+     */
+    private redrawBatchQueue: [string, ...unknown[]][][] = [];
+    private redrawBatchQueuePromise?: Promise<void>;
+    private resolveRedrawBatchQueuePromise?: () => void;
 
     private commandsController: CommandsController;
     /**
@@ -328,6 +334,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
         this.isInit = true;
         this.watchAndApplyNeovimEdits();
+        this.watchAndProcessRedrawBatches();
         for (const e of vscode.window.visibleTextEditors) {
             await this.initBuffer(e);
         }
@@ -928,271 +935,295 @@ export class NVIMPluginController implements vscode.Disposable {
             // this.pendingRedrawNotificationsQueue.push([...this.currentRedrawBatch, ...currRedrawNotifications]);
             const batch = [...this.currentRedrawBatch, ...currRedrawNotifications];
             this.currentRedrawBatch = [];
-            this.processRedrawBatch(batch);
+            this.redrawBatchQueue.push(batch);
+            if (this.resolveRedrawBatchQueuePromise) {
+                this.resolveRedrawBatchQueuePromise();
+            }
         } else {
             this.currentRedrawBatch.push(...currRedrawNotifications);
         }
     };
 
-    private processRedrawBatch = (batch: [string, ...unknown[]][]): void => {
+    private watchAndProcessRedrawBatches = async (): Promise<void> => {
+        // need sync queue otherwise HL may be broken (especially when has many results from incsearch)
         // eslint-disable-next-line no-constant-condition
-        // process notification
-        let newModeName: string | undefined;
-        // since neovim sets cmdheight=0 internally various vim plugins like easymotion are working incorrect and awaiting hitting enter
-        // this is frustruating
-        let acceptPrompt = false;
-        const gridHighlights: Map<number, RedrawHighlightsUpdates> = new Map();
-        const gridCursorUpdates: Set<number> = new Set();
-        for (const [name, ...args] of batch) {
-            const firstArg = args[0] || [];
-            switch (name) {
-                case "mode_info_set": {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [, modes] = firstArg as [string, any[]];
-                    for (const mode of modes) {
-                        if (!mode.name) {
-                            continue;
-                        }
-                        this.vimModes.set(
-                            mode.name,
-                            "cursor_shape" in mode
-                                ? {
-                                      attrId: mode.attr_id,
-                                      attrIdLm: mode.attr_id_lm,
-                                      cursorShape: mode.cursor_shape,
-                                      name: mode.name,
-                                      shortName: mode.short_name,
-                                      blinkOff: mode.blinkoff,
-                                      blinkOn: mode.blinkon,
-                                      blinkWait: mode.blinkwait,
-                                      cellPercentage: mode.cell_percentage,
-                                      mouseShape: mode.mouse_shape,
-                                  }
-                                : {
-                                      name: mode.name,
-                                      shortName: mode.short_name,
-                                      mouseShape: mode.mouse_shape,
-                                  },
-                        );
-                    }
-                    break;
+        while (true) {
+            const batch = this.redrawBatchQueue.shift();
+            if (!batch) {
+                let timeout: NodeJS.Timeout | undefined;
+                this.redrawBatchQueuePromise = new Promise(res => {
+                    this.resolveRedrawBatchQueuePromise = res;
+                    timeout = setTimeout(res, 50);
+                });
+                await this.redrawBatchQueuePromise;
+                if (timeout) {
+                    clearTimeout(timeout);
                 }
-                case "hl_attr_define": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [id, uiAttrs, , info] of args as [
-                        number,
-                        never,
-                        never,
-                        [{ kind: "ui"; ui_name: string; hi_name: string }],
-                    ][]) {
-                        if (info && info[0] && info[0].hi_name) {
-                            const name = info[0].hi_name;
-                            this.highlightProvider.addHighlightGroup(id, name, uiAttrs);
-                        }
-                    }
-                    break;
-                }
-                case "cmdline_show": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const [content, pos, firstc, prompt, indent, level] = firstArg as [
-                        [object, string][],
-                        number,
-                        string,
-                        string,
-                        number,
-                        number,
-                    ];
-                    const allContent = content.map(([, str]) => str);
-                    this.commandLine.show(allContent.join(""), firstc, prompt);
-                    break;
-                }
-                case "wildmenu_show": {
-                    const [items] = firstArg as [string[]];
-                    this.commandLine.setCompletionItems(items);
-                    break;
-                }
-                case "cmdline_hide": {
-                    this.commandLine.cancel();
-                    break;
-                }
-                case "msg_showcmd": {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [content] = firstArg as [string, any[]];
-                    let str = "";
-                    if (content) {
-                        for (const c of content) {
-                            const [, cmdStr] = c;
-                            if (cmdStr) {
-                                str += cmdStr;
-                            }
-                        }
-                    }
-                    this.statusLine.statusString = str;
-                    break;
-                }
-                case "msg_show": {
-                    let str = "";
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    for (const [type, content] of args as [string, any[], never][]) {
-                        // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
-                        //     this.nextInputBlocking = true;
-                        // }
-                        if (type === "return_prompt") {
-                            acceptPrompt = true;
-                        }
-                        if (content) {
-                            for (const c of content) {
-                                const [, cmdStr] = c;
-                                if (cmdStr) {
-                                    str += cmdStr;
+                this.redrawBatchQueuePromise = undefined;
+                this.resolveRedrawBatchQueuePromise = undefined;
+            } else {
+                // process notification
+                let newModeName: string | undefined;
+                // since neovim sets cmdheight=0 internally various vim plugins like easymotion are working incorrect and awaiting hitting enter
+                let acceptPrompt = false;
+                const gridHighlights: Map<number, RedrawHighlightsUpdates> = new Map();
+                const gridCursorUpdates: Set<number> = new Set();
+                for (const [name, ...args] of batch) {
+                    const firstArg = args[0] || [];
+                    switch (name) {
+                        case "mode_info_set": {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const [, modes] = firstArg as [string, any[]];
+                            for (const mode of modes) {
+                                if (!mode.name) {
+                                    continue;
                                 }
-                            }
-                        }
-                    }
-                    this.statusLine.msgString = str;
-                    break;
-                }
-                case "msg_showmode": {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [content] = firstArg as [any[]];
-                    let str = "";
-                    if (content) {
-                        for (const c of content) {
-                            const [, modeStr] = c;
-                            if (modeStr) {
-                                str += modeStr;
-                            }
-                        }
-                    }
-                    this.statusLine.modeString = str;
-                    break;
-                }
-                case "msg_clear": {
-                    this.statusLine.msgString = "";
-                    break;
-                }
-                case "mode_change": {
-                    // update cursor for all visible editors
-                    for (const e of vscode.window.visibleTextEditors) {
-                        if (!e.viewColumn) {
-                            continue;
-                        }
-                        const winId = this.editorColumnIdToWinId.get(e.viewColumn);
-                        if (!winId) {
-                            continue;
-                        }
-                        const grid = [...this.grids].find(([, conf]) => conf.winId === winId);
-                        if (!grid) {
-                            continue;
-                        }
-                        gridCursorUpdates.add(grid[0]);
-                    }
-                    [newModeName] = firstArg as [string, never];
-                    break;
-                }
-                case "win_pos": {
-                    const [grid, win] = firstArg as [number, Window];
-                    if (!this.grids.has(grid)) {
-                        this.grids.set(grid, {
-                            winId: win.id,
-                            cursorLine: 0,
-                            cursorPos: 0,
-                            screenLine: 0,
-                        });
-                    }
-                    break;
-                }
-                case "win_close": {
-                    for (const [grid] of args as [number][]) {
-                        this.grids.delete(grid);
-                    }
-                    break;
-                }
-                case "win_external_pos": {
-                    for (const [grid, win] of args as [number, Window][]) {
-                        if (!this.grids.has(grid)) {
-                            this.grids.set(grid, {
-                                winId: win.id,
-                                cursorLine: 0,
-                                cursorPos: 0,
-                                screenLine: 0,
-                            });
-                        }
-                    }
-                    break;
-                }
-                case "grid_cursor_goto": {
-                    for (const [grid, screenRow] of args as [number, number, number][]) {
-                        gridCursorUpdates.add(grid);
-                        const conf = this.grids.get(grid);
-                        if (conf) {
-                            conf.screenLine = screenRow;
-                        }
-                    }
-                    break;
-                }
-                case "grid_line": {
-                    for (const gridEvent of args) {
-                        const [grid, row, colStart, cells] = gridEvent as [
-                            number,
-                            number,
-                            number,
-                            [string, number?, number?],
-                        ];
-                        const gridConf = this.grids.get(grid);
-                        if (!gridConf) {
-                            continue;
-                        }
-                        const columnToWinId = [...this.editorColumnIdToWinId].find(([, id]) => id === gridConf.winId);
-                        if (!columnToWinId) {
-                            continue;
-                        }
-                        let cellIdx = 0;
-
-                        const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnToWinId[0]);
-                        if (!editor) {
-                            continue;
-                        }
-                        const uri = editor.document.uri.toString();
-                        const buf = this.uriToBuffer.get(uri);
-                        const isExternal = buf && this.managedBufferIds.has(buf.id) ? false : true;
-                        const finalRow = row;
-
-                        // store highlight updates, then apply then after flush()
-                        let cellHlId = 0;
-                        if (!gridHighlights.has(grid)) {
-                            gridHighlights.set(grid, {});
-                        }
-                        const gridHighlight = gridHighlights.get(grid)!;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        for (const [, hlId, repeat] of cells as any[]) {
-                            if (hlId != null) {
-                                cellHlId = hlId;
-                            }
-                            for (let i = 0; i < (repeat || 1); i++) {
-                                const col = colStart + cellIdx;
-                                const highlightGroup = this.highlightProvider.getHighlightGroupName(
-                                    cellHlId,
-                                    isExternal,
+                                this.vimModes.set(
+                                    mode.name,
+                                    "cursor_shape" in mode
+                                        ? {
+                                              attrId: mode.attr_id,
+                                              attrIdLm: mode.attr_id_lm,
+                                              cursorShape: mode.cursor_shape,
+                                              name: mode.name,
+                                              shortName: mode.short_name,
+                                              blinkOff: mode.blinkoff,
+                                              blinkOn: mode.blinkon,
+                                              blinkWait: mode.blinkwait,
+                                              cellPercentage: mode.cell_percentage,
+                                              mouseShape: mode.mouse_shape,
+                                          }
+                                        : {
+                                              name: mode.name,
+                                              shortName: mode.short_name,
+                                              mouseShape: mode.mouse_shape,
+                                          },
                                 );
-                                if (!gridHighlight[finalRow]) {
-                                    gridHighlight[finalRow] = {};
-                                }
-                                if (!gridHighlight[finalRow][col]) {
-                                    gridHighlight[finalRow][col] = "remove";
-                                }
-                                if (highlightGroup) {
-                                    gridHighlight[finalRow][col] = highlightGroup;
-                                }
-                                cellIdx++;
                             }
+                            break;
+                        }
+                        case "hl_attr_define": {
+                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                            for (const [id, uiAttrs, , info] of args as [
+                                number,
+                                never,
+                                never,
+                                [{ kind: "ui"; ui_name: string; hi_name: string }],
+                            ][]) {
+                                if (info && info[0] && info[0].hi_name) {
+                                    const name = info[0].hi_name;
+                                    this.highlightProvider.addHighlightGroup(id, name, uiAttrs);
+                                }
+                            }
+                            break;
+                        }
+                        case "cmdline_show": {
+                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                            const [content, pos, firstc, prompt, indent, level] = firstArg as [
+                                [object, string][],
+                                number,
+                                string,
+                                string,
+                                number,
+                                number,
+                            ];
+                            const allContent = content.map(([, str]) => str);
+                            this.commandLine.show(allContent.join(""), firstc, prompt);
+                            break;
+                        }
+                        case "wildmenu_show": {
+                            const [items] = firstArg as [string[]];
+                            this.commandLine.setCompletionItems(items);
+                            break;
+                        }
+                        case "cmdline_hide": {
+                            this.commandLine.cancel();
+                            break;
+                        }
+                        case "msg_showcmd": {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const [content] = firstArg as [string, any[]];
+                            let str = "";
+                            if (content) {
+                                for (const c of content) {
+                                    const [, cmdStr] = c;
+                                    if (cmdStr) {
+                                        str += cmdStr;
+                                    }
+                                }
+                            }
+                            this.statusLine.statusString = str;
+                            break;
+                        }
+                        case "msg_show": {
+                            let str = "";
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            for (const [type, content] of args as [string, any[], never][]) {
+                                // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
+                                //     this.nextInputBlocking = true;
+                                // }
+                                if (type === "return_prompt") {
+                                    acceptPrompt = true;
+                                }
+                                if (content) {
+                                    for (const c of content) {
+                                        const [, cmdStr] = c;
+                                        if (cmdStr) {
+                                            str += cmdStr;
+                                        }
+                                    }
+                                }
+                            }
+                            this.statusLine.msgString = str;
+                            break;
+                        }
+                        case "msg_showmode": {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const [content] = firstArg as [any[]];
+                            let str = "";
+                            if (content) {
+                                for (const c of content) {
+                                    const [, modeStr] = c;
+                                    if (modeStr) {
+                                        str += modeStr;
+                                    }
+                                }
+                            }
+                            this.statusLine.modeString = str;
+                            break;
+                        }
+                        case "msg_clear": {
+                            this.statusLine.msgString = "";
+                            break;
+                        }
+                        case "mode_change": {
+                            // update cursor for all visible editors
+                            for (const e of vscode.window.visibleTextEditors) {
+                                if (!e.viewColumn) {
+                                    continue;
+                                }
+                                const winId = this.editorColumnIdToWinId.get(e.viewColumn);
+                                if (!winId) {
+                                    continue;
+                                }
+                                const grid = [...this.grids].find(([, conf]) => conf.winId === winId);
+                                if (!grid) {
+                                    continue;
+                                }
+                                gridCursorUpdates.add(grid[0]);
+                            }
+                            [newModeName] = firstArg as [string, never];
+                            break;
+                        }
+                        case "win_pos": {
+                            const [grid, win] = firstArg as [number, Window];
+                            if (!this.grids.has(grid)) {
+                                this.grids.set(grid, {
+                                    winId: win.id,
+                                    cursorLine: 0,
+                                    cursorPos: 0,
+                                    screenLine: 0,
+                                });
+                            }
+                            break;
+                        }
+                        case "win_close": {
+                            for (const [grid] of args as [number][]) {
+                                this.grids.delete(grid);
+                            }
+                            break;
+                        }
+                        case "win_external_pos": {
+                            for (const [grid, win] of args as [number, Window][]) {
+                                if (!this.grids.has(grid)) {
+                                    this.grids.set(grid, {
+                                        winId: win.id,
+                                        cursorLine: 0,
+                                        cursorPos: 0,
+                                        screenLine: 0,
+                                    });
+                                }
+                            }
+                            break;
+                        }
+                        case "grid_cursor_goto": {
+                            for (const [grid, screenRow] of args as [number, number, number][]) {
+                                gridCursorUpdates.add(grid);
+                                const conf = this.grids.get(grid);
+                                if (conf) {
+                                    conf.screenLine = screenRow;
+                                }
+                            }
+                            break;
+                        }
+                        case "grid_line": {
+                            for (const gridEvent of args) {
+                                const [grid, row, colStart, cells] = gridEvent as [
+                                    number,
+                                    number,
+                                    number,
+                                    [string, number?, number?],
+                                ];
+                                const gridConf = this.grids.get(grid);
+                                if (!gridConf) {
+                                    continue;
+                                }
+                                const columnToWinId = [...this.editorColumnIdToWinId].find(
+                                    ([, id]) => id === gridConf.winId,
+                                );
+                                if (!columnToWinId) {
+                                    continue;
+                                }
+                                let cellIdx = 0;
+
+                                const editor = vscode.window.visibleTextEditors.find(
+                                    e => e.viewColumn === columnToWinId[0],
+                                );
+                                if (!editor) {
+                                    continue;
+                                }
+                                const uri = editor.document.uri.toString();
+                                const buf = this.uriToBuffer.get(uri);
+                                const isExternal = buf && this.managedBufferIds.has(buf.id) ? false : true;
+                                const finalRow = row;
+
+                                // store highlight updates, then apply then after flush()
+                                let cellHlId = 0;
+                                if (!gridHighlights.has(grid)) {
+                                    gridHighlights.set(grid, {});
+                                }
+                                const gridHighlight = gridHighlights.get(grid)!;
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                for (const [, hlId, repeat] of cells as any[]) {
+                                    if (hlId != null) {
+                                        cellHlId = hlId;
+                                    }
+                                    for (let i = 0; i < (repeat || 1); i++) {
+                                        const col = colStart + cellIdx;
+                                        const highlightGroup = this.highlightProvider.getHighlightGroupName(
+                                            cellHlId,
+                                            isExternal,
+                                        );
+                                        if (!gridHighlight[finalRow]) {
+                                            gridHighlight[finalRow] = {};
+                                        }
+                                        if (!gridHighlight[finalRow][col]) {
+                                            gridHighlight[finalRow][col] = "remove";
+                                        }
+                                        if (highlightGroup) {
+                                            gridHighlight[finalRow][col] = highlightGroup;
+                                        }
+                                        cellIdx++;
+                                    }
+                                }
+                            }
+                            break;
                         }
                     }
-                    break;
                 }
+                await this.applyRedrawUpdate(newModeName, gridCursorUpdates, gridHighlights, acceptPrompt);
             }
         }
-        this.applyRedrawUpdate(newModeName, gridCursorUpdates, gridHighlights, acceptPrompt);
     };
 
     private applyRedrawUpdate = async (
