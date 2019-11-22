@@ -596,10 +596,16 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         this.applyCursorStyleToEditor(e, this.currentModeName);
-        await this.client.callAtomic([
-            ["nvim_win_set_cursor", [winId, [e.selection.active.line + 1, e.selection.active.character]]],
-            ["nvim_set_current_win", [winId]],
-        ]);
+        const requests: [string, unknown[]][] = [["nvim_set_current_win", [winId]]];
+        const uri = e.document.uri.toString();
+        const buf = this.uriToBuffer.get(uri);
+        if (buf && this.managedBufferIds.has(buf.id)) {
+            requests.unshift([
+                "nvim_win_set_cursor",
+                [winId, [e.selection.active.line + 1, e.selection.active.character]],
+            ]);
+        }
+        await this.client.callAtomic(requests);
     };
 
     // Following lines are enabling vim-style cursor follow on scroll
@@ -1336,7 +1342,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 continue;
             }
 
-            const topScreenLine = gridConf.cursorLine - gridConf.screenLine;
+            const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
             for (const [lineId, highlights] of Object.entries(updates)) {
                 for (const [colId, group] of Object.entries(highlights)) {
                     if (group === "remove") {
