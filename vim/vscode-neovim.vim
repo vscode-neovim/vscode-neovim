@@ -9,6 +9,7 @@ set nowb
 set noswapfile
 set noautoread
 set scrolloff=100
+set conceallevel=0
 
 " do not hide buffers
 set nohidden
@@ -55,11 +56,11 @@ function! VSCodeExtensionNotify(cmd, ...)
 endfunction
 
 " Called from extension when opening/creating new file in vscode to reset undo tree
-function! VSCodeClearUndo()
+function! VSCodeClearUndo(bufId)
     let oldlevels = &undolevels
-    set undolevels=-1
-    exe "normal a \<BS>\<Esc>"
-    let &undolevels = oldlevels
+    call nvim_buf_set_option(a:bufId, 'undolevels', -1)
+    call nvim_buf_set_lines(a:bufId, 0, 0, 0, [])
+    call nvim_buf_set_option(a:bufId, 'undolevels', oldlevels)
     unlet oldlevels
 endfunction
 
@@ -108,16 +109,6 @@ function! VSCodeGetRegister(reg)
     return getreg(a:reg)
 endfunction
 
-function! s:notifyBlockingModeStart()
-    let cursor = nvim_win_get_cursor(0)
-    let winline = winline()
-    call VSCodeExtensionCall('notify-blocking', 1, cursor, winline)
-endfunction
-
-function! s:notifyBlockingModeEnd()
-    call VSCodeExtensionCall('notify-blocking', 0)
-endfunction
-
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
     " Sometimes doesn't work, although on extensions we handle such buffers
@@ -139,11 +130,11 @@ execute 'source ' . s:currDir . '/vscode-file-commands.vim'
 execute 'source ' . s:currDir . '/vscode-tab-commands.vim'
 execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 
-autocmd BufWinEnter,WinNew,WinEnter * :only
+" autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
+autocmd BufCreate,BufReadPost * :set conceallevel=0
+" autocmd WinNew * :only
 " Disable syntax highlighting since we don't need it anyway
 " autocmd BufWinEnter * :syntax off
-autocmd BufWinEnter * :set conceallevel=0
-autocmd CmdlineEnter * :call <SID>notifyBlockingModeStart()
-autocmd CmdlineLeave * :call <SID>notifyBlockingModeEnd()
+" autocmd BufWinEnter * :set conceallevel=0
 
