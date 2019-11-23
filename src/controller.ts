@@ -1514,14 +1514,20 @@ export class NVIMPluginController implements vscode.Disposable {
             );
         } else if (revealCursor.active.line < visibleRange.start.line) {
             const revealType =
-                visibleRange.start.line - revealCursor.active.line >= visibleLines / 2 ? "center" : "top";
+                visibleRange.start.line - revealCursor.active.line >= visibleLines / 2
+                    ? vscode.TextEditorRevealType.Default
+                    : vscode.TextEditorRevealType.AtTop;
             // this.textEditorsRevealing.set(editor, revealCursor.active.line);
-            vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
+            editor.revealRange(new vscode.Range(revealCursor.active, revealCursor.active), revealType);
+            // vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
         } else if (revealCursor.active.line > visibleRange.end.line) {
             const revealType =
-                revealCursor.active.line - visibleRange.end.line >= visibleLines / 2 ? "center" : "bottom";
+                revealCursor.active.line - visibleRange.end.line >= visibleLines / 2
+                    ? vscode.TextEditorRevealType.InCenter
+                    : vscode.TextEditorRevealType.Default;
             // this.textEditorsRevealing.set(editor, revealCursor.active.line);
-            vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
+            editor.revealRange(new vscode.Range(revealCursor.active, revealCursor.active), revealType);
+            // vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
         }
     };
 
