@@ -1284,6 +1284,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     visualStart = result[0].pop() as [number, number, number, number];
                 }
                 // set cursor updates
+                const currentEditor = vscode.window.activeTextEditor;
                 for (let i = 0; i < result[0].length; i++) {
                     const gridId = shouldUpateGrids[i];
                     const cursor = result[0][i];
@@ -1295,10 +1296,12 @@ export class NVIMPluginController implements vscode.Disposable {
                     gridConf.cursorLine = cursor[0] - 1;
                     gridConf.cursorPos = cursor[1];
                 }
-                const currentEditor = vscode.window.activeTextEditor;
                 for (const grid of shouldUpateGrids) {
                     const conf = this.grids.get(grid);
                     if (!conf) {
+                        continue;
+                    }
+                    if (!cursorUpdates.has(grid)) {
                         continue;
                     }
                     const columnWin = editorColumnsToWin.find(([, winId]) => winId === conf.winId);
@@ -1307,6 +1310,10 @@ export class NVIMPluginController implements vscode.Disposable {
                     }
                     const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnWin[0]);
                     if (!editor) {
+                        continue;
+                    }
+                    // disallow curesor updates for non active editor
+                    if (editor !== vscode.window.activeTextEditor) {
                         continue;
                     }
                     this.updateCursorPosInEditor(
