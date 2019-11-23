@@ -1178,6 +1178,13 @@ export class NVIMPluginController implements vscode.Disposable {
                             }
                             break;
                         }
+                        // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
+                        case "grid_scroll": {
+                            for (const [grid] of args as [number, number, number, null, number, number, number][]) {
+                                gridCursorUpdates.add(grid);
+                            }
+                            break;
+                        }
                         case "grid_cursor_goto": {
                             for (const [grid, screenRow] of args as [number, number, number][]) {
                                 gridCursorUpdates.add(grid);
