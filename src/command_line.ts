@@ -3,11 +3,11 @@ import { Disposable, window, QuickPick, QuickPickItem, commands } from "vscode";
 import { GlyphChars } from "./constants";
 
 export class CommandLineController implements Disposable {
+    public isDisplayed = false;
+
     private input: QuickPick<QuickPickItem>;
 
     private disposables: Disposable[] = [];
-
-    private isDisplayed = false;
 
     private completionAllowed = false;
 

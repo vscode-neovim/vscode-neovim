@@ -198,7 +198,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private editorColumnIdToWinId: Map<number, number> = new Map();
 
-    private textEditorsRevealing: WeakMap<vscode.TextEditor, number> = new WeakMap();
+    private cmdlineTimer?: NodeJS.Timeout;
 
     private grids: Map<
         number,
@@ -1039,8 +1039,23 @@ export class NVIMPluginController implements vscode.Disposable {
                                 number,
                                 number,
                             ];
-                            const allContent = content.map(([, str]) => str);
-                            this.commandLine.show(allContent.join(""), firstc, prompt);
+                            const allContent = content.map(([, str]) => str).join("");
+                            if (this.cmdlineTimer) {
+                                clearTimeout(this.cmdlineTimer);
+                                this.cmdlineTimer = undefined;
+                                this.commandLine.show(allContent, firstc, prompt);
+                            } else {
+                                // if there is initial content and it's not currently displayed then it may come
+                                // from some mapping. to prevent bad UI commandline transition we delay cmdline appearing here
+                                if (allContent !== "" && !this.commandLine.isDisplayed) {
+                                    this.cmdlineTimer = setTimeout(
+                                        () => this.showCmdOnTimer(allContent, firstc, prompt),
+                                        200,
+                                    );
+                                } else {
+                                    this.commandLine.show(allContent, firstc, prompt);
+                                }
+                            }
                             break;
                         }
                         case "wildmenu_show": {
@@ -1049,7 +1064,12 @@ export class NVIMPluginController implements vscode.Disposable {
                             break;
                         }
                         case "cmdline_hide": {
-                            this.commandLine.cancel();
+                            if (this.cmdlineTimer) {
+                                clearTimeout(this.cmdlineTimer);
+                                this.cmdlineTimer = undefined;
+                            } else {
+                                this.commandLine.cancel();
+                            }
                             break;
                         }
                         case "msg_showcmd": {
@@ -1965,6 +1985,11 @@ export class NVIMPluginController implements vscode.Disposable {
         // console.log("====LINES====");
         // console.log(lines.join("\n"));
         // console.log("====END====");
+    };
+
+    private showCmdOnTimer = (initialContent: string, firstc: string, prompt: string): void => {
+        this.commandLine.show(initialContent, firstc, prompt);
+        this.cmdlineTimer = undefined;
     };
 
     private onCmdChange = async (e: string, complete: boolean): Promise<void> => {
