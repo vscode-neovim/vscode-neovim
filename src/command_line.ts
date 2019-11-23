@@ -44,7 +44,8 @@ export class CommandLineController implements Disposable {
             this.completionItems = [];
             this.input.items = [];
             this.completionTimer = setTimeout(this.processCompletionTimer, 1500);
-            this.onChange(this.input.value);
+            // breaks mappings with command line mode, e.g. :call stuff()
+            // this.onChange(this.input.value);
         } else {
             const newTitle = prompt || this.getTitle(mode);
             if (newTitle !== this.input.title) {

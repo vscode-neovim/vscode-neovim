@@ -1976,7 +1976,6 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private onCmdCancel = async (): Promise<void> => {
-        vscode.commands.executeCommand("setContext", "neovim.cmdLine", false);
         await this.client.input("<Esc>");
     };
 
