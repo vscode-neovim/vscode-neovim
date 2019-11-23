@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.31]
+
+- Fix crazy cursor jumping when having opened multiple editors panes
+
 ## [0.0.30]
 
 - Implemented nvim's ext_multigrid support. This solves almost all problems with vim highlighting and potentially enables easymotion's overwin motions (they still don't work however). Window management still should be performed by vscode
