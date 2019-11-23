@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.32]
+
+- Cmdline fixes/improvements (#50, #51)
+
 ## [0.0.31]
 
 - Fix crazy cursor jumping when having opened multiple editors panes
