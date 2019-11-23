@@ -263,7 +263,7 @@ describe("VSCode integration specific stuff", () => {
         await wait(1000);
         await sendVSCodeKeys("100j", 1500);
 
-        await sendVSCodeKeys("<C-w>h", 1000);
+        await sendVSCodeKeys("<C-w>h", 2000);
         await sendVSCodeKeys("l");
         await assertContent(
             {
@@ -272,7 +272,7 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
 
-        await sendVSCodeKeys("<C-w>l", 1000);
+        await sendVSCodeKeys("<C-w>l", 2000);
         await sendVSCodeKeys("l");
         await assertContent(
             {
