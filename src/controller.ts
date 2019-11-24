@@ -867,9 +867,9 @@ export class NVIMPluginController implements vscode.Disposable {
                     continue;
                 }
                 // happens after undo
-                // if (firstLine === lastLine && data.length === 0) {
-                //     return;
-                // }
+                if (firstLine === lastLine && data.length === 0) {
+                    continue;
+                }
                 this.documentLastChangedVersion.set(uri, textEditor.document.version + 1);
                 const endRangeLine = lastLine;
                 const endRangePos = 0;
@@ -1962,22 +1962,16 @@ export class NVIMPluginController implements vscode.Disposable {
             requests.push(...bufLinesRequests);
         }
         if (updateCursor && vscode.window.activeTextEditor) {
-            const cursorScreenRow =
-                vscode.window.activeTextEditor.selection.active.line -
-                vscode.window.activeTextEditor.visibleRanges[0].start.line;
-            requests.push(
+            requests.push([
+                "nvim_win_set_cursor",
                 [
-                    "nvim_win_set_cursor",
+                    0,
                     [
-                        0,
-                        [
-                            vscode.window.activeTextEditor.selection.active.line + 1,
-                            vscode.window.activeTextEditor.selection.active.character,
-                        ],
+                        vscode.window.activeTextEditor.selection.active.line + 1,
+                        vscode.window.activeTextEditor.selection.active.character,
                     ],
                 ],
-                ["nvim_call_function", ["VSCodeAlignScreenRow", [cursorScreenRow + 1]]],
-            );
+            ]);
         }
         await this.client.callAtomic(requests);
     };

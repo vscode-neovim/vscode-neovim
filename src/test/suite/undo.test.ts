@@ -94,6 +94,23 @@ describe("Undo", () => {
         await assertContent(
             {
                 content: ["a", "", "b"],
+                cursor: [1, 0],
+            },
+            client,
+        );
+        await sendVSCodeKeys("itest");
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["a", "test", "b"],
+            },
+            client,
+        );
+        await sendVSCodeKeys("dd");
+        await assertContent(
+            {
+                content: ["a", "b"],
             },
             client,
         );
