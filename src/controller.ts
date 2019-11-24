@@ -867,9 +867,9 @@ export class NVIMPluginController implements vscode.Disposable {
                     continue;
                 }
                 // happens after undo
-                if (firstLine === lastLine && data.length === 0) {
-                    return;
-                }
+                // if (firstLine === lastLine && data.length === 0) {
+                //     return;
+                // }
                 this.documentLastChangedVersion.set(uri, textEditor.document.version + 1);
                 const endRangeLine = lastLine;
                 const endRangePos = 0;
