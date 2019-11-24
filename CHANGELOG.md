@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.0.33-0.0.34]
+
+- Fix extension for linux/macos users
+- Fix buffer-vscode desynchornization after redo
+
 ## [0.0.32]
 
 - Cmdline fixes/improvements (#50, #51)
