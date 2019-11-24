@@ -168,7 +168,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private vimModes: Map<string, CursorMode | OtherMode> = new Map();
     private highlightProvider: HighlightProvider;
 
-    private nvimAttachWaiter: Promise<void> = Promise.resolve();
+    private nvimInitPromise: Promise<void> = Promise.resolve();
     private isInit = false;
 
     private neovimExtensionsPath: string;
@@ -199,6 +199,8 @@ export class NVIMPluginController implements vscode.Disposable {
     private editorColumnIdToWinId: Map<number, number> = new Map();
 
     private cmdlineTimer?: NodeJS.Timeout;
+
+    private editorChangedPromise?: Promise<void>;
 
     private grids: Map<
         number,
@@ -266,11 +268,17 @@ export class NVIMPluginController implements vscode.Disposable {
     }
 
     public async init(): Promise<void> {
+        let resolveInitPromise: () => void = () => {
+            /* ignore */
+        };
+        this.nvimInitPromise = new Promise(res => {
+            resolveInitPromise = res;
+        });
         await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.nvimAttachWaiter = this.client.uiAttach(NVIM_WIN_WIDTH, NVIM_WIN_HEIGHT, {
+        await this.client.uiAttach(NVIM_WIN_WIDTH, NVIM_WIN_HEIGHT, {
             rgb: true,
             // override: true,
             /* eslint-disable @typescript-eslint/camelcase */
@@ -285,7 +293,6 @@ export class NVIMPluginController implements vscode.Disposable {
             /* eslint-enable @typescript-eslint/camelcase */
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
-        await this.nvimAttachWaiter;
 
         // create empty buffer which is used when there is no active editor in the window
         const buf = await this.client.createBuffer(true, false);
@@ -301,10 +308,13 @@ export class NVIMPluginController implements vscode.Disposable {
         // // }
         // // await this.onOpenTextDocument(doc);
         // // }
+        const firstWin = await this.client.window;
 
         // create nvim external windows. each window is mapped to corresponding view column
         // each window has own grid. IDs are starting from 1000 with first win is 1000 and second win is 1002 (why?)
         const requests: [string, unknown[]][] = [
+            ["nvim_set_var", ["vscode_primary_win", firstWin.id]],
+            ["nvim_set_var", ["vscode_noeditor_buffer", this.noEditorBuffer.id]],
             ["nvim_buf_set_option", [this.noEditorBuffer.id, "modified", true]],
             ["nvim_win_set_buf", [0, this.noEditorBuffer.id]],
         ];
@@ -325,20 +335,27 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.callAtomic(requests);
 
         const wins = await this.client.windows;
+        const clearjumpRequests: [string, unknown[]][] = wins.map(w => [
+            "nvim_win_set_var",
+            [w.id, "vscode_clearjump", true],
+        ]);
+        await this.client.callAtomic(clearjumpRequests);
+
         let currColumn = 1;
         for (const w of wins) {
             this.editorColumnIdToWinId.set(currColumn, w.id);
             currColumn++;
         }
 
-        this.isInit = true;
         this.watchAndApplyNeovimEdits();
         this.watchAndProcessRedrawBatches();
+        this.isInit = true;
+        resolveInitPromise();
         for (const e of vscode.window.visibleTextEditors) {
             await this.initBuffer(e);
         }
         // this.onChangedEdtiors(vscode.window.visibleTextEditors);
-        await this.onChangedActiveEditor(vscode.window.activeTextEditor);
+        await this.onChangedActiveEditor(vscode.window.activeTextEditor, true);
     }
 
     public dispose(): void {
@@ -370,7 +387,7 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         this.documentChangesInInsertMode.set(uri, []);
-        await this.nvimAttachWaiter;
+        await this.nvimInitPromise;
         let buf: NeovimBuffer | undefined;
         if (this.pendingBuffers.has(uri)) {
             const bufId = this.pendingBuffers.get(uri);
@@ -405,7 +422,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
         requests.push(["nvim_buf_set_lines", [buf.id, 0, 1, false, lines]]);
         // if (cursor) {
-        requests.push(["nvim_win_set_cursor", [0, [cursor.line + 1, cursor.character]]]);
+        requests.push(["nvim_win_set_cursor", [winId, [cursor.line + 1, cursor.character]]]);
         // }
         requests.push(["nvim_buf_set_var", [buf.id, "vscode_controlled", true]]);
         requests.push(["nvim_buf_set_name", [buf.id, uri]]);
@@ -419,7 +436,7 @@ export class NVIMPluginController implements vscode.Disposable {
     }
 
     private onChangeTextDocument = async (e: vscode.TextDocumentChangeEvent): Promise<void> => {
-        await this.nvimAttachWaiter;
+        await this.nvimInitPromise;
         const uri = e.document.uri.toString();
         const version = e.document.version;
         if (this.documentLastChangedVersion.get(uri) === version) {
@@ -519,7 +536,13 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private onChangedEdtiors = async (): Promise<void> => {
-        await this.nvimAttachWaiter;
+        await this.nvimInitPromise;
+        let resolvePromise = (): void => {
+            /* ignore */
+        };
+        this.editorChangedPromise = new Promise(res => {
+            resolvePromise = res;
+        });
         const requests: [string, unknown[]][] = [];
         const activeColumns: Set<number> = new Set();
         for (const editor of vscode.window.visibleTextEditors) {
@@ -554,7 +577,11 @@ export class NVIMPluginController implements vscode.Disposable {
             if (activeColumns.has(column)) {
                 continue;
             }
+            requests.push(["nvim_win_set_var", [winId, "vscode_clearjump", true]]);
             requests.push(["nvim_win_set_buf", [winId, this.noEditorBuffer.id]]);
+        }
+        if (activeColumns.has(vscode.ViewColumn.One)) {
+            requests.push(["nvim_call_function", ["VSCodeClearJumpIfFirstWin", []]]);
         }
         await this.client.callAtomic(requests);
         // wipeout any buffers with non visible documents. We process them here because onDidCloseTextDocument fires before onChangedEditors
@@ -582,11 +609,16 @@ export class NVIMPluginController implements vscode.Disposable {
         if (wipeoutBuffers.size) {
             await this.client.command(`bwipeout! ${[...wipeoutBuffers].join(" ")}`);
         }
+        resolvePromise();
+        this.editorChangedPromise = undefined;
     };
 
-    private onChangedActiveEditor = async (e: vscode.TextEditor | undefined): Promise<void> => {
+    private onChangedActiveEditor = async (e: vscode.TextEditor | undefined, init = false): Promise<void> => {
         // !Note called also when editor changes column
-        await this.nvimAttachWaiter;
+        await this.nvimInitPromise;
+        if (this.editorChangedPromise) {
+            await this.editorChangedPromise;
+        }
 
         if (!e || !e.viewColumn) {
             return;
@@ -604,6 +636,9 @@ export class NVIMPluginController implements vscode.Disposable {
                 "nvim_win_set_cursor",
                 [winId, [e.selection.active.line + 1, e.selection.active.character]],
             ]);
+        }
+        if (init) {
+            requests.push(["nvim_call_function", ["VSCodeClearJumpIfFirstWin", []]]);
         }
         await this.client.callAtomic(requests);
     };
@@ -725,7 +760,12 @@ export class NVIMPluginController implements vscode.Disposable {
         if (gridConf[1].cursorLine === cursor.line && gridConf[1].cursorPos === cursor.character) {
             return;
         }
-        this.updateCursorPositionInNeovim(winId, cursor.line, cursor.character);
+        this.updateCursorPositionInNeovim(
+            winId,
+            cursor.line,
+            cursor.character,
+            e.kind === vscode.TextEditorSelectionChangeKind.Command && e.textEditor === vscode.window.activeTextEditor,
+        );
 
         // let shouldUpdateNeovimCursor = false;
 
@@ -1422,9 +1462,19 @@ export class NVIMPluginController implements vscode.Disposable {
         this.applyCursorStyleToEditor(e, modeName);
     };
 
-    private updateCursorPositionInNeovim = async (winId: number, line: number, col: number): Promise<void> => {
+    private updateCursorPositionInNeovim = async (
+        winId: number,
+        line: number,
+        col: number,
+        jumpEntry = false,
+    ): Promise<void> => {
         // if (this.nvimRealLinePosition !== line || this.nvimRealColPosition !== col) {
-        await this.client.request("nvim_win_set_cursor", [winId, [line + 1, col]]);
+        const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, [line + 1, col]]]];
+        if (jumpEntry) {
+            requests.push(["nvim_command", ["normal! m'"]]);
+        }
+        await this.client.callAtomic(requests);
+        // await this.client.request("nvim_win_set_cursor", [winId, [line + 1, col]]);
         // }
     };
 
@@ -1814,7 +1864,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         // !vscode will display previous one in the same pane, but neovim buffer may be different
                         // !so active editor will switch to the wrong one
                         // !Important: this affects vim jumplist, but we use vscode one for now
-                        // await vscode.window.showTextDocument(vscode.Uri.parse(uri));
+                        await vscode.window.showTextDocument(vscode.Uri.parse(uri));
                     }
                 }
                 break;

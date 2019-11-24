@@ -1,0 +1,175 @@
+import os from "os";
+import path from "path";
+import fs from "fs";
+
+import vscode from "vscode";
+import { NeovimClient } from "neovim";
+
+import {
+    attachTestNvimClient,
+    closeNvimClient,
+    closeAllActiveEditors,
+    wait,
+    sendVSCodeKeys,
+    assertContent,
+} from "../utils";
+
+describe("VSCode integration specific stuff", () => {
+    let client: NeovimClient;
+    before(async () => {
+        client = await attachTestNvimClient();
+    });
+    after(async () => {
+        await closeNvimClient(client);
+    });
+
+    afterEach(async () => {
+        await closeAllActiveEditors();
+    });
+
+    it("Resets jumplist for new files", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["line1", "line2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait(1000);
+
+        await sendVSCodeKeys("<C-o>");
+        await assertContent(
+            {
+                content: ["line1", "line2"],
+            },
+            client,
+        );
+
+        const doc2 = await vscode.workspace.openTextDocument({
+            content: ["line12", "line22"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two);
+        await wait(1000);
+
+        await sendVSCodeKeys("<C-o>");
+        await assertContent(
+            {
+                content: ["line12", "line22"],
+            },
+            client,
+        );
+
+        // close all and open new doc
+        await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+        const doc3 = await vscode.workspace.openTextDocument({
+            content: ["line13", "line23"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc3);
+        await wait(1000);
+
+        await sendVSCodeKeys("<C-o>");
+        await assertContent(
+            {
+                content: ["line13", "line23"],
+            },
+            client,
+        );
+    });
+
+    it("Switches to existing files and opens closed files", async () => {
+        const doc1path = path.join(os.tmpdir(), Math.random().toString() + ".txt");
+        const doc2path = path.join(os.tmpdir(), Math.random().toString() + ".txt");
+        const doc3path = path.join(os.tmpdir(), Math.random().toString() + ".txt");
+        fs.writeFileSync(doc1path, "doc1", { encoding: "utf8" });
+        fs.writeFileSync(doc2path, "doc2", { encoding: "utf8" });
+        fs.writeFileSync(doc3path, "doc3", { encoding: "utf8" });
+        const doc1 = await vscode.workspace.openTextDocument(doc1path);
+        const doc2 = await vscode.workspace.openTextDocument(doc2path);
+        const doc3 = await vscode.workspace.openTextDocument(doc3path);
+        await vscode.window.showTextDocument(doc1, { preview: false });
+        await vscode.window.showTextDocument(doc2, { preview: false });
+        await vscode.window.showTextDocument(doc3, { preview: false });
+        await wait(2000);
+
+        await assertContent(
+            {
+                content: ["doc3"],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("<C-o>");
+        await assertContent(
+            {
+                content: ["doc2"],
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+        await wait(1000);
+        await assertContent(
+            {
+                content: ["doc3"],
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("workbench.action.closeOtherEditors");
+        await wait(1000);
+        await sendVSCodeKeys("<C-o>");
+        await wait(1000);
+        await assertContent(
+            {
+                content: ["doc2"],
+            },
+            client,
+        );
+    });
+
+    it("Editor actions create jump points", async () => {
+        const doc1 = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
+        );
+        await vscode.window.showTextDocument(doc1);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg");
+        await vscode.commands.executeCommand("workbench.action.gotoSymbol");
+        await wait(1000);
+        await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
+        await wait(1000);
+        await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
+        await wait(1000);
+        await assertContent(
+            {
+                cursor: [115, 0],
+            },
+            client,
+        );
+        await vscode.commands.executeCommand("workbench.action.gotoSymbol");
+        await wait(1000);
+        await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
+        await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
+        await wait(1000);
+        await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
+        await wait(1000);
+        await assertContent(
+            {
+                cursor: [170, 0],
+            },
+            client,
+        );
+        await sendVSCodeKeys("<C-o>");
+        await assertContent(
+            {
+                cursor: [115, 0],
+            },
+            client,
+        );
+        // await sendVSCodeKeys("<C-i>");
+        // await assertContent(
+        //     {
+        //         cursor: [1, 17],
+        //     },
+        //     client,
+        // );
+    });
+});
