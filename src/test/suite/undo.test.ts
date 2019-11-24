@@ -78,4 +78,24 @@ describe("Undo", () => {
             client,
         );
     });
+
+    it("Buffer is ok after undo and o", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: "a\nb",
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+        await sendVSCodeKeys("yy");
+        await sendVSCodeKeys("p");
+        await sendVSCodeKeys("u");
+        await sendVSCodeKeys("o");
+
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["a", "", "b"],
+            },
+            client,
+        );
+    });
 });
