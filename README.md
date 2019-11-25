@@ -35,11 +35,15 @@ Neovim 0.4.2 or greater
 * =, == are mapped to ```editor.action.formatSelection```
 * It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
 * Scrolling is done by VSCode side. ```<C-d>/<C-u>/etc...``` are slighly different
-* Jumplist is mapped to VSCode's ```navigateBack/navigateForward``` commands.
 * File management commands such as ```e``` / ```w``` / ```q``` etc are mapped to corresponding vscode commands and behavior may be different (see below)
 * ```gf``` is mapped to ```editor.action.goToTypeDefinition```
 * ```gF``` is mapped to ```editor.action.revealDefinition``` (VSCode shortcut: ```F12```)
 * ```<C-w>gF``` is mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
+
+## Jumplist
+
+Jumplist behavior is slightly different than in vim. First it's bound to vscode pane (view column) lifetime. Everytime you close the vew column you reset the jumplist for this view column. The first column will usually have vscode's session lifetime unless you close it too (e.g. by closing all editors). Second, if there is a different file in the jumplist and it's closed in the active column, but opened in the other view column - jumping to this file from the jumplist will switch to the column where the editor is visible rather than opening a new editor (may be controlled by some vscode setting, i haven't tested). Third, jumplist is not inherited for ```split```/```vsplit``` commands.
+You can also use vscode jumplist (bind ```<C-o```/```<C-i>``` to ```workbench.action.navigateBack/Forward```>), but it's completely messed due to constantly setting the cursor position and there is no way to prevent this.
 
 ## Wildmenu completion
 

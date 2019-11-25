@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.35]
+
+- Use VIM jumplist for ```<C-o>```/```<C-i>``` (there are a differences with jumplist behavior in vim, see Readme for details))
+
 ## [0.0.33-0.0.34]
 
 - Fix extension for linux/macos users
