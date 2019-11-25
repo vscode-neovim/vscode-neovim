@@ -17,6 +17,8 @@ set nohidden
 set noautowrite
 " Disable shada session storing
 " set shada=
+set nonumber
+set norelativenumber
 
 let s:currDir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
 " Adjust rtp path
