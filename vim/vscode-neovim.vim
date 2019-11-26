@@ -106,14 +106,6 @@ function! VSCodeGetLastInsertText()
     return lines
 endfunction
 
-function VSCodeClearJumpIfFirstWin()
-    let currWin = nvim_get_current_win()
-    if currWin == g:vscode_primary_win && w:vscode_clearjump
-        let w:vscode_clearjump = 0
-        clearjumps
-    endif
-endfunction
-
 " Used for ctrl-r [reg] insert keybindings
 function! VSCodeGetRegister(reg)
     return getreg(a:reg)
@@ -122,13 +114,9 @@ endfunction
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
     let tabstop = &tabstop
-    call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop)
-endfunction
-
-function! s:onWinEnter()
-    if w:vscode_clearjump
-        let w:vscode_clearjump = 0
-        clearjumps
+    let controlled = getbufvar(a:id, "vscode_controlled")
+    if !controlled
+        call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop)
     endif
 endfunction
 
@@ -146,7 +134,6 @@ execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 " autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 autocmd BufCreate,BufReadPost * :set conceallevel=0
-autocmd WinEnter * :call <SID>onWinEnter()
 " autocmd WinNew * :only
 " Disable syntax highlighting since we don't need it anyway
 " autocmd BufWinEnter * :syntax off

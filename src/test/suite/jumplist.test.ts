@@ -14,7 +14,7 @@ import {
     assertContent,
 } from "../utils";
 
-describe("VSCode integration specific stuff", () => {
+describe.skip("VSCode integration specific stuff", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
