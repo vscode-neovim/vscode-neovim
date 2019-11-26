@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from "child_process";
 import path from "path";
 
+import throttle from "lodash/throttle";
 import vscode from "vscode";
 import { attach, Buffer as NeovimBuffer, NeovimClient, Window } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
@@ -615,6 +616,8 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private onChangedActiveEditor = async (e: vscode.TextEditor | undefined, init = false): Promise<void> => {
         // !Note called also when editor changes column
+        // !Note. when moving editor to other column, first onChangedActiveEditor is called with existing editor opened
+        // !in the destination pane, then onChangedEditors is fired, then onChangedActiveEditor with actual editor
         await this.nvimInitPromise;
         if (this.editorChangedPromise) {
             await this.editorChangedPromise;
@@ -627,6 +630,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!winId) {
             return;
         }
+        this.showUriThrottled.cancel();
         this.applyCursorStyleToEditor(e, this.currentModeName);
         const requests: [string, unknown[]][] = [["nvim_set_current_win", [winId]]];
         const uri = e.document.uri.toString();
@@ -1838,6 +1842,18 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     }
 
+    // Then moving editor to other pane and there is already one editor in this pane, vscode first is calling
+    // onChangeActiveEditor with the old edtior, then.onChangeActiveEditor with the new editor
+    // in neovim the "external-buffer" request is fired with this editor and we're switching to wrong editor
+    // the solution is here is slightly throttle the showTextDocument call, then cancel it in onChangeActiveEditor if needed
+    private showUriThrottled = throttle(
+        (uri: string) => {
+            vscode.window.showTextDocument(vscode.Uri.parse(uri));
+        },
+        100,
+        { leading: false },
+    );
+
     private async handleExtensionRequest(command: string, args: unknown[]): Promise<unknown> {
         switch (command) {
             case "external-buffer": {
@@ -1865,7 +1881,8 @@ export class NVIMPluginController implements vscode.Disposable {
                         // !vscode will display previous one in the same pane, but neovim buffer may be different
                         // !so active editor will switch to the wrong one
                         // !Important: this affects vim jumplist, but we use vscode one for now
-                        await vscode.window.showTextDocument(vscode.Uri.parse(uri));
+                        // await vscode.window.showTextDocument(vscode.Uri.parse(uri));
+                        this.showUriThrottled(uri);
                     }
                 }
                 break;

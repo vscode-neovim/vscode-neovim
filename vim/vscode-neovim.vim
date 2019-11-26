@@ -121,12 +121,8 @@ endfunction
 
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
-    " Sometimes doesn't work, although on extensions we handle such buffers
-    let controlled = getbufvar(a:id, "vscode_controlled")
-    if !controlled
-        let tabstop = &tabstop
-        call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop)
-    endif
+    let tabstop = &tabstop
+    call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop)
 endfunction
 
 function! s:onWinEnter()
