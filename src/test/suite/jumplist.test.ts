@@ -172,4 +172,61 @@ describe("VSCode integration specific stuff", () => {
         //     client,
         // );
     });
+
+    it("Jump to definition to antoher file creates jump point", async () => {
+        const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
+        await vscode.window.showTextDocument(doc1);
+        await wait(1000);
+
+        await sendVSCodeKeys("jjjjjl");
+        await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
+        await wait(1500);
+
+        await sendVSCodeKeys("100k", 1000);
+        await sendVSCodeKeys("<C-o>", 1000);
+        await assertContent(
+            {
+                cursor: [115, 16],
+            },
+            client,
+        );
+    });
+
+    it("Jump to definition in same file", async () => {
+        const doc1 = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/go-to-def-same-file.ts"),
+        );
+        await vscode.window.showTextDocument(doc1);
+        await wait(1000);
+
+        await sendVSCodeKeys("49jm'");
+        await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
+        await wait(1500);
+
+        await sendVSCodeKeys("j");
+        await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
+        await wait(1500);
+
+        await assertContent(
+            {
+                cursor: [4, 9],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("<C-o>");
+        await assertContent(
+            {
+                cursor: [26, 9],
+            },
+            client,
+        );
+        await sendVSCodeKeys("<C-o>");
+        await assertContent(
+            {
+                cursor: [49, 0],
+            },
+            client,
+        );
+    });
 });

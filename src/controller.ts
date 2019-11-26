@@ -636,6 +636,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 "nvim_win_set_cursor",
                 [winId, [e.selection.active.line + 1, e.selection.active.character]],
             ]);
+            requests.push(["nvim_command", ["normal! m'"]]);
         }
         if (init) {
             requests.push(["nvim_call_function", ["VSCodeClearJumpIfFirstWin", []]]);
@@ -716,7 +717,7 @@ export class NVIMPluginController implements vscode.Disposable {
     /**
      * Handle vscode selection change. This includes everything touching selection or cursor position, includes custom commands and selection = [] assignment
      */
-    private onChangeSelection = async (e: vscode.TextEditorSelectionChangeEvent): Promise<void> => {
+    private onChangeSelection = (e: vscode.TextEditorSelectionChangeEvent): void => {
         // try to update cursor in neovim as rarely as we can
         if (this.isInsertMode) {
             return;
