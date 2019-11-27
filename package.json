@@ -4,7 +4,7 @@
 	"description": "Real VIM in your Visual Studio Code",
 	"publisher": "asvetliakov",
 	"extensionKind": "ui",
-	"version": "0.0.34",
+	"version": "0.0.35",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/asvetliakov/vscode-neovim"
