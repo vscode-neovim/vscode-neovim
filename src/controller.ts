@@ -1854,7 +1854,7 @@ export class NVIMPluginController implements vscode.Disposable {
             case "external-buffer": {
                 const [name, idStr, expandTab, tabStop, isJumping] = args as [string, string, number, number, number];
                 const id = parseInt(idStr, 10);
-                if (!this.managedBufferIds.has(id) || !(name && /:\/\//.test(name))) {
+                if (!this.managedBufferIds.has(id) && !(name && /:\/\//.test(name))) {
                     await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
                 } else if (isJumping && name) {
                     // !Important: we only allow to open uri from neovim side when jumping. Otherwise it may break vscode editor management

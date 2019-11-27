@@ -134,14 +134,15 @@ endfunction
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
     let tabstop = &tabstop
-    let controlled = getbufvar(a:id, "vscode_controlled")
-    if !controlled
-        call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop, g:isJumping)
+    let isJumping = 0
+    if exists("g:isJumping")
+        let isJumping = g:isJumping
     endif
+    call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop, isJumping)
 endfunction
 
 function! s:onWinEnter()
-    if w:vscode_clearjump
+    if exists("w:vscode_clearjump") && w:vscode_clearjump
         let w:vscode_clearjump = 0
         clearjumps
     endif

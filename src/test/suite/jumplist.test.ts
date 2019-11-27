@@ -29,7 +29,7 @@ describe("VSCode integration specific stuff", () => {
 
     it("Resets jumplist for new files", async () => {
         const doc = await vscode.workspace.openTextDocument({
-            content: ["line1", "line2"].join("\n"),
+            content: ["1line", "1line"].join("\n"),
         });
         await vscode.window.showTextDocument(doc);
         await wait(1000);
@@ -37,13 +37,13 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("<C-o>");
         await assertContent(
             {
-                content: ["line1", "line2"],
+                content: ["1line", "1line"],
             },
             client,
         );
 
         const doc2 = await vscode.workspace.openTextDocument({
-            content: ["line12", "line22"].join("\n"),
+            content: ["2line", "2line"].join("\n"),
         });
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two);
         await wait(1000);
@@ -51,7 +51,7 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("<C-o>");
         await assertContent(
             {
-                content: ["line12", "line22"],
+                content: ["2line", "2line"],
             },
             client,
         );
@@ -59,7 +59,7 @@ describe("VSCode integration specific stuff", () => {
         // close all and open new doc
         await vscode.commands.executeCommand("workbench.action.closeAllEditors");
         const doc3 = await vscode.workspace.openTextDocument({
-            content: ["line13", "line23"].join("\n"),
+            content: ["3line", "3line"].join("\n"),
         });
         await vscode.window.showTextDocument(doc3);
         await wait(1000);
@@ -67,7 +67,7 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("<C-o>");
         await assertContent(
             {
-                content: ["line13", "line23"],
+                content: ["3line", "3line"],
             },
             client,
         );

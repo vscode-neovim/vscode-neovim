@@ -39,7 +39,10 @@ Neovim 0.4.2 or greater
 * ```gf``` is mapped to ```editor.action.goToTypeDefinition```
 * ```gF``` is mapped to ```editor.action.revealDefinition``` (VSCode shortcut: ```F12```)
 * ```<C-w>gF``` is mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
-* Jumplist ```<C-o>```/```<C-i>``` mapped temporarly to vscode navigateBack/Forward commands
+
+## Jumplist
+
+Jumplist lifetime is mapped to vscode's view column lifetime and not persisted between restarts. Also jumplist is not inherited for ```split```/etc... commands
 
 ## Wildmenu completion
 
