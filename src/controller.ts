@@ -202,6 +202,8 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private editorChangedPromise?: Promise<void>;
 
+    private skipJumpsForUris: Map<string, boolean> = new Map();
+
     private grids: Map<
         number,
         { winId: number; cursorLine: number; cursorPos: number; screenLine: number }
@@ -308,10 +310,12 @@ export class NVIMPluginController implements vscode.Disposable {
         // // }
         // // await this.onOpenTextDocument(doc);
         // // }
+        const firstWin = await this.client.window;
 
         // create nvim external windows. each window is mapped to corresponding view column
         // each window has own grid. IDs are starting from 1000 with first win is 1000 and second win is 1002 (why?)
         const requests: [string, unknown[]][] = [
+            ["nvim_set_var", ["vscode_primary_win", firstWin.id]],
             ["nvim_set_var", ["vscode_noeditor_buffer", this.noEditorBuffer.id]],
             ["nvim_buf_set_option", [this.noEditorBuffer.id, "modified", true]],
             ["nvim_win_set_buf", [0, this.noEditorBuffer.id]],
@@ -333,6 +337,11 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.callAtomic(requests);
 
         const wins = await this.client.windows;
+        const clearjumpRequests: [string, unknown[]][] = wins.map(w => [
+            "nvim_win_set_var",
+            [w.id, "vscode_clearjump", true],
+        ]);
+        await this.client.callAtomic(clearjumpRequests);
 
         let currColumn = 1;
         for (const w of wins) {
@@ -348,7 +357,7 @@ export class NVIMPluginController implements vscode.Disposable {
             await this.initBuffer(e);
         }
         // this.onChangedEdtiors(vscode.window.visibleTextEditors);
-        await this.onChangedActiveEditor(vscode.window.activeTextEditor);
+        await this.onChangedActiveEditor(vscode.window.activeTextEditor, true);
     }
 
     public dispose(): void {
@@ -570,7 +579,11 @@ export class NVIMPluginController implements vscode.Disposable {
             if (activeColumns.has(column)) {
                 continue;
             }
+            requests.push(["nvim_win_set_var", [winId, "vscode_clearjump", true]]);
             requests.push(["nvim_win_set_buf", [winId, this.noEditorBuffer.id]]);
+        }
+        if (activeColumns.has(vscode.ViewColumn.One)) {
+            requests.push(["nvim_call_function", ["VSCodeClearJumpIfFirstWin", []]]);
         }
         await this.client.callAtomic(requests);
         // wipeout any buffers with non visible documents. We process them here because onDidCloseTextDocument fires before onChangedEditors
@@ -602,7 +615,7 @@ export class NVIMPluginController implements vscode.Disposable {
         this.editorChangedPromise = undefined;
     };
 
-    private onChangedActiveEditor = async (e: vscode.TextEditor | undefined): Promise<void> => {
+    private onChangedActiveEditor = async (e: vscode.TextEditor | undefined, init = false): Promise<void> => {
         // !Note called also when editor changes column
         // !Note. when moving editor to other column, first onChangedActiveEditor is called with existing editor opened
         // !in the destination pane, then onChangedEditors is fired, then onChangedActiveEditor with actual editor
@@ -623,10 +636,21 @@ export class NVIMPluginController implements vscode.Disposable {
         const uri = e.document.uri.toString();
         const buf = this.uriToBuffer.get(uri);
         if (buf && this.managedBufferIds.has(buf.id)) {
-            requests.unshift([
-                "nvim_win_set_cursor",
-                [winId, [e.selection.active.line + 1, e.selection.active.character]],
-            ]);
+            requests.unshift(
+                // !Note: required otherwise navigating through jump stack may lead to broken state when vscode switches to editor
+                // !in the other column but neovim win thinks it has this editor active
+                // !Note: not required if editor is forced to opened in the same column
+                // ["nvim_win_set_buf", [winId, buf.id]],
+                ["nvim_win_set_cursor", [winId, [e.selection.active.line + 1, e.selection.active.character]]],
+            );
+        }
+        if (init) {
+            requests.push(["nvim_call_function", ["VSCodeClearJumpIfFirstWin", []]]);
+        }
+        if (this.skipJumpsForUris.get(e.document.uri.toString())) {
+            this.skipJumpsForUris.delete(e.document.uri.toString());
+        } else {
+            requests.push(["nvim_call_function", ["VSCodeStoreJumpForWin", [winId]]]);
         }
         await this.client.callAtomic(requests);
     };
@@ -716,6 +740,8 @@ export class NVIMPluginController implements vscode.Disposable {
         // !Important: ignore selection of non active editor.
         // !For peek definition and similar stuff vscode opens another editor and updates selections here
         // !We must ignore it otherwise the cursor will just "jump"
+
+        // !Note: Seems view column checking is enough
         if (e.textEditor !== vscode.window.activeTextEditor) {
             return;
         }
@@ -748,7 +774,13 @@ export class NVIMPluginController implements vscode.Disposable {
         if (gridConf[1].cursorLine === cursor.line && gridConf[1].cursorPos === cursor.character) {
             return;
         }
-        this.updateCursorPositionInNeovim(winId, cursor.line, cursor.character);
+        let createJumpEntry = !e.kind || e.kind === vscode.TextEditorSelectionChangeKind.Command;
+        const skipJump = this.skipJumpsForUris.get(e.textEditor.document.uri.toString());
+        if (skipJump) {
+            createJumpEntry = false;
+            this.skipJumpsForUris.delete(e.textEditor.document.uri.toString());
+        }
+        this.updateCursorPositionInNeovim(winId, cursor.line, cursor.character, createJumpEntry);
 
         // let shouldUpdateNeovimCursor = false;
 
@@ -1445,8 +1477,17 @@ export class NVIMPluginController implements vscode.Disposable {
         this.applyCursorStyleToEditor(e, modeName);
     };
 
-    private updateCursorPositionInNeovim = async (winId: number, line: number, col: number): Promise<void> => {
-        await this.client.request("nvim_win_set_cursor", [winId, [line + 1, col]]);
+    private updateCursorPositionInNeovim = async (
+        winId: number,
+        line: number,
+        col: number,
+        createJumpEntry = false,
+    ): Promise<void> => {
+        const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, [line + 1, col]]]];
+        if (createJumpEntry) {
+            requests.push(["nvim_call_function", ["VSCodeStoreJumpForWin", [winId]]]);
+        }
+        await this.client.callAtomic(requests);
     };
 
     private isVisualMode(modeShortName: string): boolean {
@@ -1811,31 +1852,30 @@ export class NVIMPluginController implements vscode.Disposable {
     private async handleExtensionRequest(command: string, args: unknown[]): Promise<unknown> {
         switch (command) {
             case "external-buffer": {
-                const [name, idStr, expandTab, tabStop] = args as [string, string, number, number];
+                const [name, idStr, expandTab, tabStop, isJumping] = args as [string, string, number, number, number];
                 const id = parseInt(idStr, 10);
-                if (!this.managedBufferIds.has(id)) {
-                    // Handle when trying to open vscode uri from vim
-                    // todo: naive checking
-                    if (name && /:\/\//.test(name)) {
-                        try {
-                            const uri = vscode.Uri.parse(name, true);
-                            this.pendingBuffers.set(name, id);
-                            const doc = await vscode.workspace.openTextDocument(uri);
-                            await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active);
-                        } catch {
-                            // ignore ?
+                if (!this.managedBufferIds.has(id) || !(name && /:\/\//.test(name))) {
+                    await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
+                } else if (isJumping && name) {
+                    // !Important: we only allow to open uri from neovim side when jumping. Otherwise it may break vscode editor management
+                    // !and produce ugly switching effects
+                    try {
+                        let doc = vscode.workspace.textDocuments.find(d => d.uri.toString() === name);
+                        if (!doc) {
+                            doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(name, true));
                         }
-                    } else {
-                        await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
-                    }
-                } else {
-                    const uri = this.bufferIdToUri.get(id);
-                    if (uri) {
-                        // !Important! This is messing with vscode window management: when you close the editor
-                        // !vscode will display previous one in the same pane, but neovim buffer may be different
-                        // !so active editor will switch to the wrong one
-                        // !Important: this affects vim jumplist, but we use vscode one for now
-                        // await vscode.window.showTextDocument(vscode.Uri.parse(uri));
+                        this.skipJumpsForUris.set(name, true);
+                        await vscode.window.showTextDocument(doc, {
+                            // viewColumn: vscode.ViewColumn.Active,
+                            // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
+                            viewColumn: vscode.window.activeTextEditor
+                                ? vscode.window.activeTextEditor.viewColumn
+                                : vscode.ViewColumn.Active,
+                            preserveFocus: false,
+                            preview: false,
+                        });
+                    } catch {
+                        // todo: show error
                     }
                 }
                 break;

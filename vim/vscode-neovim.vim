@@ -111,12 +111,39 @@ function! VSCodeGetRegister(reg)
     return getreg(a:reg)
 endfunction
 
+function! VSCodeClearJumpIfFirstWin()
+    let currWin = nvim_get_current_win()
+    if currWin == g:vscode_primary_win && w:vscode_clearjump
+        let w:vscode_clearjump = 0
+        clearjumps
+    endif
+endfunction
+
+function! VSCodeStoreJumpForWin(winId)
+    " Seems causing troubles
+    " let currWin = nvim_get_current_win()
+    " if currWin != a:winId
+    "     call nvim_set_current_win(a:winId)
+    " endif
+    exe "normal! m'"
+    " if currWin != a:winId
+    "     call nvim_set_current_win(currWin)
+    " endif
+endfunction
+
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
     let tabstop = &tabstop
     let controlled = getbufvar(a:id, "vscode_controlled")
     if !controlled
-        call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop)
+        call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop, g:isJumping)
+    endif
+endfunction
+
+function! s:onWinEnter()
+    if w:vscode_clearjump
+        let w:vscode_clearjump = 0
+        clearjumps
     endif
 endfunction
 
@@ -134,6 +161,7 @@ execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 " autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 autocmd BufCreate,BufReadPost * :set conceallevel=0
+autocmd WinEnter * :call <SID>onWinEnter()
 " autocmd WinNew * :only
 " Disable syntax highlighting since we don't need it anyway
 " autocmd BufWinEnter * :syntax off
