@@ -2,6 +2,10 @@
 
 Neovim integration for Visual Studio Code
 
+For those who doesn't know [Neovim](https://neovim.io/) is the fork of VIM to allow greater VIM extensibility and embeddability. The extension is using full embedded neovim instance as backend (with the exception of the insert mode and window/buffer/file management), no more half-complete VIM emulation
+
+VSCodeVim has neovim integration but it doesn't use it for anything but ex-commands (e.g. commands like ```:normal```) and relying for own emulated implementation for anything else.
+
 Please report any issues/suggestions to [vscode-neovim repository](https://github.com/asvetliakov/vscode-neovim)
 
 ## Installation
@@ -12,8 +16,9 @@ Please report any issues/suggestions to [vscode-neovim repository](https://githu
 ## Features
 
 * Almost fully feature-complete VIM integration by utilizing neovim
-* First-class VSCode insert mode. The plugin unbinds self from ```type``` event in the insert mode, so no typing lag anymore.
+* First-class VSCode insert mode. The plugin unbinds self from the ```type``` event in the insert mode, so no typing lag and freezing anymore when long completion popup appears.
 * Fully working VSCode features - autocompletion/go to definition/snippets/multiple cursors/etc...
+* vimrc/vim plugins/etc are supported (few plugins don't make sense with vscode, such as nerdtree)
 
 ## Requirements
 
