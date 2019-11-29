@@ -78,6 +78,7 @@ const NVIM_WIN_WIDTH = 500;
 
 export class NVIMPluginController implements vscode.Disposable {
     private isInsertMode = false;
+    private isRecording = false;
     /**
      * Current vim mode
      */
@@ -838,7 +839,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!this.isInit) {
             return;
         }
-        if (!this.isInsertMode) {
+        if (!this.isInsertMode || this.isRecording) {
             this.client.input(this.normalizeKey(type.text));
         } else {
             vscode.commands.executeCommand("default:type", { text: type.text });
@@ -1333,7 +1334,7 @@ export class NVIMPluginController implements vscode.Disposable {
         const editorColumnsToWin = [...this.editorColumnIdToWinId];
         const prevModeName = this.currentModeName;
         if (newModeName) {
-            this.handleModeChange(newModeName);
+            await this.handleModeChange(newModeName);
         }
         if (cursorUpdates.size || highlightUpdates.size) {
             const syncCursorsGrids: Set<number> = new Set([...cursorUpdates, ...highlightUpdates.keys()]);
@@ -1460,13 +1461,19 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private handleModeChange = (modeName: string): void => {
+    private handleModeChange = async (modeName: string): Promise<void> => {
         this.isInsertMode = modeName === "insert";
         if (this.isInsertMode && this.typeHandlerDisplose) {
-            this.typeHandlerDisplose.dispose();
-            this.typeHandlerDisplose = undefined;
+            const isRecording = await this.client.callFunction("reg_recording");
+            if (!isRecording) {
+                this.typeHandlerDisplose.dispose();
+                this.typeHandlerDisplose = undefined;
+            } else {
+                this.isRecording = true;
+            }
         } else if (!this.isInsertMode && !this.typeHandlerDisplose) {
             this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
+            this.isRecording = false;
         }
         this.currentModeName = modeName;
         const e = vscode.window.activeTextEditor;

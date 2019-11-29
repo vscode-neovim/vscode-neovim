@@ -8,6 +8,7 @@
 		],
 		"sourceMap": true,
 		"rootDir": "src",
+		"types": ["node", "mocha"],
 		"esModuleInterop": true,
 		"skipLibCheck": true,
 		"strict": true   /* enable all strict type-checking options */
