@@ -2,7 +2,7 @@
 
 Neovim integration for Visual Studio Code
 
-For those who doesn't know [Neovim](https://neovim.io/) is the fork of VIM to allow greater VIM extensibility and embeddability. The extension is using full embedded neovim instance as backend (with the exception of the insert mode and window/buffer/file management), no more half-complete VIM emulation
+For those who don't know [Neovim](https://neovim.io/) is the fork of VIM to allow greater VIM extensibility and embeddability. The extension is using full embedded neovim instance as backend (with the exception of the insert mode and window/buffer/file management), no more half-complete VIM emulation
 
 VSCodeVim has neovim integration but it doesn't use it for anything but ex-commands (e.g. commands like ```:normal```) and relying for own emulated implementation for anything else.
 
