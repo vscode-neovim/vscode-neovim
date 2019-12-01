@@ -1377,8 +1377,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
             }
         }
-        const mode = newModeName || this.currentModeName;
-        if (mode && mode.startsWith("cmdline")) {
+        if (this.currentModeName.startsWith("cmdline")) {
             this.applyRedrawUpdateInCmdlineMode(newModeName, gridCursorUpdates, gridHighlights, acceptPrompt);
         } else {
             this.applyRedrawUpdate(newModeName, gridCursorUpdates, gridHighlights, acceptPrompt);
