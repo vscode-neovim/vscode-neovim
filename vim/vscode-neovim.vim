@@ -148,6 +148,13 @@ function! s:onWinEnter()
     endif
 endfunction
 
+function! s:onInsertEnter()
+    let reg = reg_recording()
+    if reg != ""
+        call VSCodeExtensionCall('notify-recording', reg)
+    endif
+endfunction
+
 
 " Load altercmd first
 execute 'source ' . s:currDir . '/vim-altercmd/plugin/altercmd.vim'
@@ -163,6 +170,7 @@ execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 autocmd BufEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 autocmd BufCreate,BufReadPost * :set conceallevel=0
 autocmd WinEnter * :call <SID>onWinEnter()
+autocmd InsertEnter * :call <SID>onInsertEnter()
 " autocmd WinNew * :only
 " Disable syntax highlighting since we don't need it anyway
 " autocmd BufWinEnter * :syntax off

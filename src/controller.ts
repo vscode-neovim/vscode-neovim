@@ -867,9 +867,6 @@ export class NVIMPluginController implements vscode.Disposable {
     private watchAndApplyNeovimEdits = async (): Promise<void> => {
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            // unfortunately workspace edit also doens't work for multiple text edit
-            // const workspaceEdit = new vscode.WorkspaceEdit();
-            // const edit = this.pendingBufChangesQueue.shift();
             const edits = this.pendingBufChangesQueue.splice(0, 1);
             if (!edits.length) {
                 let timeout: NodeJS.Timeout | undefined;
@@ -1424,7 +1421,7 @@ export class NVIMPluginController implements vscode.Disposable {
         const editorColumnsToWin = [...this.editorColumnIdToWinId];
         const prevModeName = this.currentModeName;
         if (newModeName) {
-            await this.handleModeChange(newModeName);
+            this.handleModeChange(newModeName);
         }
         if (cursorUpdates.size || highlightUpdates.size) {
             const syncCursorsGrids: Set<number> = new Set([...cursorUpdates, ...highlightUpdates.keys()]);
@@ -1551,16 +1548,11 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private handleModeChange = async (modeName: string): Promise<void> => {
+    private handleModeChange = (modeName: string): void => {
         this.isInsertMode = modeName === "insert";
-        if (this.isInsertMode && this.typeHandlerDisplose) {
-            const isRecording = await this.client.callFunction("reg_recording");
-            if (!isRecording) {
-                this.typeHandlerDisplose.dispose();
-                this.typeHandlerDisplose = undefined;
-            } else {
-                this.isRecording = true;
-            }
+        if (this.isInsertMode && this.typeHandlerDisplose && !this.isRecording) {
+            this.typeHandlerDisplose.dispose();
+            this.typeHandlerDisplose = undefined;
         } else if (!this.isInsertMode && !this.typeHandlerDisplose) {
             this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
             this.isRecording = false;
@@ -2031,6 +2023,10 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (close === "all") {
                     await vscode.commands.executeCommand("workbench.action.closeOtherEditors");
                 }
+                break;
+            }
+            case "notify-recording": {
+                this.isRecording = true;
                 break;
             }
         }
