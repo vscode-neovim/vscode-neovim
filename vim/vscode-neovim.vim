@@ -155,6 +155,19 @@ function! s:onInsertEnter()
     endif
 endfunction
 
+function! s:onCursorMoved()
+    let mode = nvim_get_mode()
+    if !get(mode, 'blocking')
+        let currentWin = nvim_get_current_win()
+        let cursorPos = nvim_win_get_cursor(0)
+        let visualStart = []
+        if get(mode, 'mode') == 'v' || get(mode, 'mode') == 'V' || get(mode, 'mode') == "\<C-v>"
+            let visualStart = getpos("v")
+        endif
+        call VSCodeExtensionNotify('cursor', currentWin, get(mode, 'mode'), cursorPos, visualStart)
+    endif
+endfunction
+
 
 " Load altercmd first
 execute 'source ' . s:currDir . '/vim-altercmd/plugin/altercmd.vim'
@@ -167,10 +180,11 @@ execute 'source ' . s:currDir . '/vscode-tab-commands.vim'
 execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 
 " autocmd BufWinEnter,WinNew,WinEnter * :only
-autocmd BufEnter * :call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
+autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 autocmd BufCreate,BufReadPost * :set conceallevel=0
-autocmd WinEnter * :call <SID>onWinEnter()
-autocmd InsertEnter * :call <SID>onInsertEnter()
+autocmd WinEnter * call <SID>onWinEnter()
+autocmd InsertEnter * call <SID>onInsertEnter()
+autocmd CursorMoved * call <SID>onCursorMoved()
 " autocmd WinNew * :only
 " Disable syntax highlighting since we don't need it anyway
 " autocmd BufWinEnter * :syntax off
