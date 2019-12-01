@@ -38,23 +38,22 @@
 					"type": "string",
 					"default": "",
 					"title": "Neovim path",
-					"description": "Full path to Neovim executable"
+					"description": "Full path to Neovim executable. If you enabled useWSL specify the linux path to nvim executable"
 				},
 				"vscode-neovim.useCtrlKeysForNormalMode": {
 					"type": "boolean",
 					"default": true,
-					"title": "Use Ctrl keys in normal/visual/etc...(except insert) modes"
+					"description": "Use Ctrl keys in normal/visual/etc...(except insert) modes"
 				},
 				"vscode-neovim.useCtrlKeysForInsertMode": {
 					"type": "boolean",
 					"default": true,
-					"title": "Use Ctrl keys in insert mode"
+					"description": "Use Ctrl keys in insert mode"
 				},
-				"vscode-neovim.mouseSelectionVisualMode": {
+				"vscode-neovim.useWSL": {
 					"type": "boolean",
-					"title": "Mouse selection starting visual mode",
-					"description": "When true selecting by mouse will start vim visual mode",
-					"default": false
+					"default": false,
+					"description": "Use neovim installed in WSL. If you enable it, specify neovim path installed in WSL"
 				},
 				"vscode-neovim.highlightGroups.ignoreHighlights": {
 					"type": "array",
@@ -142,7 +141,7 @@
 				"vscode-neovim.highlightGroups.highlights": {
 					"type": "object",
 					"title": "Highlight Groups Configuration",
-					"description": "Define colors for various highlight groups. Can accept either 'vim' to use colors from vim or text decoration properties object",
+					"description": "Define colors for various VIM highlight groups. Can accept either 'vim' to use colors from vim or text decoration properties object",
 					"default": {
 						"Directory": "vim",
 						"IncSearch": {

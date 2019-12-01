@@ -1,5 +1,3 @@
-// The module 'vscode' contains the VS Code extensibility APIaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 
 import { NVIMPluginController } from "./controller";
@@ -19,6 +17,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const mouseVisualSelection = settings.get("mouseSelectionVisualMode", false);
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
+    const useWsl = settings.get("useWSL", false);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
     const plugin = new NVIMPluginController(
@@ -31,6 +30,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         mouseVisualSelection,
+        useWsl,
     );
     context.subscriptions.push(plugin);
     await plugin.init();
