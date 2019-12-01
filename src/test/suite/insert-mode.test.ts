@@ -15,7 +15,7 @@ import {
     pasteVSCode,
 } from "../utils";
 
-describe.only("Insert mode and buffer syncronization", () => {
+describe("Insert mode and buffer syncronization", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();

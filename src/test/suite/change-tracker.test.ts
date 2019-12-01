@@ -10,9 +10,9 @@ describe("Change tracker test", () => {
         t.changeLine(4);
 
         assert.deepEqual(t.getChanges(), [
-            { start: 0, end: 0, newStart: 0, newEnd: 0 },
-            { start: 2, end: 2, newStart: 2, newEnd: 2 },
-            { start: 4, end: 4, newStart: 4, newEnd: 4 },
+            { start: 0, end: 0, newStart: 0, newEnd: 0, diff: 0 },
+            { start: 2, end: 2, newStart: 2, newEnd: 2, diff: 0 },
+            { start: 4, end: 4, newStart: 4, newEnd: 4, diff: 0 },
         ]);
     });
 
@@ -28,6 +28,7 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 1,
+                diff: 0,
             },
         ]);
 
@@ -39,12 +40,14 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 1,
+                diff: 0,
             },
             {
                 start: 2,
                 end: 2,
                 newStart: 2,
                 newEnd: 2,
+                diff: 0,
             },
         ]);
     });
@@ -60,12 +63,14 @@ describe("Change tracker test", () => {
                 end: 3,
                 newStart: 3,
                 newEnd: 3,
+                diff: 0,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
 
@@ -76,18 +81,21 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 2,
                 newEnd: 2,
+                diff: 0,
             },
             {
                 start: 3,
                 end: 3,
                 newStart: 3,
                 newEnd: 3,
+                diff: 0,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
 
@@ -98,18 +106,21 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 2,
                 newEnd: 2,
+                diff: 0,
             },
             {
                 start: 3,
                 end: 3,
                 newStart: 3,
                 newEnd: 3,
+                diff: 0,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
 
@@ -120,74 +131,30 @@ describe("Change tracker test", () => {
                 end: 0,
                 newStart: 0,
                 newEnd: 0,
+                diff: 0,
             },
             {
                 start: 2,
                 end: 2,
                 newStart: 2,
                 newEnd: 2,
+                diff: 0,
             },
             {
                 start: 3,
                 end: 3,
                 newStart: 3,
                 newEnd: 3,
+                diff: 0,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
-        // // will combine both changes into one
-        // t.changeLine(1);
-        // assert.deepEqual(t.getChanges(), [
-        //     {
-        //         start: 0,
-        //         end: 4,
-        //         newStart: 0,
-        //         newEnd: 4,
-        //     },
-        // ]);
-
-        // t.changeLine(8);
-        // t.changeLine(10);
-        // assert.deepEqual(t.getChanges(), [
-        //     {
-        //         start: 0,
-        //         end: 4,
-        //         newStart: 0,
-        //         newEnd: 4,
-        //     },
-        //     {
-        //         start: 8,
-        //         end: 8,
-        //         newStart: 8,
-        //         newEnd: 8,
-        //     },
-        //     {
-        //         start: 10,
-        //         end: 10,
-        //         newStart: 10,
-        //         newEnd: 10,
-        //     },
-        // ]);
-        // t.changeLine(9);
-        // assert.deepEqual(t.getChanges(), [
-        //     {
-        //         start: 0,
-        //         end: 4,
-        //         newStart: 0,
-        //         newEnd: 4,
-        //     },
-        //     {
-        //         start: 8,
-        //         end: 10,
-        //         newStart: 8,
-        //         newEnd: 10,
-        //     },
-        // ]);
     });
 
     it("Changing added line", async () => {
@@ -202,6 +169,7 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 2,
+                diff: 1,
             },
         ]);
     });
@@ -215,6 +183,7 @@ describe("Change tracker test", () => {
                 end: 0,
                 newStart: 0,
                 newEnd: 1,
+                diff: 1,
             },
         ]);
 
@@ -225,6 +194,7 @@ describe("Change tracker test", () => {
                 end: 0,
                 newStart: 0,
                 newEnd: 1,
+                diff: 1,
             },
             // shift by -1 since newline was added before
             {
@@ -232,6 +202,7 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 3,
                 newEnd: 4,
+                diff: 1,
             },
         ]);
     });
@@ -247,6 +218,7 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 2,
                 newEnd: 4,
+                diff: 2,
             },
         ]);
 
@@ -257,12 +229,14 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 2,
+                diff: 1,
             },
             {
                 start: 2,
                 end: 2,
                 newStart: 3,
                 newEnd: 5,
+                diff: 2,
             },
         ]);
 
@@ -273,12 +247,14 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 2,
+                diff: 1,
             },
             {
                 start: 2,
                 end: 2,
                 newStart: 3,
                 newEnd: 6,
+                diff: 3,
             },
         ]);
 
@@ -289,18 +265,21 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 2,
+                diff: 1,
             },
             {
                 start: 2,
                 end: 2,
                 newStart: 3,
                 newEnd: 6,
+                diff: 3,
             },
             {
                 start: 6,
                 end: 6,
                 newStart: 10,
                 newEnd: 11,
+                diff: 1,
             },
         ]);
     });
@@ -314,6 +293,7 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 2,
+                diff: 1,
             },
         ]);
 
@@ -324,12 +304,14 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 2,
+                diff: 1,
             },
             {
                 start: 2,
                 end: 2,
                 newStart: 3,
                 newEnd: 4,
+                diff: 1,
             },
         ]);
     });
@@ -347,18 +329,21 @@ describe("Change tracker test", () => {
                 end: 3,
                 newStart: 3,
                 newEnd: 3,
+                diff: 0,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 4,
                 newEnd: 5,
+                diff: 1,
             },
             {
                 start: 5,
                 end: 5,
                 newStart: 6,
                 newEnd: 6,
+                diff: 0,
             },
         ]);
     });
@@ -374,6 +359,7 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 2,
                 newEnd: 5,
+                diff: 3,
             },
         ]);
     });
@@ -393,12 +379,14 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 1,
                 newEnd: 1,
+                diff: 0,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 4,
                 newEnd: 5,
+                diff: 1,
             },
             {
                 start: 7,
@@ -406,6 +394,7 @@ describe("Change tracker test", () => {
                 // pushed one line down since we have added new line 5
                 newStart: 8,
                 newEnd: 9,
+                diff: 1,
             },
         ]);
     });
@@ -421,6 +410,7 @@ describe("Change tracker test", () => {
                 end: 4,
                 newStart: 4,
                 newEnd: 5,
+                diff: 1,
             },
         ]);
     });
@@ -435,6 +425,7 @@ describe("Change tracker test", () => {
                 end: 5,
                 newStart: 4,
                 newEnd: 4,
+                diff: -1,
             },
         ]);
 
@@ -445,12 +436,14 @@ describe("Change tracker test", () => {
                 end: 5,
                 newStart: 4,
                 newEnd: 4,
+                diff: -1,
             },
             {
                 start: 6,
                 end: 7,
                 newStart: 5,
                 newEnd: 5,
+                diff: -1,
             },
         ]);
     });
@@ -469,12 +462,14 @@ describe("Change tracker test", () => {
                 end: 1,
                 newStart: 0,
                 newEnd: 0,
+                diff: -1,
             },
             {
                 start: 2,
                 end: 2,
                 newStart: 1,
                 newEnd: 1,
+                diff: 0,
             },
         ]);
 
@@ -485,6 +480,7 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 0,
                 newEnd: 0,
+                diff: -2,
             },
         ]);
     });
@@ -503,12 +499,14 @@ describe("Change tracker test", () => {
                 end: 0,
                 newStart: 0,
                 newEnd: 0,
+                diff: 0,
             },
             {
                 start: 1,
                 end: 2,
                 newStart: 1,
                 newEnd: 1,
+                diff: -1,
             },
         ]);
 
@@ -519,6 +517,7 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 0,
                 newEnd: 0,
+                diff: -2,
             },
         ]);
     });
@@ -534,12 +533,14 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 1,
                 newEnd: 1,
+                diff: -1,
             },
             {
                 start: 3,
                 end: 4,
                 newStart: 2,
                 newEnd: 2,
+                diff: -1,
             },
         ]);
 
@@ -550,18 +551,21 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 1,
                 newEnd: 1,
+                diff: -1,
             },
             {
                 start: 3,
                 end: 4,
                 newStart: 2,
                 newEnd: 2,
+                diff: -1,
             },
             {
                 start: 8,
                 end: 9,
                 newStart: 6,
                 newEnd: 6,
+                diff: -1,
             },
         ]);
         t.removeLineFrom(5);
@@ -571,18 +575,21 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 1,
                 newEnd: 1,
+                diff: -1,
             },
             {
                 start: 3,
                 end: 4,
                 newStart: 2,
                 newEnd: 2,
+                diff: -1,
             },
             {
                 start: 7,
                 end: 9,
                 newStart: 5,
                 newEnd: 5,
+                diff: -2,
             },
         ]);
     });
@@ -599,6 +606,7 @@ describe("Change tracker test", () => {
                 end: 6,
                 newStart: 3,
                 newEnd: 3,
+                diff: -3,
             },
         ]);
     });
@@ -615,18 +623,21 @@ describe("Change tracker test", () => {
                 end: 2,
                 newStart: 2,
                 newEnd: 2,
+                diff: 0,
             },
             {
                 start: 6,
                 end: 7,
                 newStart: 6,
                 newEnd: 6,
+                diff: -1,
             },
             {
                 start: 10,
                 end: 10,
                 newStart: 9,
                 newEnd: 9,
+                diff: 0,
             },
         ]);
     });
@@ -641,6 +652,7 @@ describe("Change tracker test", () => {
                 end: 4,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
     });
@@ -657,6 +669,7 @@ describe("Change tracker test", () => {
                 end: 4,
                 newStart: 4,
                 newEnd: 5,
+                diff: 1,
             },
         ]);
     });
@@ -672,12 +685,14 @@ describe("Change tracker test", () => {
                 end: 0,
                 newStart: 0,
                 newEnd: 1,
+                diff: 1,
             },
             {
                 start: 1,
                 end: 1,
                 newStart: 2,
                 newEnd: 2,
+                diff: 0,
             },
         ]);
     });
@@ -693,12 +708,14 @@ describe("Change tracker test", () => {
                 end: 3,
                 newStart: 3,
                 newEnd: 3,
+                diff: 0,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
         t.changeLine(4);
@@ -708,12 +725,14 @@ describe("Change tracker test", () => {
                 end: 3,
                 newStart: 3,
                 newEnd: 3,
+                diff: 0,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
     });
@@ -729,12 +748,14 @@ describe("Change tracker test", () => {
                 end: 4,
                 newStart: 3,
                 newEnd: 3,
+                diff: -1,
             },
             {
                 start: 5,
                 end: 5,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
     });
@@ -750,6 +771,7 @@ describe("Change tracker test", () => {
                 end: 4,
                 newStart: 3,
                 newEnd: 3,
+                diff: -1,
             },
         ]);
 
@@ -760,12 +782,14 @@ describe("Change tracker test", () => {
                 end: 4,
                 newStart: 3,
                 newEnd: 3,
+                diff: -1,
             },
             {
                 start: 5,
                 end: 5,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
 
@@ -776,12 +800,14 @@ describe("Change tracker test", () => {
                 end: 4,
                 newStart: 3,
                 newEnd: 3,
+                diff: -1,
             },
             {
                 start: 5,
                 end: 5,
                 newStart: 4,
                 newEnd: 5,
+                diff: 1,
             },
         ]);
 
@@ -792,12 +818,14 @@ describe("Change tracker test", () => {
                 end: 4,
                 newStart: 3,
                 newEnd: 3,
+                diff: -1,
             },
             {
                 start: 5,
                 end: 5,
                 newStart: 4,
                 newEnd: 6,
+                diff: 2,
             },
         ]);
     });
@@ -816,6 +844,7 @@ describe("Change tracker test", () => {
                 end: 3,
                 newStart: 2,
                 newEnd: 2,
+                diff: -1,
             },
         ]);
 
@@ -829,12 +858,14 @@ describe("Change tracker test", () => {
                 end: 3,
                 newStart: 2,
                 newEnd: 2,
+                diff: -1,
             },
             {
                 start: 5,
                 end: 5,
                 newStart: 4,
                 newEnd: 4,
+                diff: 0,
             },
         ]);
 
@@ -845,35 +876,47 @@ describe("Change tracker test", () => {
                 end: 3,
                 newStart: 2,
                 newEnd: 2,
+                diff: -1,
             },
             {
                 start: 4,
                 end: 4,
                 newStart: 3,
                 newEnd: 4,
+                diff: 1,
             },
             {
                 start: 5,
                 end: 5,
                 newStart: 5,
                 newEnd: 5,
+                diff: 0,
             },
         ]);
 
-        // t.addNewLineFrom(4);
-        // assert.deepEqual(t.getChanges(), [
-        //     {
-        //         start: 3,
-        //         end: 4,
-        //         newStart: 3,
-        //         newEnd: 3,
-        //     },
-        //     {
-        //         start: 5,
-        //         end: 5,
-        //         newStart: 4,
-        //         newEnd: 6,
-        //     },
-        // ]);
+        t.addNewLineFrom(4);
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: 2,
+                end: 3,
+                newStart: 2,
+                newEnd: 2,
+                diff: -1,
+            },
+            {
+                start: 4,
+                end: 4,
+                newStart: 3,
+                newEnd: 4,
+                diff: 1,
+            },
+            {
+                start: 5,
+                end: 5,
+                newStart: 5,
+                newEnd: 6,
+                diff: 1,
+            },
+        ]);
     });
 });

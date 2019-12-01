@@ -107,7 +107,6 @@ export class ChangeTracker {
             }
             diffForNextNewRange += change.shiftWidth;
         }
-        console.log(final);
         return final;
     }
 

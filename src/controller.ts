@@ -502,10 +502,10 @@ export class NVIMPluginController implements vscode.Disposable {
                             tracker.changeLine(start + lineDiffForNextChange);
                         }
                     }
-                    if (range.start.line + changedTextByEol.length < range.end.line + 1) {
+                    if (range.start.line + changedTextByEol.length - 1 < range.end.line) {
                         for (
-                            let start = range.start.line + changedTextByEol.length;
-                            start < range.end.line + 1;
+                            let start = range.start.line + changedTextByEol.length - 1;
+                            start < range.end.line;
                             start++
                         ) {
                             tracker.removeLineFrom(start + lineDiffForNextChange);
