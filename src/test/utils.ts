@@ -147,6 +147,7 @@ export async function sendVSCodeSpecialKey(
         case "cursorRight":
         case "cursorUp": {
             await commands.executeCommand(key);
+            break;
         }
     }
     await wait(waitTimeout);

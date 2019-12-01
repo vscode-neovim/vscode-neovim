@@ -15,7 +15,7 @@ import {
     pasteVSCode,
 } from "../utils";
 
-describe("Insert mode and buffer syncronization", () => {
+describe.only("Insert mode and buffer syncronization", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
@@ -33,7 +33,7 @@ describe("Insert mode and buffer syncronization", () => {
             content: "blah\nblah2",
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
 
         await sendVSCodeKeys("ll");
         await sendVSCodeKeys("i");
@@ -55,7 +55,7 @@ describe("Insert mode and buffer syncronization", () => {
             content: "blah\nblah2",
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
 
         await sendVSCodeKeys("i");
         await sendVSCodeKeys("\n");
@@ -99,7 +99,7 @@ describe("Insert mode and buffer syncronization", () => {
             content: ["blah1", "", "", "blah2", "", "", "", "blah3"].join("\n"),
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
 
         await sendVSCodeKeys("jjji");
         await sendVSCodeSpecialKey("backspace");
@@ -133,7 +133,7 @@ describe("Insert mode and buffer syncronization", () => {
             content: ["blah1", "", "", "blah2"].join("\n"),
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
 
         await sendVSCodeKeys("A");
         await sendVSCodeSpecialKey("delete");
@@ -163,7 +163,7 @@ describe("Insert mode and buffer syncronization", () => {
             content: ["blah1", "", "blah2"].join("\n"),
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
 
         await sendVSCodeKeys("ji");
         await vscode.window.activeTextEditor!.insertSnippet(new vscode.SnippetString("while ($1) {\n$2\n}"));
@@ -179,16 +179,16 @@ describe("Insert mode and buffer syncronization", () => {
         );
     });
 
-    it("Changes afterting and deleting newlines", async () => {
+    it("Changes after inserting and deleting newlines", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["blah1", "", "", "blah2", "", "blah3"].join("\n"),
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
 
         // go to end of blah2
         await sendVSCodeKeys("jjj");
-        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("A", 1000);
         await sendVSCodeKeys("test");
         // go to newline before
         await sendVSCodeSpecialKey("cursorUp");
@@ -223,7 +223,7 @@ describe("Insert mode and buffer syncronization", () => {
         await wait();
 
         await sendVSCodeKeys("jjj");
-        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("A", 1000);
         await sendVSCodeKeys("test");
 
         setSelection([{ anchorPos: [0, 0], cursorPos: [3, 0] }]);
@@ -245,7 +245,7 @@ describe("Insert mode and buffer syncronization", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("i");
+        await sendVSCodeKeys("i", 1000);
         setSelection([{ anchorPos: [0, 0], cursorPos: [1, 1] }]);
         await copyVSCodeSelection();
 
@@ -365,7 +365,8 @@ describe("Insert mode and buffer syncronization", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("ji");
+        await sendVSCodeKeys("j", 500);
+        await sendVSCodeKeys("I", 1000);
         await sendVSCodeKeys("\n".repeat(50));
         await sendEscapeKey(1000);
 
