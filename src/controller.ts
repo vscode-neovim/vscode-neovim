@@ -962,7 +962,10 @@ export class NVIMPluginController implements vscode.Disposable {
                         for (let i = 0; i < data.length; i++) {
                             const str = data[i];
                             const line = firstLine + i;
-                            if (typeof change.lines[line] === "undefined") {
+                            if (line >= lastLine) {
+                                change.lines = [...change.lines.slice(0, line), str, ...change.lines.slice(line + 1)];
+                                change.tracker.addNewLineFrom(lastLine - 1);
+                            } else if (typeof change.lines[line] === "undefined") {
                                 change.lines.push(str);
                                 change.tracker.addNewLineFrom(line - 1);
                             } else {
