@@ -919,4 +919,107 @@ describe("Change tracker test", () => {
             },
         ]);
     });
+
+    it("Zero line adding", async () => {
+        const t = new ChangeTracker();
+        t.addNewLineFrom(0);
+
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: 0,
+                end: 0,
+                newStart: 0,
+                newEnd: 1,
+                diff: 1,
+            },
+        ]);
+
+        t.addNewLineFrom(0);
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: 0,
+                end: 0,
+                newStart: 0,
+                newEnd: 2,
+                diff: 2,
+            },
+        ]);
+    });
+
+    it("-1 line adding", async () => {
+        const t = new ChangeTracker();
+        t.addNewLineFrom(-1);
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: -1,
+                end: -1,
+                newStart: -1,
+                newEnd: 0,
+                diff: 1,
+            },
+        ]);
+
+        t.addNewLineFrom(-1);
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: -1,
+                end: -1,
+                newStart: -1,
+                newEnd: 1,
+                diff: 2,
+            },
+        ]);
+    });
+
+    it("Zero line deleting", async () => {
+        const t = new ChangeTracker();
+        t.removeLineFrom(0);
+
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: 0,
+                end: 1,
+                newStart: 0,
+                newEnd: 0,
+                diff: -1,
+            },
+        ]);
+
+        t.removeLineFrom(0);
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: 0,
+                end: 2,
+                newStart: 0,
+                newEnd: 0,
+                diff: -2,
+            },
+        ]);
+    });
+
+    it("-1 line deleting", async () => {
+        const t = new ChangeTracker();
+        t.removeLineFrom(-1);
+
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: -1,
+                end: 0,
+                newStart: -1,
+                newEnd: -1,
+                diff: -1,
+            },
+        ]);
+
+        t.removeLineFrom(-1);
+        assert.deepEqual(t.getChanges(), [
+            {
+                start: -1,
+                end: 1,
+                newStart: -1,
+                newEnd: -1,
+                diff: -2,
+            },
+        ]);
+    });
 });

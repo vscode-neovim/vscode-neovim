@@ -38,7 +38,7 @@
 					"type": "string",
 					"default": "",
 					"title": "Neovim path",
-					"description": "Full path to Neovim executable. If you enabled useWSL specify the linux path to nvim executable"
+					"description": "Full path to Neovim executable. If you have enabled useWSL specify the linux path to nvim executable"
 				},
 				"vscode-neovim.useCtrlKeysForNormalMode": {
 					"type": "boolean",

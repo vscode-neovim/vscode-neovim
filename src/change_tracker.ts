@@ -1,3 +1,8 @@
+/**
+ * !Important: ranges could be -1 means it should add/delete before zero line
+ * !For vscode changes it's not possible to delete 0 line or paste before 0 line thus
+ * !but possible for changes originated from nvim
+ */
 interface ChangeRange {
     start: number;
     end: number;
@@ -13,9 +18,14 @@ interface LineChange {
 }
 
 export class ChangeTracker {
+    /**
+     * Array of line changes. index represent the line (thus indexes may not be subsequents)
+     * !Important! Lines(indexes) are 1 based internally
+     */
     private lineChanges: LineChange[] = [];
 
     public addNewLineFrom(fromLine: number): void {
+        fromLine++;
         const shift = this.getShiftWidthForLine(fromLine);
         const nearest = this.getNearestChangeForLine(fromLine - shift);
         if (nearest) {
@@ -43,6 +53,7 @@ export class ChangeTracker {
     }
 
     public removeLineFrom(fromLine: number): void {
+        fromLine++;
         const shift = this.getShiftWidthForLine(fromLine);
         const nearest = this.getNearestChangeForLine(fromLine - shift);
         if (nearest) {
@@ -60,6 +71,7 @@ export class ChangeTracker {
     }
 
     public changeLine(line: number): void {
+        line++;
         const nearest = this.getNearestChangeForLine(line);
         // don't do anything if the line falls into nearest line + shiftWidth range
         // e.g. if there is a line 2 with shiftWidth + 1 (means line 3 was addded) and we change line 3, we won't store anything
@@ -95,13 +107,13 @@ export class ChangeTracker {
             }
             if (!skipIdx.includes(idx)) {
                 final.push({
-                    start: idx,
-                    newStart: idx + diffForNextNewRange,
-                    end: change.shiftWidth < 0 ? idx + Math.abs(change.shiftWidth) : idx,
+                    start: idx - 1,
+                    newStart: idx + diffForNextNewRange - 1,
+                    end: change.shiftWidth < 0 ? idx + Math.abs(change.shiftWidth) - 1 : idx - 1,
                     newEnd:
                         change.shiftWidth > 0
-                            ? idx + change.shiftWidth + diffForNextNewRange
-                            : idx + diffForNextNewRange,
+                            ? idx + change.shiftWidth + diffForNextNewRange - 1
+                            : idx + diffForNextNewRange - 1,
                     diff: change.shiftWidth,
                 });
             }
