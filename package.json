@@ -1019,6 +1019,7 @@
 		"vscode-test": "^1.2.3"
 	},
 	"dependencies": {
+		"fast-diff": "^1.2.0",
 		"lodash": "^4.17.15",
 		"neovim": "^4.5.0"
 	}

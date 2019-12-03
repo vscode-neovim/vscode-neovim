@@ -26,7 +26,7 @@ describe("Basic editing and navigation", () => {
 
     it("Normal mode", async () => {
         const doc = await vscode.workspace.openTextDocument({
-            content: "1abc\n\n2abc blah\n3abc blah blah\n4abc",
+            content: ["1abc", "", "2abc blah", "3abc blah blah", "4abc"].join("\n"),
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
@@ -233,8 +233,18 @@ describe("Basic editing and navigation", () => {
     it("Ci-ca-etc...", async () => {
         const doc = await vscode.workspace.openTextDocument({
             // adding "end" to the end of doc because of newline bug. Pretty minor
-            content:
-                "text (first) text\ntext (second) text\ntext 'third' text\ntext { text\ntext block text\ntext } text\ntext { text\ntext block2 text\ntext } text\nend",
+            content: [
+                "text (first) text",
+                "text (second) text",
+                "text 'third' text",
+                "text { text",
+                "text block text",
+                "text } text",
+                "text { text",
+                "text block2 text",
+                "text } text",
+                "end",
+            ].join("\n"),
         });
 
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);

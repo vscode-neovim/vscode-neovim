@@ -25,7 +25,7 @@ import { TextEditor, window, TextEditorCursorStyle, commands, Range, EndOfLine, 
  * can be combined, like no - normal operator
  */
 
-export async function wait(timeout = 100): Promise<void> {
+export async function wait(timeout = 1000): Promise<void> {
     await new Promise(res => setTimeout(res, timeout));
 }
 
@@ -119,14 +119,21 @@ export function hasVSCodeCursorStyle(style: "block" | "underline" | "line", edit
     }
 }
 
-export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTimeout = 100): Promise<void> {
-    await client.input(keys);
-    await wait(waitTimeout);
-}
-
-export async function sendVSCodeKeys(keys: string, waitTimeout = 100): Promise<void> {
-    await commands.executeCommand("type", { text: keys });
-    await wait(waitTimeout);
+export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<void> {
+    let key = "";
+    let append = false;
+    for (const k of keys) {
+        key = append ? key + k : k;
+        if (key === "<") {
+            append = true;
+        } else if (key === ">") {
+            append = false;
+        }
+        if (!append) {
+            await commands.executeCommand("type", { text: key });
+            await wait(waitTimeout);
+        }
+    }
 }
 
 export async function sendVSCodeSpecialKey(
