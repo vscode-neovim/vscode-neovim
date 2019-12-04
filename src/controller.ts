@@ -1489,7 +1489,10 @@ export class NVIMPluginController implements vscode.Disposable {
         const prevModeName = this.currentModeName;
         if (newModeName) {
             this.handleModeChange(newModeName);
-            if (prevModeName && prevModeName.startsWith("cmdline") && !newModeName.startsWith("cmdline")) {
+            if (
+                (prevModeName && prevModeName.startsWith("cmdline") && !newModeName.startsWith("cmdline")) ||
+                newModeName === "visual"
+            ) {
                 this.resyncCursor();
             }
             // need to clear selection when going off from visual mode
@@ -1696,14 +1699,23 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!gridConf) {
             return;
         }
-        const [[[line1based, col0based], screenLine1Based]] = await this.client.callAtomic([
+        const [[mode, [line1based, col0based], screenLine1Based, visualStart]] = await this.client.callAtomic([
+            ["nvim_get_mode", []],
             ["nvim_win_get_cursor", [winId]],
             ["nvim_call_function", ["winline", []]],
+            ["nvim_call_function", ["getpos", ["v"]]],
         ]);
         gridConf[1].cursorLine = line1based - 1;
         gridConf[1].cursorPos = col0based;
         gridConf[1].screenLine = screenLine1Based - 1;
-        this.updateCursorPosInEditor(e, gridConf[1].cursorLine, gridConf[1].cursorPos, this.currentModeName);
+        this.updateCursorPosInEditor(
+            e,
+            gridConf[1].cursorLine,
+            gridConf[1].cursorPos,
+            mode.mode,
+            visualStart,
+            this.currentModeName === "visual",
+        );
     };
 
     private updateCursorPositionInNeovim = async (
@@ -1755,7 +1767,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         const visibleRange = editor.visibleRanges[0];
         let revealCursor = new vscode.Selection(newLine, newCol, newLine, newCol);
-        if (mode && this.isVisualMode(mode) && Array.isArray(visualStart)) {
+        if (mode && this.isVisualMode(mode) && Array.isArray(visualStart) && !this.leaveMultipleCursorsForVisualMode) {
             // visual/visual line/visual block (char code = 22) modes
             // visual start pos is 1.1 based
             const visualStartLine = visualStart[1] - 1;

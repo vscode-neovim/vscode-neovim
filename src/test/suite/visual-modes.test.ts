@@ -11,7 +11,7 @@ import {
     sendEscapeKey,
 } from "../utils";
 
-describe.only("Visual modes test", () => {
+describe("Visual modes test", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
@@ -338,6 +338,7 @@ describe.only("Visual modes test", () => {
         await sendVSCodeKeys("V", 1000);
         await sendVSCodeKeys("jj", 1000);
         await sendVSCodeKeys("A");
+        await wait(1000);
 
         await assertContent(
             {
