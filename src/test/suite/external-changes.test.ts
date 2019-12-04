@@ -14,7 +14,7 @@ import {
     closeActiveEditor,
 } from "../utils";
 
-describe("External changes on file", () => {
+describe("External changes in file", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();

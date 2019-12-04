@@ -111,7 +111,13 @@ function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
                     }
                 }
                 // if first change is not diff equal, then we need to shift index by +1
-                if (diffs[0] && diffs[0][0] !== 0 && !ranges.length) {
+                if (
+                    diffs[0] &&
+                    diffs[0][0] !== 0 &&
+                    !ranges.length &&
+                    currRange.type === "changed" &&
+                    Math.abs(currRangeDiff) > 0
+                ) {
                     oldIdx++;
                     newIdx++;
                 }
