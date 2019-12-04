@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.38]
+
+- Fix cursor position after deleting a line and possibly other changes
+
 ## [0.0.37]
 
 - Fix performance of o/O. If you're using custom bindings for them, you might need to rebind them to call new action. See vscode-insert.vim
