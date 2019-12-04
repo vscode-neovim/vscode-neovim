@@ -964,7 +964,13 @@ export class NVIMPluginController implements vscode.Disposable {
         // so we'll process all changes in slightly throttled function
         this.pendingBufChangesQueue.push({ buffer, firstLine, lastLine, data: linedata, tick });
         if (this.resolveBufQueuePromise) {
-            this.resolveBufQueuePromise();
+            // slightly delay resolving to allow more changes come
+            setTimeout(() => {
+                if (this.resolveBufQueuePromise) {
+                    this.resolveBufQueuePromise();
+                }
+            }, 10);
+            // this.resolveBufQueuePromise();
         }
     };
 
