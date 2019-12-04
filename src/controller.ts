@@ -978,7 +978,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     this.resolveBufQueuePromise = res;
                     // not necessary to timeout at all, but let's make sure
                     // !note looks like needed - increasing value starting to produce buffer desync. Because of this?
-                    timeout = setTimeout(res, 50);
+                    timeout = setTimeout(res, 40);
                 });
                 await this.bufQueuePromise;
                 if (timeout) {
