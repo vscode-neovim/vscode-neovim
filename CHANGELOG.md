@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.0.36]
+
+- Fix macros with insert mode
+- Big performance improvements, fix undo & macros performance
+- Allow to use neovim installed in WSL. Tick useWSL conf checkbox and specify linux path to neovim
+
 ## [0.0.35]
 
 - Use VIM jumplist for ```<C-o>```/```<C-i>```/```<Tab>```
