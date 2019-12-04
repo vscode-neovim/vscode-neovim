@@ -2193,6 +2193,16 @@ export class NVIMPluginController implements vscode.Disposable {
                 this.isRecording = true;
                 break;
             }
+            case "insert-line": {
+                const [type] = args as ["before" | "after"];
+                // set isInsertMode explicitly earlier to prevent newline uploading to neovim and cursor jumping
+                this.isInsertMode = true;
+                this.client.command("startinsert");
+                vscode.commands.executeCommand(
+                    type === "before" ? "editor.action.insertLineBefore" : "editor.action.insertLineAfter",
+                );
+                break;
+            }
             case "cursor": {
                 const [winId, mode, [line1based, col0based], visualStart] = args as [
                     number,
@@ -2314,6 +2324,9 @@ export class NVIMPluginController implements vscode.Disposable {
             // const bufTick = this.skipBufferTickUpdate.get(buf.id) || 0;
             this.skipBufferTickUpdate.set(buf.id, bufTick + bufLinesRequests.length);
             requests.push(...bufLinesRequests);
+        }
+        if (!requests.length) {
+            return;
         }
 
         if (updateCursor && vscode.window.activeTextEditor) {

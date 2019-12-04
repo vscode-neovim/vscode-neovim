@@ -1,12 +1,10 @@
 
 function! s:vscodeInsertBefore()
-    startinsert
-    call VSCodeCall('editor.action.insertLineBefore')
+    call VSCodeExtensionNotify('insert-line', 'before')
 endfunction
 
 function! s:vscodeInsertAfter()
-    startinsert
-    call VSCodeCall('editor.action.insertLineAfter')
+    call VSCodeExtensionNotify('insert-line', 'after')
 endfunction
 
 function! s:vscodeMultipleCursorsVisualMode(append)
@@ -26,8 +24,8 @@ function! s:vscodeMultipleCursorsVisualMode(append)
     endif
 endfunction
 
-nnoremap <silent> <expr> O <SID>vscodeInsertBefore()
-nnoremap <silent> <expr> o <SID>vscodeInsertAfter()
+nnoremap <silent> O :<C-u> call<SID>vscodeInsertBefore()<CR>
+nnoremap <silent> o :<C-u> call<SID>vscodeInsertAfter()<CR>
 
 " Multiple cursors support for visual line/block modes
 xnoremap <silent> <expr> A <SID>vscodeMultipleCursorsVisualMode(1)
