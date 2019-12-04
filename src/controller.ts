@@ -1141,6 +1141,8 @@ export class NVIMPluginController implements vscode.Disposable {
                                 editor.selections = [new vscode.Selection(cursor, cursor)];
                             }
                             this.documentText.set(uri, editor.document.getText());
+                            // since vscode breaks cursor positions in many cases, resync cursor
+                            this.resyncCursor();
                         }
                     }
                     // if (workspaceEdit.size) {

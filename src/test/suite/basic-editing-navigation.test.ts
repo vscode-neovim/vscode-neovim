@@ -90,18 +90,9 @@ describe("Basic editing and navigation", () => {
             client,
         );
 
-        await sendVSCodeKeys("O");
-        await assertContent(
-            {
-                content: ["1abc", "", "3abc blah blah", "4abc"],
-                cursor: [1, 0],
-                mode: "i",
-                cursorStyle: "line",
-            },
-            client,
-        );
-
+        await sendVSCodeKeys("O", 500);
         await sendEscapeKey();
+
         await assertContent(
             {
                 content: ["1abc", "", "3abc blah blah", "4abc"],
@@ -121,32 +112,28 @@ describe("Basic editing and navigation", () => {
         );
 
         // test o, O
-        await sendVSCodeKeys("o");
-        await wait(1000);
+        await sendVSCodeKeys("o", 1000);
+        await sendEscapeKey();
         await assertContent(
             {
                 content: ["1abc", "", "3abc blah blah", "", "4abc"],
                 cursor: [3, 0],
-                mode: "i",
-                cursorStyle: "line",
+                mode: "n",
             },
             client,
         );
-        await sendEscapeKey();
         await sendVSCodeKeys("k");
 
-        await sendVSCodeKeys("O");
-        await wait(1000);
+        await sendVSCodeKeys("O", 1000);
+        await sendEscapeKey();
         await assertContent(
             {
                 content: ["1abc", "", "", "3abc blah blah", "", "4abc"],
                 cursor: [2, 0],
-                mode: "i",
-                cursorStyle: "line",
+                mode: "n",
             },
             client,
         );
-        await sendEscapeKey();
     });
 
     it("Editing last line doesnt insert new line in vscode", async () => {
@@ -205,25 +192,22 @@ describe("Basic editing and navigation", () => {
 
         await sendEscapeKey();
         await sendVSCodeKeys("O");
+        await sendEscapeKey();
         await wait(1000);
         await assertContent(
             {
                 cursor: [0, 0],
-                cursorStyle: "line",
-                mode: "i",
                 content: ["", "1abc"],
             },
             client,
         );
 
-        await sendEscapeKey();
         await sendVSCodeKeys("o");
+        await sendEscapeKey();
         await wait(1000);
         await assertContent(
             {
                 cursor: [1, 0],
-                cursorStyle: "line",
-                mode: "i",
                 content: ["", "", "1abc"],
             },
             client,
@@ -323,6 +307,24 @@ describe("Basic editing and navigation", () => {
                 cursorStyle: "line",
                 mode: "i",
                 content: ["text () text", "text  text", "text 'third' text", "text  text", "text {} text", "end"],
+            },
+            client,
+        );
+    });
+
+    it("Cursor is ok after deleting the line", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["a", "{", "    b", "    c", "}"].join("\n"),
+        });
+
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("jj$");
+        await sendVSCodeKeys("dd");
+        await assertContent(
+            {
+                cursor: [2, 4],
             },
             client,
         );
