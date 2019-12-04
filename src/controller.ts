@@ -85,35 +85,54 @@ function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
     let oldIdx = 0;
     let newIdx = 0;
     let currRange: EditRange | undefined;
+    let currRangeDiff = 0;
     for (let i = 0; i < diffs.length; i++) {
         const [diffRes, diffStr] = diffs[i];
         if (diffRes === 0) {
             if (currRange) {
-                const diff = currRange.newEnd - currRange.newStart - (currRange.end - currRange.start);
-                if (Math.abs(diff) > 0) {
-                    newIdx += currRange.newEnd - currRange.newStart;
-                    oldIdx += currRange.end - currRange.start;
+                // const diff = currRange.newEnd - currRange.newStart - (currRange.end - currRange.start);
+                if (Math.abs(currRangeDiff) > 0) {
+                    if (currRange.type === "removed") {
+                        oldIdx += Math.abs(currRangeDiff);
+                    } else if (currRange.type === "changed") {
+                        oldIdx += currRange.end - currRange.start;
+                        newIdx += currRange.newEnd - currRange.newStart;
+                    } else if (currRange.type === "added") {
+                        newIdx += Math.abs(currRangeDiff);
+                    }
                 } else {
-                    newIdx += 1 + (currRange.newEnd - currRange.newStart);
-                    oldIdx += 1 + (currRange.newEnd - currRange.newStart);
+                    const diff = currRange.newEnd - currRange.newStart;
+                    if (diff === 0) {
+                        newIdx++;
+                        oldIdx++;
+                    } else {
+                        newIdx += 1 + (currRange.newEnd - currRange.newStart);
+                        oldIdx += 1 + (currRange.newEnd - currRange.newStart);
+                    }
+                }
+                // if first change is not diff equal, then we need to shift index by +1
+                if (diffs[0] && diffs[0][0] !== 0 && !ranges.length) {
+                    oldIdx++;
+                    newIdx++;
                 }
                 ranges.push(currRange);
                 currRange = undefined;
+                currRangeDiff = 0;
             }
             oldIdx += diffStr.length;
             newIdx += diffStr.length;
             // if first change is single newline, then it's being eaten into the equal diff. probably comes from optimization by trimming common prefix?
-            if (
-                ranges.length === 0 &&
-                diffStr.length !== 1 &&
-                diffs[i + 1] &&
-                diffs[i + 1][0] === 1 &&
-                diffs[i + 1][1].length === 1 &&
-                diffs[i + 1][1].charCodeAt(0) === 3
-            ) {
-                oldIdx--;
-                newIdx--;
-            }
+            // if (
+            //     ranges.length === 0 &&
+            //     diffStr.length !== 1 &&
+            //     diffs[i + 1] &&
+            //     diffs[i + 1][0] === 1 &&
+            //     diffs[i + 1][1].length === 1 &&
+            //     diffs[i + 1][1].charCodeAt(0) === 3
+            // ) {
+            //     oldIdx--;
+            //     newIdx--;
+            // }
         } else {
             if (!currRange) {
                 currRange = {
@@ -123,6 +142,7 @@ function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
                     newEnd: newIdx,
                     type: "changed",
                 };
+                currRangeDiff = 0;
             }
             if (diffRes === -1) {
                 // handle single string change, the diff will be -1,1 in this case
@@ -132,6 +152,7 @@ function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
                 }
                 currRange.type = "removed";
                 currRange.end += diffStr.length - 1;
+                currRangeDiff = -diffStr.length;
             } else {
                 if (currRange.type === "removed") {
                     currRange.type = "changed";
@@ -139,6 +160,7 @@ function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
                     currRange.type = "added";
                 }
                 currRange.newEnd += diffStr.length - 1;
+                currRangeDiff += diffStr.length;
             }
         }
     }
@@ -959,7 +981,10 @@ export class NVIMPluginController implements vscode.Disposable {
                 this.bufQueuePromise = undefined;
                 this.resolveBufQueuePromise = undefined;
             } else {
-                const changes: Map<string, { lines: string[]; editor: vscode.TextEditor }> = new Map();
+                const changes: Map<
+                    string,
+                    { lines: string[]; editor: vscode.TextEditor; changed: boolean }
+                > = new Map();
                 for (const { buffer, data, firstLine, lastLine, tick } of edits) {
                     const uri = this.bufferIdToUri.get(buffer.id);
                     if (!uri) {
@@ -975,12 +1000,15 @@ export class NVIMPluginController implements vscode.Disposable {
                     if (!textEditor) {
                         continue;
                     }
-                    let change: { lines: string[]; editor: vscode.TextEditor } | undefined = changes.get(uri);
+                    let change:
+                        | { lines: string[]; editor: vscode.TextEditor; changed: boolean }
+                        | undefined = changes.get(uri);
                     if (!change) {
                         const eol = textEditor.document.eol === vscode.EndOfLine.CRLF ? "\r\n" : "\n";
                         change = {
                             lines: textEditor.document.getText().split(eol),
                             editor: textEditor,
+                            changed: false,
                         };
                         changes.set(uri, change);
                     }
@@ -992,10 +1020,11 @@ export class NVIMPluginController implements vscode.Disposable {
                     if (firstLine === lastLine && data.length === 0) {
                         continue;
                     }
+                    change.changed = true;
                     // nvim sends following:
                     // 1. string change - firstLine is the changed line , lastLine + 1
                     // 2. cleaned line but not deleted - first line is the changed line, lastLine + 1, linedata is ""
-                    // 3. newline insert - firstLine = lastLine and linedata is ""
+                    // 3. newline insert - firstLine = lastLine and linedata is "" or new data
                     // 4. line deleted - firstLine is changed line, lastLine + 1, linedata is empty []
                     // LAST LINE is exclusive and can be out of the last editor line
                     if (firstLine !== lastLine && data.length === 1 && data[0] === "") {
@@ -1010,7 +1039,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         }
                     } else if (firstLine === lastLine) {
                         // 3
-                        if (firstLine >= textEditor!.document.lineCount) {
+                        if (firstLine > change.lines.length) {
                             data.unshift("");
                         }
                         if (firstLine === 0) {
@@ -1026,42 +1055,43 @@ export class NVIMPluginController implements vscode.Disposable {
                         // 1 or 3
                         // handle when change is overflow through editor lines. E.g. pasting on last line.
                         // Without newline it will append to the current one
-                        if (firstLine >= textEditor!.document.lineCount) {
+                        if (firstLine >= change.lines.length) {
                             data.unshift("");
                         }
-                        for (let i = 0; i < data.length; i++) {
-                            const str = data[i];
-                            const line = firstLine + i;
-                            if (line >= lastLine) {
-                                change.lines = [...change.lines.slice(0, line), str, ...change.lines.slice(line + 1)];
-                            } else if (typeof change.lines[line] === "undefined") {
-                                change.lines.push(str);
-                            } else {
-                                change.lines[line] = str;
-                            }
-                        }
-                        if (firstLine + data.length < lastLine) {
-                            const reduceFrom = firstLine + data.length;
-                            for (let line = firstLine + data.length; line < lastLine; line++) {
-                                change.lines.splice(reduceFrom, 1);
-                            }
-                        }
+                        change.lines = [...change.lines.slice(0, firstLine), ...data, ...change.lines.slice(lastLine)];
+                        // for (let i = 0; i < data.length; i++) {
+                        //     const str = data[i];
+                        //     const line = firstLine + i;
+                        //     if (line >= lastLine) {
+                        //         change.lines = [...change.lines.slice(0, line), str, ...change.lines.slice(line + 1)];
+                        //     } else if (typeof change.lines[line] === "undefined") {
+                        //         change.lines.push(str);
+                        //     } else {
+                        //         change.lines[line] = str;
+                        //     }
+                        // }
+                        // if (firstLine + data.length < lastLine) {
+                        //     const reduceFrom = firstLine + data.length;
+                        //     for (let line = firstLine + data.length; line < lastLine; line++) {
+                        //         change.lines.splice(reduceFrom, 1);
+                        //     }
+                        // }
                     }
                 }
                 // replacing lines with WorkspaceEdit() moves cursor to the end of the line, unfortunately this won't work
                 // const workspaceEdit = new vscode.WorkspaceEdit();
                 try {
                     for (const [uri, change] of changes) {
-                        const { editor, lines } = change;
+                        const { editor, lines, changed } = change;
+                        if (!changed) {
+                            continue;
+                        }
                         let oldText = editor.document.getText();
                         const eol = editor.document.eol === vscode.EndOfLine.CRLF ? "\r\n" : "\n";
                         let newText = lines.join(eol);
-                        // workaround about problem changing last line when it's empty
-                        // todo: it doesn't work if you just add empty line without changing it
-                        if (newText.slice(-1) === eol) {
-                            oldText += "\n";
-                            newText += "\n";
-                        }
+                        // add few lines to the end otherwise diff may be wrong for a newline characters
+                        oldText += `${eol}end${eol}end`;
+                        newText += `${eol}end${eol}end`;
                         const diffPrepare = diffLineToChars(oldText, newText);
                         const d = diff(diffPrepare.chars1, diffPrepare.chars2);
                         const ranges = prepareEditRangesFromDiff(d);
@@ -1069,36 +1099,41 @@ export class NVIMPluginController implements vscode.Disposable {
                             continue;
                         }
                         this.documentLastChangedVersion.set(uri, editor.document.version + 1);
-                        const success = await change.editor.edit(builder => {
+                        const cursor = editor.selection.active;
+                        const success = await editor.edit(builder => {
                             for (const range of ranges) {
                                 const text = lines.slice(range.newStart, range.newEnd + 1);
                                 if (range.type === "removed") {
-                                    builder.delete(new vscode.Range(range.start, 0, range.end + 1, 0));
+                                    if (range.end >= editor.document.lineCount - 1 && range.start > 0) {
+                                        const startChar = editor.document.lineAt(range.start - 1).range.end.character;
+                                        builder.delete(new vscode.Range(range.start - 1, startChar, range.end, 999999));
+                                    } else {
+                                        builder.delete(new vscode.Range(range.start, 0, range.end + 1, 0));
+                                    }
                                 } else if (range.type === "changed") {
                                     builder.replace(
                                         new vscode.Range(range.start, 0, range.end, 999999),
                                         text.join("\n"),
                                     );
                                 } else if (range.type === "added") {
-                                    builder.insert(new vscode.Position(range.start, 0), text.join("\n") + "\n");
+                                    if (range.start >= editor.document.lineCount) {
+                                        text.unshift(
+                                            ...new Array(range.start - (editor.document.lineCount - 1)).fill(""),
+                                        );
+                                    } else {
+                                        text.push("");
+                                    }
+                                    builder.replace(new vscode.Position(range.start, 0), text.join("\n"));
                                 }
                             }
-                            // for (const range of changeRanges) {
-                            //     if (range.start < 0 && range.diff < 0) {
-                            //         builder.delete(new vscode.Range(0, 0, Math.abs(range.diff), 0));
-                            //     } else if (range.start < 0 && range.diff > 0) {
-                            //         const text = change.lines.slice(0, range.newEnd + 1);
-                            //         builder.insert(new vscode.Position(0, 0), text.join("\n") + "\n");
-                            //     } else {
-                            //         const text = change.lines.slice(range.newStart, range.newEnd + 1);
-                            //         builder.replace(
-                            //             new vscode.Range(range.start, 0, range.end, 999999),
-                            //             text.join("\n"),
-                            //         );
-                            //     }
-                            // }
                         });
                         if (success) {
+                            // workaround for cursor moving after inserting some text
+                            // it's not the ideal solution since there is minor transition from selection to single cursor
+                            // todo: another solution is to combine ranges and replacing text starting by prev line when need to insert something
+                            if (!editor.selection.anchor.isEqual(editor.selection.active)) {
+                                editor.selections = [new vscode.Selection(cursor, cursor)];
+                            }
                             this.documentText.set(uri, editor.document.getText());
                         }
                     }
@@ -2207,10 +2242,11 @@ export class NVIMPluginController implements vscode.Disposable {
 
             // workaround about problem changing last line when it's empty
             // todo: it doesn't work if you just add empty line without changing it
-            if (origText.slice(-1) === eol) {
-                origText += "\n";
-                newText += "\n";
-            }
+            // if (origText.slice(-1) === "\n" || origText.slice(-1) === "\r\n") {
+            // add few lines to the end otherwise diff may be wrong for a newline characters
+            origText += `${eol}end${eol}end`;
+            newText += `${eol}end${eol}end`;
+            // }
             const diffPrepare = diffLineToChars(origText, newText);
             const d = diff(diffPrepare.chars1, diffPrepare.chars2);
             const ranges = prepareEditRangesFromDiff(d);
@@ -2228,13 +2264,20 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (range.type === "removed") {
                     text = [];
                     end++;
+                    lineDiffForNextChange--;
                 } else if (range.type === "changed") {
+                    // workaround for the diff issue when you put newline after the first line
+                    // diff doesn't account this case
+                    if ((newText.slice(-1) === "\n" || newText.slice(-1) === "\r\n") && !origText.includes(eol)) {
+                        text.push("");
+                    }
                     end++;
                 } else if (range.type === "added") {
                     // prevent adding newline
                     if (range.start === 0 && !origText) {
                         end++;
                     }
+                    lineDiffForNextChange++;
                     // if (text.slice(-1)[0] === "") {
                     //     text.pop();
                     // }

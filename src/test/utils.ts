@@ -124,9 +124,9 @@ export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<v
     let append = false;
     for (const k of keys) {
         key = append ? key + k : k;
-        if (key === "<") {
+        if (k === "<") {
             append = true;
-        } else if (key === ">") {
+        } else if (k === ">") {
             append = false;
         }
         if (!append) {

@@ -29,7 +29,7 @@ describe("Undo", () => {
             content: "some line\notherline",
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(2000);
         await sendVSCodeKeys("u");
         await assertContent(
             {

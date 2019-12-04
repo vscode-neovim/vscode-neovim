@@ -272,7 +272,7 @@ describe("Basic editing and navigation", () => {
         );
 
         await sendEscapeKey();
-        await sendVSCodeKeys("j06lca(");
+        await sendVSCodeKeys("j08lca(");
         await assertContent(
             {
                 vsCodeCursor: [1, 5],

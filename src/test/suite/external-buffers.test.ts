@@ -33,14 +33,16 @@ describe("Neovim external buffers", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys(":help", 1000);
-        await sendVSCodeKeys("<CR>", 2000);
+        await sendVSCodeKeys(":help", 0);
+        await sendVSCodeKeys("\n", 0);
+        await wait(2000);
 
         const text = vscode.window.activeTextEditor!.document.getText();
         assert.ok(text.indexOf("main help file") !== -1);
 
-        await sendVSCodeKeys(":help options", 1000);
-        await sendVSCodeKeys("<CR>", 2000);
+        await sendVSCodeKeys(":help options", 0);
+        await sendVSCodeKeys("\n", 0);
+        await wait(2000);
 
         const text2 = vscode.window.activeTextEditor!.document.getText();
         assert.ok(text2.indexOf("VIM REFERENCE MANUAL") !== -1);
@@ -55,8 +57,9 @@ describe("Neovim external buffers", () => {
         await vscode.window.showTextDocument(doc);
         await wait();
 
-        await sendVSCodeKeys(":help local-options", 1000);
-        await sendVSCodeKeys("\n", 2000);
+        await sendVSCodeKeys(":help local-options", 0);
+        await sendVSCodeKeys("\n", 0);
+        await wait(2000);
 
         await assertContent(
             {

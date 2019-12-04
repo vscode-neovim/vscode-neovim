@@ -23,6 +23,7 @@ describe("Yanking and pasting", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
         await setCursor(1, 1);
+        await wait();
 
         await sendVSCodeKeys("yy");
         await sendVSCodeKeys("p");
@@ -50,13 +51,13 @@ describe("Yanking and pasting", () => {
             content: "some line\notherline",
         });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await wait(1000);
         await sendVSCodeKeys("yj");
 
         const doc2 = await vscode.workspace.openTextDocument({});
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
-        await wait();
-        await sendVSCodeKeys("p");
+        await wait(1000);
+        await sendVSCodeKeys("p", 1000);
 
         await assertContent(
             {
@@ -68,8 +69,8 @@ describe("Yanking and pasting", () => {
 
         const doc3 = await vscode.workspace.openTextDocument({ content: "blah" });
         await vscode.window.showTextDocument(doc3, vscode.ViewColumn.One);
-        await wait();
-        await sendVSCodeKeys("p");
+        await wait(1000);
+        await sendVSCodeKeys("p", 1000);
         await assertContent(
             {
                 content: ["blah", "some line", "otherline"],

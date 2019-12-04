@@ -182,8 +182,10 @@ describe("VSCode integration specific stuff", () => {
         await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
         await wait(1500);
 
-        await sendVSCodeKeys("100k", 1000);
-        await sendVSCodeKeys("<C-o>", 1000);
+        await sendVSCodeKeys("100k", 0);
+        await wait(100);
+        await sendVSCodeKeys("<C-o>", 0);
+        await wait(1000);
         await assertContent(
             {
                 cursor: [115, 16],
@@ -199,7 +201,7 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc1);
         await wait(1000);
 
-        await sendVSCodeKeys("49jm'");
+        await sendVSCodeKeys("49jm'", 0);
         await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
         await wait(1500);
 
@@ -214,14 +216,16 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
 
-        await sendVSCodeKeys("<C-o>");
+        await sendVSCodeKeys("<C-o>", 0);
+        await wait(1000);
         await assertContent(
             {
                 cursor: [26, 9],
             },
             client,
         );
-        await sendVSCodeKeys("<C-o>");
+        await sendVSCodeKeys("<C-o>", 0);
+        await wait(1000);
         await assertContent(
             {
                 cursor: [49, 0],
