@@ -1,8 +1,13 @@
 # Change Log
 
+## [0.0.39]
+
+- Fix bug with incorrect buffer edits
+- Fix cursor jumping after pressing something like ```cw``` and fast typing text in large file
+
 ## [0.0.38]
 
-- Fix cursor position after deleting a line and possibly other changes
+- Fix cursor position after deleting a line and possibly other operations
 
 ## [0.0.37]
 
