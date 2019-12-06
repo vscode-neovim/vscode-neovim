@@ -251,8 +251,9 @@ describe("Insert mode and buffer syncronization", () => {
 
         setSelection([{ anchorPos: [2, 0], cursorPos: [4, 0] }]);
         await pasteVSCode();
+        await wait(500);
 
-        await sendEscapeKey();
+        await sendEscapeKey(1000);
 
         await assertContent(
             {
@@ -373,6 +374,44 @@ describe("Insert mode and buffer syncronization", () => {
         await assertContent(
             {
                 content: ["a", ..."\n".repeat(50).split("\n"), "b"],
+            },
+            client,
+        );
+    });
+
+    it("Complex change - 1", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["1", "2", "3", "4", "5", "6", "7", "8", "9"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("jji"); // at beginning "3"
+        await wait(1000);
+
+        await sendVSCodeSpecialKey("delete");
+        await sendVSCodeSpecialKey("delete");
+        await sendVSCodeSpecialKey("delete");
+        await sendVSCodeSpecialKey("delete");
+        await sendVSCodeSpecialKey("delete");
+        await sendVSCodeSpecialKey("delete");
+        await sendVSCodeKeys("\n");
+        await sendVSCodeSpecialKey("cursorUp");
+        await sendVSCodeKeys(" 3\n");
+        await sendVSCodeKeys("4\n");
+        await sendVSCodeKeys("5\n");
+        await sendVSCodeKeys("5.1");
+        await sendVSCodeSpecialKey("cursorDown"); // at end of 6
+        await sendVSCodeKeys("\n6.1\n6.2");
+        await sendVSCodeSpecialKey("cursorDown"); // at end of 7 7
+        await sendVSCodeSpecialKey("delete");
+        await sendVSCodeSpecialKey("delete"); // delete 8
+
+        await sendEscapeKey(1000);
+
+        await assertContent(
+            {
+                content: ["1", "2", " 3", " 4", " 5", " 5.1", "6", "6.1", "6.2", "7", "9"],
             },
             client,
         );

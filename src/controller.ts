@@ -91,35 +91,16 @@ function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
         if (diffRes === 0) {
             if (currRange) {
                 // const diff = currRange.newEnd - currRange.newStart - (currRange.end - currRange.start);
-                if (Math.abs(currRangeDiff) > 0) {
-                    if (currRange.type === "removed") {
-                        oldIdx += Math.abs(currRangeDiff);
-                    } else if (currRange.type === "changed") {
-                        oldIdx += currRange.end - currRange.start;
-                        newIdx += currRange.newEnd - currRange.newStart;
-                    } else if (currRange.type === "added") {
-                        newIdx += Math.abs(currRangeDiff);
-                    }
-                } else {
-                    const diff = currRange.newEnd - currRange.newStart;
-                    if (diff === 0) {
-                        newIdx++;
-                        oldIdx++;
-                    } else {
-                        newIdx += 1 + (currRange.newEnd - currRange.newStart);
-                        oldIdx += 1 + (currRange.newEnd - currRange.newStart);
-                    }
-                }
-                // if first change is not diff equal, then we need to shift index by +1
-                if (
-                    diffs[0] &&
-                    diffs[0][0] !== 0 &&
-                    !ranges.length &&
-                    currRange.type === "changed" &&
-                    Math.abs(currRangeDiff) > 0
-                ) {
-                    oldIdx++;
-                    newIdx++;
+                if (currRange.type === "changed") {
+                    // changed range is inclusive
+                    oldIdx += 1 + (currRange.end - currRange.start);
+                    newIdx += 1 + (currRange.newEnd - currRange.newStart);
+                } else if (currRange.type === "added") {
+                    // added range is non inclusive
+                    newIdx += Math.abs(currRangeDiff);
+                } else if (currRange.type === "removed") {
+                    // removed range is non inclusive
+                    oldIdx += Math.abs(currRangeDiff);
                 }
                 ranges.push(currRange);
                 currRange = undefined;
