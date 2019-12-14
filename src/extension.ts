@@ -2,11 +2,14 @@ import * as vscode from "vscode";
 
 import { NVIMPluginController } from "./controller";
 
+const EXT_NAME = "vscode-neovim";
+const EXT_ID = `asvetliakov.${EXT_NAME}`;
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    const ext = vscode.extensions.getExtension("vscode-neovim")!;
-    const settings = vscode.workspace.getConfiguration("vscode-neovim");
+    const ext = vscode.extensions.getExtension(EXT_ID)!;
+    const settings = vscode.workspace.getConfiguration(EXT_NAME);
     const neovimPath = process.env.NEOVIM_PATH || settings.get("neovimPath");
     if (!neovimPath) {
         vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
