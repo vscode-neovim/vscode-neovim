@@ -5,6 +5,7 @@ import { NVIMPluginController } from "./controller";
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    const ext = vscode.extensions.getExtension("vscode-neovim")!;
     const settings = vscode.workspace.getConfiguration("vscode-neovim");
     const neovimPath = process.env.NEOVIM_PATH || settings.get("neovimPath");
     if (!neovimPath) {
@@ -30,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         mouseVisualSelection,
-        useWsl,
+        ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
     );
     context.subscriptions.push(plugin);
     await plugin.init();

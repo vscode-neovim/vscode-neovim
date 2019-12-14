@@ -3,7 +3,7 @@
 	"displayName": "Neo Vim",
 	"description": "Real VIM in your Visual Studio Code",
 	"publisher": "asvetliakov",
-	"extensionKind": "ui",
+	"extensionKind": ["ui"],
 	"version": "0.0.39",
 	"repository": {
 		"type": "git",
