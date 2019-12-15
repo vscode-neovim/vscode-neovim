@@ -2447,12 +2447,12 @@ export class NVIMPluginController implements vscode.Disposable {
             await this.uploadDocumentChangesToNeovim();
         }
         await this.client.input("<Esc>");
-        const buf = await this.client.buffer;
-        const lines = await buf.lines;
-        console.log("====LINES====");
-        console.log(lines.length);
-        console.log(lines.join("\n"));
-        console.log("====END====");
+        // const buf = await this.client.buffer;
+        // const lines = await buf.lines;
+        // console.log("====LINES====");
+        // console.log(lines.length);
+        // console.log(lines.join("\n"));
+        // console.log("====END====");
     };
 
     private showCmdOnTimer = (initialContent: string, firstc: string, prompt: string): void => {
