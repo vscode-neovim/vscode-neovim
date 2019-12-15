@@ -10,6 +10,10 @@ set noswapfile
 set noautoread
 set scrolloff=100
 set conceallevel=0
+set fileencoding=utf-8
+set fileencodings=utf-8
+set termencoding=utf-8
+set encoding=utf-8
 
 " do not hide buffers
 set nohidden

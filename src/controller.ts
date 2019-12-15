@@ -157,6 +157,66 @@ function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
     return ranges;
 }
 
+function getBytesFromCodePoint(point?: number): number {
+    if (point == null) {
+        return 0;
+    }
+    if (point <= 0x7f) {
+        return 1;
+    }
+    if (point <= 0x7ff) {
+        return 2;
+    }
+    if (point >= 0xd800 && point <= 0xdfff) {
+        // Surrogate pair: These take 4 bytes in UTF-8 and 2 chars in UCS-2
+        return 4;
+    }
+    if (point < 0xffff) {
+        return 3;
+    }
+    return 4;
+}
+
+function convertByteNumToCharNum(line: string, col: number): number {
+    if (col === 0) {
+        return col;
+    }
+
+    let currCharNum = 0;
+    let totalBytes = 0;
+    while (totalBytes < col) {
+        totalBytes += getBytesFromCodePoint(line.codePointAt(currCharNum));
+        currCharNum++;
+    }
+    return currCharNum;
+}
+
+function convertCharNumToByteNum(line: string, col: number): number {
+    if (col === 0) {
+        return col;
+    }
+
+    let currCharNum = 0;
+    let totalBytes = 0;
+    while (currCharNum < col) {
+        totalBytes += getBytesFromCodePoint(line.codePointAt(currCharNum));
+        currCharNum++;
+    }
+    return totalBytes;
+}
+
+function getStartColForHL(line: string, byteCol: number): number {
+    let currByteCol = 0;
+    let currCharNum = 0;
+    while (currByteCol < byteCol) {
+        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        // HL treats 3+ byte width treats as 2 bytes, see https://github.com/asvetliakov/vscode-neovim/issues/69
+        currByteCol += bytes >= 2 ? 2 : bytes;
+        currCharNum++;
+    }
+    return currCharNum;
+}
+
 interface CursorMode {
     /**
      * Cursor attribute id (defined by `hl_attr_define`)
@@ -848,7 +908,9 @@ export class NVIMPluginController implements vscode.Disposable {
             createJumpEntry = false;
             this.skipJumpsForUris.delete(e.textEditor.document.uri.toString());
         }
-        this.updateCursorPositionInNeovim(winId, cursor.line, cursor.character, createJumpEntry);
+        const lineText = e.textEditor.document.lineAt(cursor.line).text;
+        const byteCol = convertCharNumToByteNum(lineText, cursor.character);
+        this.updateCursorPositionInNeovim(winId, cursor.line, byteCol, createJumpEntry);
 
         // let shouldUpdateNeovimCursor = false;
 
@@ -1428,6 +1490,11 @@ export class NVIMPluginController implements vscode.Disposable {
                         const buf = this.uriToBuffer.get(uri);
                         const isExternal = buf && this.managedBufferIds.has(buf.id) ? false : true;
                         const finalRow = row;
+                        if (finalRow >= editor.document.lineCount) {
+                            continue;
+                        }
+                        const line = editor.document.lineAt(finalRow).text;
+                        const finalStartCol = getStartColForHL(line, colStart);
 
                         // store highlight updates, then apply then after flush()
                         let cellHlId = 0;
@@ -1436,12 +1503,16 @@ export class NVIMPluginController implements vscode.Disposable {
                         }
                         const gridHighlight = gridHighlights.get(grid)!;
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        for (const [, hlId, repeat] of cells as any[]) {
+                        for (const [text, hlId, repeat] of cells as any[]) {
+                            if (text === "") {
+                                // double-width chars (such as chinese characters) have "" as second cell
+                                continue;
+                            }
                             if (hlId != null) {
                                 cellHlId = hlId;
                             }
                             for (let i = 0; i < (repeat || 1); i++) {
-                                const col = colStart + cellIdx;
+                                const col = finalStartCol + cellIdx;
                                 const highlightGroup = this.highlightProvider.getHighlightGroupName(
                                     cellHlId,
                                     isExternal,
@@ -1594,8 +1665,21 @@ export class NVIMPluginController implements vscode.Disposable {
                     if (!gridConf) {
                         continue;
                     }
-                    gridConf.cursorLine = cursor[0] - 1;
-                    gridConf.cursorPos = cursor[1];
+                    const columnWin = editorColumnsToWin.find(([, winId]) => winId === gridConf.winId);
+                    if (!columnWin) {
+                        continue;
+                    }
+                    const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnWin[0]);
+                    if (!editor) {
+                        continue;
+                    }
+                    const cursorLine = cursor[0] - 1;
+                    if (cursorLine >= editor.document.lineCount) {
+                        continue;
+                    }
+                    gridConf.cursorLine = cursorLine;
+                    const lineText = editor.document.lineAt(cursorLine).text;
+                    gridConf.cursorPos = convertByteNumToCharNum(lineText, cursor[1]);
                 }
                 for (const grid of shouldUpateGrids) {
                     const conf = this.grids.get(grid);
@@ -1696,15 +1780,30 @@ export class NVIMPluginController implements vscode.Disposable {
             ["nvim_call_function", ["winline", []]],
             ["nvim_call_function", ["getpos", ["v"]]],
         ]);
-        gridConf[1].cursorLine = line1based - 1;
-        gridConf[1].cursorPos = col0based;
+        const cursorLine = line1based - 1;
+        if (cursorLine >= e.document.lineCount) {
+            return;
+        }
+        gridConf[1].cursorLine = cursorLine;
+        const lineText = e.document.lineAt(cursorLine).text;
+        gridConf[1].cursorPos = convertByteNumToCharNum(lineText, col0based);
         gridConf[1].screenLine = screenLine1Based - 1;
+        const visual = visualStart
+            ? {
+                  line: visualStart[1] - 1,
+                  col: visualStart[2] - 1,
+              }
+            : undefined;
+        if (visual && visual.line < e.document.lineCount) {
+            const visualLine = e.document.lineAt(visual.line).text;
+            visual.col = convertByteNumToCharNum(visualLine, visual.col);
+        }
         this.updateCursorPosInEditor(
             e,
             gridConf[1].cursorLine,
             gridConf[1].cursorPos,
             mode.mode,
-            visualStart,
+            visual,
             this.currentModeName === "visual",
         );
     };
@@ -1734,7 +1833,7 @@ export class NVIMPluginController implements vscode.Disposable {
         newLine: number,
         newCol: number,
         mode: string,
-        visualStart?: [number, number, number, number],
+        visualStart?: { line: number; col: number },
         forceUpdate = false,
     ): void => {
         const pendingCursor = this.editorPendingCursor.get(editor);
@@ -1758,20 +1857,18 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         const visibleRange = editor.visibleRanges[0];
         let revealCursor = new vscode.Selection(newLine, newCol, newLine, newCol);
-        if (mode && this.isVisualMode(mode) && Array.isArray(visualStart) && !this.leaveMultipleCursorsForVisualMode) {
+        if (mode && this.isVisualMode(mode) && visualStart && !this.leaveMultipleCursorsForVisualMode) {
             // visual/visual line/visual block (char code = 22) modes
             // visual start pos is 1.1 based
-            const visualStartLine = visualStart[1] - 1;
-            const visualStartChar = visualStart[2] - 1;
             if (mode === "v") {
                 // vscode selection is differ than vim selection: in vim the character is selected under the block cursor
                 // but in vscode it's not. workaround it by creating second selection with newCol +- 1
-                if (newCol >= visualStartChar && newLine >= visualStartLine) {
-                    revealCursor = new vscode.Selection(visualStartLine, visualStartChar, newLine, newCol);
+                if (newCol >= visualStart.col && newLine >= visualStart.line) {
+                    revealCursor = new vscode.Selection(visualStart.line, visualStart.col, newLine, newCol);
                     editor.selections = [revealCursor, new vscode.Selection(newLine, newCol + 1, newLine, newCol)];
                 } else {
                     // backward selection - move anchor to next character
-                    revealCursor = new vscode.Selection(visualStartLine, visualStartChar + 1, newLine, newCol);
+                    revealCursor = new vscode.Selection(visualStart.line, visualStart.col + 1, newLine, newCol);
                     editor.selections = [revealCursor];
                 }
             } else if (mode === "V") {
@@ -1780,8 +1877,8 @@ export class NVIMPluginController implements vscode.Disposable {
                 // for visual line we put cursor at the start, for visual block at the direction
                 const doc = editor.document;
                 const selections: vscode.Selection[] = [];
-                const lineStart = visualStartLine <= newLine ? visualStartLine : newLine;
-                const lineEnd = visualStartLine > newLine ? visualStartLine : newLine;
+                const lineStart = visualStart.line <= newLine ? visualStart.line : newLine;
+                const lineEnd = visualStart.line > newLine ? visualStart.line : newLine;
                 for (let line = lineStart; line <= lineEnd; line++) {
                     const docLine = doc.lineAt(line);
                     const firstNonWhitespaceChar = docLine.firstNonWhitespaceCharacterIndex;
@@ -1808,19 +1905,19 @@ export class NVIMPluginController implements vscode.Disposable {
             } else {
                 // visual block mode
                 const selections: vscode.Selection[] = [];
-                const lineStart = visualStartLine <= newLine ? visualStartLine : newLine;
-                const lineEnd = visualStartLine > newLine ? visualStartLine : newLine;
+                const lineStart = visualStart.line <= newLine ? visualStart.line : newLine;
+                const lineEnd = visualStart.line > newLine ? visualStart.line : newLine;
                 for (let line = lineStart; line <= lineEnd; line++) {
                     // do similar trick as with visual char mode - produce two selections for forward selection
                     // and increase anchor for backward selection
                     const lineSelections: vscode.Selection[] = [];
-                    if (newCol > visualStartChar) {
+                    if (newCol > visualStart.col) {
                         lineSelections.push(
-                            new vscode.Selection(line, visualStartChar, line, newCol),
+                            new vscode.Selection(line, visualStart.col, line, newCol),
                             new vscode.Selection(line, newCol + 1, line, newCol),
                         );
                     } else {
-                        lineSelections.push(new vscode.Selection(line, visualStartChar + 1, line, newCol));
+                        lineSelections.push(new vscode.Selection(line, visualStart.col + 1, line, newCol));
                     }
                     selections.push(...lineSelections);
                     if (line === newLine) {
@@ -2193,25 +2290,41 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (!gridConf) {
                     break;
                 }
-                gridConf[1].cursorLine = line1based - 1;
-                gridConf[1].cursorPos = col0based;
                 const viewColumn = [...this.editorColumnIdToWinId].find(([, w]) => w === winId);
                 if (!viewColumn) {
                     break;
                 }
 
                 const textEditor = vscode.window.visibleTextEditors.find(e => e.viewColumn === viewColumn[0]);
-                if (textEditor) {
-                    this.updateCursorPosInEditor(
-                        textEditor,
-                        gridConf[1].cursorLine,
-                        gridConf[1].cursorPos,
-                        mode,
-                        // apply visual selection only in active editor for now
-                        // !note: vim behaves differently
-                        textEditor === vscode.window.activeTextEditor ? visualStart : undefined,
-                    );
+                if (!textEditor) {
+                    break;
                 }
+                const line = line1based - 1;
+                if (line >= textEditor.document.lineCount) {
+                    break;
+                }
+                gridConf[1].cursorLine = line;
+                const lineText = textEditor.document.lineAt(line).text;
+                gridConf[1].cursorPos = convertByteNumToCharNum(lineText, col0based);
+                const visual = visualStart
+                    ? {
+                          line: visualStart[1] - 1,
+                          col: visualStart[2] - 1,
+                      }
+                    : undefined;
+                if (visual && visual.line < textEditor.document.lineCount) {
+                    const visualLine = textEditor.document.lineAt(visual.line).text;
+                    visual.col = convertByteNumToCharNum(visualLine, visual.col);
+                }
+                this.updateCursorPosInEditor(
+                    textEditor,
+                    gridConf[1].cursorLine,
+                    gridConf[1].cursorPos,
+                    mode,
+                    // apply visual selection only in active editor for now
+                    // !note: vim behaves differently
+                    textEditor === vscode.window.activeTextEditor ? visual : undefined,
+                );
                 break;
             }
         }
