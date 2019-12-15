@@ -28,8 +28,8 @@ describe("Multi-byte characters", () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["测试微服务", "", "没办法跳转到最后一个"].join("\n"),
         });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(2000);
+        await vscode.window.showTextDocument(doc);
+        await wait();
 
         await assertContent(
             {
@@ -42,7 +42,7 @@ describe("Multi-byte characters", () => {
         await sendVSCodeKeys("ll");
         await assertContent(
             {
-                cursor: [0, 2],
+                vsCodeCursor: [0, 2],
             },
             client,
         );
@@ -51,7 +51,7 @@ describe("Multi-byte characters", () => {
         await assertContent(
             {
                 content: ["测试服务", "", "没办法跳转到最后一个"],
-                cursor: [0, 2],
+                vsCodeCursor: [0, 2],
             },
             client,
         );
@@ -67,7 +67,7 @@ describe("Multi-byte characters", () => {
         await setCursor(2, 5, 500);
         await assertContent(
             {
-                cursor: [2, 5],
+                vsCodeCursor: [2, 5],
             },
             client,
         );
