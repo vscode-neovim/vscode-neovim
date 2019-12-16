@@ -7,6 +7,9 @@
 - Removed multiple cursors by default from visual line/block modes (visual block mode still spawns cursors but they are pruly visual) (#59, #61). Previous behavior is still accessible by ```mi``` or ```ma``` keybindings while in visual line/block modes
 - Allow to override keys/mappings set by extension (previously they set after user config loaded)
 - Allow to identify if neovim is running through vscode extension by checking ```if exists('g:vscode')``` (#83)
+- Added ```<C-[>``` and ```Escape``` as escape keys (#74)
+- Added ```<C-n>``` and ```<C-p>``` to select next autocomplete suggestion/show next/prev parameter hint
+
 
 ## [0.0.39]
 
