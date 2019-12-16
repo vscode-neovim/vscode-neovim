@@ -413,6 +413,11 @@ export class NVIMPluginController implements vscode.Disposable {
         { winId: number; cursorLine: number; cursorPos: number; screenLine: number }
     > = new Map();
 
+    /**
+     * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
+     */
+    private compositeEscapeFirstPressTimestamp?: number;
+
     public constructor(
         neovimPath: string,
         extensionPath: string,
@@ -448,6 +453,16 @@ export class NVIMPluginController implements vscode.Disposable {
         );
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-e", () => this.scrollLine("down")));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-y", () => this.scrollLine("up")));
+        this.disposables.push(
+            vscode.commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
+                this.handleCompositeEscapeFirstKey(key),
+            ),
+        );
+        this.disposables.push(
+            vscode.commands.registerCommand("vscode-neovim.compositeEscape2", (key: string) =>
+                this.handleCompositeEscapeSecondKey(key),
+            ),
+        );
 
         const neovimSupportScriptPath = path.join(extensionPath, "vim", "vscode-neovim.vim");
         const neovimOptionScriptPath = path.join(extensionPath, "vim", "vscode-options.vim");
@@ -2558,6 +2573,37 @@ export class NVIMPluginController implements vscode.Disposable {
                     line.firstNonWhitespaceCharacterIndex,
                 ),
             ];
+        }
+    };
+
+    private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {
+        if (this.currentModeName !== "insert") {
+            return;
+        }
+        const now = new Date().getTime();
+        if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
+            // jj
+            this.compositeEscapeFirstPressTimestamp = undefined;
+            await vscode.commands.executeCommand("deleteLeft");
+            this.onEscapeKeyCommand();
+        } else {
+            this.compositeEscapeFirstPressTimestamp = now;
+            // insert character
+            await vscode.commands.executeCommand("default:type", { text: key });
+        }
+    };
+
+    private handleCompositeEscapeSecondKey = async (key: string): Promise<void> => {
+        if (this.currentModeName !== "insert") {
+            return;
+        }
+        const now = new Date().getTime();
+        if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
+            this.compositeEscapeFirstPressTimestamp = undefined;
+            await vscode.commands.executeCommand("deleteLeft");
+            this.onEscapeKeyCommand();
+        } else {
+            await vscode.commands.executeCommand("default:type", { text: key });
         }
     };
 }

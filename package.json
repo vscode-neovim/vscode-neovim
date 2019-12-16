@@ -172,6 +172,14 @@
 		},
 		"commands": [
 			{
+				"command": "vscode-neovim.compositeEscape1",
+				"title": "Composite escape key 1"
+			},
+			{
+				"command": "vscode-neovim.compositeEscape2",
+				"title": "Composite escape key 2"
+			},
+			{
 				"command": "vscode-neovim.escape",
 				"title": "Escape key"
 			},
@@ -529,6 +537,18 @@
 			}
 		],
 		"keybindings": [
+			{
+				"command": "vscode-neovim.compositeEscape1",
+				"key": "j",
+				"when": "neovim.mode == insert",
+				"args": "j"
+			},
+			{
+				"command": "vscode-neovim.compositeEscape2",
+				"key": "k",
+				"when": "neovim.mode == insert",
+				"args": "k"
+			},
 			{
 				"command": "list.focusDown",
 				"key": "ctrl+n",
