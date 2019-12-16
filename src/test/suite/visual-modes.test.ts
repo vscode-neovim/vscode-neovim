@@ -172,11 +172,7 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("ww");
         await assertContent(
             {
-                vsCodeSelections: [
-                    new vscode.Selection(1, 14, 1, 0),
-                    new vscode.Selection(2, 0, 2, 5),
-                    new vscode.Selection(2, 14, 2, 5),
-                ],
+                vsCodeSelections: [new vscode.Selection(1, 0, 2, 5), new vscode.Selection(2, 14, 2, 5)],
             },
             client,
         );
@@ -184,11 +180,7 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("kk");
         await assertContent(
             {
-                vsCodeSelections: [
-                    new vscode.Selection(0, 0, 0, 5),
-                    new vscode.Selection(0, 14, 0, 5),
-                    new vscode.Selection(1, 14, 1, 0),
-                ],
+                vsCodeSelections: [new vscode.Selection(0, 0, 0, 5), new vscode.Selection(1, 14, 0, 5)],
             },
             client,
         );
@@ -289,6 +281,68 @@ describe("Visual modes test", () => {
         );
     });
 
+    it("Smaller or empty line between with visual block mode", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test", "a", "test", "", "test2", "", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("ll");
+        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await wait(1000);
+
+        await sendVSCodeKeys("j");
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(0, 3, 0, 1), new vscode.Selection(1, 1, 1, 1)],
+            },
+            client,
+        );
+        await sendVSCodeKeys("j");
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(0, 3, 0, 2), new vscode.Selection(2, 3, 2, 2)],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+
+        // A creates empty spaces to fill line
+        await assertContent(
+            {
+                content: ["tesblaht", "a  blah", "tesblaht", "", "test2", "", "test2"],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("0jjjjll");
+        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await wait(1000);
+        await sendVSCodeKeys("jj");
+
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(4, 3, 4, 2), new vscode.Selection(6, 3, 6, 2)],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("I");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+        // I doens't create empty spaces
+        await assertContent(
+            {
+                content: ["tesblaht", "a  blah", "tesblaht", "", "teblahst2", "", "teblahst2"],
+            },
+            client,
+        );
+    });
+
     it("Visual line mode - multi cursor editing", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: [" blah1 abc", "  blah2 abc", "blah3 abc"].join("\n"),
@@ -298,21 +352,7 @@ describe("Visual modes test", () => {
 
         await sendVSCodeKeys("V", 1000);
         await sendVSCodeKeys("jj", 1000);
-
-        await assertContent(
-            {
-                vsCodeSelections: [
-                    new vscode.Selection(0, 0, 0, 1),
-                    new vscode.Selection(0, 10, 0, 1),
-                    new vscode.Selection(1, 0, 1, 2),
-                    new vscode.Selection(1, 11, 1, 2),
-                    new vscode.Selection(2, 9, 2, 0),
-                ],
-            },
-            client,
-        );
-
-        await sendVSCodeKeys("I");
+        await sendVSCodeKeys("mi");
         await assertContent(
             {
                 mode: "i",
@@ -337,7 +377,7 @@ describe("Visual modes test", () => {
 
         await sendVSCodeKeys("V", 1000);
         await sendVSCodeKeys("jj", 1000);
-        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("ma");
         await wait(1000);
 
         await assertContent(
@@ -374,20 +414,7 @@ describe("Visual modes test", () => {
         await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
         await wait(1000);
         await sendVSCodeKeys("lk");
-
-        await assertContent(
-            {
-                vsCodeSelections: [
-                    new vscode.Selection(0, 6, 0, 7),
-                    new vscode.Selection(0, 8, 0, 7),
-                    new vscode.Selection(1, 6, 1, 7),
-                    new vscode.Selection(1, 8, 1, 7),
-                ],
-            },
-            client,
-        );
-
-        await sendVSCodeKeys("I");
+        await sendVSCodeKeys("mi");
         await assertContent(
             {
                 mode: "i",
@@ -409,7 +436,7 @@ describe("Visual modes test", () => {
         await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
         await wait(1000);
         await sendVSCodeKeys("lj");
-        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("ma");
         await assertContent(
             {
                 mode: "i",

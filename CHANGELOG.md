@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.0.40]
+
+- Fix cursor/highlight not working with multi-byte width characters (Russian, Chinese, Japanese, etc...), i.e the extension should work normally with them (#68, #91)
+- Fix incorrect vim highlight when using tab indentation (#81)
+- Removed multiple cursors by default from visual line/block modes (visual block mode still spawns cursors but they are pruly visual) (#59, #61). Previous behavior is still accessible by ```mi``` or ```ma``` keybindings while in visual line/block modes
+
 ## [0.0.39]
 
 - Fix bug with incorrect buffer edits

@@ -28,5 +28,5 @@ nnoremap <silent> O :<C-u> call<SID>vscodeInsertBefore()<CR>
 nnoremap <silent> o :<C-u> call<SID>vscodeInsertAfter()<CR>
 
 " Multiple cursors support for visual line/block modes
-xnoremap <silent> <expr> A <SID>vscodeMultipleCursorsVisualMode(1)
-xnoremap <silent> <expr> I <SID>vscodeMultipleCursorsVisualMode(0)
+xnoremap <silent> <expr> ma <SID>vscodeMultipleCursorsVisualMode(1)
+xnoremap <silent> <expr> mi <SID>vscodeMultipleCursorsVisualMode(0)

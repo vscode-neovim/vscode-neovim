@@ -68,12 +68,12 @@ Command menu has the wildmenu completion on type. The completion options appear 
 
 Multiple cursors work in:
 1. Insert mode
-2. Visual line mode
-3. Visual block mode
+2. (Optional) Visual line mode
+3. (Optional) Visual block mode
 
-Both visual lines and visual block modes spawn multiple cursors for you. You can switch to insert mode by pressing ```I``` or ```A``` keys. The effect differs:
-* For visual line mode ```I``` will start insert mode on each selected line on the first non whitespace characeter and ```A``` will on the end of line
-* For visual block mode ```I``` will start insert on each selected line before the cursor block and ```A``` after
+To spawn multiple cursors from visual line/block modes type ```ma``` or ```mi``` (by default). The effect differs:
+* For visual line mode ```mi``` will start insert mode on each selected line on the first non whitespace characeter and ```ma``` will on the end of line
+* For visual block mode ```mi``` will start insert on each selected line before the cursor block and ```ma``` after
 
 See gif in action:
 
