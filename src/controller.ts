@@ -377,8 +377,6 @@ export class NVIMPluginController implements vscode.Disposable {
     private nvimInitPromise: Promise<void> = Promise.resolve();
     private isInit = false;
 
-    private neovimExtensionsPath: string;
-
     /**
      * Special flag to ignore mouse selection and don't send cursor event to neovim. Used for vscode-range-command RPC commands
      */
@@ -427,7 +425,6 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         this.mouseSelectionEnabled = mouseSelection;
         this.highlightProvider = new HighlightProvider(highlightsConfiguration);
-        this.neovimExtensionsPath = path.join(extensionPath, "vim", "vscode-neovim.vim");
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument));
         this.disposables.push(vscode.window.onDidChangeVisibleTextEditors(this.onChangedEdtiors));
@@ -451,11 +448,18 @@ export class NVIMPluginController implements vscode.Disposable {
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-e", () => this.scrollLine("down")));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-y", () => this.scrollLine("up")));
 
+        const neovimSupportScriptPath = path.join(extensionPath, "vim", "vscode-neovim.vim");
+        const neovimOptionScriptPath = path.join(extensionPath, "vim", "vscode-options.vim");
+
         const args = [
             "-N",
             "--embed",
+            // load options after user config
             "-c",
-            useWsl ? `source $(wslpath '${this.neovimExtensionsPath}')` : `source ${this.neovimExtensionsPath}`,
+            useWsl ? `source $(wslpath '${neovimOptionScriptPath}')` : `source ${neovimOptionScriptPath}`,
+            // load support script before user config (to allow to rebind keybindings/commands)
+            "--cmd",
+            useWsl ? `source $(wslpath '${neovimSupportScriptPath}')` : `source ${neovimSupportScriptPath}`,
         ];
         if (useWsl) {
             args.unshift(neovimPath);

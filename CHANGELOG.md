@@ -5,6 +5,8 @@
 - Fix cursor/highlight not working with multi-byte width characters (Russian, Chinese, Japanese, etc...), i.e the extension should work normally with them (#68, #91)
 - Fix incorrect vim highlight when using tab indentation (#81)
 - Removed multiple cursors by default from visual line/block modes (visual block mode still spawns cursors but they are pruly visual) (#59, #61). Previous behavior is still accessible by ```mi``` or ```ma``` keybindings while in visual line/block modes
+- Allow to override keys/mappings set by extension (previously they set after user config loaded)
+- Allow to identify if neovim is running through vscode extension by checking ```if exists('g:vscode')``` (#83)
 
 ## [0.0.39]
 
