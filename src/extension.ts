@@ -22,6 +22,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = settings.get("useWSL", false);
+    const customInit = settings.get("neovimInitPath", "");
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
     const plugin = new NVIMPluginController(
@@ -35,6 +36,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         } as any,
         mouseVisualSelection,
         ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
+        customInit,
     );
     context.subscriptions.push(plugin);
     await plugin.init();

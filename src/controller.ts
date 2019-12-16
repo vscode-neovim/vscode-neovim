@@ -419,6 +419,7 @@ export class NVIMPluginController implements vscode.Disposable {
         highlightsConfiguration: HighlightConfiguration,
         mouseSelection: boolean,
         useWsl: boolean,
+        customInit = "",
     ) {
         if (!neovimPath) {
             throw new Error("Neovim path is not defined");
@@ -471,6 +472,9 @@ export class NVIMPluginController implements vscode.Disposable {
                 "--listen",
                 `${process.env.NEOVIM_DEBUG_HOST || "127.0.0.1"}:${process.env.NEOVIM_DEBUG_PORT || 4000}`,
             );
+        }
+        if (customInit) {
+            args.push("-u", customInit);
         }
         this.nvimProc = spawn(useWsl ? "C:\\Windows\\system32\\wsl.exe" : neovimPath, args, {});
         this.client = attach({ proc: this.nvimProc });
