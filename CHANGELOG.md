@@ -9,6 +9,7 @@
 - Allow to identify if neovim is running through vscode extension by checking ```if exists('g:vscode')``` (#83)
 - Added ```<C-[>``` and ```Escape``` as escape keys (#74)
 - Added ```<C-n>``` and ```<C-p>``` to select next autocomplete suggestion/show next/prev parameter hint
+- Added ```jj``` and ```jk``` as escape keys from the insert mode (#75)
 
 
 ## [0.0.39]
