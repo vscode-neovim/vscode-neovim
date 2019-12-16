@@ -54,7 +54,7 @@ Neovim 0.4.2 or greater
 * ```gF``` is mapped to ```editor.action.revealDefinition``` (VSCode shortcut: ```F12```)
 * ```<C-w>gF``` is mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
 
-## Determining if running through vscode in your init.vim
+## Determining if running in vscode in your init.vim
 
 This should do the trick:
 ```vim
