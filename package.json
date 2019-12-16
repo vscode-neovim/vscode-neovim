@@ -530,8 +530,59 @@
 		],
 		"keybindings": [
 			{
+				"command": "list.focusDown",
+				"key": "ctrl+n",
+				"when": "listFocus && !inputFocus"
+			},
+			{
+				"command": "list.focusUp",
+				"key": "ctrl+p",
+				"when": "listFocus && !inputFocus"
+			},
+			{
+				"command": "showNextParameterHint",
+				"key": "ctrl+n",
+				"when": "editorTextFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
+			},
+			{
+				"command": "showPrevParameterHint",
+				"key": "ctrl+p",
+				"when": "editorTextFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
+			},
+			{
+				"key": "ctrl+n",
+				"command": "selectNextSuggestion",
+				"when": "textInputFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
+			},
+			{
+				"key": "ctrl+p",
+				"command": "selectPrevSuggestion",
+				"when": "textInputFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
+			},
+			{
+				"command": "workbench.action.quickOpenSelectNext",
+				"key": "ctrl+n",
+				"when": "inQuickOpen"
+			},
+			{
+				"command": "workbench.action.quickOpenSelectPrevious",
+				"key": "ctrl+p",
+				"when": "inQuickOpen"
+			},
+			{
 				"command": "vscode-neovim.escape",
-				"key": "ctrl+c"
+				"key": "ctrl+c",
+				"when": "editorTextFocus && neovim.mode != normal"
+			},
+			{
+				"command": "vscode-neovim.escape",
+				"key": "Escape",
+				"when": "editorTextFocus && neovim.mode != normal"
+			},
+			{
+				"command": "vscode-neovim.escape",
+				"key": "ctrl+[",
+				"when": "editorTextFocus && neovim.mode != normal"
 			},
 			{
 				"command": "vscode-neovim.ctrl-g-cmdline",
