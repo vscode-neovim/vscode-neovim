@@ -11,6 +11,8 @@
 - Added ```<C-n>``` and ```<C-p>``` to select next autocomplete suggestion/show next/prev parameter hint
 - Added ```jj``` and ```jk``` as escape keys from the insert mode (#75)
 - Pass ```<C-/>``` to neovim and call VSCodeCommentary (still recommended to bind it to own keys) (#89)
+- Pass ```<S-Tab>``` to neovim
+- Allow to pass additional ctrl keys to neovim (see Readme)
 
 
 ## [0.0.39]

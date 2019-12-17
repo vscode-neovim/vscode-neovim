@@ -414,6 +414,12 @@
 			},
 			{
 				"command": "vscode-neovim.send",
+				"key": "shift+tab",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.mode != cmdline_normal",
+				"args": "<S-Tab>"
+			},
+			{
+				"command": "vscode-neovim.send",
 				"key": "down",
 				"when": "editorTextFocus && neovim.mode != insert",
 				"args": "<Down>"
