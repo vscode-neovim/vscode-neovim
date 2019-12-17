@@ -45,6 +45,26 @@ Neovim 0.4.2 or greater
 * ```gF```/```gD``` are mapped to ```editor.action.peekDefinition``` (opens definition in peek)
 * ```<C-w>gF```/```<C-w>gf```/```<C-w>gd``` are mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
 
+## Enabling jj or jk as escape keys from the insert mode
+
+Put into your keybindings.json:
+
+```json
+    {
+        "command": "vscode-neovim.compositeEscape1",
+        "key": "j",
+        "when": "neovim.mode == insert",
+        "args": "j"
+    },
+    {
+        "command": "vscode-neovim.compositeEscape2",
+        "key": "k",
+        "when": "neovim.mode == insert",
+        "args": "k"
+    }
+
+```
+
 ## Determining if running in vscode in your init.vim
 
 This should do the trick:
