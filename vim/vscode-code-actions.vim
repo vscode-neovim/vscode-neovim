@@ -26,6 +26,7 @@ endfunction
 
 function! s:vscodeGoToDefinition()
     if exists('b:vscode_controlled') && b:vscode_controlled
+        exe "normal! m'"
         call VSCodeNotify("editor.action.revealDefinition")
     else
         " Allow to funcionar in help files
