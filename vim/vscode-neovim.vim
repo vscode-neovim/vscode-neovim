@@ -114,6 +114,7 @@ endfunction
 
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
+    set conceallevel=0
     let tabstop = &tabstop
     let isJumping = 0
     if exists("g:isJumping")
