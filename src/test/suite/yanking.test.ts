@@ -46,6 +46,7 @@ describe("Yanking and pasting", () => {
         );
     });
 
+    // todo: sometimes failing due to cursor positions, sometimes works. most often is failing
     it("Pasting into document with single line", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: "some line\notherline",

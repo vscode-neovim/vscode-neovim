@@ -14,7 +14,7 @@ import {
     assertContent,
 } from "../utils";
 
-describe("VSCode integration specific stuff", () => {
+describe("Jumplist & jump actions", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
@@ -124,6 +124,7 @@ describe("VSCode integration specific stuff", () => {
         );
     });
 
+    // !seems failing, but actually works
     it("Editor actions create jump points", async () => {
         const doc1 = await vscode.workspace.openTextDocument(
             path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),

@@ -210,7 +210,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await sendVSCodeKeys("<C-v>");
         await wait(1000);
         await assertContent(
             {
@@ -269,7 +269,7 @@ describe("Visual modes test", () => {
         );
 
         await sendVSCodeKeys("w");
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await sendVSCodeKeys("<C-v>");
         await wait(1000);
         await sendVSCodeKeys("bjd");
         await assertContent(
@@ -289,7 +289,7 @@ describe("Visual modes test", () => {
         await wait();
 
         await sendVSCodeKeys("ll");
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await sendVSCodeKeys("<C-v>");
         await wait(1000);
 
         await sendVSCodeKeys("j");
@@ -320,7 +320,7 @@ describe("Visual modes test", () => {
         );
 
         await sendVSCodeKeys("0jjjjll");
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await sendVSCodeKeys("<C-v>");
         await wait(1000);
         await sendVSCodeKeys("jj");
 
@@ -411,7 +411,7 @@ describe("Visual modes test", () => {
         await wait();
 
         await sendVSCodeKeys("jw");
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await sendVSCodeKeys("<C-v>");
         await wait(1000);
         await sendVSCodeKeys("lk");
         await sendVSCodeKeys("mi");
@@ -433,7 +433,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await sendVSCodeKeys("<C-v>");
         await wait(1000);
         await sendVSCodeKeys("lj");
         await sendVSCodeKeys("ma");
@@ -463,7 +463,7 @@ describe("Visual modes test", () => {
         await wait();
 
         await sendVSCodeKeys("l");
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-v");
+        await sendVSCodeKeys("<C-v>");
         await wait(1000);
         await sendVSCodeKeys("jj");
 

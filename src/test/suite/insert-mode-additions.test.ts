@@ -55,7 +55,7 @@ describe("Simulated insert keys", () => {
         await sendVSCodeKeys('"+yy');
         await sendVSCodeKeys("o", 500);
 
-        await vscode.commands.executeCommand("vscode-neovim.paste-register-+");
+        await vscode.commands.executeCommand("vscode-neovim.paste-register", "+");
         await wait();
 
         await sendEscapeKey();
