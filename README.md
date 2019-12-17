@@ -50,9 +50,9 @@ Neovim 0.4.2 or greater
 * It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
 * Scrolling is done by VSCode side. ```<C-d>/<C-u>/etc...``` are slighly different
 * File management commands such as ```e``` / ```w``` / ```q``` etc are mapped to corresponding vscode commands and behavior may be different (see below)
-* ```gf``` is mapped to ```editor.action.goToTypeDefinition```
-* ```gF``` is mapped to ```editor.action.revealDefinition``` (VSCode shortcut: ```F12```)
-* ```<C-w>gF``` is mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
+* ```gf```/```gd```/```<C-]``` are mapped to ```editor.action.revealDefinition``` (Shortcut ```F12```). also ```<C-]>``` works in vim helps files
+* ```gF```/```gD``` are mapped to ```editor.action.peekDefinition``` (opens definition in peek)
+* ```<C-w>gF```/```<C-w>gf```/```<C-w>gd``` are mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
 
 ## Determining if running in vscode in your init.vim
 

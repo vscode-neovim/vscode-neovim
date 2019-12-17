@@ -5,7 +5,7 @@
 - Fix cursor/highlight not working with multi-byte width characters (Russian, Chinese, Japanese, etc...), i.e the extension should work normally with them (#68, #91)
 - Fix incorrect vim highlight when using tab indentation (#81)
 - Removed multiple cursors by default from visual line/block modes (visual block mode still spawns cursors but they are pruly visual) (#59, #61). Previous behavior is still accessible by ```mi``` or ```ma``` keybindings while in visual line/block modes
-- Allow to override keys/mappings set by extension (previously they set after user config loaded)
+- Allow to override keys/mappings set by extension (previously they have been set after user config loaded)
 - Allow to identify if neovim is running through vscode extension by checking ```if exists('g:vscode')``` (#83)
 - Added ```<C-[>``` and ```Escape``` as escape keys (#74)
 - Added ```<C-n>``` and ```<C-p>``` to select next autocomplete suggestion/show next/prev parameter hint
@@ -14,6 +14,7 @@
 - Pass ```<S-Tab>``` to neovim
 - Allow to pass additional ctrl keys to neovim (see Readme)
 - Added workaround for ```gk```/```gj``` motions
+- Corrected ```gf```/```gF``` keybindings. Add ```<C-]>``` as go-to-def (works in help too) (#77). Add ```gd```/```gD``` as secondary mappings to go-to-def/peek-def. Add ```<C-w>gd``` to reveal definition aside
 
 
 ## [0.0.39]
