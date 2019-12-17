@@ -274,6 +274,7 @@ Refer to vim manual to get help what they're doing
 * CTRL-k
 * CTRL-l
 * CTRL-h
+* CTRL-/
 
 Other control keys are not being sent (Usually useless with vscode)
 
@@ -286,6 +287,28 @@ Other control keys are not being sent (Usually useless with vscode)
 * CTRL-l (add next character under the cursor to incsearch)
 * CTRL-n / CTRL-p (select next/previous wildmenu completion)
 * Tab - Select suggestion
+
+## Pass additional keys to neovim or disable existing ctrl keys mappings
+
+### To pass additional ctrl key sequence, for example <C-Tab> add to your keybindings.json:
+
+```json
+    {
+        "command": "vscode-neovim.send",
+        "key": "ctrl+tab",
+        "when": "editorTextFocus && neovim.mode != insert",
+        "args": "<C-Tab>"
+    }
+```
+
+### To disable existing ctrl key sequence, for example Ctrl+A add to your keybindings.json
+
+```json
+    {
+        "command": "-vscode-neovim.send",
+        "key": "ctrl+a"
+    }
+```
 
 
 ## Vim-easymotion
