@@ -592,17 +592,17 @@
 			{
 				"command": "vscode-neovim.escape",
 				"key": "ctrl+c",
-				"when": "editorTextFocus && neovim.mode != normal"
+				"when": "editorTextFocus"
 			},
 			{
 				"command": "vscode-neovim.escape",
 				"key": "Escape",
-				"when": "editorTextFocus && neovim.mode != normal"
+				"when": "editorTextFocus"
 			},
 			{
 				"command": "vscode-neovim.escape",
 				"key": "ctrl+[",
-				"when": "editorTextFocus && neovim.mode != normal"
+				"when": "editorTextFocus"
 			},
 			{
 				"command": "vscode-neovim.ctrl-g-cmdline",
