@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.42]
+
+- Disabled jj/jk escape keys by default
+
 ## [0.0.40]
 
 - Fix cursor/highlight not working with multi-byte width characters (Russian, Chinese, Japanese, etc...), i.e the extension should work normally with them (#68, #91)
