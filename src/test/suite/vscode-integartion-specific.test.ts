@@ -261,11 +261,11 @@ describe("VSCode integration specific stuff", () => {
         );
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait(1000);
-        await sendVSCodeKeys("50j", 0);
+        await sendVSCodeKeys("gg50j", 0);
         await wait(1500);
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.Two);
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.Two, false);
         await wait(1000);
-        await sendVSCodeKeys("100j", 0);
+        await sendVSCodeKeys("gg100j", 0);
         await wait(1500);
 
         await sendVSCodeKeys("<C-w>h", 0);

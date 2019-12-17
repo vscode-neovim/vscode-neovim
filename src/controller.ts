@@ -391,11 +391,12 @@ export class NVIMPluginController implements vscode.Disposable {
     /**
      * Pending cursor update. Indicates that editor should drop all cursor updates from neovim until it got the one indicated in [number, number]
      * We set it when switching the active editor
+     * !seems not needed anymore
      */
-    private editorPendingCursor: WeakMap<
-        vscode.TextEditor,
-        { line: number; col: number; screenRow: number; totalSkips: number }
-    > = new WeakMap();
+    // private editorPendingCursor: WeakMap<
+    //     vscode.TextEditor,
+    //     { line: number; col: number; screenRow: number; totalSkips: number }
+    // > = new WeakMap();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private noEditorBuffer: NeovimBuffer = undefined as any;
@@ -669,7 +670,7 @@ export class NVIMPluginController implements vscode.Disposable {
         requests.push(["nvim_buf_set_var", [buf.id, "vscode_controlled", true]]);
         requests.push(["nvim_buf_set_name", [buf.id, uri]]);
         requests.push(["nvim_call_function", ["VSCodeClearUndo", [buf.id]]]);
-        this.editorPendingCursor.set(e, { line: cursor.line, col: cursor.character, screenRow: 0, totalSkips: 0 });
+        // this.editorPendingCursor.set(e, { line: cursor.line, col: cursor.character, screenRow: 0, totalSkips: 0 });
         await this.client.callAtomic(requests);
         this.bufferIdToUri.set(buf.id, uri);
         this.uriToBuffer.set(uri, buf);
@@ -1895,16 +1896,16 @@ export class NVIMPluginController implements vscode.Disposable {
         visualStart?: { line: number; col: number },
         forceUpdate = false,
     ): void => {
-        const pendingCursor = this.editorPendingCursor.get(editor);
-        if (pendingCursor) {
-            // disallow skipping more than 2 cursor requests to prevent failing into some bad state. Not very elegant
-            if ((newLine !== pendingCursor.line || newCol !== pendingCursor.col) && pendingCursor.totalSkips < 2) {
-                pendingCursor.totalSkips++;
-                return;
-            } else {
-                this.editorPendingCursor.delete(editor);
-            }
-        }
+        // const pendingCursor = this.editorPendingCursor.get(editor);
+        // if (pendingCursor) {
+        //     // disallow skipping more than 2 cursor requests to prevent failing into some bad state. Not very elegant
+        //     if ((newLine !== pendingCursor.line || newCol !== pendingCursor.col) && pendingCursor.totalSkips < 2) {
+        //         pendingCursor.totalSkips++;
+        //         return;
+        //     } else {
+        //         this.editorPendingCursor.delete(editor);
+        //     }
+        // }
         const currentCursor = editor.selections[0].active;
         if (
             currentCursor.line === newLine &&
