@@ -49,20 +49,25 @@ Neovim 0.4.2 or greater
 
 Put into your keybindings.json:
 
+for `jj`
+
 ```json
     {
         "command": "vscode-neovim.compositeEscape1",
         "key": "j",
         "when": "neovim.mode == insert",
         "args": "j"
-    },
+    }
+```
+
+to enable `jk` add also:
+```json
     {
         "command": "vscode-neovim.compositeEscape2",
         "key": "k",
         "when": "neovim.mode == insert",
         "args": "k"
     }
-
 ```
 
 ## Determining if running in vscode in your init.vim
