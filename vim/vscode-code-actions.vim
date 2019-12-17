@@ -49,3 +49,7 @@ xnoremap <silent> <C-w>gF :<C-u>call VSCodeNotify('editor.action.revealDefinitio
 " Bind C-/ to vscode commentary since calling from vscode produces double comments due to multiple cursors
 xnoremap <expr> <C-/> <SID>vscodeCommentary()
 nnoremap <expr> <C-/> <SID>vscodeCommentary() . '_'
+
+" Workaround for gk/gj
+nnoremap gk :<C-u>call VSCodeCall('cursorMove', { 'to': 'up', 'by': 'wrappedLine', 'value': v:count ? v:count : 1 })<CR>
+nnoremap gj :<C-u>call VSCodeCall('cursorMove', { 'to': 'down', 'by': 'wrappedLine', 'value': v:count ? v:count : 1 })<CR>

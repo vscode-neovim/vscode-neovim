@@ -1243,13 +1243,13 @@ export class NVIMPluginController implements vscode.Disposable {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private onNeovimNotification = (method: string, events: [string, ...any[]]): void => {
         if (method === "vscode-command") {
-            const [vscodeCommand, ...commandArgs] = events;
-            this.handleVSCodeCommand(vscodeCommand, ...commandArgs);
+            const [vscodeCommand, commandArgs] = events as [string, unknown[]];
+            this.handleVSCodeCommand(vscodeCommand, Array.isArray(commandArgs) ? commandArgs : [commandArgs]);
             return;
         }
         if (method === "vscode-range-command") {
-            const [vscodeCommand, line1, line2, ...args] = events;
-            this.handleVSCodeRangeCommand(vscodeCommand, line1, line2, ...args);
+            const [vscodeCommand, line1, line2, args] = events;
+            this.handleVSCodeRangeCommand(vscodeCommand, line1, line2, Array.isArray(args) ? args : [args]);
             return;
         }
         if (method === "vscode-neovim") {
@@ -2205,16 +2205,19 @@ export class NVIMPluginController implements vscode.Disposable {
         try {
             let result: unknown;
             if (eventName === "vscode-command") {
-                const [vscodeCommand, ...commandArgs] = eventArgs;
-                result = await this.handleVSCodeCommand(vscodeCommand, ...commandArgs);
+                const [vscodeCommand, commandArgs] = eventArgs as [string, unknown[]];
+                result = await this.handleVSCodeCommand(
+                    vscodeCommand,
+                    Array.isArray(commandArgs) ? commandArgs : [commandArgs],
+                );
             } else if (eventName === "vscode-range-command") {
-                const [vscodeCommand, line1, line2, ...commandArgs] = eventArgs as [
-                    string,
-                    number,
-                    number,
-                    ...unknown[],
-                ];
-                result = await this.handleVSCodeRangeCommand(vscodeCommand, line1, line2, ...commandArgs);
+                const [vscodeCommand, line1, line2, commandArgs] = eventArgs as [string, number, number, unknown[]];
+                result = await this.handleVSCodeRangeCommand(
+                    vscodeCommand,
+                    line1,
+                    line2,
+                    Array.isArray(commandArgs) ? commandArgs : [commandArgs],
+                );
             } else if (eventName === "vscode-neovim") {
                 const [command, commandArgs] = eventArgs as [string, unknown[]];
                 result = await this.handleExtensionRequest(command, commandArgs);
@@ -2225,7 +2228,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private async handleVSCodeCommand(command: string, ...args: unknown[]): Promise<unknown> {
+    private async handleVSCodeCommand(command: string, args: unknown[]): Promise<unknown> {
         return await this.runVSCodeCommand(command, ...args);
     }
 
@@ -2233,7 +2236,7 @@ export class NVIMPluginController implements vscode.Disposable {
         command: string,
         line1: number,
         line2: number,
-        ...args: unknown[]
+        args: unknown[],
     ): Promise<unknown> {
         if (vscode.window.activeTextEditor) {
             this.shouldIgnoreMouseSelection = true;
