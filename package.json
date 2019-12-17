@@ -545,6 +545,12 @@
 				"args": "<C-h>"
 			},
 			{
+				"command": "vscode-neovim.send",
+				"key": "ctrl+/",
+				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal",
+				"args": "<C-/>"
+			},
+			{
 				"command": "deleteAllLeft",
 				"key": "ctrl-u",
 				"when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert"

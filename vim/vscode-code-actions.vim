@@ -45,3 +45,7 @@ nnoremap <silent> <C-w>gf :<C-u>call VSCodeNotify('editor.action.revealDefinitio
 nnoremap <silent> <C-w>gF :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 xnoremap <silent> <C-w>gf :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 xnoremap <silent> <C-w>gF :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
+
+" Bind C-/ to vscode commentary since calling from vscode produces double comments due to multiple cursors
+xnoremap <expr> <C-/> <SID>vscodeCommentary()
+nnoremap <expr> <C-/> <SID>vscodeCommentary() . '_'
