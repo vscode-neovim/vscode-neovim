@@ -1283,8 +1283,9 @@ export class NVIMPluginController implements vscode.Disposable {
         let newModeName: string | undefined;
         // since neovim sets cmdheight=0 internally various vim plugins like easymotion are working incorrect and awaiting hitting enter
         let acceptPrompt = false;
-        const gridHighlights: Map<number, RedrawHighlightsUpdates> = new Map();
+        // const gridHighlights: Map<number, RedrawHighlightsUpdates> = new Map();
         const gridCursorUpdates: Set<number> = new Set();
+        const gridLineEvents: unknown[] = [];
 
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
@@ -1502,89 +1503,24 @@ export class NVIMPluginController implements vscode.Disposable {
                     break;
                 }
                 case "grid_line": {
-                    for (const gridEvent of args) {
-                        const [grid, row, colStart, cells] = gridEvent as [
-                            number,
-                            number,
-                            number,
-                            [string, number?, number?],
-                        ];
-                        const gridConf = this.grids.get(grid);
-                        if (!gridConf) {
-                            continue;
-                        }
-                        const columnToWinId = [...this.editorColumnIdToWinId].find(([, id]) => id === gridConf.winId);
-                        if (!columnToWinId) {
-                            continue;
-                        }
-                        let cellIdx = 0;
-
-                        const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnToWinId[0]);
-                        if (!editor) {
-                            continue;
-                        }
-                        const uri = editor.document.uri.toString();
-                        const buf = this.uriToBuffer.get(uri);
-                        const isExternal = buf && this.managedBufferIds.has(buf.id) ? false : true;
-                        const finalRow = row;
-                        if (finalRow >= editor.document.lineCount) {
-                            continue;
-                        }
-                        const line = editor.document.lineAt(finalRow).text;
-                        const finalStartCol = getStartColForHL(line, colStart);
-
-                        // store highlight updates, then apply then after flush()
-                        let cellHlId = 0;
-                        if (!gridHighlights.has(grid)) {
-                            gridHighlights.set(grid, {});
-                        }
-                        const gridHighlight = gridHighlights.get(grid)!;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        for (const [text, hlId, repeat] of cells as any[]) {
-                            if (text === "") {
-                                // double-width chars (such as chinese characters) have "" as second cell
-                                continue;
-                            }
-                            if (hlId != null) {
-                                cellHlId = hlId;
-                            }
-                            for (let i = 0; i < (repeat || 1); i++) {
-                                const col = finalStartCol + cellIdx;
-                                const highlightGroup = this.highlightProvider.getHighlightGroupName(
-                                    cellHlId,
-                                    isExternal,
-                                );
-                                if (!gridHighlight[finalRow]) {
-                                    gridHighlight[finalRow] = {};
-                                }
-                                if (!gridHighlight[finalRow][col]) {
-                                    gridHighlight[finalRow][col] = "remove";
-                                }
-                                if (highlightGroup) {
-                                    gridHighlight[finalRow][col] = highlightGroup;
-                                }
-                                cellIdx++;
-                            }
-                        }
-                    }
+                    // batch can contain multiple grid_line events
+                    gridLineEvents.push(...args);
                     break;
                 }
             }
         }
         if (this.currentModeName.startsWith("cmdline")) {
-            this.applyRedrawUpdateInCmdlineMode(newModeName, gridCursorUpdates, gridHighlights, acceptPrompt);
+            this.applyRedrawUpdateInCmdlineMode(newModeName, gridCursorUpdates, gridLineEvents, acceptPrompt);
         } else {
-            this.applyRedrawUpdate(newModeName, gridCursorUpdates, gridHighlights, acceptPrompt);
+            this.applyRedrawUpdate(newModeName, gridLineEvents, acceptPrompt);
         }
     };
 
     private applyRedrawUpdate = (
         newModeName: string | undefined,
-        cursorUpdates: Set<number>,
-        highlightUpdates: Map<number, RedrawHighlightsUpdates>,
+        gridLineEvents: unknown[],
         acceptPrompt: boolean,
     ): void => {
-        const editorColumnsToWin = [...this.editorColumnIdToWinId];
         const prevModeName = this.currentModeName;
         if (newModeName) {
             this.handleModeChange(newModeName);
@@ -1616,35 +1552,76 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
             }
         }
-        for (const [grid, updates] of highlightUpdates) {
+        const updateGrids: Set<number> = new Set();
+        for (const gridEvent of gridLineEvents) {
+            const [grid, row, colStart, cells] = gridEvent as [number, number, number, [string, number?, number?]];
             const gridConf = this.grids.get(grid);
             if (!gridConf) {
                 continue;
             }
-            const editorColumn = editorColumnsToWin.find(([, winId]) => gridConf.winId === winId);
-            if (!editorColumn) {
+            const columnToWinId = [...this.editorColumnIdToWinId].find(([, id]) => id === gridConf.winId);
+            if (!columnToWinId) {
                 continue;
             }
-            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === editorColumn[0]);
+            let cellIdx = 0;
+
+            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnToWinId[0]);
             if (!editor) {
                 continue;
             }
-
             const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
-            for (const [lineId, highlights] of Object.entries(updates)) {
-                for (const [colId, group] of Object.entries(highlights)) {
-                    const highlightLine = topScreenLine + parseInt(lineId, 10);
-                    if (highlightLine < 0) {
-                        continue;
-                    }
-                    if (group === "remove") {
-                        this.highlightProvider.remove(grid, highlightLine, parseInt(colId, 10));
+            const highlightLine = topScreenLine + row;
+            if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
+                continue;
+            }
+            const uri = editor.document.uri.toString();
+            const buf = this.uriToBuffer.get(uri);
+            const isExternal = buf && this.managedBufferIds.has(buf.id) ? false : true;
+            const line = editor.document.lineAt(highlightLine).text;
+            const finalStartCol = getStartColForHL(line, colStart);
+
+            let cellHlId = 0;
+            // if (!gridHighlights.has(grid)) {
+            //     gridHighlights.set(grid, {});
+            // }
+            // const gridHighlight = gridHighlights.get(grid)!;
+            updateGrids.add(grid);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            for (const [text, hlId, repeat] of cells as any[]) {
+                if (text === "") {
+                    // double-width chars (such as chinese characters) have "" as second cell
+                    continue;
+                }
+                if (hlId != null) {
+                    cellHlId = hlId;
+                }
+                for (let i = 0; i < (repeat || 1); i++) {
+                    const col = finalStartCol + cellIdx;
+                    const highlightGroup = this.highlightProvider.getHighlightGroupName(cellHlId, isExternal);
+                    if (highlightGroup) {
+                        this.highlightProvider.add(grid, highlightGroup, highlightLine, col);
                     } else {
-                        this.highlightProvider.add(grid, group, highlightLine, parseInt(colId, 10));
+                        this.highlightProvider.remove(grid, highlightLine, col);
                     }
+                    cellIdx++;
                 }
             }
+        }
+        for (const grid of updateGrids) {
+            const gridConf = this.grids.get(grid);
+            if (!gridConf) {
+                continue;
+            }
+            const columnToWinId = [...this.editorColumnIdToWinId].find(([, id]) => id === gridConf.winId);
+            if (!columnToWinId) {
+                continue;
+            }
+            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnToWinId[0]);
+            if (!editor) {
+                continue;
+            }
             const highlights = this.highlightProvider.provideGridHighlights(grid);
+
             for (const [decorator, ranges] of highlights) {
                 editor.setDecorations(decorator, ranges);
             }
@@ -1661,7 +1638,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private applyRedrawUpdateInCmdlineMode = async (
         newModeName: string | undefined,
         cursorUpdates: Set<number>,
-        highlightUpdates: Map<number, RedrawHighlightsUpdates>,
+        gridLineEvents: unknown[],
         acceptPrompt: boolean,
     ): Promise<void> => {
         const editorColumnsToWin = [...this.editorColumnIdToWinId];
@@ -1672,8 +1649,12 @@ export class NVIMPluginController implements vscode.Disposable {
                 this.resyncCursor();
             }
         }
-        if (cursorUpdates.size || highlightUpdates.size) {
-            const syncCursorsGrids: Set<number> = new Set([...cursorUpdates, ...highlightUpdates.keys()]);
+        const highlightGridUpdates: Set<number> = new Set();
+        for (const [grid] of gridLineEvents as unknown[][]) {
+            highlightGridUpdates.add(grid as number);
+        }
+        if (cursorUpdates.size || highlightGridUpdates.size) {
+            const syncCursorsGrids: Set<number> = new Set([...cursorUpdates, ...highlightGridUpdates.keys()]);
             // we need to know if current mode is blocking otherwise nvim_win_get_cursor/nvim_call_function will stuck until unblock
             const mode = await this.client.mode;
             if (!mode.blocking) {
@@ -1742,35 +1723,76 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
             }
         }
-        for (const [grid, updates] of highlightUpdates) {
+        const updateGrids: Set<number> = new Set();
+        for (const gridEvent of gridLineEvents) {
+            const [grid, row, colStart, cells] = gridEvent as [number, number, number, [string, number?, number?]];
             const gridConf = this.grids.get(grid);
             if (!gridConf) {
                 continue;
             }
-            const editorColumn = editorColumnsToWin.find(([, winId]) => gridConf.winId === winId);
-            if (!editorColumn) {
+            const columnToWinId = [...this.editorColumnIdToWinId].find(([, id]) => id === gridConf.winId);
+            if (!columnToWinId) {
                 continue;
             }
-            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === editorColumn[0]);
+            let cellIdx = 0;
+
+            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnToWinId[0]);
             if (!editor) {
                 continue;
             }
-
             const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
-            for (const [lineId, highlights] of Object.entries(updates)) {
-                for (const [colId, group] of Object.entries(highlights)) {
-                    const highlightLine = topScreenLine + parseInt(lineId, 10);
-                    if (highlightLine < 0) {
-                        continue;
-                    }
-                    if (group === "remove") {
-                        this.highlightProvider.remove(grid, highlightLine, parseInt(colId, 10));
+            const highlightLine = topScreenLine + row;
+            if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
+                continue;
+            }
+            const uri = editor.document.uri.toString();
+            const buf = this.uriToBuffer.get(uri);
+            const isExternal = buf && this.managedBufferIds.has(buf.id) ? false : true;
+            const line = editor.document.lineAt(highlightLine).text;
+            const finalStartCol = getStartColForHL(line, colStart);
+
+            let cellHlId = 0;
+            // if (!gridHighlights.has(grid)) {
+            //     gridHighlights.set(grid, {});
+            // }
+            // const gridHighlight = gridHighlights.get(grid)!;
+            updateGrids.add(grid);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            for (const [text, hlId, repeat] of cells as any[]) {
+                if (text === "") {
+                    // double-width chars (such as chinese characters) have "" as second cell
+                    continue;
+                }
+                if (hlId != null) {
+                    cellHlId = hlId;
+                }
+                for (let i = 0; i < (repeat || 1); i++) {
+                    const col = finalStartCol + cellIdx;
+                    const highlightGroup = this.highlightProvider.getHighlightGroupName(cellHlId, isExternal);
+                    if (highlightGroup) {
+                        this.highlightProvider.add(grid, highlightGroup, highlightLine, col);
                     } else {
-                        this.highlightProvider.add(grid, group, highlightLine, parseInt(colId, 10));
+                        this.highlightProvider.remove(grid, highlightLine, col);
                     }
+                    cellIdx++;
                 }
             }
+        }
+        for (const grid of updateGrids) {
+            const gridConf = this.grids.get(grid);
+            if (!gridConf) {
+                continue;
+            }
+            const columnToWinId = [...this.editorColumnIdToWinId].find(([, id]) => id === gridConf.winId);
+            if (!columnToWinId) {
+                continue;
+            }
+            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnToWinId[0]);
+            if (!editor) {
+                continue;
+            }
             const highlights = this.highlightProvider.provideGridHighlights(grid);
+
             for (const [decorator, ranges] of highlights) {
                 editor.setDecorations(decorator, ranges);
             }
