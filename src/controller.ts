@@ -2407,11 +2407,6 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private uploadDocumentChangesToNeovim = async (): Promise<void> => {
         const requests: [string, unknown[]][] = [];
-        let updateCursor = false;
-        const activeUri = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.document.uri.toString()
-            : undefined;
-
         for (const [uri, changed] of this.documentChangesInInsertMode) {
             if (!changed) {
                 continue;
@@ -2429,9 +2424,6 @@ export class NVIMPluginController implements vscode.Disposable {
             const buf = this.uriToBuffer.get(uri);
             if (!buf) {
                 continue;
-            }
-            if (uri === activeUri) {
-                updateCursor = true;
             }
             let newText = document.getText();
             this.documentText.set(uri, newText);
@@ -2487,11 +2479,8 @@ export class NVIMPluginController implements vscode.Disposable {
             this.skipBufferTickUpdate.set(buf.id, bufTick + bufLinesRequests.length);
             requests.push(...bufLinesRequests);
         }
-        if (!requests.length) {
-            return;
-        }
 
-        if (updateCursor && vscode.window.activeTextEditor) {
+        if (vscode.window.activeTextEditor) {
             requests.push([
                 "nvim_win_set_cursor",
                 [
@@ -2502,6 +2491,9 @@ export class NVIMPluginController implements vscode.Disposable {
                     ],
                 ],
             ]);
+        }
+        if (!requests.length) {
+            return;
         }
         await this.client.callAtomic(requests);
     };

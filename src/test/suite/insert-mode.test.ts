@@ -416,4 +416,25 @@ describe("Insert mode and buffer syncronization", () => {
             client,
         );
     });
+
+    it("Moving cursor in insert mode stores cursor position on exit", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["blah1 blah2 blah3"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("i");
+        await sendVSCodeSpecialKey("cursorRight");
+        await sendVSCodeSpecialKey("cursorRight");
+        await sendVSCodeSpecialKey("cursorRight");
+        await sendEscapeKey(1000);
+
+        await assertContent(
+            {
+                cursor: [0, 2],
+            },
+            client,
+        );
+    });
 });
