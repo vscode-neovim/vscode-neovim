@@ -25,16 +25,6 @@ Please report any issues/suggestions to [vscode-neovim repository](https://githu
 Neovim 0.4.2 or greater
 
 * Set neovim path in the extension settings and you're good to go. **Important** you must specify full path to neovim, like ```C:\Neovim\bin\nvim.exe``` or ```/usr/local/bin/nvim```
-* Bind your favorite escape key to ```vscode-neovim.escape``` command. Default ```Ctrl+C```. **Important** this is being sent as ```<Esc>``` to neovim
-
-## To set different escape key, add to your ```keybindings.json``` (or alternatively set it through vscode keybindings UI),
-```json
-    {
-        "key": "Escape",
-        "command": "vscode-neovim.escape",
-        "when": "editorTextFocus && neovim.mode != normal"
-    }
-```
 
 ## Important
 
@@ -42,6 +32,7 @@ Neovim 0.4.2 or greater
 * When you type some commands they may be substituted for the another, like ```:write``` will be replaced by ```:Write```. This is normal.
 * File/tab/window management (```:w```/```q```/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindngs/commands. **DO NOT** use vim ```:w```, etc... in scripts/keybindings, they won't work.
 * It's good idea to backup and move your init.vim file and start with new one until #25 is done
+* It's better to use spaces instead of tabs for file indent. `<C-v>` is broken for tab indents
 
 ## VSCode specific features and differences
 
