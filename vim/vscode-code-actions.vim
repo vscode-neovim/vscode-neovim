@@ -34,6 +34,11 @@ function! s:vscodeGoToDefinition()
     endif
 endfunction
 
+function! s:hover()
+  normal! gv
+  call VSCodeNotify('editor.action.showHover')
+endfunction
+
 command! -range -bar VSCodeCommentary call s:vscodeCommentary(<line1>, <line2>)
 
 xnoremap <expr> <Plug>VSCodeCommentary <SID>vscodeCommentary()
@@ -48,12 +53,14 @@ nnoremap <expr> == <SID>vscodeFormat() . '_'
 " gf/gF . Map to go to definition for now
 nnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition()<CR>
 nnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition()<CR>
+nnoremap <silent> gh :<C-u>call VSCodeNotify('editor.action.showHover')<CR>
 nnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition()<CR>
 nnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
 nnoremap <silent> gD :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
 
 xnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition()<CR>
 xnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition()<CR>
+xnoremap <silent> gh :<C-u>call <SID>hover()<CR>
 xnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition()<CR>
 xnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
 xnoremap <silent> gD :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
