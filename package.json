@@ -432,6 +432,18 @@
 			},
 			{
 				"command": "vscode-neovim.send",
+				"key": "ctrl+right",
+				"when": "editorTextFocus && neovim.mode != insert",
+				"args": "<C-Right>"
+			},
+			{
+				"command": "vscode-neovim.send",
+				"key": "ctrl+left",
+				"when": "editorTextFocus && neovim.mode != insert",
+				"args": "<C-Left>"
+			},
+			{
+				"command": "vscode-neovim.send",
 				"key": "ctrl+a",
 				"when": "editorTextFocus && neovim.mode != insert && neovim.ctrlKeysNormal",
 				"args": "<C-a>"
