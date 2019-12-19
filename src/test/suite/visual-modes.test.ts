@@ -138,6 +138,24 @@ describe("Visual modes test", () => {
         );
     });
 
+    // see https://github.com/asvetliakov/vscode-neovim/issues/105
+    it.skip("viw on last symbol", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("lll");
+        await sendVSCodeKeys("viw");
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(0, 0, 0, 3), new vscode.Selection(0, 4, 0, 3)],
+            },
+            client,
+        );
+    });
+
     it("Visual line mode", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["abc1 abc2 abc3", "abc1 abc2 abc3", "abc1 abc2 abc3"].join("\n"),
