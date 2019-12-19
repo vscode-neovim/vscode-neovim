@@ -653,7 +653,6 @@ export class NVIMPluginController implements vscode.Disposable {
             options: { insertSpaces, tabSize },
         } = e;
 
-        const cursor = e.selection.active;
         const requests: [string, VimValue[]][] = [];
         requests.push(["nvim_win_set_buf", [winId, buf.id]]);
         requests.push(["nvim_buf_set_option", [buf.id, "expandtab", insertSpaces as boolean]]);
@@ -665,7 +664,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
         requests.push(["nvim_buf_set_lines", [buf.id, 0, 1, false, lines]]);
         // if (cursor) {
-        requests.push(["nvim_win_set_cursor", [winId, [cursor.line + 1, cursor.character]]]);
+        requests.push(["nvim_win_set_cursor", [winId, this.getNeovimCursorPosForEditor(e)]]);
         // }
         requests.push(["nvim_buf_set_var", [buf.id, "vscode_controlled", true]]);
         requests.push(["nvim_buf_set_name", [buf.id, uri]]);
@@ -729,13 +728,12 @@ export class NVIMPluginController implements vscode.Disposable {
                 continue;
             }
             activeColumns.add(editor.viewColumn);
-            const cursor = editor.selection.active;
             // !for external buffer - without set_buf the buffer will disappear when switching to other editor and break vscode editor management
             // ! alternatively we can close the editor with such buf?
             requests.push(["nvim_win_set_buf", [winId, buf.id]]);
             if (this.managedBufferIds.has(buf.id)) {
                 // !important: need to update cursor in atomic operation
-                requests.push(["nvim_win_set_cursor", [winId, [cursor.line + 1, cursor.character]]]);
+                requests.push(["nvim_win_set_cursor", [winId, this.getNeovimCursorPosForEditor(editor)]]);
             }
             this.applyCursorStyleToEditor(editor, this.currentModeName);
         }
@@ -807,7 +805,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 // !in the other column but neovim win thinks it has this editor active
                 // !Note: not required if editor is forced to opened in the same column
                 // ["nvim_win_set_buf", [winId, buf.id]],
-                ["nvim_win_set_cursor", [winId, [e.selection.active.line + 1, e.selection.active.character]]],
+                ["nvim_win_set_cursor", [winId, this.getNeovimCursorPosForEditor(e)]],
             );
         }
         if (init) {
@@ -946,9 +944,7 @@ export class NVIMPluginController implements vscode.Disposable {
             createJumpEntry = false;
             this.skipJumpsForUris.delete(e.textEditor.document.uri.toString());
         }
-        const lineText = e.textEditor.document.lineAt(cursor.line).text;
-        const byteCol = convertCharNumToByteNum(lineText, cursor.character);
-        this.updateCursorPositionInNeovim(winId, cursor.line, byteCol, createJumpEntry);
+        this.updateCursorPositionInNeovim(winId, this.getNeovimCursorPosForEditor(e.textEditor), createJumpEntry);
 
         // let shouldUpdateNeovimCursor = false;
 
@@ -1868,13 +1864,19 @@ export class NVIMPluginController implements vscode.Disposable {
         );
     };
 
+    private getNeovimCursorPosForEditor = (e: vscode.TextEditor): [number, number] => {
+        const cursor = e.selection.active;
+        const lineText = e.document.lineAt(cursor.line).text;
+        const byteCol = convertCharNumToByteNum(lineText, cursor.character);
+        return [cursor.line + 1, byteCol];
+    };
+
     private updateCursorPositionInNeovim = async (
         winId: number,
-        line: number,
-        col: number,
+        cursor: [number, number],
         createJumpEntry = false,
     ): Promise<void> => {
-        const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, [line + 1, col]]]];
+        const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursor]]];
         if (createJumpEntry) {
             requests.push(["nvim_call_function", ["VSCodeStoreJumpForWin", [winId]]]);
         }
@@ -2486,13 +2488,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (vscode.window.activeTextEditor) {
             requests.push([
                 "nvim_win_set_cursor",
-                [
-                    0,
-                    [
-                        vscode.window.activeTextEditor.selection.active.line + 1,
-                        vscode.window.activeTextEditor.selection.active.character,
-                    ],
-                ],
+                [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor)],
             ]);
         }
         if (!requests.length) {

@@ -9,6 +9,7 @@ import {
     closeAllActiveEditors,
     closeNvimClient,
     setCursor,
+    sendEscapeKey,
 } from "../utils";
 
 describe("Multi-byte characters", () => {
@@ -68,6 +69,32 @@ describe("Multi-byte characters", () => {
         await assertContent(
             {
                 vsCodeCursor: [2, 5],
+            },
+            client,
+        );
+    });
+
+    it("Cursor is ok after exiting insert mode", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["测试微服务", "", "没办法跳转到最后一个"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("lll");
+
+        await assertContent(
+            {
+                vsCodeCursor: [0, 3],
+            },
+            client,
+        );
+        await sendVSCodeKeys("i");
+
+        await sendEscapeKey();
+        await assertContent(
+            {
+                vsCodeCursor: [0, 2],
             },
             client,
         );
