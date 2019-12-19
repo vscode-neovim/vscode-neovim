@@ -1,16 +1,22 @@
-" Last arg is to reset cursor
-nnoremap <silent> z<CR> :<C-u>call VSCodeExtensionNotify('reveal', 'top', 1)<CR>
-xnoremap <silent> z<CR> :<C-u>call VSCodeExtensionNotify('reveal', 'top', 1)<CR>
-nnoremap <silent> zt :<C-u>call VSCodeExtensionNotify('reveal', 'top', 0)<CR>
-xnoremap <silent> zt :<C-u>call VSCodeExtensionNotify('reveal', 'top', 0)<CR>
-nnoremap <silent> z. :<C-u>call VSCodeExtensionNotify('reveal', 'center', 1)<CR>
-xnoremap <silent> z. :<C-u>call VSCodeExtensionNotify('reveal', 'center', 1)<CR>
-nnoremap <silent> zz :<C-u>call VSCodeExtensionNotify('reveal', 'center', 0)<CR>
-xnoremap <silent> zz :<C-u>call VSCodeExtensionNotify('reveal', 'center', 0)<CR>
-nnoremap <silent> z- :<C-u>call VSCodeExtensionNotify('reveal', 'bottom', 1)<CR>
-xnoremap <silent> z- :<C-u>call VSCodeExtensionNotify('reveal', 'bottom', 1)<CR>
-nnoremap <silent> zb :<C-u>call VSCodeExtensionNotify('reveal', 'bottom', 0)<CR>
-xnoremap <silent> zb :<C-u>call VSCodeExtensionNotify('reveal', 'bottom', 0)<CR>
+function s:reveal(direction, resetCursor, restoreVisual)
+    if a:restoreVisual
+        normal! gv
+    endif
+    call VSCodeExtensionNotify('reveal', a:direction, a:resetCursor)
+endfunction
+
+nnoremap <silent> z<CR> :<C-u>call <SID>reveal('top', 1, 0)<CR>
+xnoremap <silent> z<CR> :<C-u>call <SID>reveal('top', 1, 1)<CR>
+nnoremap <silent> zt :<C-u>call <SID>reveal('top', 0, 0)<CR>
+xnoremap <silent> zt :<C-u>call <SID>reveal('top', 0, 1)<CR>
+nnoremap <silent> z. :<C-u>call <SID>reveal('center', 1, 0)<CR>
+xnoremap <silent> z. :<C-u>call <SID>reveal('center', 1, 1)<CR>
+nnoremap <silent> zz :<C-u>call <SID>reveal('center', 0, 0)<CR>
+xnoremap <silent> zz :<C-u>call <SID>reveal('center', 0, 1)<CR>
+nnoremap <silent> z- :<C-u>call <SID>reveal('bottom', 1, 0)<CR>
+xnoremap <silent> z- :<C-u>call <SID>reveal('bottom', 1, 1)<CR>
+nnoremap <silent> zb :<C-u>call <SID>reveal('bottom', 0, 0)<CR>
+xnoremap <silent> zb :<C-u>call <SID>reveal('bottom', 0, 1)<CR>
 
 nnoremap <silent> <expr> H VSCodeExtensionNotify('move-cursor', 'top')
 xnoremap <silent> <expr> H VSCodeExtensionNotify('move-cursor', 'top')
