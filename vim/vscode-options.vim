@@ -19,5 +19,9 @@ set nohidden
 set noautowrite
 " Disable shada session storing
 " set shada=
-set nonumber
+" set nonumber
 set norelativenumber
+" Render line number as "marker" of the visible top/bottom screen row
+set number
+" up to 10 000 000
+set numberwidth=8
