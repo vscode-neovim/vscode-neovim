@@ -2,10 +2,11 @@
 
 ## [0.0.43]
 
-- Visual modes DON'T produce vscode selections right now. These were implemented through various workarounds and gave really small value. Also this fixes small issue related to visual mode ( #105 )
-- Refactored vscode<->neovim cursor management
+- Visual modes DON'T produce vscode selections right now. These were implemented through various workarounds and gave really small value. Also this fixes issues related to visual mode ( #105, #118 ). To round the corners, invoking vscode's command palette (by using default vscode hotkeys) from visual mode will convert neovim visual selection to vscode visual selection, this should cover most use cases. Also, there are `VScodeNotifyRange`/`VSCodeCallRange` vim functions if you need to call vscode command with selection
+- Refactored vscode<->neovim cursor & highlight management
 - Fix `ma`/`mi` not working when selecting lines upward ( #117 )
-- Changed `ma`/`mi` to skip empty lines. Added `mA`/`mI` for previous behavior
+- Changed `ma`/`mi` to skip empty lines. Added `mA`/`mI` for the previous behavior
+- Macro recording fixes
 
 ## [0.0.42]
 
