@@ -1679,12 +1679,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (vscode.window.activeTextEditor.viewColumn !== columnConf[0]) {
                     continue;
                 }
-                this.updateCursorPosInEditor(
-                    vscode.window.activeTextEditor,
-                    gridConf.cursorLine,
-                    gridConf.cursorPos,
-                    "normal",
-                );
+                this.updateCursorPosInEditor(vscode.window.activeTextEditor, gridConf.cursorLine, gridConf.cursorPos);
             }
         }
 
@@ -1771,9 +1766,7 @@ export class NVIMPluginController implements vscode.Disposable {
             e,
             gridConf[1].cursorLine,
             gridConf[1].cursorPos,
-            mode.mode,
-            visual,
-            this.currentModeName === "visual",
+            // this.currentModeName === "visual",
         );
     };
 
@@ -1807,9 +1800,8 @@ export class NVIMPluginController implements vscode.Disposable {
         editor: vscode.TextEditor,
         newLine: number,
         newCol: number,
-        mode: string,
-        visualStart?: { line: number; col: number },
-        forceUpdate = false,
+        // mode: string,
+        // visualStart?: { line: number; col: number },
     ): void => {
         // const pendingCursor = this.editorPendingCursor.get(editor);
         // if (pendingCursor) {
@@ -1821,99 +1813,105 @@ export class NVIMPluginController implements vscode.Disposable {
         //         this.editorPendingCursor.delete(editor);
         //     }
         // }
-        const currentCursor = editor.selections[0].active;
-        if (
-            currentCursor.line === newLine &&
-            currentCursor.character === newCol &&
-            !this.isVisualMode(mode) &&
-            !forceUpdate
-        ) {
-            return;
-        }
+        // const currentCursor = editor.selections[0].active;
+        // if (
+        //     currentCursor.line === newLine &&
+        //     currentCursor.character === newCol &&
+        //     // !this.isVisualMode(mode) &&
+        //     !forceUpdate
+        // ) {
+        //     return;
+        // }
         const visibleRange = editor.visibleRanges[0];
-        let revealCursor = new vscode.Selection(newLine, newCol, newLine, newCol);
-        if (mode && this.isVisualMode(mode) && visualStart && !this.leaveMultipleCursorsForVisualMode) {
-            // visual/visual line/visual block (char code = 22) modes
-            // visual start pos is 1.1 based
-            if (mode === "v") {
-                // vscode selection is differ than vim selection: in vim the character is selected under the block cursor
-                // but in vscode it's not. workaround it by creating second selection with newCol +- 1
-                if (newCol >= visualStart.col && newLine >= visualStart.line) {
-                    revealCursor = new vscode.Selection(visualStart.line, visualStart.col, newLine, newCol);
-                    editor.selections = [revealCursor, new vscode.Selection(newLine, newCol + 1, newLine, newCol)];
-                } else {
-                    // backward selection - move anchor to next character
-                    revealCursor = new vscode.Selection(visualStart.line, visualStart.col + 1, newLine, newCol);
-                    editor.selections = [revealCursor];
-                }
-            } else if (mode === "V") {
-                // for visual line mode we add each selection (with own cursor) for own line, the line with the cursor is broke by
-                // two selections to simulate moving cursor while in visual line mode
-                // for visual line we put cursor at the start, for visual block at the direction
-                const selections: vscode.Selection[] = [];
-                const lineStart = visualStart.line <= newLine ? visualStart.line : newLine;
-                const lineEnd = visualStart.line > newLine ? visualStart.line : newLine;
-                if (visualStart.line <= newLine) {
-                    selections.push(
-                        new vscode.Selection(lineStart, 0, lineEnd, newCol),
-                        new vscode.Selection(lineEnd, 999999, lineEnd, newCol),
-                    );
-                    revealCursor = selections[1];
-                } else {
-                    selections.push(
-                        new vscode.Selection(lineStart, 0, lineStart, newCol),
-                        new vscode.Selection(lineEnd, 99999, lineStart, newCol),
-                    );
-                    revealCursor = selections[0];
-                }
-                editor.selections = selections;
-            } else {
-                // visual block mode
-                const doc = editor.document;
-                const selections: vscode.Selection[] = [];
-                const lineStart = visualStart.line <= newLine ? visualStart.line : newLine;
-                const lineEnd = visualStart.line > newLine ? visualStart.line : newLine;
-                for (let line = lineStart; line <= lineEnd; line++) {
-                    // do similar trick as with visual char mode - produce two selections for forward selection
-                    // and increase anchor for backward selection
-                    const docLine = doc.lineAt(line);
-                    // avoid creating cursor if line text is less than selection
-                    if (docLine.range.end.character <= Math.min(visualStart.col, newCol)) {
-                        // if it's cursor line we must place cursor to the end of the line
-                        if (docLine.lineNumber === newLine) {
-                            const sel = new vscode.Selection(
-                                newLine,
-                                docLine.range.end.character,
-                                newLine,
-                                docLine.range.end.character,
-                            );
-                            selections.push(sel);
-                            revealCursor = sel;
-                        }
-                        continue;
-                    }
-                    const lineSelections: vscode.Selection[] = [];
-                    if (newCol > visualStart.col) {
-                        lineSelections.push(
-                            new vscode.Selection(line, visualStart.col, line, newCol),
-                            new vscode.Selection(line, newCol + 1, line, newCol),
-                        );
-                    } else {
-                        lineSelections.push(new vscode.Selection(line, visualStart.col + 1, line, newCol));
-                    }
-                    selections.push(...lineSelections);
-                    if (line === newLine) {
-                        revealCursor = lineSelections[0];
-                    }
-                }
-                editor.selections = selections;
-            }
-        } else if (this.leaveMultipleCursorsForVisualMode) {
-            // we have prepared cursors already, just reveal first if needed
-            revealCursor = editor.selections[0];
-        } else {
-            editor.selections = [revealCursor];
-        }
+        const revealCursor = new vscode.Selection(newLine, newCol, newLine, newCol);
+        editor.selections = [revealCursor];
+        // if (this.currentModeName === "visual" && !this.leaveMultipleCursorsForVisualMode) {
+        //     const visualMode = this.currentVisualMode || "v";
+        //     const [visualStartLine, visualStartCol] = this.visualModeStart || [newLine, newCol];
+        //     if (!this.visualModeStart) {
+        //         this.visualModeStart = [visualStartLine, visualStartCol];
+        //     }
+        //     // visual/visual line/visual block (char code = 22) modes
+        //     // visual start pos is 1.1 based
+        //     if (visualMode === "v") {
+        //         // vscode selection is differ than vim selection: in vim the character is selected under the block cursor
+        //         // but in vscode it's not. workaround it by creating second selection with newCol +- 1
+        //         if (newCol >= visualStartCol && newLine >= visualStartLine) {
+        //             revealCursor = new vscode.Selection(visualStartLine, visualStartCol, newLine, newCol);
+        //             editor.selections = [revealCursor, new vscode.Selection(newLine, newCol + 1, newLine, newCol)];
+        //         } else {
+        //             // backward selection - move anchor to next character
+        //             revealCursor = new vscode.Selection(visualStartLine, visualStartCol + 1, newLine, newCol);
+        //             editor.selections = [revealCursor];
+        //         }
+        //     } else if (visualMode === "V") {
+        //         // for visual line mode we add each selection (with own cursor) for own line, the line with the cursor is broke by
+        //         // two selections to simulate moving cursor while in visual line mode
+        //         // for visual line we put cursor at the start, for visual block at the direction
+        //         const selections: vscode.Selection[] = [];
+        //         const lineStart = visualStartLine <= newLine ? visualStartLine : newLine;
+        //         const lineEnd = visualStartLine > newLine ? visualStartLine : newLine;
+        //         if (visualStartLine <= newLine) {
+        //             selections.push(
+        //                 new vscode.Selection(lineStart, 0, lineEnd, newCol),
+        //                 new vscode.Selection(lineEnd, 999999, lineEnd, newCol),
+        //             );
+        //             revealCursor = selections[1];
+        //         } else {
+        //             selections.push(
+        //                 new vscode.Selection(lineStart, 0, lineStart, newCol),
+        //                 new vscode.Selection(lineEnd, 99999, lineStart, newCol),
+        //             );
+        //             revealCursor = selections[0];
+        //         }
+        //         editor.selections = selections;
+        //     } else {
+        //         // visual block mode
+        //         const doc = editor.document;
+        //         const selections: vscode.Selection[] = [];
+        //         const lineStart = visualStartLine <= newLine ? visualStartLine : newLine;
+        //         const lineEnd = visualStartLine > newLine ? visualStartLine : newLine;
+        //         for (let line = lineStart; line <= lineEnd; line++) {
+        //             // do similar trick as with visual char mode - produce two selections for forward selection
+        //             // and increase anchor for backward selection
+        //             const docLine = doc.lineAt(line);
+        //             // avoid creating cursor if line text is less than selection
+        //             if (docLine.range.end.character <= Math.min(visualStartCol, newCol)) {
+        //                 // if it's cursor line we must place cursor to the end of the line
+        //                 if (docLine.lineNumber === newLine) {
+        //                     const sel = new vscode.Selection(
+        //                         newLine,
+        //                         docLine.range.end.character,
+        //                         newLine,
+        //                         docLine.range.end.character,
+        //                     );
+        //                     selections.push(sel);
+        //                     revealCursor = sel;
+        //                 }
+        //                 continue;
+        //             }
+        //             const lineSelections: vscode.Selection[] = [];
+        //             if (newCol > visualStartCol) {
+        //                 lineSelections.push(
+        //                     new vscode.Selection(line, visualStartCol, line, newCol),
+        //                     new vscode.Selection(line, newCol + 1, line, newCol),
+        //                 );
+        //             } else {
+        //                 lineSelections.push(new vscode.Selection(line, visualStartCol + 1, line, newCol));
+        //             }
+        //             selections.push(...lineSelections);
+        //             if (line === newLine) {
+        //                 revealCursor = lineSelections[0];
+        //             }
+        //         }
+        //         editor.selections = selections;
+        //     }
+        // } else if (this.leaveMultipleCursorsForVisualMode) {
+        //     // we have prepared cursors already, just reveal first if needed
+        //     revealCursor = editor.selections[0];
+        // } else {
+        //     editor.selections = [revealCursor];
+        // }
 
         const visibleLines = visibleRange.end.line - visibleRange.start.line;
         // this.commitScrolling.cancel();

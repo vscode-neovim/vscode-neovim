@@ -140,8 +140,7 @@
 						"SpecialComment",
 						"Debug",
 						"Folded",
-						"FoldColumn",
-						"Visual"
+						"FoldColumn"
 					]
 				},
 				"vscode-neovim.highlightGroups.highlights": {
@@ -157,6 +156,9 @@
 						"Search": {
 							"backgroundColor": "theme.editor.findMatchHighlightBackground",
 							"borderColor": "theme.editor.findMatchHighlightBorder"
+						},
+						"Visual": {
+							"backgroundColor": "theme.editor.selectionBackground"
 						},
 						"Conceal": "vim",
 						"Substitute": "vim"

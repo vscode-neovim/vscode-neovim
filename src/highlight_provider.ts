@@ -166,7 +166,7 @@ export class HighlightProvider {
         "Cursor",
         "lCursor",
         "VisualNC",
-        "Visual",
+        // "Visual",
         "Conceal",
         "CursorLine",
         "CursorLineNr",
