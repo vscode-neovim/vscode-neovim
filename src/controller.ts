@@ -1247,7 +1247,15 @@ export class NVIMPluginController implements vscode.Disposable {
                             // it's not the ideal solution since there is minor transition from selection to single cursor
                             // todo: another solution is to combine ranges and replacing text starting by prev line when need to insert something
                             if (!editor.selection.anchor.isEqual(editor.selection.active)) {
-                                editor.selections = [new vscode.Selection(cursor, cursor)];
+                                // workaround cursor in insert recording mode
+                                // todo: why it's needed???
+                                if (this.isRecording) {
+                                    editor.selections = [
+                                        new vscode.Selection(editor.selection.active, editor.selection.active),
+                                    ];
+                                } else {
+                                    editor.selections = [new vscode.Selection(cursor, cursor)];
+                                }
                             }
                             this.documentText.set(uri, editor.document.getText());
                             // since vscode breaks cursor positions in many cases, resync cursor
@@ -2247,6 +2255,7 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         if (this.isInsertMode) {
+            this.isRecording = false;
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
         }
