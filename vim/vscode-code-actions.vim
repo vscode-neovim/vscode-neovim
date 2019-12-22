@@ -8,7 +8,7 @@ function! s:vscodeFormat(...) abort
         let [line1, line2] = [line("'["), line("']")]
     endif
 
-    call VSCodeCallRange("editor.action.formatSelection", line1, line2)
+    call VSCodeCallRange("editor.action.formatSelection", line1, line2, 0)
 endfunction
 
 function! s:vscodeCommentary(...) abort
@@ -21,7 +21,7 @@ function! s:vscodeCommentary(...) abort
         let [line1, line2] = [line("'["), line("']")]
     endif
 
-    call VSCodeCallRange("editor.action.commentLine", line1, line2)
+    call VSCodeCallRange("editor.action.commentLine", line1, line2, 0)
 endfunction
 
 function! s:vscodeGoToDefinition()
@@ -37,6 +37,12 @@ endfunction
 function! s:hover()
   normal! gv
   call VSCodeNotify('editor.action.showHover')
+endfunction
+
+function! s:openVSCodeCommandsInVisualMode()
+    let startLine = line("v")
+    let endLine = line(".")
+    call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
 endfunction
 
 command! -range -bar VSCodeCommentary call s:vscodeCommentary(<line1>, <line2>)
@@ -79,3 +85,6 @@ nnoremap <expr> <C-/> <SID>vscodeCommentary() . '_'
 " Workaround for gk/gj
 nnoremap gk :<C-u>call VSCodeCall('cursorMove', { 'to': 'up', 'by': 'wrappedLine', 'value': v:count ? v:count : 1 })<CR>
 nnoremap gj :<C-u>call VSCodeCall('cursorMove', { 'to': 'down', 'by': 'wrappedLine', 'value': v:count ? v:count : 1 })<CR>
+
+" workaround for calling command picker in visual mode
+xnoremap <expr> <C-P> <SID>openVSCodeCommandsInVisualMode()

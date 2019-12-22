@@ -1284,8 +1284,14 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         if (method === "vscode-range-command") {
-            const [vscodeCommand, line1, line2, args] = events;
-            this.handleVSCodeRangeCommand(vscodeCommand, line1, line2, Array.isArray(args) ? args : [args]);
+            const [vscodeCommand, line1, line2, leaveSelection, args] = events;
+            this.handleVSCodeRangeCommand(
+                vscodeCommand,
+                line1,
+                line2,
+                !!leaveSelection,
+                Array.isArray(args) ? args : [args],
+            );
             return;
         }
         if (method === "vscode-neovim") {
@@ -2015,11 +2021,18 @@ export class NVIMPluginController implements vscode.Disposable {
                     Array.isArray(commandArgs) ? commandArgs : [commandArgs],
                 );
             } else if (eventName === "vscode-range-command") {
-                const [vscodeCommand, line1, line2, commandArgs] = eventArgs as [string, number, number, unknown[]];
+                const [vscodeCommand, line1, line2, commandArgs, leaveSelection] = eventArgs as [
+                    string,
+                    number,
+                    number,
+                    number,
+                    unknown[],
+                ];
                 result = await this.handleVSCodeRangeCommand(
                     vscodeCommand,
                     line1,
                     line2,
+                    !!leaveSelection,
                     Array.isArray(commandArgs) ? commandArgs : [commandArgs],
                 );
             } else if (eventName === "vscode-neovim") {
@@ -2038,18 +2051,25 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private async handleVSCodeRangeCommand(
         command: string,
-        line1: number,
-        line2: number,
+        startLine: number,
+        endLine: number,
+        leaveSelection: boolean,
         args: unknown[],
     ): Promise<unknown> {
-        if (vscode.window.activeTextEditor) {
+        const e = vscode.window.activeTextEditor;
+        if (e) {
             this.shouldIgnoreMouseSelection = true;
-            const prevSelections = [...vscode.window.activeTextEditor.selections];
-            vscode.window.activeTextEditor.selections = [
-                new vscode.Selection(line2 as number, 0, ((line1 as number) - 1) as number, 0),
-            ];
+            const prevSelections = [...e.selections];
+            // startLine is visual start
+            if (startLine > endLine) {
+                e.selections = [new vscode.Selection(startLine - 1, 9999999, endLine - 1, 0)];
+            } else {
+                e.selections = [new vscode.Selection(startLine - 1, 0, endLine - 1, 9999999)];
+            }
             const res = await this.runVSCodeCommand(command, ...args);
-            vscode.window.activeTextEditor.selections = prevSelections;
+            if (!leaveSelection) {
+                e.selections = prevSelections;
+            }
             this.shouldIgnoreMouseSelection = false;
             return res;
         }

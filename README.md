@@ -28,7 +28,7 @@ Neovim 0.4.2 or greater
 
 ## Important
 
-* Visual modes are not producing real vscode selections (few versions had this feature previously, but it was implemented through ugly & hacky workarounds). Any vscode commands expecting selection won't work. But don't worry, you can workaround it by calling `call VSCodeNotifyRange("some-vscode-command", line1, line2)` from your vim/custom mapping. Likely you won't needed it all because code commenting/formatting/indenting for visual modes already works out of the box.
+* Visual modes are not producing real vscode selections (few versions had this feature previously, but it was implemented through ugly & hacky workarounds). Any vscode commands expecting selection won't work. But don't worry, you can workaround it by calling `call VSCodeNotifyRange("some-vscode-command", line1, line2, 0)` from your vim/custom mapping. Likely you won't needed it all because code commenting/formatting/indenting for visual modes already works out of the box. Also invoking command palette in visual mode through default hotkey (`f1`/`ctrl/cmd+shift+p`) will produce real vscode selection too.
 * The extenison for now works best if ```editor.scrollBeyondLastLine``` is disabled.
 * When you type some commands they may be substituted for the another, like ```:write``` will be replaced by ```:Write```. This is normal.
 * File/tab/window management (```:w```/```q```/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindngs/commands. **DO NOT** use vim ```:w```, etc... in scripts/keybindings, they won't work.
