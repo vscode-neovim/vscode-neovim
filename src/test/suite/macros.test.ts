@@ -80,4 +80,23 @@ describe("Macros", () => {
             client,
         );
     });
+
+    it("Cursor is ok while recording macro in insert mode", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["a", "b", "c"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("qa");
+        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("123");
+
+        await assertContent(
+            {
+                vsCodeCursor: [0, 4],
+            },
+            client,
+        );
+    });
 });
