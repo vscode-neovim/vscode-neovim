@@ -1476,6 +1476,11 @@ export class NVIMPluginController implements vscode.Disposable {
                             screenLine: 0,
                             topScreenLine: 0,
                         });
+                    } else {
+                        const conf = this.grids.get(grid)!;
+                        if (!conf.winId) {
+                            conf.winId = win.id;
+                        }
                     }
                     break;
                 }
@@ -1495,6 +1500,11 @@ export class NVIMPluginController implements vscode.Disposable {
                                 screenLine: 0,
                                 topScreenLine: 0,
                             });
+                        } else {
+                            const conf = this.grids.get(grid)!;
+                            if (!conf.winId) {
+                                conf.winId = win.id;
+                            }
                         }
                     }
                     break;
@@ -1547,9 +1557,16 @@ export class NVIMPluginController implements vscode.Disposable {
                     );
                     for (const evt of firstLinesEvents) {
                         const [grid] = evt;
-                        const gridConf = this.grids.get(grid);
+                        let gridConf = this.grids.get(grid);
                         if (!gridConf) {
-                            continue;
+                            gridConf = {
+                                cursorLine: 0,
+                                cursorPos: 0,
+                                screenLine: 0,
+                                topScreenLine: 0,
+                                winId: 0,
+                            };
+                            this.grids.set(grid, gridConf);
                         }
                         const lineNum = extractLineNumberFromGridLineEvent(evt, this.numberLineHlId);
                         if (lineNum != null) {
@@ -1559,9 +1576,16 @@ export class NVIMPluginController implements vscode.Disposable {
                     }
                     for (const evt of lastLinesEvents) {
                         const [grid] = evt;
-                        const gridConf = this.grids.get(grid);
+                        let gridConf = this.grids.get(grid);
                         if (!gridConf) {
-                            continue;
+                            gridConf = {
+                                cursorLine: 0,
+                                cursorPos: 0,
+                                screenLine: 0,
+                                topScreenLine: 0,
+                                winId: 0,
+                            };
+                            this.grids.set(grid, gridConf);
                         }
                         const lineNum = extractLineNumberFromGridLineEvent(evt, this.numberLineHlId);
                         if (lineNum != null) {
