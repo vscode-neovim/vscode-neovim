@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.0.43]
+
+- Visual modes DON'T produce vscode selections right now. These were implemented through various workarounds and gave really small value. Also this fixes small issue related to visual mode ( #105 )
+- Refactored vscode<->neovim cursor management
+- Fix `ma`/`mi` not working when selecting lines upward ( #117 )
+- Changed `ma`/`mi` to skip empty lines. Added `mA`/`mI` for previous behavior
+
 ## [0.0.42]
 
 - Disabled jj/jk escape keys by default

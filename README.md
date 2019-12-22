@@ -28,6 +28,7 @@ Neovim 0.4.2 or greater
 
 ## Important
 
+* Visual modes are not producing real vscode selections (few versions had this feature previously, but it was implemented through ugly & hacky workarounds). Any vscode commands expecting selection won't work. But don't worry, you can workaround it by calling `call VSCodeNotifyRange("some-vscode-command", line1, line2)` from your vim/custom mapping. Likely you won't needed it all because code commenting/formatting/indenting for visual modes already works out of the box.
 * The extenison for now works best if ```editor.scrollBeyondLastLine``` is disabled.
 * When you type some commands they may be substituted for the another, like ```:write``` will be replaced by ```:Write```. This is normal.
 * File/tab/window management (```:w```/```q```/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindngs/commands. **DO NOT** use vim ```:w```, etc... in scripts/keybindings, they won't work.
@@ -98,9 +99,10 @@ Multiple cursors work in:
 2. (Optional) Visual line mode
 3. (Optional) Visual block mode
 
-To spawn multiple cursors from visual line/block modes type ```ma``` or ```mi``` (by default). The effect differs:
-* For visual line mode ```mi``` will start insert mode on each selected line on the first non whitespace characeter and ```ma``` will on the end of line
-* For visual block mode ```mi``` will start insert on each selected line before the cursor block and ```ma``` after
+To spawn multiple cursors from visual line/block modes type `ma`/`mA` or `mi`/`mI` (by default). The effect differs:
+* For visual line mode `mi` will start insert mode on each selected line on the first non whitespace characeter and `ma` will on the end of line
+* For visual block mode `mi` will start insert on each selected line before the cursor block and `ma` after
+* `mA`/`mI` versions account empty lines too (only for visual line mode, for visual block mode they're same as ma/mi)
 
 See gif in action:
 

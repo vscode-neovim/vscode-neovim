@@ -1463,21 +1463,6 @@ export class NVIMPluginController implements vscode.Disposable {
                     break;
                 }
                 case "mode_change": {
-                    // update cursor for all visible editors
-                    for (const e of vscode.window.visibleTextEditors) {
-                        if (!e.viewColumn) {
-                            continue;
-                        }
-                        const winId = this.editorColumnIdToWinId.get(e.viewColumn);
-                        if (!winId) {
-                            continue;
-                        }
-                        const grid = [...this.grids].find(([, conf]) => conf.winId === winId);
-                        if (!grid) {
-                            continue;
-                        }
-                        gridCursorUpdates.add(grid[0]);
-                    }
                     [newModeName] = firstArg as [string, never];
                     break;
                 }
@@ -1738,12 +1723,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!gridConf) {
             return;
         }
-        const [[mode, [line1based, col0based], screenLine1Based, visualStart]] = await this.client.callAtomic([
-            ["nvim_get_mode", []],
-            ["nvim_win_get_cursor", [winId]],
-            ["nvim_call_function", ["winline", []]],
-            ["nvim_call_function", ["getpos", ["v"]]],
-        ]);
+        const [line1based, col0based] = await this.client.callFunction("nvim_win_get_cursor", [winId]);
         const cursorLine = line1based - 1;
         if (cursorLine >= e.document.lineCount) {
             return;
@@ -1751,23 +1731,7 @@ export class NVIMPluginController implements vscode.Disposable {
         gridConf[1].cursorLine = cursorLine;
         const lineText = e.document.lineAt(cursorLine).text;
         gridConf[1].cursorPos = convertByteNumToCharNum(lineText, col0based);
-        gridConf[1].screenLine = screenLine1Based - 1;
-        const visual = visualStart
-            ? {
-                  line: visualStart[1] - 1,
-                  col: visualStart[2] - 1,
-              }
-            : undefined;
-        if (visual && visual.line < e.document.lineCount) {
-            const visualLine = e.document.lineAt(visual.line).text;
-            visual.col = convertByteNumToCharNum(visualLine, visual.col);
-        }
-        this.updateCursorPosInEditor(
-            e,
-            gridConf[1].cursorLine,
-            gridConf[1].cursorPos,
-            // this.currentModeName === "visual",
-        );
+        this.updateCursorPosInEditor(e, gridConf[1].cursorLine, gridConf[1].cursorPos);
     };
 
     private getNeovimCursorPosForEditor = (e: vscode.TextEditor): [number, number] => {
@@ -1789,130 +1753,16 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.callAtomic(requests);
     };
 
-    private isVisualMode(modeShortName: string): boolean {
-        return modeShortName === "v" || modeShortName === "V" || modeShortName.charCodeAt(0) === 22;
-    }
-
     /**
      * Update cursor in active editor. Coords are zero based
      */
-    private updateCursorPosInEditor = (
-        editor: vscode.TextEditor,
-        newLine: number,
-        newCol: number,
-        // mode: string,
-        // visualStart?: { line: number; col: number },
-    ): void => {
-        // const pendingCursor = this.editorPendingCursor.get(editor);
-        // if (pendingCursor) {
-        //     // disallow skipping more than 2 cursor requests to prevent failing into some bad state. Not very elegant
-        //     if ((newLine !== pendingCursor.line || newCol !== pendingCursor.col) && pendingCursor.totalSkips < 2) {
-        //         pendingCursor.totalSkips++;
-        //         return;
-        //     } else {
-        //         this.editorPendingCursor.delete(editor);
-        //     }
-        // }
-        // const currentCursor = editor.selections[0].active;
-        // if (
-        //     currentCursor.line === newLine &&
-        //     currentCursor.character === newCol &&
-        //     // !this.isVisualMode(mode) &&
-        //     !forceUpdate
-        // ) {
-        //     return;
-        // }
+    private updateCursorPosInEditor = (editor: vscode.TextEditor, newLine: number, newCol: number): void => {
+        if (this.leaveMultipleCursorsForVisualMode) {
+            return;
+        }
         const visibleRange = editor.visibleRanges[0];
         const revealCursor = new vscode.Selection(newLine, newCol, newLine, newCol);
         editor.selections = [revealCursor];
-        // if (this.currentModeName === "visual" && !this.leaveMultipleCursorsForVisualMode) {
-        //     const visualMode = this.currentVisualMode || "v";
-        //     const [visualStartLine, visualStartCol] = this.visualModeStart || [newLine, newCol];
-        //     if (!this.visualModeStart) {
-        //         this.visualModeStart = [visualStartLine, visualStartCol];
-        //     }
-        //     // visual/visual line/visual block (char code = 22) modes
-        //     // visual start pos is 1.1 based
-        //     if (visualMode === "v") {
-        //         // vscode selection is differ than vim selection: in vim the character is selected under the block cursor
-        //         // but in vscode it's not. workaround it by creating second selection with newCol +- 1
-        //         if (newCol >= visualStartCol && newLine >= visualStartLine) {
-        //             revealCursor = new vscode.Selection(visualStartLine, visualStartCol, newLine, newCol);
-        //             editor.selections = [revealCursor, new vscode.Selection(newLine, newCol + 1, newLine, newCol)];
-        //         } else {
-        //             // backward selection - move anchor to next character
-        //             revealCursor = new vscode.Selection(visualStartLine, visualStartCol + 1, newLine, newCol);
-        //             editor.selections = [revealCursor];
-        //         }
-        //     } else if (visualMode === "V") {
-        //         // for visual line mode we add each selection (with own cursor) for own line, the line with the cursor is broke by
-        //         // two selections to simulate moving cursor while in visual line mode
-        //         // for visual line we put cursor at the start, for visual block at the direction
-        //         const selections: vscode.Selection[] = [];
-        //         const lineStart = visualStartLine <= newLine ? visualStartLine : newLine;
-        //         const lineEnd = visualStartLine > newLine ? visualStartLine : newLine;
-        //         if (visualStartLine <= newLine) {
-        //             selections.push(
-        //                 new vscode.Selection(lineStart, 0, lineEnd, newCol),
-        //                 new vscode.Selection(lineEnd, 999999, lineEnd, newCol),
-        //             );
-        //             revealCursor = selections[1];
-        //         } else {
-        //             selections.push(
-        //                 new vscode.Selection(lineStart, 0, lineStart, newCol),
-        //                 new vscode.Selection(lineEnd, 99999, lineStart, newCol),
-        //             );
-        //             revealCursor = selections[0];
-        //         }
-        //         editor.selections = selections;
-        //     } else {
-        //         // visual block mode
-        //         const doc = editor.document;
-        //         const selections: vscode.Selection[] = [];
-        //         const lineStart = visualStartLine <= newLine ? visualStartLine : newLine;
-        //         const lineEnd = visualStartLine > newLine ? visualStartLine : newLine;
-        //         for (let line = lineStart; line <= lineEnd; line++) {
-        //             // do similar trick as with visual char mode - produce two selections for forward selection
-        //             // and increase anchor for backward selection
-        //             const docLine = doc.lineAt(line);
-        //             // avoid creating cursor if line text is less than selection
-        //             if (docLine.range.end.character <= Math.min(visualStartCol, newCol)) {
-        //                 // if it's cursor line we must place cursor to the end of the line
-        //                 if (docLine.lineNumber === newLine) {
-        //                     const sel = new vscode.Selection(
-        //                         newLine,
-        //                         docLine.range.end.character,
-        //                         newLine,
-        //                         docLine.range.end.character,
-        //                     );
-        //                     selections.push(sel);
-        //                     revealCursor = sel;
-        //                 }
-        //                 continue;
-        //             }
-        //             const lineSelections: vscode.Selection[] = [];
-        //             if (newCol > visualStartCol) {
-        //                 lineSelections.push(
-        //                     new vscode.Selection(line, visualStartCol, line, newCol),
-        //                     new vscode.Selection(line, newCol + 1, line, newCol),
-        //                 );
-        //             } else {
-        //                 lineSelections.push(new vscode.Selection(line, visualStartCol + 1, line, newCol));
-        //             }
-        //             selections.push(...lineSelections);
-        //             if (line === newLine) {
-        //                 revealCursor = lineSelections[0];
-        //             }
-        //         }
-        //         editor.selections = selections;
-        //     }
-        // } else if (this.leaveMultipleCursorsForVisualMode) {
-        //     // we have prepared cursors already, just reveal first if needed
-        //     revealCursor = editor.selections[0];
-        // } else {
-        //     editor.selections = [revealCursor];
-        // }
-
         const visibleLines = visibleRange.end.line - visibleRange.start.line;
         // this.commitScrolling.cancel();
         if (visibleRange.contains(revealCursor)) {
@@ -1940,35 +1790,37 @@ export class NVIMPluginController implements vscode.Disposable {
         }
     };
 
-    private prepareForMultiCursorEditingFromVisualMode(append: boolean, visualMode: string): void {
+    private multipleCursorFromVisualMode(
+        append: boolean,
+        visualMode: string,
+        startLine: number,
+        endLine: number,
+        skipEmpty: boolean,
+    ): void {
         if (!vscode.window.activeTextEditor) {
             return;
         }
         if (this.currentModeName !== "visual") {
             return;
         }
-        this.leaveMultipleCursorsForVisualMode = true;
-        const sels = vscode.window.activeTextEditor.selections;
+        const currentCursorPos = vscode.window.activeTextEditor.selection.active;
         const newSelections: vscode.Selection[] = [];
         const doc = vscode.window.activeTextEditor.document;
-        for (const sel of sels) {
-            let start = sel.active.line >= sel.anchor.line ? sel.anchor.line : sel.active.line;
-            const end = sel.active.line >= sel.anchor.line ? sel.active.line : sel.anchor.line;
-            for (start; start <= end; start++) {
-                if (newSelections.find(s => s.active.line === sel.active.line)) {
-                    continue;
-                }
-                const line = doc.lineAt(start);
-                let char = 0;
-                if (visualMode === "V") {
-                    char = append ? line.range.end.character : line.firstNonWhitespaceCharacterIndex;
-                } else {
-                    // visual block - take cursor pos and do insert/append after it
-                    char = append ? sel.active.character + 1 : sel.active.character;
-                }
-                newSelections.push(new vscode.Selection(start, char, start, char));
+        for (let line = startLine; line <= endLine; line++) {
+            const lineDef = doc.lineAt(line);
+            // always skip empty lines for visual block mode
+            if (lineDef.text.trim() === "" && (skipEmpty || visualMode !== "V")) {
+                continue;
             }
+            let char = 0;
+            if (visualMode === "V") {
+                char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
+            } else {
+                char = append ? currentCursorPos.character + 1 : currentCursorPos.character;
+            }
+            newSelections.push(new vscode.Selection(line, char, line, char));
         }
+        this.leaveMultipleCursorsForVisualMode = true;
         vscode.window.activeTextEditor.selections = newSelections;
     }
 
@@ -2224,8 +2076,14 @@ export class NVIMPluginController implements vscode.Disposable {
             }
             case "visual-edit": {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [append, visualMode] = args as any;
-                this.prepareForMultiCursorEditingFromVisualMode(!!append, visualMode);
+                const [append, visualMode, startLine1Based, endLine1Based, skipEmpty] = args as any;
+                this.multipleCursorFromVisualMode(
+                    !!append,
+                    visualMode,
+                    startLine1Based - 1,
+                    endLine1Based - 1,
+                    !!skipEmpty,
+                );
                 break;
             }
             case "open-file": {
