@@ -309,4 +309,34 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
     });
+
+    it("Spawning command line from visual mode produces vscode selection", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["a1", "b1", "c1"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait(1000);
+        await sendVSCodeKeys("Vj");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await wait();
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(0, 0, 1, 2)],
+            },
+            client,
+        );
+        await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
+        await sendEscapeKey();
+
+        await sendVSCodeKeys("GVk");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await wait();
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(2, 2, 1, 0)],
+            },
+            client,
+        );
+        await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
+    });
 });
