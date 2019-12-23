@@ -1,10 +1,5 @@
 import { Range, TextEditorDecorationType, ThemableDecorationRenderOptions, ThemeColor, window } from "vscode";
 
-type Cols = Set<number>;
-type ColHiglights = Map<number, Cols>;
-type TypeHighlights = Map<string, ColHiglights>;
-type GridHighligts = Map<number, TypeHighlights>;
-
 export interface VimHighlightUIAttributes {
     foreground?: number;
     background?: number;
@@ -128,9 +123,10 @@ function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): The
 
 export class HighlightProvider {
     /**
-     * Stores current highlights from various groups for document uri
+     * Current HL. key is the grid id and values is two dimension array representing rows and cols. Array may contain empty values
      */
-    private gridHighlights: GridHighligts = new Map();
+    private highlights: Map<number, number[][]> = new Map();
+    private prevGridHighlightsIds: Map<number, Set<string>> = new Map();
     /**
      * Maps highlight id to highlight group name
      */
@@ -241,108 +237,183 @@ export class HighlightProvider {
         return this.decoratorConfigurations.get(decorator)!;
     }
 
-    public add(grid: number, type: string, row: number, col: number): void {
-        let gridHighlights = this.gridHighlights.get(grid);
-        if (!gridHighlights) {
-            gridHighlights = new Map();
-            this.gridHighlights.set(grid, gridHighlights);
-        }
-        let typeHighlights = gridHighlights.get(type);
-        if (!typeHighlights) {
-            typeHighlights = new Map();
-            gridHighlights.set(type, typeHighlights);
-        }
-
-        let rowHighlights = typeHighlights.get(row);
-        if (!rowHighlights) {
-            rowHighlights = new Set();
-            typeHighlights.set(row, rowHighlights);
-        }
-
-        rowHighlights.add(col);
-    }
-
-    public remove(grid: number, row: number, col: number): void {
-        const gridHighlights = this.gridHighlights.get(grid);
-        if (!gridHighlights) {
+    public cleanRow(grid: number, row: number): void {
+        const gridHl = this.highlights.get(grid);
+        if (!gridHl) {
             return;
         }
-        for (const [, typeHighlights] of gridHighlights) {
-            const rowHighlights = typeHighlights.get(row);
-            if (!rowHighlights) {
+        delete gridHl[row];
+    }
+
+    public processHLCellsEvent(
+        grid: number,
+        row: number,
+        start: number,
+        external: boolean,
+        cells: [string, number?, number?][],
+    ): void {
+        let cellHlId = 0;
+        let cellIdx = start;
+        if (!this.highlights.has(grid)) {
+            this.highlights.set(grid, []);
+        }
+        const gridHl = this.highlights.get(grid)!;
+
+        for (const [text, hlId, repeat] of cells) {
+            // 2+bytes chars (such as chinese characters) have "" as second cell
+            if (text === "") {
                 continue;
             }
-            rowHighlights.delete(col);
+            if (hlId != null) {
+                cellHlId = hlId;
+            }
+            const groupName = this.getHighlightGroupName(cellHlId, external);
+            // end of the line - clean and exit
+            if (text === "$" && (groupName === "NonText" || this.highlightIdToGroupName.get(cellHlId) === "NonText")) {
+                if (cellIdx === 0) {
+                    delete gridHl[row];
+                } else if (gridHl[row]) {
+                    gridHl[row].splice(cellIdx);
+                }
+                break;
+            }
+            for (let i = 0; i < (repeat || 1); i++) {
+                if (!gridHl[row]) {
+                    gridHl[row] = [];
+                }
+                if (groupName) {
+                    gridHl[row][cellIdx] = cellHlId;
+                } else {
+                    delete gridHl[row][cellIdx];
+                }
+                cellIdx++;
+            }
         }
     }
 
-    public removeLine(grid: number, row: number): void {
-        const gridHighlights = this.gridHighlights.get(grid);
-        if (!gridHighlights) {
+    public shiftGridHighlights(grid: number, by: number): void {
+        const gridHl = this.highlights.get(grid);
+        if (!gridHl) {
             return;
         }
-        for (const [, typeHighlights] of gridHighlights) {
-            typeHighlights.delete(row);
+        if (by > 0) {
+            // remove clipped out rows
+            for (let i = 0; i < by; i++) {
+                delete gridHl[i];
+            }
+            // first get non empty indexes, then process, seems faster than iterating whole array
+            const idxs: number[] = [];
+            gridHl.forEach((_row, idx) => {
+                idxs.push(idx);
+            });
+            // shift
+            for (const idx of idxs) {
+                gridHl[idx - by] = gridHl[idx];
+                delete gridHl[idx];
+            }
+        } else if (by < 0) {
+            // remove clipped out rows
+            for (let i = 0; i < Math.abs(by); i++) {
+                delete gridHl[gridHl.length - 1 - i];
+            }
+            const idxs: number[] = [];
+            gridHl.forEach((_row, idx) => {
+                idxs.push(idx);
+            });
+            for (const idx of idxs.reverse()) {
+                gridHl[idx + Math.abs(by)] = gridHl[idx];
+                delete gridHl[idx];
+            }
         }
     }
 
-    public clean(grid: number): void {
-        const gridHighlights = this.gridHighlights.get(grid);
-        if (!gridHighlights) {
-            return;
-        }
-        for (const [, hls] of gridHighlights) {
-            hls.clear();
-        }
-    }
-
-    public provideGridHighlights(grid: number): [TextEditorDecorationType, Range[]][] {
-        const gridHighlights = this.gridHighlights.get(grid);
-        if (!gridHighlights) {
-            return [];
-        }
-
+    public getGridHighlights(grid: number, topLine: number): [TextEditorDecorationType, Range[]][] {
         const result: [TextEditorDecorationType, Range[]][] = [];
-        for (const [groupName, decorator] of this.highlighGroupToDecorator) {
+        const hlRanges: Map<string, Array<{ lineS: number; lineE: number; colS: number; colE: number }>> = new Map();
+        const gridHl = this.highlights.get(grid);
+
+        if (gridHl) {
+            // let currHlId = 0;
+            let currHlName = "";
+            let currHlStartRow = 0;
+            let currHlEndRow = 0;
+            let currHlStartCol = 0;
+            let currHlEndCol = 0;
+            // forEach faster than for in/of for arrays while iterating on array with empty values
+            gridHl.forEach((rowHighlights, rowIdx) => {
+                rowHighlights.forEach((cellHlId, cellIdx) => {
+                    const cellHlName = this.highlightIdToGroupName.get(cellHlId);
+                    if (
+                        cellHlName &&
+                        currHlName === cellHlName &&
+                        // allow to extend prev HL if on same row and next cell OR previous row and end of range is end col
+                        currHlEndRow === rowIdx &&
+                        currHlEndCol === cellIdx - 1
+                    ) {
+                        currHlEndCol = cellIdx;
+                    } else {
+                        if (currHlName) {
+                            if (!hlRanges.has(currHlName)) {
+                                hlRanges.set(currHlName, []);
+                            }
+                            hlRanges.get(currHlName)!.push({
+                                lineS: currHlStartRow,
+                                lineE: currHlEndRow,
+                                colS: currHlStartCol,
+                                colE: currHlEndCol,
+                            });
+                            currHlName = "";
+                            currHlStartCol = 0;
+                            currHlEndCol = 0;
+                            currHlStartRow = 0;
+                            currHlEndRow = 0;
+                        }
+                        if (cellHlName) {
+                            currHlName = cellHlName;
+                            currHlStartRow = rowIdx;
+                            currHlEndRow = rowIdx;
+                            currHlStartCol = cellIdx;
+                            currHlEndCol = cellIdx;
+                        }
+                    }
+                });
+            });
+            if (currHlName) {
+                if (!hlRanges.has(currHlName)) {
+                    hlRanges.set(currHlName, []);
+                }
+                hlRanges.get(currHlName)!.push({
+                    lineS: currHlStartRow,
+                    lineE: currHlEndRow,
+                    colS: currHlStartCol,
+                    colE: currHlEndCol,
+                });
+            }
+        }
+        for (const [groupName, ranges] of hlRanges) {
+            const decorator = this.getDecoratorForHighlightGroup(groupName);
             if (!decorator) {
                 continue;
             }
-
-            const typeHighlights = gridHighlights.get(groupName);
-            if (!typeHighlights) {
-                continue;
-            }
-            const ranges: Range[] = [];
-            for (const [row, cols] of typeHighlights) {
-                const rowRanges = this.createRangeFromCols(row, [...cols]);
-                if (rowRanges) {
-                    ranges.push(...rowRanges);
+            const decoratorRanges = ranges.map(
+                r => new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1),
+            );
+            result.push([decorator, decoratorRanges]);
+        }
+        const prevHighlights = this.prevGridHighlightsIds.get(grid);
+        if (prevHighlights) {
+            for (const groupName of prevHighlights) {
+                if (!hlRanges.has(groupName)) {
+                    const decorator = this.getDecoratorForHighlightGroup(groupName);
+                    if (!decorator) {
+                        continue;
+                    }
+                    result.push([decorator, []]);
                 }
             }
-            result.push([decorator, ranges]);
         }
+        this.prevGridHighlightsIds.set(grid, new Set(hlRanges.keys()));
         return result;
-    }
-
-    private createRangeFromCols(row: number, cols: number[]): Range[] | undefined {
-        if (!cols.length) {
-            return;
-        }
-        const ranges: Range[] = [];
-        const sortedCols = cols.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-        for (let i = 0; i < sortedCols.length; i++) {
-            const startCol = sortedCols[i];
-            let skipCol = startCol;
-            // skip until range won't overlap, e.g. if there are 1, 2, 3, 5, 6, 7, we'll skil 2 and 6
-            while (skipCol + 1 === sortedCols[i + 1]) {
-                skipCol = sortedCols[i + 1];
-                i++;
-                continue;
-            }
-            const endCol = sortedCols[i];
-            ranges.push(new Range(row, startCol, row, endCol + 1));
-        }
-        return ranges;
     }
 
     private createDecoratorForHighlightGroup(groupName: string, options: ThemableDecorationRenderOptions): void {

@@ -1365,6 +1365,11 @@ export class NVIMPluginController implements vscode.Disposable {
         let acceptPrompt = false;
         const gridCursorUpdates: Set<number> = new Set();
         const gridHLUpdates: Set<number> = new Set();
+        // must to setup win conf event first
+        const winEvents = batch.filter(([name]) => name === "win_pos" || name === "win_external_pos");
+        if (winEvents.length) {
+            batch.unshift(...winEvents);
+        }
 
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
@@ -1567,11 +1572,14 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
                 // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
                 case "grid_scroll": {
-                    for (const [grid] of args as [number, number, number, null, number, number, number][]) {
+                    for (const [grid, , , , , by] of args as [number, number, number, null, number, number, number][]) {
                         if (grid === 1) {
                             continue;
                         }
                         gridCursorUpdates.add(grid);
+                        // by > 0 - scroll down, must remove existing elements from first and shift row hl left
+                        // by < 0 - scroll up, must remove existing elements from right shift row hl right
+                        this.highlightProvider.shiftGridHighlights(grid, by);
                     }
                     break;
                 }
@@ -1582,23 +1590,6 @@ export class NVIMPluginController implements vscode.Disposable {
                         if (conf) {
                             conf.screenLine = screenRow;
                             conf.screenPos = normalizedScreenCol;
-                            // conf.cursorLine = getLineFromLineNumberString(conf.topScreenLineStr) + screenRow;
-                            // const viewColumnConf = [...this.editorColumnIdToWinId].find(
-                            //     ([, winId]) => winId === conf.winId,
-                            // );
-                            // const editor = viewColumnConf
-                            //     ? vscode.window.visibleTextEditors.find(e => e.viewColumn === viewColumnConf[0])
-                            //     : undefined;
-                            // if (editor === vscode.window.activeTextEditor && this.ignoreNextCursorUpdate) {
-                            //     this.ignoreNextCursorUpdate = false;
-                            //     continue;
-                            // }
-                            // if (editor && conf.cursorLine < editor.document.lineCount) {
-                            //     const line = editor.document.lineAt(conf.cursorLine).text;
-                            //     conf.cursorPos = convertByteNumToCharNum(line, normalizedScreenCol);
-                            // } else {
-                            //     conf.cursorPos = 0;
-                            // }
                             gridCursorUpdates.add(grid);
                         }
                     }
@@ -1677,6 +1668,12 @@ export class NVIMPluginController implements vscode.Disposable {
 
                     // eslint-disable-next-line prefer-const
                     for (let [grid, row, colStart, cells] of gridEvents) {
+                        if (grid == 2 && row > LAST_SCREEN_LINE_FIRST_GRID) {
+                            continue;
+                        }
+                        if (grid > 2 && row > LAST_SCREEN_LINE_OTHER_GRID) {
+                            continue;
+                        }
                         const gridConf = this.grids.get(grid);
                         if (!gridConf) {
                             continue;
@@ -1694,12 +1691,14 @@ export class NVIMPluginController implements vscode.Disposable {
                         const topScreenLine = getLineFromLineNumberString(gridConf.topScreenLineStr);
                         const highlightLine = topScreenLine + row;
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
+                            if (highlightLine > 0) {
+                                this.highlightProvider.cleanRow(grid, row);
+                            }
                             continue;
                         }
                         const uri = editor.document.uri.toString();
                         const buf = this.uriToBuffer.get(uri);
                         const isExternal = buf && this.managedBufferIds.has(buf.id) ? false : true;
-                        const line = editor.document.lineAt(highlightLine).text;
                         let finalStartCol = 0;
                         if (cells[0] && cells[0][1] === this.numberLineHlId) {
                             // remove linenumber cells
@@ -1708,36 +1707,15 @@ export class NVIMPluginController implements vscode.Disposable {
                                 continue;
                             }
                             cells = cells.slice(firstTextIdx);
+                        } else if (colStart === NUMBER_COLUMN_WIDTH) {
+                            finalStartCol = 0;
                         } else {
+                            const line = editor.document.lineAt(highlightLine).text;
                             // shift left start col (in vim linenumber is accounted, while in vscode don't)
                             finalStartCol = getStartColForHL(line, colStart - NUMBER_COLUMN_WIDTH);
                         }
-
-                        let cellHlId = 0;
-                        let cellIdx = 0;
-                        for (const [text, hlId, repeat] of cells) {
-                            if (text === "") {
-                                // double-width chars (such as chinese characters) have "" as second cell
-                                continue;
-                            }
-                            if (hlId != null) {
-                                cellHlId = hlId;
-                            }
-                            for (let i = 0; i < (repeat || 1); i++) {
-                                const col = finalStartCol + cellIdx;
-                                const highlightGroup = this.highlightProvider.getHighlightGroupName(
-                                    cellHlId,
-                                    isExternal,
-                                );
-                                if (highlightGroup) {
-                                    this.highlightProvider.add(grid, highlightGroup, highlightLine, col);
-                                } else {
-                                    this.highlightProvider.remove(grid, highlightLine, col);
-                                }
-                                gridHLUpdates.add(grid);
-                                cellIdx++;
-                            }
-                        }
+                        this.highlightProvider.processHLCellsEvent(grid, row, finalStartCol, isExternal, cells);
+                        gridHLUpdates.add(grid);
                     }
                     break;
                 }
@@ -1795,9 +1773,11 @@ export class NVIMPluginController implements vscode.Disposable {
             if (!editor) {
                 continue;
             }
-            const highlights = this.highlightProvider.provideGridHighlights(grid);
-
-            for (const [decorator, ranges] of highlights) {
+            const hls = this.highlightProvider.getGridHighlights(
+                grid,
+                getLineFromLineNumberString(gridConf.topScreenLineStr),
+            );
+            for (const [decorator, ranges] of hls) {
                 editor.setDecorations(decorator, ranges);
             }
         }

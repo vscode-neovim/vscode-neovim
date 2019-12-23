@@ -25,3 +25,6 @@ set norelativenumber
 set number
 " up to 10 000 000
 set numberwidth=8
+" Need to know linebreaks for optimized HL
+set listchars=eol:$
+set list
