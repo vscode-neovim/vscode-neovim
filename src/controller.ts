@@ -20,13 +20,24 @@ interface EditRange {
     type: "changed" | "removed" | "added";
 }
 
+interface GridConf {
+    winId: number;
+    cursorLine: number;
+    cursorPos: number;
+    screenLine: number;
+    screenPos: number;
+    topScreenLineStr: string;
+    bottomScreenLineStr: string;
+}
+
 type GridLineEvent = [number, number, number, [string, number, number][]];
 
-function extractLineNumberFromGridLineEvent(event: GridLineEvent, lineNumberHlId: number): number | undefined {
-    const [, , , cells] = event;
+function processLineNumberStringFromEvent(event: GridLineEvent, lineNumberHlId: number, prevString: string): string {
+    const [, , colStart, cells] = event;
     if (!cells.length || cells[0][1] !== lineNumberHlId) {
-        return;
+        return prevString;
     }
+
     let lineNumStr = "";
     for (const [text, hlId, repeat] of cells) {
         if (hlId != null && hlId !== lineNumberHlId) {
@@ -36,12 +47,22 @@ function extractLineNumberFromGridLineEvent(event: GridLineEvent, lineNumberHlId
             lineNumStr += text;
         }
     }
-    if (lineNumStr) {
-        const lineNum = parseInt(lineNumStr.trim(), 10);
-        if (!isNaN(lineNum)) {
-            return lineNum - 1;
-        }
+    const newStr = prevString.slice(0, colStart) + lineNumStr;
+    return newStr;
+}
+
+function getLineFromLineNumberString(lineStr: string): number {
+    const num = parseInt(lineStr.trim(), 10);
+    return isNaN(num) ? 0 : num - 1;
+}
+
+function convertLineNumberToString(line: number): string {
+    let lineNumStr = line.toString(10);
+    // prepend " " for empty lines
+    for (let i = lineNumStr.length; i < 7; i++) {
+        lineNumStr = " " + lineNumStr;
     }
+    return lineNumStr + " ";
 }
 
 // Copied from https://github.com/google/diff-match-patch/blob/master/javascript/diff_match_patch_uncompressed.js
@@ -253,6 +274,24 @@ function getStartColForHL(line: string, byteCol: number): number {
     return currCharNum;
 }
 
+function getEditorCursorPos(editor: vscode.TextEditor, conf: GridConf): { line: number; col: number } {
+    const topScreenLine = getLineFromLineNumberString(conf.topScreenLineStr);
+    const cursorLine = topScreenLine + conf.screenLine;
+    if (cursorLine >= editor.document.lineCount) {
+        // shouldn't happen
+        return {
+            col: 0,
+            line: 0,
+        };
+    }
+    const line = editor.document.lineAt(cursorLine).text;
+    const col = convertByteNumToCharNum(line, conf.screenPos);
+    return {
+        line: cursorLine,
+        col,
+    };
+}
+
 interface CursorMode {
     /**
      * Cursor attribute id (defined by `hl_attr_define`)
@@ -311,7 +350,8 @@ const NVIM_WIN_HEIGHT = 201;
 const NVIM_WIN_WIDTH = 500;
 
 const FIRST_SCREEN_LINE = 0;
-const LAST_SCREEN_LINE = 199;
+const LAST_SCREEN_LINE_FIRST_GRID = 199;
+const LAST_SCREEN_LINE_OTHER_GRID = 200;
 
 // set numberwidth=8
 const NUMBER_COLUMN_WIDTH = 8;
@@ -323,6 +363,7 @@ export class NVIMPluginController implements vscode.Disposable {
      * Current vim mode
      */
     private currentModeName = "";
+    private ignoreNextCursorUpdate = false;
     /**
      * Special flag to leave multiple cursors produced by visual line/visual block mode after
      * exiting visual mode. Being set by RPC request
@@ -439,10 +480,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private skipJumpsForUris: Map<string, boolean> = new Map();
 
-    private grids: Map<
-        number,
-        { winId: number; cursorLine: number; cursorPos: number; screenLine: number; topScreenLine: number }
-    > = new Map();
+    private grids: Map<number, GridConf> = new Map();
 
     private numberLineHlId = 0;
 
@@ -1487,8 +1525,10 @@ export class NVIMPluginController implements vscode.Disposable {
                             winId: win.id,
                             cursorLine: 0,
                             cursorPos: 0,
+                            screenPos: 0,
                             screenLine: 0,
-                            topScreenLine: 0,
+                            topScreenLineStr: "      1 ",
+                            bottomScreenLineStr: "    200 ",
                         });
                     } else {
                         const conf = this.grids.get(grid)!;
@@ -1511,8 +1551,10 @@ export class NVIMPluginController implements vscode.Disposable {
                                 winId: win.id,
                                 cursorLine: 0,
                                 cursorPos: 0,
+                                screenPos: 0,
                                 screenLine: 0,
-                                topScreenLine: 0,
+                                topScreenLineStr: "      1 ",
+                                bottomScreenLineStr: "    200 ",
                             });
                         } else {
                             const conf = this.grids.get(grid)!;
@@ -1525,11 +1567,8 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
                 // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
                 case "grid_scroll": {
-                    // we only update here for movements while in command line mode (e.g. incsearch) since CursorMoved autocmd event won't be fired this case
-                    if (this.currentModeName === "cmdline_normal") {
-                        for (const [grid] of args as [number, number, number, null, number, number, number][]) {
-                            gridCursorUpdates.add(grid);
-                        }
+                    for (const [grid] of args as [number, number, number, null, number, number, number][]) {
+                        gridCursorUpdates.add(grid);
                     }
                     break;
                 }
@@ -1539,19 +1578,24 @@ export class NVIMPluginController implements vscode.Disposable {
                         const normalizedScreenCol = screenCol - NUMBER_COLUMN_WIDTH;
                         if (conf) {
                             conf.screenLine = screenRow;
-                            conf.cursorLine = conf.topScreenLine + screenRow;
-                            const viewColumnConf = [...this.editorColumnIdToWinId].find(
-                                ([, winId]) => winId === conf.winId,
-                            );
-                            const editor = viewColumnConf
-                                ? vscode.window.visibleTextEditors.find(e => e.viewColumn === viewColumnConf[0])
-                                : undefined;
-                            if (editor && conf.cursorLine < editor.document.lineCount) {
-                                const line = editor.document.lineAt(conf.cursorLine).text;
-                                conf.cursorPos = convertByteNumToCharNum(line, normalizedScreenCol);
-                            } else {
-                                conf.cursorPos = 0;
-                            }
+                            conf.screenPos = normalizedScreenCol;
+                            // conf.cursorLine = getLineFromLineNumberString(conf.topScreenLineStr) + screenRow;
+                            // const viewColumnConf = [...this.editorColumnIdToWinId].find(
+                            //     ([, winId]) => winId === conf.winId,
+                            // );
+                            // const editor = viewColumnConf
+                            //     ? vscode.window.visibleTextEditors.find(e => e.viewColumn === viewColumnConf[0])
+                            //     : undefined;
+                            // if (editor === vscode.window.activeTextEditor && this.ignoreNextCursorUpdate) {
+                            //     this.ignoreNextCursorUpdate = false;
+                            //     continue;
+                            // }
+                            // if (editor && conf.cursorLine < editor.document.lineCount) {
+                            //     const line = editor.document.lineAt(conf.cursorLine).text;
+                            //     conf.cursorPos = convertByteNumToCharNum(line, normalizedScreenCol);
+                            // } else {
+                            //     conf.cursorPos = 0;
+                            // }
                             gridCursorUpdates.add(grid);
                         }
                     }
@@ -1566,8 +1610,11 @@ export class NVIMPluginController implements vscode.Disposable {
                             line === FIRST_SCREEN_LINE && cells[0] && cells[0][1] === this.numberLineHlId,
                     );
                     const lastLinesEvents = gridEvents.filter(
-                        ([, line, , cells]) =>
-                            line === LAST_SCREEN_LINE && cells[0] && cells[0][1] === this.numberLineHlId,
+                        ([grid, line, , cells]) =>
+                            ((grid === 2 && line === LAST_SCREEN_LINE_FIRST_GRID) ||
+                                (grid > 2 && line === LAST_SCREEN_LINE_OTHER_GRID)) &&
+                            cells[0] &&
+                            cells[0][1] === this.numberLineHlId,
                     );
                     for (const evt of firstLinesEvents) {
                         const [grid] = evt;
@@ -1576,17 +1623,26 @@ export class NVIMPluginController implements vscode.Disposable {
                             gridConf = {
                                 cursorLine: 0,
                                 cursorPos: 0,
+                                screenPos: 0,
                                 screenLine: 0,
-                                topScreenLine: 0,
+                                topScreenLineStr: "      1 ",
+                                bottomScreenLineStr: grid === 2 ? "    200 " : "    201 ",
                                 winId: 0,
                             };
                             this.grids.set(grid, gridConf);
                         }
-                        const lineNum = extractLineNumberFromGridLineEvent(evt, this.numberLineHlId);
-                        if (lineNum != null) {
-                            gridConf.topScreenLine = lineNum;
-                            gridCursorUpdates.add(grid);
-                        }
+                        const topLineStr = processLineNumberStringFromEvent(
+                            evt,
+                            this.numberLineHlId,
+                            gridConf.topScreenLineStr,
+                        );
+                        const topLine = getLineFromLineNumberString(topLineStr);
+                        const bottomLine = topLine + (grid === 2 ? 199 : 200);
+                        const bottomLineStr = convertLineNumberToString(bottomLine + 1);
+
+                        gridConf.topScreenLineStr = topLineStr;
+                        gridConf.bottomScreenLineStr = bottomLineStr;
+                        gridCursorUpdates.add(grid);
                     }
                     for (const evt of lastLinesEvents) {
                         const [grid] = evt;
@@ -1595,17 +1651,25 @@ export class NVIMPluginController implements vscode.Disposable {
                             gridConf = {
                                 cursorLine: 0,
                                 cursorPos: 0,
+                                screenPos: 0,
                                 screenLine: 0,
-                                topScreenLine: 0,
+                                topScreenLineStr: "      1 ",
+                                bottomScreenLineStr: grid === 2 ? "    200 " : "    201 ",
                                 winId: 0,
                             };
                             this.grids.set(grid, gridConf);
                         }
-                        const lineNum = extractLineNumberFromGridLineEvent(evt, this.numberLineHlId);
-                        if (lineNum != null) {
-                            gridConf.topScreenLine = lineNum - LAST_SCREEN_LINE;
-                            gridCursorUpdates.add(grid);
-                        }
+                        const bottomLineStr = processLineNumberStringFromEvent(
+                            evt,
+                            this.numberLineHlId,
+                            gridConf.bottomScreenLineStr,
+                        );
+                        const bottomLine = getLineFromLineNumberString(bottomLineStr);
+                        const topLine = bottomLine - (grid === 2 ? 199 : 200);
+                        const topLineStr = convertLineNumberToString(topLine + 1);
+                        gridConf.bottomScreenLineStr = bottomLineStr;
+                        gridConf.topScreenLineStr = topLineStr;
+                        gridCursorUpdates.add(grid);
                     }
 
                     // eslint-disable-next-line prefer-const
@@ -1624,7 +1688,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             continue;
                         }
                         // const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
-                        const topScreenLine = gridConf.topScreenLine;
+                        const topScreenLine = getLineFromLineNumberString(gridConf.topScreenLineStr);
                         const highlightLine = topScreenLine + row;
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             continue;
@@ -1689,20 +1753,29 @@ export class NVIMPluginController implements vscode.Disposable {
             this.handleModeChange(newModeName);
         }
 
-        if (vscode.window.activeTextEditor) {
-            for (const grid of cursorUpdates) {
-                const gridConf = this.grids.get(grid);
-                if (!gridConf) {
-                    continue;
-                }
-                const columnConf = [...this.editorColumnIdToWinId].find(([, winId]) => winId === gridConf.winId);
-                if (!columnConf) {
-                    continue;
-                }
-                if (vscode.window.activeTextEditor.viewColumn !== columnConf[0]) {
-                    continue;
-                }
-                this.updateCursorPosInEditor(vscode.window.activeTextEditor, gridConf.cursorLine, gridConf.cursorPos);
+        for (const grid of cursorUpdates) {
+            const gridConf = this.grids.get(grid);
+            if (!gridConf) {
+                continue;
+            }
+            const columnConf = [...this.editorColumnIdToWinId].find(([, winId]) => winId === gridConf.winId);
+            if (!columnConf) {
+                continue;
+            }
+            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnConf[0]);
+            if (!editor) {
+                continue;
+            }
+            if (editor === vscode.window.activeTextEditor && this.ignoreNextCursorUpdate) {
+                this.ignoreNextCursorUpdate = false;
+                continue;
+            }
+            const cursor = getEditorCursorPos(editor, gridConf);
+            gridConf.cursorLine = cursor.line;
+            gridConf.cursorPos = cursor.col;
+            // allow to update cursor only for active editor
+            if (editor === vscode.window.activeTextEditor) {
+                this.updateCursorPosInEditor(editor, cursor.line, cursor.col);
             }
         }
 
@@ -2174,12 +2247,14 @@ export class NVIMPluginController implements vscode.Disposable {
             }
             case "insert-line": {
                 const [type] = args as ["before" | "after"];
-                // set isInsertMode explicitly earlier to prevent newline uploading to neovim and cursor jumping
-                this.isInsertMode = true;
-                this.client.command("startinsert");
-                vscode.commands.executeCommand(
+                // need to ignore cursor update to prevent cursor jumping
+                this.ignoreNextCursorUpdate = true;
+                await this.client.command("startinsert");
+                await vscode.commands.executeCommand(
                     type === "before" ? "editor.action.insertLineBefore" : "editor.action.insertLineAfter",
                 );
+                // grid_cursor_goto will unset it, butt let's make sure
+                this.ignoreNextCursorUpdate = false;
                 break;
             }
         }
