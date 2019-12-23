@@ -7,6 +7,7 @@
 - Fix `ma`/`mi` not working when selecting lines upward ( #117 )
 - Changed `ma`/`mi` to skip empty lines. Added `mA`/`mI` for the previous behavior
 - Macro recording fixes
+- Refactored & optimized HL provider (highlight should be faster now)
 
 ## [0.0.42]
 
