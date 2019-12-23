@@ -278,10 +278,10 @@ function getEditorCursorPos(editor: vscode.TextEditor, conf: GridConf): { line: 
     const topScreenLine = getLineFromLineNumberString(conf.topScreenLineStr);
     const cursorLine = topScreenLine + conf.screenLine;
     if (cursorLine >= editor.document.lineCount) {
-        // shouldn't happen
+        // rarely happens, but could, usually for external help files when text is not available now (due to async edit or so)
         return {
-            col: 0,
-            line: 0,
+            col: conf.screenPos,
+            line: cursorLine,
         };
     }
     const line = editor.document.lineAt(cursorLine).text;
@@ -1568,6 +1568,9 @@ export class NVIMPluginController implements vscode.Disposable {
                 // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
                 case "grid_scroll": {
                     for (const [grid] of args as [number, number, number, null, number, number, number][]) {
+                        if (grid === 1) {
+                            continue;
+                        }
                         gridCursorUpdates.add(grid);
                     }
                     break;
