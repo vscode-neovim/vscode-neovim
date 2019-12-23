@@ -222,7 +222,7 @@ function getBytesFromCodePoint(point?: number): number {
     return 4;
 }
 
-function convertByteNumToCharNum(line: string, col: number): number {
+function convertByteNumToCharNum(line: string, col: number, multiBytes2ByteWidth = false): number {
     if (col === 0 || !line) {
         return 0;
     }
@@ -230,7 +230,8 @@ function convertByteNumToCharNum(line: string, col: number): number {
     let currCharNum = 0;
     let totalBytes = 0;
     while (totalBytes < col) {
-        totalBytes += getBytesFromCodePoint(line.codePointAt(currCharNum));
+        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        totalBytes += multiBytes2ByteWidth ? (bytes >= 2 ? 2 : bytes) : bytes;
         currCharNum++;
         if (currCharNum >= line.length) {
             return currCharNum;
@@ -285,7 +286,7 @@ function getEditorCursorPos(editor: vscode.TextEditor, conf: GridConf): { line: 
         };
     }
     const line = editor.document.lineAt(cursorLine).text;
-    const col = convertByteNumToCharNum(line, conf.screenPos);
+    const col = convertByteNumToCharNum(line, conf.screenPos, true);
     return {
         line: cursorLine,
         col,
@@ -1252,7 +1253,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             continue;
                         }
                         this.documentLastChangedVersion.set(uri, editor.document.version + 1);
-                        const cursor = editor.selection.active;
+                        // const cursor = editor.selection.active;
                         const success = await editor.edit(builder => {
                             for (const range of ranges) {
                                 const text = lines.slice(range.newStart, range.newEnd + 1);
@@ -1284,22 +1285,44 @@ export class NVIMPluginController implements vscode.Disposable {
                             // workaround for cursor moving after inserting some text
                             // it's not the ideal solution since there is minor transition from selection to single cursor
                             // todo: another solution is to combine ranges and replacing text starting by prev line when need to insert something
-                            if (!editor.selection.anchor.isEqual(editor.selection.active)) {
-                                // workaround cursor in insert recording mode
-                                // todo: why it's needed???
-                                if (this.isRecording) {
-                                    editor.selections = [
-                                        new vscode.Selection(editor.selection.active, editor.selection.active),
-                                    ];
-                                } else {
-                                    editor.selections = [new vscode.Selection(cursor, cursor)];
+                            // if (!editor.selection.anchor.isEqual(editor.selection.active)) {
+                            //     // workaround cursor in insert recording mode
+                            //     // todo: why it's needed???
+                            //     if (this.isRecording) {
+                            //         editor.selections = [
+                            //             new vscode.Selection(editor.selection.active, editor.selection.active),
+                            //         ];
+                            //     } else {
+                            //         editor.selections = [new vscode.Selection(cursor, cursor)];
+                            //     }
+                            // }
+                            if (!this.isInsertMode) {
+                                // vscode manages cursor after edits very differently so
+                                // try to set cursor pos for the one obtained from neovim. This may be wrong because of race conditions
+                                if (editor.viewColumn) {
+                                    const winId = this.editorColumnIdToWinId.get(editor.viewColumn);
+                                    if (winId) {
+                                        const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
+                                        if (gridConf) {
+                                            editor.selections = [
+                                                new vscode.Selection(
+                                                    gridConf[1].cursorLine,
+                                                    gridConf[1].cursorPos,
+                                                    gridConf[1].cursorLine,
+                                                    gridConf[1].cursorPos,
+                                                ),
+                                            ];
+                                        }
+                                    }
+                                    // also send request in background to resync
+                                    this.resyncCursor();
                                 }
+                            } else if (this.isRecording) {
+                                editor.selections = [
+                                    new vscode.Selection(editor.selection.active, editor.selection.active),
+                                ];
                             }
                             this.documentText.set(uri, editor.document.getText());
-                            // since vscode breaks cursor positions in many cases, resync cursor
-                            if (!this.isInsertMode) {
-                                this.resyncCursor();
-                            }
                         }
                     }
                     // if (workspaceEdit.size) {
@@ -1831,7 +1854,8 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         gridConf[1].cursorLine = cursorLine;
         const lineText = e.document.lineAt(cursorLine).text;
-        gridConf[1].cursorPos = convertByteNumToCharNum(lineText, col0based);
+        // nvim_win_get_cursor uses 1-4 bytes width, while grid_cursor_goto is 2
+        gridConf[1].cursorPos = convertByteNumToCharNum(lineText, col0based, false);
         this.updateCursorPosInEditor(e, gridConf[1].cursorLine, gridConf[1].cursorPos);
     };
 

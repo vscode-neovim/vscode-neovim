@@ -164,6 +164,7 @@ export async function assertContent(
     options: {
         cursor?: [number, number];
         vsCodeCursor?: [number, number];
+        cursorLine?: number;
         content?: string[];
         cursorStyle?: "block" | "underline" | "line";
         mode?: string;
@@ -201,6 +202,20 @@ export async function assertContent(
                 getVScodeCursor(editor),
                 options.vsCodeCursor,
                 `Cursor position in vscode - ${options.vsCodeCursor[0]}:${options.vsCodeCursor[1]}`,
+            );
+        }
+        if (options.cursorLine) {
+            const vscodeCursor = getVScodeCursor(editor);
+            const nvimCursor = await getNeovimCursor(client);
+            assert.deepEqual(
+                vscodeCursor[0],
+                options.cursorLine,
+                `Cursor line position in vscode is not correct: ${vscodeCursor[0]}`,
+            );
+            assert.deepEqual(
+                nvimCursor[0],
+                options.cursorLine,
+                `Cursor line position in neovim is not correct: ${vscodeCursor[0]}`,
             );
         }
         if (options.vsCodeVisibleRange) {
