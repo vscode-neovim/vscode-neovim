@@ -28,18 +28,17 @@ Neovim 0.4.2 or greater
 
 ## Important
 
-* Visual modes are not producing real vscode selections (few versions had this feature previously, but it was implemented through ugly & hacky workarounds). Any vscode commands expecting selection won't work. But don't worry, you can workaround it by calling `call VSCodeNotifyRange("some-vscode-command", line1, line2, 0)` from your vim/custom mapping. Likely you won't needed it all because code commenting/formatting/indenting for visual modes already works out of the box. Also invoking command palette in visual mode through default hotkey (`f1`/`ctrl/cmd+shift+p`) will produce real vscode selection too.
+* Visual modes are not producing real vscode selections (few versions had this feature previously, but it was implemented through ugly & hacky workarounds). Any vscode commands expecting selection won't work. To round the corners, invoking VSCode command picker through the default hotkeys (`f1`/`ctrl/cmd+shift+p`) from visual mode converts vim selection to real vscode selection. Also commenting/indenting/formatting works out of the box too. If you're using some custom mapping for calling vscode commands and depends on real vscode selection, you can use `VSCodeNotifyRange`/`VSCodeNotifyRangePos` (the first one linewise, the latter characterwise) functions which will convert visual mode selection to vscode selection before calling the command. See [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54) and [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98)
 * The extenison for now works best if ```editor.scrollBeyondLastLine``` is disabled.
 * When you type some commands they may be substituted for the another, like ```:write``` will be replaced by ```:Write```. This is normal.
 * File/tab/window management (```:w```/```q```/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindngs/commands. **DO NOT** use vim ```:w```, etc... in scripts/keybindings, they won't work.
-* It's good idea to backup and move your init.vim file and start with new one until #25 is done
 * It's better to use spaces instead of tabs for file indent. `<C-v>` is broken for tab indents
 
 ## VSCode specific features and differences
 
 * O, o keys mapped to vscode ```editor.action.insertLineBefore/insertLineAfter``` command thus dont support count prefix
 * =, == are mapped to ```editor.action.formatSelection```
-* It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not
+* It's possible to call vscode commands from neovim. See ```VSCodeCall/VSCodeNotify``` vim functions in ```vscode-neovim.vim``` file. ```VSCodeCall``` is blocking request, while ```VSCodeNotify``` is not (see below)
 * Scrolling is done by VSCode side. ```<C-d>/<C-u>/etc...``` are slighly different
 * File management commands such as ```e``` / ```w``` / ```q``` etc are mapped to corresponding vscode commands and behavior may be different (see below)
 * ```gf```/```gd```/```<C-]``` are mapped to ```editor.action.revealDefinition``` (Shortcut ```F12```). also ```<C-]>``` works in vim helps files
@@ -81,6 +80,51 @@ else
     " ordinary neovim
 endif
 ```
+
+## Invoking vscode actions from neovim
+
+There are [few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/ecd361ff1968e597e2500e8ce1108830e918cfb8/vim/vscode-neovim.vim#L17-L39) that could be used to invoke any vscode commands:
+
+* `VSCodeNotify(command, ...)`/`VSCodeCall(command, ...)` - invokes vscode command with optional arguments
+* `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)`/`VSCodeCallRange(command, line1, line2, leaveSelection, ...)` - produces real vscode selection from line1 to line2 and invokes vscode command. Linewise. Put 1 for `leaveSelection` argument to leave vscode selection after invoking the command
+* `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`/`VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` - produces real vscode selection from line1.pos1 to line2.pos2 and invokes vscode command. Characterwise
+
+Functions with `Notify` in name are non-blocking, the ones with `Call` are blocking. Generally **use Notify** unless you really need a blocking call
+
+*Examples*:
+
+Produce linewise selection and show vscode commands (default binding)
+```
+function! s:showCommands()
+    let startLine = line("v")
+    let endLine = line(".")
+    call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
+endfunction
+
+xnoremap <silent> <C-P> :<C-u>call <SID>showCommands()<CR>
+```
+
+Produce characterwise selection and show vscode commands (default binding):
+```
+function! s:showCommands()
+    let startPos = getpos("v")
+    let endPos = getpos(".")
+    call VSCodeNotifyRangePos("workbench.action.showCommands", startPos[1], endPos[1], startPos[2], endPos[2], 1)
+endfunction
+
+xnoremap <silent> <C-P> :<C-u>call <SID>showCommands()<CR>
+```
+
+Run Find in files for word under cursor in vscode:
+```
+nnoremap <silent> ? :<C-u>call VSCodeNotify('workbench.action.findInFiles', { 'query': expand('<cword>')})<CR>
+```
+
+Open definition aside (default binding):
+```
+nnoremap <silent> <C-w>gd :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
+```
+
 
 ## Jumplist
 
