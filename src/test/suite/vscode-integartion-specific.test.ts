@@ -220,18 +220,17 @@ describe("VSCode integration specific stuff", () => {
     it("Cursor is ok when go to def into editor in the other pane", async () => {
         const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
         await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        await wait(1500);
+        await sendVSCodeKeys("5j", 0);
         await wait(1000);
 
         const doc2 = await vscode.workspace.openTextDocument(
             path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
         );
         const editor2 = await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two, true);
-        await wait(1000);
-
-        setCursor(5, 1);
-
-        await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
         await wait(1500);
+
+        await vscode.commands.executeCommand("editor.action.revealDefinition", doc1.uri, new vscode.Position(5, 1));
 
         assert.ok(vscode.window.activeTextEditor === editor2);
         await assertContent(

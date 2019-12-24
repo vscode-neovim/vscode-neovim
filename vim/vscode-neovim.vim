@@ -159,9 +159,8 @@ execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 " autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 " Help and other buffer types may explicitly disable line numbers - reenable them
-autocmd BufCreate,BufReadPost * :set conceallevel=0 | :set number | :set numberwidth=8
+autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8
 autocmd WinEnter * call <SID>onWinEnter()
-autocmd WinEnter * :set number | :set numberwidth=8
 autocmd InsertEnter * call <SID>onInsertEnter()
 " autocmd WinNew * :only
 " Disable syntax highlighting since we don't need it anyway

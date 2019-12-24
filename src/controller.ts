@@ -629,6 +629,9 @@ export class NVIMPluginController implements vscode.Disposable {
             ["nvim_set_var", ["vscode_noeditor_buffer", this.noEditorBuffer.id]],
             ["nvim_buf_set_option", [this.noEditorBuffer.id, "modified", true]],
             ["nvim_win_set_buf", [0, this.noEditorBuffer.id]],
+            ["nvim_win_set_option", [firstWin.id, "number", true]],
+            ["nvim_win_set_option", [firstWin.id, "numberwidth", NUMBER_COLUMN_WIDTH]],
+            ["nvim_win_set_option", [firstWin.id, "conceallevel", 0]],
         ];
         for (let i = 1; i < 20; i++) {
             requests.push([
@@ -647,11 +650,16 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.callAtomic(requests);
 
         const wins = await this.client.windows;
-        const clearjumpRequests: [string, unknown[]][] = wins.map(w => [
-            "nvim_win_set_var",
-            [w.id, "vscode_clearjump", true],
-        ]);
-        await this.client.callAtomic(clearjumpRequests);
+        const winOptionsRequests: [string, unknown[]][] = [];
+        for (const w of wins) {
+            winOptionsRequests.push(
+                ["nvim_win_set_var", [w.id, "vscode_clearjump", true]],
+                ["nvim_win_set_option", [firstWin.id, "number", true]],
+                ["nvim_win_set_option", [firstWin.id, "numberwidth", NUMBER_COLUMN_WIDTH]],
+                ["nvim_win_set_option", [firstWin.id, "conceallevel", 0]],
+            );
+        }
+        await this.client.callAtomic(winOptionsRequests);
 
         let currColumn = 1;
         for (const w of wins) {
@@ -807,6 +815,12 @@ export class NVIMPluginController implements vscode.Disposable {
             if (this.managedBufferIds.has(buf.id)) {
                 // !important: need to update cursor in atomic operation
                 requests.push(["nvim_win_set_cursor", [winId, this.getNeovimCursorPosForEditor(editor)]]);
+                // !important: need to set cursor to grid_conf because nvim may not send initial grid_cursor_goto
+                const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
+                if (gridConf) {
+                    gridConf[1].cursorLine = editor.selection.active.line;
+                    gridConf[1].cursorPos = editor.selection.active.character;
+                }
             }
             this.applyCursorStyleToEditor(editor, this.currentModeName);
         }
@@ -885,6 +899,11 @@ export class NVIMPluginController implements vscode.Disposable {
                 // ["nvim_win_set_buf", [winId, buf.id]],
                 ["nvim_win_set_cursor", [winId, this.getNeovimCursorPosForEditor(e)]],
             );
+            const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
+            if (gridConf) {
+                gridConf[1].cursorLine = e.selection.active.line;
+                gridConf[1].cursorPos = e.selection.active.character;
+            }
         }
         if (init) {
             requests.push(["nvim_call_function", ["VSCodeClearJumpIfFirstWin", []]]);
@@ -1693,7 +1712,8 @@ export class NVIMPluginController implements vscode.Disposable {
 
                         gridConf.topScreenLineStr = topLineStr;
                         gridConf.bottomScreenLineStr = bottomLineStr;
-                        gridCursorUpdates.add(grid);
+                        // !important don't put cursor update
+                        // gridCursorUpdates.add(grid);
                     }
                     for (const evt of lastLinesEvents) {
                         const [grid] = evt;
@@ -1720,7 +1740,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         const topLineStr = convertLineNumberToString(topLine + 1);
                         gridConf.bottomScreenLineStr = bottomLineStr;
                         gridConf.topScreenLineStr = topLineStr;
-                        gridCursorUpdates.add(grid);
+                        // gridCursorUpdates.add(grid);
                     }
 
                     // eslint-disable-next-line prefer-const
@@ -1809,6 +1829,10 @@ export class NVIMPluginController implements vscode.Disposable {
                 continue;
             }
             const cursor = getEditorCursorPos(editor, gridConf);
+            const currentCursor = editor.selection.active;
+            if (currentCursor.line === cursor.line && currentCursor.character === cursor.col) {
+                continue;
+            }
             gridConf.cursorLine = cursor.line;
             gridConf.cursorPos = cursor.col;
             // allow to update cursor only for active editor
