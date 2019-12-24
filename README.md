@@ -96,6 +96,7 @@ Functions with `Notify` in name are non-blocking, the ones with `Call` are block
 Produce linewise selection and show vscode commands (default binding)
 ```
 function! s:showCommands()
+    normal! gv
     let startLine = line("v")
     let endLine = line(".")
     call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
@@ -107,6 +108,7 @@ xnoremap <silent> <C-P> :<C-u>call <SID>showCommands()<CR>
 Produce characterwise selection and show vscode commands (default binding):
 ```
 function! s:showCommands()
+    normal! gv
     let startPos = getpos("v")
     let endPos = getpos(".")
     call VSCodeNotifyRangePos("workbench.action.showCommands", startPos[1], endPos[1], startPos[2], endPos[2], 1)
