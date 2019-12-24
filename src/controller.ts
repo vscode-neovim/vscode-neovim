@@ -1473,7 +1473,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     } else {
                         // if there is initial content and it's not currently displayed then it may come
                         // from some mapping. to prevent bad UI commandline transition we delay cmdline appearing here
-                        if (allContent !== "" && !this.commandLine.isDisplayed) {
+                        if (allContent !== "" && allContent !== "'<,'>" && !this.commandLine.isDisplayed) {
                             this.cmdlineTimer = setTimeout(() => this.showCmdOnTimer(allContent, firstc, prompt), 200);
                         } else {
                             this.commandLine.show(allContent, firstc, prompt);
