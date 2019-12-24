@@ -35,10 +35,14 @@ export class CommandLineController implements Disposable {
         if (!this.isDisplayed) {
             this.input.value = "";
             this.isDisplayed = true;
-            this.input.value = initialContent;
+            this.input.value = "";
             this.mode = mode;
             this.input.title = prompt || this.getTitle(mode);
             this.input.show();
+            // display content after cmdline appears - otherwise it will be preselected that is not good when calling from visual mode
+            if (initialContent) {
+                this.input.value = initialContent;
+            }
             // Display completions only after 1.5secons, so it won't bother for simple things like ":w" or ":noh"
             this.completionAllowed = false;
             this.completionItems = [];

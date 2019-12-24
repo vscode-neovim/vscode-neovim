@@ -9,6 +9,7 @@
 - Macro recording fixes
 - Refactored & optimized HL provider (highlight should be faster now)
 - Override default keybindings only when neovim was initialized succesfully ( #112 )
+- Don't preselect `'<,'>` marks when invoking cmdline from visual line ( #111 )
 
 ## [0.0.42]
 
