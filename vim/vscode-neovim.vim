@@ -19,7 +19,11 @@ function! VSCodeCall(cmd, ...)
 endfunction
 
 function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...)
-    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:leaveSelection, a:000)
+    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, 0, 0 a:leaveSelection, a:000)
+endfunction
+
+function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
+    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
 endfunction
 
 function! VSCodeNotify(cmd, ...)
@@ -27,7 +31,11 @@ function! VSCodeNotify(cmd, ...)
 endfunction
 
 function! VSCodeNotifyRange(cmd, line1, line2, leaveSelection, ...)
-    call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:leaveSelection, a:000)
+    call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, 0, 0, a:leaveSelection, a:000)
+endfunction
+
+function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
+    call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
 endfunction
 
 function! VSCodeExtensionCall(cmd, ...)

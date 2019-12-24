@@ -41,9 +41,16 @@ endfunction
 
 function! s:openVSCodeCommandsInVisualMode()
     normal! gv
-    let startLine = line("v")
-    let endLine = line(".")
-    call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
+    let visualmode = visualmode()
+    if visualmode == "V"
+        let startLine = line("v")
+        let endLine = line(".")
+        call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
+    else
+        let startPos = getpos("v")
+        let endPos = getpos(".")
+        call VSCodeNotifyRangePos("workbench.action.showCommands", startPos[1], endPos[1], startPos[2], endPos[2], 1)
+    endif
 endfunction
 
 command! -range -bar VSCodeCommentary call s:vscodeCommentary(<line1>, <line2>)

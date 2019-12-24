@@ -1350,11 +1350,13 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         if (method === "vscode-range-command") {
-            const [vscodeCommand, line1, line2, leaveSelection, args] = events;
+            const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, args] = events;
             this.handleVSCodeRangeCommand(
                 vscodeCommand,
                 line1,
                 line2,
+                pos1,
+                pos2,
                 !!leaveSelection,
                 Array.isArray(args) ? args : [args],
             );
@@ -2106,8 +2108,10 @@ export class NVIMPluginController implements vscode.Disposable {
                     Array.isArray(commandArgs) ? commandArgs : [commandArgs],
                 );
             } else if (eventName === "vscode-range-command") {
-                const [vscodeCommand, line1, line2, commandArgs, leaveSelection] = eventArgs as [
+                const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, commandArgs] = eventArgs as [
                     string,
+                    number,
+                    number,
                     number,
                     number,
                     number,
@@ -2117,6 +2121,8 @@ export class NVIMPluginController implements vscode.Disposable {
                     vscodeCommand,
                     line1,
                     line2,
+                    pos1,
+                    pos2,
                     !!leaveSelection,
                     Array.isArray(commandArgs) ? commandArgs : [commandArgs],
                 );
@@ -2134,22 +2140,61 @@ export class NVIMPluginController implements vscode.Disposable {
         return await this.runVSCodeCommand(command, ...args);
     }
 
+    /**
+     * Produce vscode selection and execute command
+     * @param command VSCode command to execute
+     * @param startLine Start line to select. 1based
+     * @param endLine End line to select. 1based
+     * @param startPos Start pos to select. 1based. If 0 then whole line will be selected
+     * @param endPos End pos to select, 1based. If you then whole line will be selected
+     * @param leaveSelection When true won't clear vscode selection after running the command
+     * @param args Additional args
+     */
     private async handleVSCodeRangeCommand(
         command: string,
         startLine: number,
         endLine: number,
+        startPos: number,
+        endPos: number,
         leaveSelection: boolean,
         args: unknown[],
     ): Promise<unknown> {
         const e = vscode.window.activeTextEditor;
         if (e) {
+            // vi<obj> includes end of line from start pos. This is not very useful, so let's check and remove it
+            // vi<obj> always select from top to bottom
+            if (endLine > startLine) {
+                try {
+                    const lineDef = e.document.lineAt(startLine - 1);
+                    if (startPos > 0 && startPos - 1 >= lineDef.range.end.character) {
+                        startLine++;
+                        startPos = 0;
+                    }
+                } catch {
+                    // ignore
+                }
+            }
             this.shouldIgnoreMouseSelection = true;
             const prevSelections = [...e.selections];
             // startLine is visual start
             if (startLine > endLine) {
-                e.selections = [new vscode.Selection(startLine - 1, 9999999, endLine - 1, 0)];
+                e.selections = [
+                    new vscode.Selection(
+                        startLine - 1,
+                        startPos > 0 ? startPos - 1 : 9999999,
+                        endLine - 1,
+                        endPos > 0 ? endPos - 1 : 0,
+                    ),
+                ];
             } else {
-                e.selections = [new vscode.Selection(startLine - 1, 0, endLine - 1, 9999999)];
+                e.selections = [
+                    new vscode.Selection(
+                        startLine - 1,
+                        startPos > 0 ? startPos - 1 : 0,
+                        endLine - 1,
+                        endPos > 0 ? endPos - 1 : 9999999,
+                    ),
+                ];
             }
             const res = await this.runVSCodeCommand(command, ...args);
             if (!leaveSelection) {
