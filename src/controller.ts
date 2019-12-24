@@ -661,6 +661,8 @@ export class NVIMPluginController implements vscode.Disposable {
 
         this.watchAndApplyNeovimEdits();
         this.isInit = true;
+        await vscode.commands.executeCommand("setContext", "neovim.init", true);
+
         resolveInitPromise();
         for (const e of vscode.window.visibleTextEditors) {
             await this.initBuffer(e);
