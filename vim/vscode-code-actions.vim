@@ -40,6 +40,7 @@ function! s:hover()
 endfunction
 
 function! s:openVSCodeCommandsInVisualMode()
+    normal! gv
     let startLine = line("v")
     let endLine = line(".")
     call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
@@ -87,4 +88,4 @@ nnoremap gk :<C-u>call VSCodeCall('cursorMove', { 'to': 'up', 'by': 'wrappedLine
 nnoremap gj :<C-u>call VSCodeCall('cursorMove', { 'to': 'down', 'by': 'wrappedLine', 'value': v:count ? v:count : 1 })<CR>
 
 " workaround for calling command picker in visual mode
-xnoremap <expr> <C-P> <SID>openVSCodeCommandsInVisualMode()
+xnoremap <silent> <C-P> :<C-u>call <SID>openVSCodeCommandsInVisualMode()<CR>
