@@ -867,6 +867,11 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         this.applyCursorStyleToEditor(e, this.currentModeName);
+        // todo: nvim sometimes doesn't switch current_win when opening vscode with
+        // multiple columns and the cursor is in the second+ column. So let's try to call it immediately
+        if (init) {
+            await this.client.request("nvim_set_current_win", [winId]);
+        }
         const requests: [string, unknown[]][] = [["nvim_set_current_win", [winId]]];
         const uri = e.document.uri.toString();
         const buf = this.uriToBuffer.get(uri);
