@@ -975,10 +975,6 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.isInsertMode) {
             return;
         }
-        // multi-selection
-        if (e.selections.length > 1) {
-            return;
-        }
         // !Important: ignore selection of non active editor.
         // !For peek definition and similar stuff vscode opens another editor and updates selections here
         // !We must ignore it otherwise the cursor will just "jump"
@@ -1016,13 +1012,42 @@ export class NVIMPluginController implements vscode.Disposable {
         if (gridConf[1].cursorLine === cursor.line && gridConf[1].cursorPos === cursor.character) {
             return;
         }
-        let createJumpEntry = !e.kind || e.kind === vscode.TextEditorSelectionChangeKind.Command;
-        const skipJump = this.skipJumpsForUris.get(e.textEditor.document.uri.toString());
-        if (skipJump) {
-            createJumpEntry = false;
-            this.skipJumpsForUris.delete(e.textEditor.document.uri.toString());
+        // multi-selection
+        if (e.selections.length > 1 || !e.selections[0].active.isEqual(e.selections[0].anchor)) {
+            if (e.kind !== vscode.TextEditorSelectionChangeKind.Mouse || !this.mouseSelectionEnabled) {
+                return;
+            } else {
+                const requests: [string, unknown[]][] = [];
+                if (this.currentModeName !== "visual") {
+                    // need to start visual mode from anchor char
+                    const firstPos = e.selections[0].anchor;
+                    const mouseClickPos = this.getNeovimCursorPosForEditor(e.textEditor, firstPos);
+                    requests.push([
+                        "nvim_input_mouse",
+                        // nvim_input_mouse is zero based while getNeovimCursorPosForEditor() returns 1 based line
+                        ["left", "press", "", gridConf[0], mouseClickPos[0] - 1, mouseClickPos[1]],
+                    ]);
+                    requests.push(["nvim_input", ["v"]]);
+                }
+                const lastSelection = e.selections.slice(-1)[0];
+                if (!lastSelection) {
+                    return;
+                }
+                requests.push([
+                    "nvim_win_set_cursor",
+                    [winId, this.getNeovimCursorPosForEditor(e.textEditor, lastSelection.active)],
+                ]);
+                this.client.callAtomic(requests);
+            }
+        } else {
+            let createJumpEntry = !e.kind || e.kind === vscode.TextEditorSelectionChangeKind.Command;
+            const skipJump = this.skipJumpsForUris.get(e.textEditor.document.uri.toString());
+            if (skipJump) {
+                createJumpEntry = false;
+                this.skipJumpsForUris.delete(e.textEditor.document.uri.toString());
+            }
+            this.updateCursorPositionInNeovim(winId, this.getNeovimCursorPosForEditor(e.textEditor), createJumpEntry);
         }
-        this.updateCursorPositionInNeovim(winId, this.getNeovimCursorPosForEditor(e.textEditor), createJumpEntry);
 
         // let shouldUpdateNeovimCursor = false;
 
@@ -1868,8 +1893,8 @@ export class NVIMPluginController implements vscode.Disposable {
         this.updateCursorPosInEditor(e, gridConf[1].cursorLine, gridConf[1].cursorPos);
     };
 
-    private getNeovimCursorPosForEditor = (e: vscode.TextEditor): [number, number] => {
-        const cursor = e.selection.active;
+    private getNeovimCursorPosForEditor = (e: vscode.TextEditor, pos?: vscode.Position): [number, number] => {
+        const cursor = pos || e.selection.active;
         const lineText = e.document.lineAt(cursor.line).text;
         const byteCol = convertCharNumToByteNum(lineText, cursor.character);
         return [cursor.line + 1, byteCol];

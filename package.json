@@ -56,6 +56,11 @@
 					"default": true,
 					"description": "Use Ctrl keys in insert mode"
 				},
+				"vscode-neovim.mouseSelectionStartVisualMode": {
+					"type": "boolean",
+					"default": false,
+					"description": "Mouse selection starts visual mode"
+				},
 				"vscode-neovim.useWSL": {
 					"type": "boolean",
 					"default": false,

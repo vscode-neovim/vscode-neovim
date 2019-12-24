@@ -11,6 +11,7 @@
 - Override default keybindings only when neovim was initialized succesfully ( #112 )
 - Don't preselect `'<,'>` marks when invoking cmdline from visual line ( #111 )
 - Implemented commandline history ( #88 )
+- Add the option to start the visual mode with mouse selection ( #94 )
 
 ## [0.0.42]
 
