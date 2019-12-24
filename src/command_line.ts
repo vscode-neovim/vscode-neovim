@@ -1,4 +1,5 @@
 import { Disposable, window, QuickPick, QuickPickItem, commands } from "vscode";
+import { NeovimClient } from "neovim";
 
 import { GlyphChars } from "./constants";
 
@@ -17,7 +18,10 @@ export class CommandLineController implements Disposable {
 
     private mode = "";
 
-    public constructor() {
+    private neovimClient: NeovimClient;
+
+    public constructor(client: NeovimClient) {
+        this.neovimClient = client;
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;
         this.disposables.push(this.input.onDidAccept(this.onAccept));
@@ -26,6 +30,8 @@ export class CommandLineController implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-word-left-cmdline", this.deleteWord));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-all-cmdline", this.deleteAll));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-char-left-cmdline", this.deleteChar));
+        this.disposables.push(commands.registerCommand("vscode-neovim.history-up-cmdline", this.onHistoryUp));
+        this.disposables.push(commands.registerCommand("vscode-neovim.history-down-cmdline", this.onHistoryDown));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.complete-selection-cmdline", this.acceptSelection),
         );
@@ -196,5 +202,21 @@ export class CommandLineController implements Disposable {
             .concat(sel.label)
             .join(" ");
         this.onChange(this.input.value);
+    };
+
+    private onHistoryUp = async (): Promise<void> => {
+        await this.neovimClient.input("<Up>");
+        const res = await this.neovimClient.callFunction("getcmdline", []);
+        if (res) {
+            this.input.value = res;
+        }
+    };
+
+    private onHistoryDown = async (): Promise<void> => {
+        await this.neovimClient.input("<Down>");
+        const res = await this.neovimClient.callFunction("getcmdline", []);
+        if (res) {
+            this.input.value = res;
+        }
     };
 }

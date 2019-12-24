@@ -565,7 +565,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         this.nvimProc = spawn(useWsl ? "C:\\Windows\\system32\\wsl.exe" : neovimPath, args, {});
         this.client = attach({ proc: this.nvimProc });
-        this.commandLine = new CommandLineController();
+        this.commandLine = new CommandLineController(this.client);
         this.statusLine = new StatusLineController();
         this.commandsController = new CommandsController(this.client);
         this.commandLine.onAccepted = this.onCmdAccept;

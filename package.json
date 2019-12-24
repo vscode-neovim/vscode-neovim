@@ -206,6 +206,14 @@
 				"title": "Neovim: Complete selection cmdline"
 			},
 			{
+				"command": "vscode-neovim.history-up-cmdline",
+				"title": "Neovim: History up cmdline"
+			},
+			{
+				"command": "vscode-neovim.history-down-cmdline",
+				"title": "Neovim: History down cmdline"
+			},
+			{
 				"command": "vscode-neovim.ctrl-b",
 				"title": "Neovim: ctrl-b"
 			},
@@ -341,6 +349,16 @@
 				"key": "ctrl+l",
 				"when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
 				"args": "<C-l>"
+			},
+			{
+				"command": "vscode-neovim.history-up-cmdline",
+				"key": "up",
+				"when": "neovim.mode == cmdline_normal"
+			},
+			{
+				"command": "vscode-neovim.history-down-cmdline",
+				"key": "down",
+				"when": "neovim.mode == cmdline_normal"
 			},
 			{
 				"command": "vscode-neovim.delete-word-left-cmdline",
