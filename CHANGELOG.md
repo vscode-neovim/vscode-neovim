@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.44]
+
+- Hotfix broken `VSCodeCallRange` (commenting/formatting didn't work because of this)
+
 ## [0.0.43]
 
 - Visual modes DON'T produce vscode selections right now. These were implemented through various workarounds, gave really small value and were constant origin of headache. Also this fixes few issues related to visual modes ( #105, #118 ). To round the corners, invoking vscode's command palette (by using default vscode hotkeys) from visual mode will convert neovim visual selection to vscode visual selection, this should cover most use cases. Also, there are `VScodeNotifyRange`/`VSCodeCallRange`/`VSCodeNotifyRangePos`/`VSCodeCallRangePos` vim functions if you need to call vscode command with selection. See [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54) and [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98) if you're doing custom mappings and assuming there is some vscode selection exist. Use `VSCodeNotifyRange` when you don't need a column pos (e.g. for visual line mode) and `VSCodeNotifyRangePos` when you need them (e.g for visual mode).
