@@ -138,6 +138,12 @@ function! s:onWinEnter()
     endif
 endfunction
 
+function! s:runFileTypeDetection()
+    doautocmd BufRead
+    " make sure we disable syntax (global option seems doesn't take effect for 2nd+ windows)
+    set syntax=off
+endfunction
+
 function! s:onInsertEnter()
     let reg = reg_recording()
     if reg != ""
@@ -162,6 +168,7 @@ autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8
 autocmd WinEnter * call <SID>onWinEnter()
 autocmd InsertEnter * call <SID>onInsertEnter()
+autocmd BufAdd * call <SID>runFileTypeDetection()
 " autocmd WinNew * :only
 " Disable syntax highlighting since we don't need it anyway
 " autocmd BufWinEnter * :syntax off

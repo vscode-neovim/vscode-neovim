@@ -717,7 +717,9 @@ export class NVIMPluginController implements vscode.Disposable {
             const buffers = await this.client.buffers;
             buf = buffers.find(b => b.id === bufId);
         } else {
-            const bbuf = await this.client.createBuffer(true, true);
+            // creating initially not listed buffer to prevent firing autocmd events when
+            // buffer name/lines are not yet set. We'll set buflisted after setup
+            const bbuf = await this.client.createBuffer(false, true);
             if (typeof bbuf === "number") {
                 return;
             }
@@ -750,6 +752,7 @@ export class NVIMPluginController implements vscode.Disposable {
         requests.push(["nvim_buf_set_var", [buf.id, "vscode_controlled", true]]);
         requests.push(["nvim_buf_set_name", [buf.id, uri]]);
         requests.push(["nvim_call_function", ["VSCodeClearUndo", [buf.id]]]);
+        requests.push(["nvim_buf_set_option", [buf.id, "buflisted", true]]);
         // this.editorPendingCursor.set(e, { line: cursor.line, col: cursor.character, screenRow: 0, totalSkips: 0 });
         await this.client.callAtomic(requests);
         this.bufferIdToUri.set(buf.id, uri);

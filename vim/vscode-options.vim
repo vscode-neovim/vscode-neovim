@@ -28,3 +28,4 @@ set numberwidth=8
 " Need to know linebreaks for optimized HL
 set listchars+=eol:$
 set list
+set syntax=off

@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.45]
+
+- Fix VIM filetype detection ( #115 ). This means `FileType` autocmd should work correctly now. Also fixes `vim-matchup` plugin
+
 ## [0.0.44]
 
 - Hotfix broken `VSCodeCallRange` (commenting/formatting didn't work because of this)
