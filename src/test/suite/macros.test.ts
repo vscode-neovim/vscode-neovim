@@ -9,6 +9,7 @@ import {
     sendVSCodeKeys,
     assertContent,
     sendEscapeKey,
+    sendVSCodeSpecialKey,
 } from "../utils";
 
 describe("Macros", () => {
@@ -95,6 +96,33 @@ describe("Macros", () => {
         await assertContent(
             {
                 vsCodeCursor: [0, 4],
+            },
+            client,
+        );
+    });
+
+    it("Insert mode is ok after exiting macro insert mode", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["a", "b", "c"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+        await sendVSCodeKeys("qa");
+        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("1");
+
+        await sendEscapeKey(1000);
+        await sendVSCodeKeys("q");
+
+        await sendVSCodeKeys("o", 1000);
+        await sendVSCodeKeys("t");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["a1", "b", "c"],
+                cursor: [0, 1],
             },
             client,
         );

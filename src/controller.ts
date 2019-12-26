@@ -2468,7 +2468,6 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         if (this.isInsertMode) {
-            this.isRecording = false;
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
         }

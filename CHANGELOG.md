@@ -2,7 +2,8 @@
 
 ## [0.0.45]
 
-- Fix VIM filetype detection ( #115 ). This means `FileType` autocmd should work correctly now. Also fixes `vim-matchup` plugin
+- Fix VIM filetype detection ( #115 ). This means `FileType` autocmd should work correctly now. Also fixes `vim-matchup` plugin. This may introduce some side effects from previously disabled filetype plugins - just fill an issue if something doesn't work
+- Fix broken cursor position in insert mode for special keys (such as `del`/`backspace`/etc) if you had recorded a macro in insert mode previously
 
 ## [0.0.44]
 
