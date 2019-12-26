@@ -717,6 +717,8 @@ export class NVIMPluginController implements vscode.Disposable {
             const buffers = await this.client.buffers;
             buf = buffers.find(b => b.id === bufId);
         } else {
+            // creating initially not listed buffer to prevent firing autocmd events when
+            // buffer name/lines are not yet set. We'll set buflisted after setup
             const bbuf = await this.client.createBuffer(false, true);
             if (typeof bbuf === "number") {
                 return;
