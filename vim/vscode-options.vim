@@ -29,3 +29,4 @@ set numberwidth=8
 set listchars+=eol:$
 set list
 set syntax=off
+set signcolumn=no
