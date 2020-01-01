@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.46]
+- Update `neovim-client` to latest version. This should eliminate delay between operations and generally improve the performance
+- Fix cursor movement for 2-byte chars ( #127 )
+
 ## [0.0.45]
 
 - Fix VIM filetype detection ( #115 ). This means `FileType` autocmd should work correctly now. Also fixes `vim-matchup` plugin. This may introduce some side effects from previously disabled filetype plugins - just fill an issue if something doesn't work
