@@ -3,7 +3,9 @@
 	"displayName": "Neo Vim",
 	"description": "Real VIM in your Visual Studio Code",
 	"publisher": "asvetliakov",
-	"extensionKind": ["ui"],
+	"extensionKind": [
+		"ui"
+	],
 	"version": "0.0.45",
 	"repository": {
 		"type": "git",
@@ -980,6 +982,6 @@
 	"dependencies": {
 		"fast-diff": "^1.2.0",
 		"lodash": "^4.17.15",
-		"neovim": "^4.5.0"
+		"neovim": "^4.7.0"
 	}
 }
