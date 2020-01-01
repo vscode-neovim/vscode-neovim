@@ -222,7 +222,7 @@ function getBytesFromCodePoint(point?: number): number {
     return 4;
 }
 
-function convertByteNumToCharNum(line: string, col: number, multiBytes2ByteWidth = false): number {
+function convertByteNumToCharNum(line: string, col: number, byteWorkaround = false): number {
     if (col === 0 || !line) {
         return 0;
     }
@@ -230,8 +230,12 @@ function convertByteNumToCharNum(line: string, col: number, multiBytes2ByteWidth
     let currCharNum = 0;
     let totalBytes = 0;
     while (totalBytes < col) {
-        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
-        totalBytes += multiBytes2ByteWidth ? (bytes >= 2 ? 2 : bytes) : bytes;
+        let bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        // VIM treats 2 bytes as 1 char pos (https://github.com/asvetliakov/vscode-neovim/issues/127)
+        if (byteWorkaround && bytes === 2) {
+            bytes = 1;
+        }
+        totalBytes += byteWorkaround ? (bytes >= 2 ? 2 : bytes) : bytes;
         currCharNum++;
         if (currCharNum >= line.length) {
             return currCharNum;
@@ -248,7 +252,10 @@ function convertCharNumToByteNum(line: string, col: number): number {
     let currCharNum = 0;
     let totalBytes = 0;
     while (currCharNum < col) {
-        totalBytes += getBytesFromCodePoint(line.codePointAt(currCharNum));
+        // VIM treats 2 bytes as 1 char pos for grid_cursor_goto/grid_lines (https://github.com/asvetliakov/vscode-neovim/issues/127)
+        // but for setting cursor we must use original byte length
+        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        totalBytes += bytes;
         currCharNum++;
         if (currCharNum >= line.length) {
             return currCharNum;
@@ -264,9 +271,15 @@ function getStartColForHL(line: string, byteCol: number): number {
     let currByteCol = 0;
     let currCharNum = 0;
     while (currByteCol < byteCol) {
-        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
-        // HL treats 3+ byte width treats as 2 bytes, see https://github.com/asvetliakov/vscode-neovim/issues/69
-        currByteCol += bytes >= 2 ? 2 : bytes;
+        let bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        if (bytes >= 3) {
+            // HL treats 3+ byte width treats as 2 bytes, see https://github.com/asvetliakov/vscode-neovim/issues/69
+            bytes = 2;
+        } else if (bytes === 2) {
+            // VIM treats 2 bytes as 1 char pos (https://github.com/asvetliakov/vscode-neovim/issues/127)
+            bytes = 1;
+        }
+        currByteCol += bytes;
         currCharNum++;
         if (currCharNum >= line.length) {
             return currCharNum;
