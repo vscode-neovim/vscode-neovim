@@ -45,6 +45,19 @@ Neovim 0.4.2 or greater
 * ```gF```/```gD``` are mapped to ```editor.action.peekDefinition``` (opens definition in peek)
 * ```<C-w>gF```/```<C-w>gf```/```<C-w>gd``` are mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
 
+## Performance problems
+
+If you have any performance problems (cursor jitter usually) make sure you're not using these kinds of extensions:
+
+* Line number extensions (VSCode has built-in support for normal/relative line numbers)
+* Indent guide extensions (VSCode has built-in indent guides)
+* Brackets highlighter extensions (VSCode has built-in feature)
+* Anything that renders decorators/put something into vscode gutter very often, e.g. on each cursor/line move
+
+Such extension may be fine and work well, but combined with any extension which should control the cursor position (such as any vim extension) it may work very bad, due to shared vscode extension host between all extensions (E.g. one extension is taking the control over the host and blocking the other extension, this produces jitter).
+
+If you're not sure, disable all other extensions except mine, **reload vscode/window** and see if the problem persist before reporting.
+
 ## Enabling jj or jk as escape keys from the insert mode
 
 Put into your keybindings.json:
