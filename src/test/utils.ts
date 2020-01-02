@@ -258,7 +258,7 @@ export async function assertContent(
     }
 }
 
-export async function sendEscapeKey(waitTimeout = 500): Promise<void> {
+export async function sendEscapeKey(waitTimeout = 1000): Promise<void> {
     await commands.executeCommand("vscode-neovim.escape");
     await wait(waitTimeout);
 }
@@ -312,9 +312,6 @@ export async function closeAllActiveEditors(escape = true): Promise<void> {
     if (escape) {
         await sendEscapeKey();
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for (const _e of window.visibleTextEditors) {
-        await closeActiveEditor(false);
-    }
+    await commands.executeCommand("workbench.action.closeAllEditors");
     await wait(1000);
 }

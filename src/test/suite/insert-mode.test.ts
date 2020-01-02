@@ -368,7 +368,7 @@ describe("Insert mode and buffer syncronization", () => {
 
         await sendVSCodeKeys("j", 500);
         await sendVSCodeKeys("I", 1000);
-        await sendVSCodeKeys("\n".repeat(50));
+        await sendVSCodeKeys("\n".repeat(50), 0);
         await sendEscapeKey(1000);
 
         await assertContent(

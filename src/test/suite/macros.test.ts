@@ -99,6 +99,8 @@ describe("Macros", () => {
             },
             client,
         );
+        await sendEscapeKey();
+        await sendVSCodeKeys("q");
     });
 
     it("Insert mode is ok after exiting macro insert mode", async () => {
@@ -107,11 +109,11 @@ describe("Macros", () => {
         });
         await vscode.window.showTextDocument(doc);
         await wait();
-        await sendVSCodeKeys("qa");
+        await sendVSCodeKeys("qb");
         await sendVSCodeKeys("A");
         await sendVSCodeKeys("1");
 
-        await sendEscapeKey(1000);
+        await sendEscapeKey();
         await sendVSCodeKeys("q");
 
         await sendVSCodeKeys("o", 1000);
