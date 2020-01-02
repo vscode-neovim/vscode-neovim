@@ -1371,18 +1371,17 @@ export class NVIMPluginController implements vscode.Disposable {
                                     if (winId) {
                                         const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
                                         if (gridConf) {
+                                            const cursorPos = getEditorCursorPos(editor, gridConf[1]);
                                             editor.selections = [
                                                 new vscode.Selection(
-                                                    gridConf[1].cursorLine,
-                                                    gridConf[1].cursorPos,
-                                                    gridConf[1].cursorLine,
-                                                    gridConf[1].cursorPos,
+                                                    cursorPos.line,
+                                                    cursorPos.col,
+                                                    cursorPos.line,
+                                                    cursorPos.col,
                                                 ),
                                             ];
                                         }
                                     }
-                                    // also send request in background to resync
-                                    this.resyncCursor();
                                 }
                             } else if (this.isRecording) {
                                 editor.selections = [
@@ -1906,31 +1905,6 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         vscode.commands.executeCommand("setContext", "neovim.mode", modeName);
         this.applyCursorStyleToEditor(e, modeName);
-    };
-
-    private resyncCursor = async (): Promise<void> => {
-        const e = vscode.window.activeTextEditor;
-        if (!e || !e.viewColumn) {
-            return;
-        }
-        const winId = this.editorColumnIdToWinId.get(e.viewColumn);
-        if (!winId) {
-            return;
-        }
-        const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
-        if (!gridConf) {
-            return;
-        }
-        const [line1based, col0based] = await this.client.callFunction("nvim_win_get_cursor", [winId]);
-        const cursorLine = line1based - 1;
-        if (cursorLine >= e.document.lineCount) {
-            return;
-        }
-        gridConf[1].cursorLine = cursorLine;
-        const lineText = e.document.lineAt(cursorLine).text;
-        // nvim_win_get_cursor uses 1-4 bytes width, while grid_cursor_goto is 2
-        gridConf[1].cursorPos = convertByteNumToCharNum(lineText, col0based, false);
-        this.updateCursorPosInEditor(e, gridConf[1].cursorLine, gridConf[1].cursorPos);
     };
 
     private getNeovimCursorPosForEditor = (e: vscode.TextEditor, pos?: vscode.Position): [number, number] => {
