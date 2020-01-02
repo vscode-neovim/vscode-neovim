@@ -5,306 +5,13 @@ import vscode from "vscode";
 import { attach, Buffer as NeovimBuffer, NeovimClient, Window } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
 import { ATTACH } from "neovim/lib/api/Buffer";
-import diff, { Diff } from "fast-diff";
+import diff from "fast-diff";
 
+import * as Utils from "./utils";
 import { CommandLineController } from "./command_line";
 import { StatusLineController } from "./status_line";
 import { HighlightProvider, HighlightConfiguration } from "./highlight_provider";
 import { CommandsController } from "./commands_controller";
-
-interface EditRange {
-    start: number;
-    end: number;
-    newStart: number;
-    newEnd: number;
-    type: "changed" | "removed" | "added";
-}
-
-interface GridConf {
-    winId: number;
-    cursorLine: number;
-    cursorPos: number;
-    screenLine: number;
-    screenPos: number;
-    topScreenLineStr: string;
-    bottomScreenLineStr: string;
-}
-
-type GridLineEvent = [number, number, number, [string, number, number][]];
-
-function processLineNumberStringFromEvent(event: GridLineEvent, lineNumberHlId: number, prevString: string): string {
-    const [, , colStart, cells] = event;
-    if (!cells.length || cells[0][1] !== lineNumberHlId) {
-        return prevString;
-    }
-
-    let lineNumStr = "";
-    for (const [text, hlId, repeat] of cells) {
-        if (hlId != null && hlId !== lineNumberHlId) {
-            break;
-        }
-        for (let i = 0; i < (repeat || 1); i++) {
-            lineNumStr += text;
-        }
-    }
-    const newStr = prevString.slice(0, colStart) + lineNumStr;
-    return newStr;
-}
-
-function getLineFromLineNumberString(lineStr: string): number {
-    const num = parseInt(lineStr.trim(), 10);
-    return isNaN(num) ? 0 : num - 1;
-}
-
-function convertLineNumberToString(line: number): string {
-    let lineNumStr = line.toString(10);
-    // prepend " " for empty lines
-    for (let i = lineNumStr.length; i < 7; i++) {
-        lineNumStr = " " + lineNumStr;
-    }
-    return lineNumStr + " ";
-}
-
-// Copied from https://github.com/google/diff-match-patch/blob/master/javascript/diff_match_patch_uncompressed.js
-function diffLineToChars(text1: string, text2: string): { chars1: string; chars2: string; lineArray: string[] } {
-    const lineArray: string[] = []; // e.g. lineArray[4] == 'Hello\n'
-    const lineHash: { [key: string]: number } = {}; // e.g. lineHash['Hello\n'] == 4
-
-    // '\x00' is a valid character, but various debuggers don't like it.
-    // So we'll insert a junk entry to avoid generating a null character.
-    lineArray[0] = "";
-
-    /**
-     * Split a text into an array of strings.  Reduce the texts to a string of
-     * hashes where each Unicode character represents one line.
-     * Modifies linearray and linehash through being a closure.
-     * @param {string} text String to encode.
-     * @return {string} Encoded string.
-     * @private
-     */
-    const linesToCharsMunge = (text: string, maxLines: number): string => {
-        let chars = "";
-        // Walk the text, pulling out a substring for each line.
-        // text.split('\n') would would temporarily double our memory footprint.
-        // Modifying text would create many large strings to garbage collect.
-        let lineStart = 0;
-        let lineEnd = -1;
-        // Keeping our own length variable is faster than looking it up.
-        let lineArrayLength = lineArray.length;
-        while (lineEnd < text.length - 1) {
-            lineEnd = text.indexOf("\n", lineStart);
-            if (lineEnd == -1) {
-                lineEnd = text.length - 1;
-            }
-            let line = text.substring(lineStart, lineEnd + 1);
-
-            // eslint-disable-next-line no-prototype-builtins
-            if (lineHash.hasOwnProperty ? lineHash.hasOwnProperty(line) : lineHash[line] !== undefined) {
-                chars += String.fromCharCode(lineHash[line]);
-            } else {
-                if (lineArrayLength == maxLines) {
-                    // Bail out at 65535 because
-                    // String.fromCharCode(65536) == String.fromCharCode(0)
-                    line = text.substring(lineStart);
-                    lineEnd = text.length;
-                }
-                chars += String.fromCharCode(lineArrayLength);
-                lineHash[line] = lineArrayLength;
-                lineArray[lineArrayLength++] = line;
-            }
-            lineStart = lineEnd + 1;
-        }
-        return chars;
-    };
-    // Allocate 2/3rds of the space for text1, the rest for text2.
-    const chars1 = linesToCharsMunge(text1, 40000);
-    const chars2 = linesToCharsMunge(text2, 65535);
-    return { chars1: chars1, chars2: chars2, lineArray: lineArray };
-}
-
-function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
-    const ranges: EditRange[] = [];
-    // 0 - not changed, diff.length is length of non changed lines
-    // 1 - added, length is added lines
-    // -1 removed, length is removed lines
-    let oldIdx = 0;
-    let newIdx = 0;
-    let currRange: EditRange | undefined;
-    let currRangeDiff = 0;
-    for (let i = 0; i < diffs.length; i++) {
-        const [diffRes, diffStr] = diffs[i];
-        if (diffRes === 0) {
-            if (currRange) {
-                // const diff = currRange.newEnd - currRange.newStart - (currRange.end - currRange.start);
-                if (currRange.type === "changed") {
-                    // changed range is inclusive
-                    oldIdx += 1 + (currRange.end - currRange.start);
-                    newIdx += 1 + (currRange.newEnd - currRange.newStart);
-                } else if (currRange.type === "added") {
-                    // added range is non inclusive
-                    newIdx += Math.abs(currRangeDiff);
-                } else if (currRange.type === "removed") {
-                    // removed range is non inclusive
-                    oldIdx += Math.abs(currRangeDiff);
-                }
-                ranges.push(currRange);
-                currRange = undefined;
-                currRangeDiff = 0;
-            }
-            oldIdx += diffStr.length;
-            newIdx += diffStr.length;
-            // if first change is single newline, then it's being eaten into the equal diff. probably comes from optimization by trimming common prefix?
-            // if (
-            //     ranges.length === 0 &&
-            //     diffStr.length !== 1 &&
-            //     diffs[i + 1] &&
-            //     diffs[i + 1][0] === 1 &&
-            //     diffs[i + 1][1].length === 1 &&
-            //     diffs[i + 1][1].charCodeAt(0) === 3
-            // ) {
-            //     oldIdx--;
-            //     newIdx--;
-            // }
-        } else {
-            if (!currRange) {
-                currRange = {
-                    start: oldIdx,
-                    end: oldIdx,
-                    newStart: newIdx,
-                    newEnd: newIdx,
-                    type: "changed",
-                };
-                currRangeDiff = 0;
-            }
-            if (diffRes === -1) {
-                // handle single string change, the diff will be -1,1 in this case
-                if (diffStr.length === 1 && diffs[i + 1] && diffs[i + 1][0] === 1 && diffs[i + 1][1].length === 1) {
-                    i++;
-                    continue;
-                }
-                currRange.type = "removed";
-                currRange.end += diffStr.length - 1;
-                currRangeDiff = -diffStr.length;
-            } else {
-                if (currRange.type === "removed") {
-                    currRange.type = "changed";
-                } else {
-                    currRange.type = "added";
-                }
-                currRange.newEnd += diffStr.length - 1;
-                currRangeDiff += diffStr.length;
-            }
-        }
-    }
-    if (currRange) {
-        ranges.push(currRange);
-    }
-    return ranges;
-}
-
-function getBytesFromCodePoint(point?: number): number {
-    if (point == null) {
-        return 0;
-    }
-    if (point <= 0x7f) {
-        return 1;
-    }
-    if (point <= 0x7ff) {
-        return 2;
-    }
-    if (point >= 0xd800 && point <= 0xdfff) {
-        // Surrogate pair: These take 4 bytes in UTF-8 and 2 chars in UCS-2
-        return 4;
-    }
-    if (point < 0xffff) {
-        return 3;
-    }
-    return 4;
-}
-
-function convertByteNumToCharNum(line: string, col: number, byteWorkaround = false): number {
-    if (col === 0 || !line) {
-        return 0;
-    }
-
-    let currCharNum = 0;
-    let totalBytes = 0;
-    while (totalBytes < col) {
-        let bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
-        // VIM treats 2 bytes as 1 char pos (https://github.com/asvetliakov/vscode-neovim/issues/127)
-        if (byteWorkaround && bytes === 2) {
-            bytes = 1;
-        }
-        totalBytes += byteWorkaround ? (bytes >= 2 ? 2 : bytes) : bytes;
-        currCharNum++;
-        if (currCharNum >= line.length) {
-            return currCharNum;
-        }
-    }
-    return currCharNum;
-}
-
-function convertCharNumToByteNum(line: string, col: number): number {
-    if (col === 0 || !line) {
-        return 0;
-    }
-
-    let currCharNum = 0;
-    let totalBytes = 0;
-    while (currCharNum < col) {
-        // VIM treats 2 bytes as 1 char pos for grid_cursor_goto/grid_lines (https://github.com/asvetliakov/vscode-neovim/issues/127)
-        // but for setting cursor we must use original byte length
-        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
-        totalBytes += bytes;
-        currCharNum++;
-        if (currCharNum >= line.length) {
-            return currCharNum;
-        }
-    }
-    return totalBytes;
-}
-
-function getStartColForHL(line: string, byteCol: number): number {
-    if (!line) {
-        return 0;
-    }
-    let currByteCol = 0;
-    let currCharNum = 0;
-    while (currByteCol < byteCol) {
-        let bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
-        if (bytes >= 3) {
-            // HL treats 3+ byte width treats as 2 bytes, see https://github.com/asvetliakov/vscode-neovim/issues/69
-            bytes = 2;
-        } else if (bytes === 2) {
-            // VIM treats 2 bytes as 1 char pos (https://github.com/asvetliakov/vscode-neovim/issues/127)
-            bytes = 1;
-        }
-        currByteCol += bytes;
-        currCharNum++;
-        if (currCharNum >= line.length) {
-            return currCharNum;
-        }
-    }
-    return currCharNum;
-}
-
-function getEditorCursorPos(editor: vscode.TextEditor, conf: GridConf): { line: number; col: number } {
-    const topScreenLine = getLineFromLineNumberString(conf.topScreenLineStr);
-    const cursorLine = topScreenLine + conf.screenLine;
-    if (cursorLine >= editor.document.lineCount) {
-        // rarely happens, but could, usually for external help files when text is not available now (due to async edit or so)
-        return {
-            col: conf.screenPos,
-            line: cursorLine,
-        };
-    }
-    const line = editor.document.lineAt(cursorLine).text;
-    const col = convertByteNumToCharNum(line, conf.screenPos, true);
-    return {
-        line: cursorLine,
-        col,
-    };
-}
 
 interface CursorMode {
     /**
@@ -351,10 +58,6 @@ interface OtherMode {
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
-}
-
-interface RedrawHighlightsUpdates {
-    [key: string]: { [key: string]: string | "remove" };
 }
 
 // to not deal with screenrow positioning, we set height to high value and scrolloff to value / 2. so screenrow will be always constant
@@ -494,7 +197,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private skipJumpsForUris: Map<string, boolean> = new Map();
 
-    private grids: Map<number, GridConf> = new Map();
+    private grids: Map<number, Utils.GridConf> = new Map();
 
     private numberLineHlId = 0;
 
@@ -1313,9 +1016,9 @@ export class NVIMPluginController implements vscode.Disposable {
                         // add few lines to the end otherwise diff may be wrong for a newline characters
                         oldText += `${eol}end${eol}end`;
                         newText += `${eol}end${eol}end`;
-                        const diffPrepare = diffLineToChars(oldText, newText);
+                        const diffPrepare = Utils.diffLineToChars(oldText, newText);
                         const d = diff(diffPrepare.chars1, diffPrepare.chars2);
-                        const ranges = prepareEditRangesFromDiff(d);
+                        const ranges = Utils.prepareEditRangesFromDiff(d);
                         if (!ranges.length) {
                             continue;
                         }
@@ -1371,7 +1074,7 @@ export class NVIMPluginController implements vscode.Disposable {
                                     if (winId) {
                                         const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
                                         if (gridConf) {
-                                            const cursorPos = getEditorCursorPos(editor, gridConf[1]);
+                                            const cursorPos = Utils.getEditorCursorPos(editor, gridConf[1]);
                                             editor.selections = [
                                                 new vscode.Selection(
                                                     cursorPos.line,
@@ -1688,7 +1391,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
                 case "grid_line": {
                     // [grid, row, colStart, cells: [text, hlId, repeat]]
-                    const gridEvents = args as GridLineEvent[];
+                    const gridEvents = args as Utils.GridLineEvent[];
                     // align topScreenLine if needed. we need to look for both FIRST_SCREEN_LINE and LAST_SCREEN_LINE because nvim may replace lines only at bottom/top
                     const firstLinesEvents = gridEvents.filter(
                         ([, line, , cells]) =>
@@ -1716,14 +1419,14 @@ export class NVIMPluginController implements vscode.Disposable {
                             };
                             this.grids.set(grid, gridConf);
                         }
-                        const topLineStr = processLineNumberStringFromEvent(
+                        const topLineStr = Utils.processLineNumberStringFromEvent(
                             evt,
                             this.numberLineHlId,
                             gridConf.topScreenLineStr,
                         );
-                        const topLine = getLineFromLineNumberString(topLineStr);
+                        const topLine = Utils.getLineFromLineNumberString(topLineStr);
                         const bottomLine = topLine + (grid === 2 ? 199 : 200);
-                        const bottomLineStr = convertLineNumberToString(bottomLine + 1);
+                        const bottomLineStr = Utils.convertLineNumberToString(bottomLine + 1);
 
                         gridConf.topScreenLineStr = topLineStr;
                         gridConf.bottomScreenLineStr = bottomLineStr;
@@ -1745,14 +1448,14 @@ export class NVIMPluginController implements vscode.Disposable {
                             };
                             this.grids.set(grid, gridConf);
                         }
-                        const bottomLineStr = processLineNumberStringFromEvent(
+                        const bottomLineStr = Utils.processLineNumberStringFromEvent(
                             evt,
                             this.numberLineHlId,
                             gridConf.bottomScreenLineStr,
                         );
-                        const bottomLine = getLineFromLineNumberString(bottomLineStr);
+                        const bottomLine = Utils.getLineFromLineNumberString(bottomLineStr);
                         const topLine = bottomLine - (grid === 2 ? 199 : 200);
-                        const topLineStr = convertLineNumberToString(topLine + 1);
+                        const topLineStr = Utils.convertLineNumberToString(topLine + 1);
                         gridConf.bottomScreenLineStr = bottomLineStr;
                         gridConf.topScreenLineStr = topLineStr;
                         // gridCursorUpdates.add(grid);
@@ -1780,7 +1483,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             continue;
                         }
                         // const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
-                        const topScreenLine = getLineFromLineNumberString(gridConf.topScreenLineStr);
+                        const topScreenLine = Utils.getLineFromLineNumberString(gridConf.topScreenLineStr);
                         const highlightLine = topScreenLine + row;
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             if (highlightLine > 0) {
@@ -1804,7 +1507,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         } else {
                             const line = editor.document.lineAt(highlightLine).text;
                             // shift left start col (in vim linenumber is accounted, while in vscode don't)
-                            finalStartCol = getStartColForHL(line, colStart - NUMBER_COLUMN_WIDTH);
+                            finalStartCol = Utils.getStartColForHL(line, colStart - NUMBER_COLUMN_WIDTH);
                         }
                         this.highlightProvider.processHLCellsEvent(grid, row, finalStartCol, isExternal, cells);
                         gridHLUpdates.add(grid);
@@ -1843,7 +1546,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 this.ignoreNextCursorUpdate = false;
                 continue;
             }
-            const cursor = getEditorCursorPos(editor, gridConf);
+            const cursor = Utils.getEditorCursorPos(editor, gridConf);
             const currentCursor = editor.selection.active;
             if (currentCursor.line === cursor.line && currentCursor.character === cursor.col) {
                 continue;
@@ -1871,7 +1574,7 @@ export class NVIMPluginController implements vscode.Disposable {
             }
             const hls = this.highlightProvider.getGridHighlights(
                 grid,
-                getLineFromLineNumberString(gridConf.topScreenLineStr),
+                Utils.getLineFromLineNumberString(gridConf.topScreenLineStr),
             );
             for (const [decorator, ranges] of hls) {
                 editor.setDecorations(decorator, ranges);
@@ -1910,7 +1613,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private getNeovimCursorPosForEditor = (e: vscode.TextEditor, pos?: vscode.Position): [number, number] => {
         const cursor = pos || e.selection.active;
         const lineText = e.document.lineAt(cursor.line).text;
-        const byteCol = convertCharNumToByteNum(lineText, cursor.character);
+        const byteCol = Utils.convertCharNumToByteNum(lineText, cursor.character);
         return [cursor.line + 1, byteCol];
     };
 
@@ -2393,9 +2096,9 @@ export class NVIMPluginController implements vscode.Disposable {
             origText += `${eol}end${eol}end`;
             newText += `${eol}end${eol}end`;
             // }
-            const diffPrepare = diffLineToChars(origText, newText);
+            const diffPrepare = Utils.diffLineToChars(origText, newText);
             const d = diff(diffPrepare.chars1, diffPrepare.chars2);
-            const ranges = prepareEditRangesFromDiff(d);
+            const ranges = Utils.prepareEditRangesFromDiff(d);
             if (!ranges.length) {
                 continue;
             }
