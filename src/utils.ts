@@ -1,4 +1,5 @@
 import { Diff } from "fast-diff";
+import { TextEditor } from "vscode";
 
 export interface EditRange {
     start: number;
@@ -6,6 +7,16 @@ export interface EditRange {
     newStart: number;
     newEnd: number;
     type: "changed" | "removed" | "added";
+}
+
+export interface GridConf {
+    winId: number;
+    cursorLine: number;
+    cursorPos: number;
+    screenLine: number;
+    screenPos: number;
+    topScreenLineStr: string;
+    bottomScreenLineStr: string;
 }
 
 export type GridLineEvent = [number, number, number, [string, number, number][]];
@@ -182,4 +193,108 @@ export function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
         ranges.push(currRange);
     }
     return ranges;
+}
+
+export function getBytesFromCodePoint(point?: number): number {
+    if (point == null) {
+        return 0;
+    }
+    if (point <= 0x7f) {
+        return 1;
+    }
+    if (point <= 0x7ff) {
+        return 2;
+    }
+    if (point >= 0xd800 && point <= 0xdfff) {
+        // Surrogate pair: These take 4 bytes in UTF-8 and 2 chars in UCS-2
+        return 4;
+    }
+    if (point < 0xffff) {
+        return 3;
+    }
+    return 4;
+}
+
+export function convertByteNumToCharNum(line: string, col: number, byteWorkaround = false): number {
+    if (col === 0 || !line) {
+        return 0;
+    }
+
+    let currCharNum = 0;
+    let totalBytes = 0;
+    while (totalBytes < col) {
+        let bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        // VIM treats 2 bytes as 1 char pos (https://github.com/asvetliakov/vscode-neovim/issues/127)
+        if (byteWorkaround && bytes === 2) {
+            bytes = 1;
+        }
+        totalBytes += byteWorkaround ? (bytes >= 2 ? 2 : bytes) : bytes;
+        currCharNum++;
+        if (currCharNum >= line.length) {
+            return currCharNum;
+        }
+    }
+    return currCharNum;
+}
+
+export function convertCharNumToByteNum(line: string, col: number): number {
+    if (col === 0 || !line) {
+        return 0;
+    }
+
+    let currCharNum = 0;
+    let totalBytes = 0;
+    while (currCharNum < col) {
+        // VIM treats 2 bytes as 1 char pos for grid_cursor_goto/grid_lines (https://github.com/asvetliakov/vscode-neovim/issues/127)
+        // but for setting cursor we must use original byte length
+        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        totalBytes += bytes;
+        currCharNum++;
+        if (currCharNum >= line.length) {
+            return currCharNum;
+        }
+    }
+    return totalBytes;
+}
+
+export function getStartColForHL(line: string, byteCol: number): number {
+    if (!line) {
+        return 0;
+    }
+    let currByteCol = 0;
+    let currCharNum = 0;
+    while (currByteCol < byteCol) {
+        let bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        if (bytes >= 3) {
+            // HL treats 3+ byte width treats as 2 bytes, see https://github.com/asvetliakov/vscode-neovim/issues/69
+            bytes = 2;
+        } else if (bytes === 2) {
+            // VIM treats 2 bytes as 1 char pos (https://github.com/asvetliakov/vscode-neovim/issues/127)
+            bytes = 1;
+        }
+        currByteCol += bytes;
+        currCharNum++;
+        if (currCharNum >= line.length) {
+            return currCharNum;
+        }
+    }
+    return currCharNum;
+}
+
+export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: number; col: number } {
+    const topScreenLine = getLineFromLineNumberString(conf.topScreenLineStr);
+    const cursorLine = topScreenLine + conf.screenLine;
+    if (cursorLine >= editor.document.lineCount) {
+        // rarely happens, but could, usually for external help files when text is not available now (due to async edit or so)
+        return {
+            col: conf.screenPos,
+            line: cursorLine,
+        };
+    }
+    const line = editor.document.lineAt(cursorLine).text;
+    const col = convertByteNumToCharNum(line, conf.screenPos, true);
+    return {
+        line: cursorLine,
+        col,
+    };
 }
