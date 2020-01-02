@@ -6,7 +6,7 @@
 	"extensionKind": [
 		"ui"
 	],
-	"version": "0.0.45",
+	"version": "0.0.46",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/asvetliakov/vscode-neovim"
