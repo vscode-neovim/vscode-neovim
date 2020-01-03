@@ -67,8 +67,7 @@ const NVIM_WIN_HEIGHT = 201;
 const NVIM_WIN_WIDTH = 500;
 
 const FIRST_SCREEN_LINE = 0;
-const LAST_SCREEN_LINE_FIRST_GRID = 199;
-const LAST_SCREEN_LINE_OTHER_GRID = 200;
+const LAST_SCREEN_LINE = 200;
 
 // set numberwidth=8
 const NUMBER_COLUMN_WIDTH = 8;
@@ -1327,7 +1326,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             screenPos: 0,
                             screenLine: 0,
                             topScreenLineStr: "      1 ",
-                            bottomScreenLineStr: "    200 ",
+                            bottomScreenLineStr: "    201 ",
                         });
                     } else {
                         const conf = this.grids.get(grid)!;
@@ -1353,7 +1352,7 @@ export class NVIMPluginController implements vscode.Disposable {
                                 screenPos: 0,
                                 screenLine: 0,
                                 topScreenLineStr: "      1 ",
-                                bottomScreenLineStr: "    200 ",
+                                bottomScreenLineStr: "    201 ",
                             });
                         } else {
                             const conf = this.grids.get(grid)!;
@@ -1398,11 +1397,8 @@ export class NVIMPluginController implements vscode.Disposable {
                             line === FIRST_SCREEN_LINE && cells[0] && cells[0][1] === this.numberLineHlId,
                     );
                     const lastLinesEvents = gridEvents.filter(
-                        ([grid, line, , cells]) =>
-                            ((grid === 2 && line === LAST_SCREEN_LINE_FIRST_GRID) ||
-                                (grid > 2 && line === LAST_SCREEN_LINE_OTHER_GRID)) &&
-                            cells[0] &&
-                            cells[0][1] === this.numberLineHlId,
+                        ([, line, , cells]) =>
+                            line === LAST_SCREEN_LINE && cells[0] && cells[0][1] === this.numberLineHlId,
                     );
                     for (const evt of firstLinesEvents) {
                         const [grid] = evt;
@@ -1414,7 +1410,7 @@ export class NVIMPluginController implements vscode.Disposable {
                                 screenPos: 0,
                                 screenLine: 0,
                                 topScreenLineStr: "      1 ",
-                                bottomScreenLineStr: grid === 2 ? "    200 " : "    201 ",
+                                bottomScreenLineStr: "    201 ",
                                 winId: 0,
                             };
                             this.grids.set(grid, gridConf);
@@ -1425,7 +1421,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             gridConf.topScreenLineStr,
                         );
                         const topLine = Utils.getLineFromLineNumberString(topLineStr);
-                        const bottomLine = topLine + (grid === 2 ? 199 : 200);
+                        const bottomLine = topLine + LAST_SCREEN_LINE;
                         const bottomLineStr = Utils.convertLineNumberToString(bottomLine + 1);
 
                         gridConf.topScreenLineStr = topLineStr;
@@ -1443,7 +1439,7 @@ export class NVIMPluginController implements vscode.Disposable {
                                 screenPos: 0,
                                 screenLine: 0,
                                 topScreenLineStr: "      1 ",
-                                bottomScreenLineStr: grid === 2 ? "    200 " : "    201 ",
+                                bottomScreenLineStr: "    201 ",
                                 winId: 0,
                             };
                             this.grids.set(grid, gridConf);
@@ -1454,7 +1450,8 @@ export class NVIMPluginController implements vscode.Disposable {
                             gridConf.bottomScreenLineStr,
                         );
                         const bottomLine = Utils.getLineFromLineNumberString(bottomLineStr);
-                        const topLine = bottomLine - (grid === 2 ? 199 : 200);
+                        const topLine = bottomLine - LAST_SCREEN_LINE;
+                        //
                         const topLineStr = Utils.convertLineNumberToString(topLine + 1);
                         gridConf.bottomScreenLineStr = bottomLineStr;
                         gridConf.topScreenLineStr = topLineStr;
@@ -1463,10 +1460,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
                     // eslint-disable-next-line prefer-const
                     for (let [grid, row, colStart, cells] of gridEvents) {
-                        if (grid == 2 && row > LAST_SCREEN_LINE_FIRST_GRID) {
-                            continue;
-                        }
-                        if (grid > 2 && row > LAST_SCREEN_LINE_OTHER_GRID) {
+                        if (row > LAST_SCREEN_LINE) {
                             continue;
                         }
                         const gridConf = this.grids.get(grid);

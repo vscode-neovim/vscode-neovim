@@ -1,6 +1,11 @@
 # Change Log
 
+## [0.0.47]
+
+- Fix the problem when cursor/extension stucks for second+ editor columns ( #126 )
+
 ## [0.0.46]
+
 - Update `neovim-client` to latest version. This should eliminate delay between operations and generally improve the performance
 - Fix cursor movement for 2-byte chars ( #127 )
 

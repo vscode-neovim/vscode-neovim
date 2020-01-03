@@ -30,3 +30,8 @@ set listchars+=eol:$
 set list
 set syntax=off
 set signcolumn=no
+
+" Disable statusline and ruler since we don't need them anyway
+set statusline=
+set laststatus=0
+set noruler
