@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.48]
+
+- Fix incorrect cursor for multibyte single column width characters ( #142 )
+
 ## [0.0.47]
 
 - Fix the problem when cursor/extension stucks for second+ editor columns ( #126 )

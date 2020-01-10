@@ -1,5 +1,6 @@
 import { Diff } from "fast-diff";
 import { TextEditor } from "vscode";
+import wcwidth from "ts-wcwidth";
 
 export interface EditRange {
     start: number;
@@ -195,7 +196,7 @@ export function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
     return ranges;
 }
 
-export function getBytesFromCodePoint(point?: number): number {
+function getBytesFromCodePoint(point?: number): number {
     if (point == null) {
         return 0;
     }
@@ -213,28 +214,6 @@ export function getBytesFromCodePoint(point?: number): number {
         return 3;
     }
     return 4;
-}
-
-export function convertByteNumToCharNum(line: string, col: number, byteWorkaround = false): number {
-    if (col === 0 || !line) {
-        return 0;
-    }
-
-    let currCharNum = 0;
-    let totalBytes = 0;
-    while (totalBytes < col) {
-        let bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
-        // VIM treats 2 bytes as 1 char pos (https://github.com/asvetliakov/vscode-neovim/issues/127)
-        if (byteWorkaround && bytes === 2) {
-            bytes = 1;
-        }
-        totalBytes += byteWorkaround ? (bytes >= 2 ? 2 : bytes) : bytes;
-        currCharNum++;
-        if (currCharNum >= line.length) {
-            return currCharNum;
-        }
-    }
-    return currCharNum;
 }
 
 export function convertCharNumToByteNum(line: string, col: number): number {
@@ -257,28 +236,21 @@ export function convertCharNumToByteNum(line: string, col: number): number {
     return totalBytes;
 }
 
-export function getStartColForHL(line: string, byteCol: number): number {
-    if (!line) {
+export function calculatorEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
+    if (screenCol === 0 || !line) {
         return 0;
     }
-    let currByteCol = 0;
-    let currCharNum = 0;
-    while (currByteCol < byteCol) {
-        let bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
-        if (bytes >= 3) {
-            // HL treats 3+ byte width treats as 2 bytes, see https://github.com/asvetliakov/vscode-neovim/issues/69
-            bytes = 2;
-        } else if (bytes === 2) {
-            // VIM treats 2 bytes as 1 char pos (https://github.com/asvetliakov/vscode-neovim/issues/127)
-            bytes = 1;
-        }
-        currByteCol += bytes;
-        currCharNum++;
-        if (currCharNum >= line.length) {
-            return currCharNum;
+    let currentCharIdx = 0;
+    let currentVimCol = 0;
+    while (currentVimCol < screenCol) {
+        currentVimCol += line[currentCharIdx] === "\t" ? tabSize : wcwidth(line[currentCharIdx]);
+
+        currentCharIdx++;
+        if (currentCharIdx >= line.length) {
+            return currentCharIdx;
         }
     }
-    return currCharNum;
+    return currentCharIdx;
 }
 
 export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: number; col: number } {
@@ -292,7 +264,7 @@ export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: 
         };
     }
     const line = editor.document.lineAt(cursorLine).text;
-    const col = convertByteNumToCharNum(line, conf.screenPos, true);
+    const col = calculatorEditorColFromVimScreenCol(line, conf.screenPos);
     return {
         line: cursorLine,
         col,

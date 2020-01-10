@@ -1501,7 +1501,11 @@ export class NVIMPluginController implements vscode.Disposable {
                         } else {
                             const line = editor.document.lineAt(highlightLine).text;
                             // shift left start col (in vim linenumber is accounted, while in vscode don't)
-                            finalStartCol = Utils.getStartColForHL(line, colStart - NUMBER_COLUMN_WIDTH);
+                            // finalStartCol = Utils.getStartColForHL(line, colStart - NUMBER_COLUMN_WIDTH);
+                            finalStartCol = Utils.calculatorEditorColFromVimScreenCol(
+                                line,
+                                colStart - NUMBER_COLUMN_WIDTH,
+                            );
                         }
                         this.highlightProvider.processHLCellsEvent(grid, row, finalStartCol, isExternal, cells);
                         gridHLUpdates.add(grid);

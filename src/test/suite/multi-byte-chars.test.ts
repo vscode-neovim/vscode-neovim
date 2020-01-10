@@ -12,7 +12,7 @@ import {
     sendEscapeKey,
 } from "../utils";
 
-describe("Multi-byte characters", () => {
+describe("Multi-width characters", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
@@ -25,7 +25,7 @@ describe("Multi-byte characters", () => {
         await closeAllActiveEditors();
     });
 
-    it("Works - 3 byte chars", async () => {
+    it("Works - 2col width chars", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["测试微服务", "", "没办法跳转到最后一个"].join("\n"),
         });
@@ -74,7 +74,7 @@ describe("Multi-byte characters", () => {
         );
     });
 
-    it("Works - 2 byte chars", async () => {
+    it("Works - 1col-2byte width chars", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["żżżżżżżż',", "ńńńńńńńń',"].join("\n"),
         });
@@ -101,7 +101,36 @@ describe("Multi-byte characters", () => {
         );
     });
 
-    it("Cursor is ok after exiting insert mode - 3 byte chars", async () => {
+    it("Works - 1col-3byte width chars", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["1ᵩᵩ123"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await assertContent(
+            {
+                content: ["1ᵩᵩ123"],
+                cursor: [0, 0],
+            },
+            client,
+        );
+        await sendVSCodeKeys("ll");
+        await assertContent({ vsCodeCursor: [0, 2] }, client);
+        await sendVSCodeKeys("ll");
+        await assertContent({ vsCodeCursor: [0, 4] }, client);
+
+        await sendVSCodeKeys("x");
+        await assertContent(
+            {
+                content: ["1ᵩᵩ13"],
+                vsCodeCursor: [0, 4],
+            },
+            client,
+        );
+    });
+
+    it("Cursor is ok after exiting insert mode - 2 col chars", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["测试微服务", "", "没办法跳转到最后一个"].join("\n"),
         });
@@ -127,7 +156,7 @@ describe("Multi-byte characters", () => {
         );
     });
 
-    it("Cursor is ok after exiting insert mode - 2 byte chars", async () => {
+    it("Cursor is ok after exiting insert mode - 1col-2byte chars", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["żżżżżżżż',", "ńńńńńńńń',"].join("\n"),
         });
@@ -151,5 +180,32 @@ describe("Multi-byte characters", () => {
             },
             client,
         );
+    });
+
+    it("Cursor is ok after exiting insertt mode - 1col-3byte width chars", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["1ᵩᵩ123"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await assertContent(
+            {
+                content: ["1ᵩᵩ123"],
+                cursor: [0, 0],
+            },
+            client,
+        );
+        await sendVSCodeKeys("ll");
+        await assertContent({ vsCodeCursor: [0, 2] }, client);
+        await sendVSCodeKeys("a");
+
+        await sendEscapeKey();
+        await assertContent({ vsCodeCursor: [0, 2] }, client);
+
+        await sendVSCodeKeys("ll");
+        await sendVSCodeKeys("a");
+        await sendEscapeKey();
+        await assertContent({ vsCodeCursor: [0, 4] }, client);
     });
 });
