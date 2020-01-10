@@ -230,7 +230,7 @@ export function convertCharNumToByteNum(line: string, col: number): number {
         totalBytes += bytes;
         currCharNum++;
         if (currCharNum >= line.length) {
-            return currCharNum;
+            return totalBytes;
         }
     }
     return totalBytes;

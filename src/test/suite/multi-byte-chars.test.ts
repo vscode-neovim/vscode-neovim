@@ -182,7 +182,7 @@ describe("Multi-width characters", () => {
         );
     });
 
-    it("Cursor is ok after exiting insertt mode - 1col-3byte width chars", async () => {
+    it("Cursor is ok after exiting insert mode - 1col-3byte width chars", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["1ᵩᵩ123"].join("\n"),
         });
@@ -207,5 +207,17 @@ describe("Multi-width characters", () => {
         await sendVSCodeKeys("a");
         await sendEscapeKey();
         await assertContent({ vsCodeCursor: [0, 4] }, client);
+    });
+
+    it("Cursor is ok after exiting insert mode at end of the line - 1col-3byte width chars", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["ᵩ123"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("A");
+        await sendEscapeKey();
+        await assertContent({ vsCodeCursor: [0, 3] }, client);
     });
 });
