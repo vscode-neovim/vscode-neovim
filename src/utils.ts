@@ -236,7 +236,7 @@ export function convertCharNumToByteNum(line: string, col: number): number {
     return totalBytes;
 }
 
-export function calculatorEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
+export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
     if (screenCol === 0 || !line) {
         return 0;
     }
@@ -264,7 +264,7 @@ export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: 
         };
     }
     const line = editor.document.lineAt(cursorLine).text;
-    const col = calculatorEditorColFromVimScreenCol(line, conf.screenPos);
+    const col = calculateEditorColFromVimScreenCol(line, conf.screenPos);
     return {
         line: cursorLine,
         col,
