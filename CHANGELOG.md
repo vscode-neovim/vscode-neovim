@@ -3,6 +3,7 @@
 ## [0.0.48]
 
 - Fix incorrect cursor for multibyte single column width characters ( #142 )
+- Fix vim-easymotion decorators drifting when text has multi-byte characters ( #144 )
 
 ## [0.0.47]
 

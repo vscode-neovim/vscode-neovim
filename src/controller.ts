@@ -1807,6 +1807,10 @@ export class NVIMPluginController implements vscode.Disposable {
      * @param decorations Text decorations, the format is [[lineNum, [colNum, text][]]]
      */
     private applyTextDecorations(hlGroupName: string, decorations: [string, [number, string][]][]): void {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
         const decorator = this.highlightProvider.getDecoratorForHighlightGroup(hlGroupName);
         if (!decorator) {
             return;
@@ -1814,26 +1818,31 @@ export class NVIMPluginController implements vscode.Disposable {
         const conf = this.highlightProvider.getDecoratorOptions(decorator);
         const options: vscode.DecorationOptions[] = [];
         for (const [lineStr, cols] of decorations) {
-            const line = parseInt(lineStr, 10) - 1;
+            try {
+                const lineNum = parseInt(lineStr, 10) - 1;
+                const line = editor.document.lineAt(lineNum).text;
 
-            for (const [colNum, text] of cols) {
-                const col = colNum - 1;
-                const opt: vscode.DecorationOptions = {
-                    range: new vscode.Range(line, col, line, col),
-                    renderOptions: {
-                        before: {
-                            ...conf,
-                            ...conf.before,
-                            contentText: text,
+                for (const [colNum, text] of cols) {
+                    // vim sends column in bytes, need to convert to characters
+                    // const col = colNum - 1;
+                    const col = Utils.convertByteNumToCharNum(line, colNum - 1);
+                    const opt: vscode.DecorationOptions = {
+                        range: new vscode.Range(lineNum, col, lineNum, col),
+                        renderOptions: {
+                            before: {
+                                ...conf,
+                                ...conf.before,
+                                contentText: text,
+                            },
                         },
-                    },
-                };
-                options.push(opt);
+                    };
+                    options.push(opt);
+                }
+            } catch {
+                // ignore
             }
         }
-        if (vscode.window.activeTextEditor) {
-            vscode.window.activeTextEditor.setDecorations(decorator, options);
-        }
+        editor.setDecorations(decorator, options);
     }
 
     private handleCustomRequest = async (
