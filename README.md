@@ -12,6 +12,9 @@ Please report any issues/suggestions to [vscode-neovim repository](https://githu
 
 * Install [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension
 * Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) Required version 0.4.2 or greater
+* If you already have big & custom `init.vim` i'd recommend to wrap existing settings & plugins with `if !exists('g:vscode')` check to prevent potential breakings and problems
+
+**Neovim 0.4+** is required. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
 
 ## Features
 
@@ -45,7 +48,7 @@ Neovim 0.4.2 or greater
 * ```gF```/```gD``` are mapped to ```editor.action.peekDefinition``` (opens definition in peek)
 * ```<C-w>gF```/```<C-w>gf```/```<C-w>gd``` are mapped to ```editor.action.revealDefinitionAside``` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
 
-## Performance problems
+## Performance/Latency problems
 
 If you have any performance problems (cursor jitter usually) make sure you're not using these kinds of extensions:
 
@@ -57,6 +60,9 @@ If you have any performance problems (cursor jitter usually) make sure you're no
 Such extension may be fine and work well, but combined with any extension which should control the cursor position (such as any vim extension) it may work very bad, due to shared vscode extension host between all extensions (E.g. one extension is taking the control over the host and blocking the other extension, this produces jitter).
 
 If you're not sure, disable all other extensions except mine, **reload vscode/window** and see if the problem persist before reporting.
+
+
+Also there are a reports that some vim settings/vim plugins increase latency and causing performance problems. Make sure you've disabled unneeded plugins. Many of them don't make sense with vscode and may cause any sort of problems. You don't need any code, highlighting, completion, lsp plugins as well any plugins that spawn windows/buffers (nerdtree and similar), fuzzy-finders plugins, etc. You might want to keep navigation/text-objects/text-editing/etc plugins - they should be fine.
 
 ## Enabling jj or jk as escape keys from the insert mode
 
