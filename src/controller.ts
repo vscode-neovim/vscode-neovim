@@ -201,6 +201,11 @@ export class NVIMPluginController implements vscode.Disposable {
     private numberLineHlId = 0;
 
     /**
+     * Cursor updates originated through neovim or neovim changes. Key is the "line.col"
+     */
+    private neovimCursorUpdates: WeakMap<vscode.TextEditor, { [key: string]: boolean }> = new WeakMap();
+
+    /**
      * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
      */
     private compositeEscapeFirstPressTimestamp?: number;
@@ -708,6 +713,18 @@ export class NVIMPluginController implements vscode.Disposable {
      * Handle vscode selection change. This includes everything touching selection or cursor position, includes custom commands and selection = [] assignment
      */
     private onChangeSelection = (e: vscode.TextEditorSelectionChangeEvent): void => {
+        if (e.selections.length === 1 && this.neovimCursorUpdates.has(e.textEditor)) {
+            const line = e.selections[0].active.line;
+            const col = e.selections[0].active.character;
+
+            const updates = this.neovimCursorUpdates.get(e.textEditor)!;
+            const shouldIgnore = !!updates[`${line}.${col}`];
+            delete updates[`${line}.${col}`];
+
+            if (shouldIgnore) {
+                return;
+            }
+        }
         // try to update cursor in neovim as rarely as we can
         if (this.isInsertMode) {
             return;
@@ -1074,14 +1091,15 @@ export class NVIMPluginController implements vscode.Disposable {
                                         const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
                                         if (gridConf) {
                                             const cursorPos = Utils.getEditorCursorPos(editor, gridConf[1]);
-                                            editor.selections = [
-                                                new vscode.Selection(
-                                                    cursorPos.line,
-                                                    cursorPos.col,
-                                                    cursorPos.line,
-                                                    cursorPos.col,
-                                                ),
-                                            ];
+                                            this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
+                                            // editor.selections = [
+                                            //     new vscode.Selection(
+                                            //         cursorPos.line,
+                                            //         cursorPos.col,
+                                            //         cursorPos.line,
+                                            //         cursorPos.col,
+                                            //     ),
+                                            // ];
                                         }
                                     }
                                 }
@@ -1636,6 +1654,10 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         const visibleRange = editor.visibleRanges[0];
         const revealCursor = new vscode.Selection(newLine, newCol, newLine, newCol);
+        if (!this.neovimCursorUpdates.has(editor)) {
+            this.neovimCursorUpdates.set(editor, {});
+        }
+        this.neovimCursorUpdates.get(editor)![`${newLine}.${newCol}`] = true;
         editor.selections = [revealCursor];
         const visibleLines = visibleRange.end.line - visibleRange.start.line;
         // this.commitScrolling.cancel();

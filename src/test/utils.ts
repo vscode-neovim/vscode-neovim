@@ -136,6 +136,11 @@ export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<v
     }
 }
 
+export async function sendVSCodeKeysAtomic(keys: string, waitTimeout = 200): Promise<void> {
+    await commands.executeCommand("type", { text: keys });
+    await wait(waitTimeout);
+}
+
 export async function sendVSCodeSpecialKey(
     key: "backspace" | "delete" | "cursorLeft" | "cursorRight" | "cursorUp" | "cursorDown",
     waitTimeout = 100,

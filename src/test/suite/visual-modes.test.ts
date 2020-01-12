@@ -9,6 +9,7 @@ import {
     assertContent,
     closeNvimClient,
     sendEscapeKey,
+    sendVSCodeKeysAtomic,
 } from "../utils";
 
 describe("Visual modes test", () => {
@@ -524,6 +525,26 @@ describe("Visual modes test", () => {
             {
                 cursor: [0, 9],
                 vsCodeSelections: [new vscode.Selection(1, 3, 0, 9)],
+            },
+            client,
+        );
+    });
+
+    it("Cursor is ok for multiple cursor updates - issue #141", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test", "test"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("V");
+        await sendVSCodeKeys("j$");
+
+        await sendVSCodeKeysAtomic(">gv", 500);
+        await assertContent(
+            {
+                content: ["    test", "    test"],
+                cursor: [1, 4],
             },
             client,
         );

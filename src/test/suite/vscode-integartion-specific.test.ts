@@ -222,7 +222,7 @@ describe("VSCode integration specific stuff", () => {
         const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
         await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
         await wait(1500);
-        await sendVSCodeKeys("5j", 0);
+        await sendVSCodeKeys("gg5j", 0);
         await wait(1000);
 
         const doc2 = await vscode.workspace.openTextDocument(
@@ -249,6 +249,7 @@ describe("VSCode integration specific stuff", () => {
         const e = await vscode.window.showTextDocument(doc);
         await wait(1000);
 
+        await sendVSCodeKeys("gg");
         await sendVSCodeKeys("/bla", 1000);
 
         await assertContent({ cursor: [115, 19] }, client);
