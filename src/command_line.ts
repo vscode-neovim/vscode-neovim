@@ -114,7 +114,8 @@ export class CommandLineController implements Disposable {
             this.input.items = [];
             this.completionItems = [];
         }
-        this.callbacks.onChanged(e, mode !== "/" && mode !== "?" && e.charAt(0) !== "/" && e.charAt(0) !== "?");
+        const useCompletion = mode === ":" && e.charAt(0) !== "?" && e.charAt(0) !== "/";
+        this.callbacks.onChanged(e, useCompletion);
     };
 
     private onHide = (): void => {

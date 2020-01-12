@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.49]
+
+- Use command line completion only for command line originated via `:` command
+
 ## [0.0.48]
 
 - Fix incorrect cursor for multibyte single column width characters ( #142 )
