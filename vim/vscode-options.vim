@@ -35,3 +35,7 @@ set signcolumn=no
 set statusline=
 set laststatus=0
 set noruler
+
+" Disable modeline processing. It's being used for tab related settings usually and we don't want to override ours
+set nomodeline
+set modelines=0
