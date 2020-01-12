@@ -6,6 +6,7 @@
 - Fix vim-easymotion decorators drifting when text has multi-byte characters ( #144 )
 - Disabled vim modeline processing
 - Force vim folds to be always opened to prevent problems
+- Fix vim-easymotion decorators drifting to the end of line ( #60 )
 
 ## [0.0.47]
 
