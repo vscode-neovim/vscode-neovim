@@ -8,6 +8,7 @@
 - Force vim folds to be always opened to prevent problems
 - Fix vim-easymotion decorators drifting to the end of line ( #60 )
 - Fix incorrect cursor positions after commands/mappings such as `>gv` ( #141 )
+- Fix double command prompt ( #120 )
 
 ## [0.0.47]
 

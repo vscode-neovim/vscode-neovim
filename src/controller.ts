@@ -150,7 +150,7 @@ export class NVIMPluginController implements vscode.Disposable {
     /**
      * Simple command line UI
      */
-    private commandLine: CommandLineController;
+    private commandLine?: CommandLineController;
     /**
      * Status var UI
      */
@@ -285,13 +285,8 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         this.nvimProc = spawn(useWsl ? "C:\\Windows\\system32\\wsl.exe" : neovimPath, args, {});
         this.client = attach({ proc: this.nvimProc });
-        this.commandLine = new CommandLineController(this.client);
         this.statusLine = new StatusLineController();
         this.commandsController = new CommandsController(this.client);
-        this.commandLine.onAccepted = this.onCmdAccept;
-        this.commandLine.onChanged = this.onCmdChange;
-        this.commandLine.onCanceled = this.onCmdCancel;
-        this.disposables.push(this.commandLine);
         this.disposables.push(this.statusLine);
         this.disposables.push(this.commandsController);
 
@@ -402,6 +397,9 @@ export class NVIMPluginController implements vscode.Disposable {
     public dispose(): void {
         for (const d of this.disposables) {
             d.dispose();
+        }
+        if (this.commandLine) {
+            this.commandLine.dispose();
         }
         if (this.typeHandlerDisplose) {
             this.typeHandlerDisplose.dispose();
@@ -1245,16 +1243,37 @@ export class NVIMPluginController implements vscode.Disposable {
                         number,
                     ];
                     const allContent = content.map(([, str]) => str).join("");
+                    // !note: neovim can send cmdline_hide followed by cmdline_show events
+                    // !since quickpick can be destroyed slightly at later time after handling cmdline_hide we want to create new command line
+                    // !controller and input for every visible cmdline_show event
+                    // !otherwise we may hit cmdline_show when it's being hidden
+                    // as alternative, it's possible to process batch and determine if we need show/hide or just redraw the command_line
+                    // but this won't handle the case when cmdline_show comes in next flush batch (is it possible?)
+                    // btw, easier to just recreate whole command line (and quickpick inside)
                     if (this.cmdlineTimer) {
                         clearTimeout(this.cmdlineTimer);
                         this.cmdlineTimer = undefined;
+                        if (!this.commandLine) {
+                            this.commandLine = new CommandLineController(this.client, {
+                                onAccepted: this.onCmdAccept,
+                                onCanceled: this.onCmdCancel,
+                                onChanged: this.onCmdChange,
+                            });
+                        }
                         this.commandLine.show(allContent, firstc, prompt);
                     } else {
                         // if there is initial content and it's not currently displayed then it may come
                         // from some mapping. to prevent bad UI commandline transition we delay cmdline appearing here
-                        if (allContent !== "" && allContent !== "'<,'>" && !this.commandLine.isDisplayed) {
+                        if (allContent !== "" && allContent !== "'<,'>" && !this.commandLine) {
                             this.cmdlineTimer = setTimeout(() => this.showCmdOnTimer(allContent, firstc, prompt), 200);
                         } else {
+                            if (!this.commandLine) {
+                                this.commandLine = new CommandLineController(this.client, {
+                                    onAccepted: this.onCmdAccept,
+                                    onCanceled: this.onCmdCancel,
+                                    onChanged: this.onCmdChange,
+                                });
+                            }
                             this.commandLine.show(allContent, firstc, prompt);
                         }
                     }
@@ -1262,15 +1281,19 @@ export class NVIMPluginController implements vscode.Disposable {
                 }
                 case "wildmenu_show": {
                     const [items] = firstArg as [string[]];
-                    this.commandLine.setCompletionItems(items);
+                    if (this.commandLine) {
+                        this.commandLine.setCompletionItems(items);
+                    }
                     break;
                 }
                 case "cmdline_hide": {
                     if (this.cmdlineTimer) {
                         clearTimeout(this.cmdlineTimer);
                         this.cmdlineTimer = undefined;
-                    } else {
-                        this.commandLine.cancel();
+                    } else if (this.commandLine) {
+                        this.commandLine.cancel(true);
+                        this.commandLine.dispose();
+                        this.commandLine = undefined;
                     }
                     break;
                 }
@@ -2200,6 +2223,13 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private showCmdOnTimer = (initialContent: string, firstc: string, prompt: string): void => {
+        if (!this.commandLine) {
+            this.commandLine = new CommandLineController(this.client, {
+                onAccepted: this.onCmdAccept,
+                onCanceled: this.onCmdCancel,
+                onChanged: this.onCmdChange,
+            });
+        }
         this.commandLine.show(initialContent, firstc, prompt);
         this.cmdlineTimer = undefined;
     };

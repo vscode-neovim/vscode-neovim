@@ -3,6 +3,12 @@ import { NeovimClient } from "neovim";
 
 import { GlyphChars } from "./constants";
 
+export interface CommandLineCallbacks {
+    onAccepted(): void;
+    onChanged(str: string, complete: boolean): void;
+    onCanceled(): void;
+}
+
 export class CommandLineController implements Disposable {
     public isDisplayed = false;
 
@@ -20,8 +26,13 @@ export class CommandLineController implements Disposable {
 
     private neovimClient: NeovimClient;
 
-    public constructor(client: NeovimClient) {
+    private ignoreHideEvent = false;
+
+    private callbacks: CommandLineCallbacks;
+
+    public constructor(client: NeovimClient, callbacks: CommandLineCallbacks) {
         this.neovimClient = client;
+        this.callbacks = callbacks;
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;
         this.disposables.push(this.input.onDidAccept(this.onAccept));
@@ -75,13 +86,10 @@ export class CommandLineController implements Disposable {
         }
     }
 
-    public cancel(): void {
+    public cancel(ignoreHideEvent = false): void {
+        this.ignoreHideEvent = ignoreHideEvent;
         this.input.hide();
     }
-
-    public onAccepted?: () => void;
-    public onChanged?: (str: string, complete: boolean) => void;
-    public onCanceled?: () => void;
 
     public dispose(): void {
         for (const d of this.disposables) {
@@ -94,9 +102,7 @@ export class CommandLineController implements Disposable {
         if (!this.isDisplayed) {
             return;
         }
-        if (this.onAccepted) {
-            this.onAccepted();
-        }
+        this.callbacks.onAccepted();
     };
 
     private onChange = (e: string): void => {
@@ -108,10 +114,7 @@ export class CommandLineController implements Disposable {
             this.input.items = [];
             this.completionItems = [];
         }
-        if (!this.onChanged) {
-            return;
-        }
-        this.onChanged(e, mode !== "/" && mode !== "?" && e.charAt(0) !== "/" && e.charAt(0) !== "?");
+        this.callbacks.onChanged(e, mode !== "/" && mode !== "?" && e.charAt(0) !== "/" && e.charAt(0) !== "?");
     };
 
     private onHide = (): void => {
@@ -119,10 +122,11 @@ export class CommandLineController implements Disposable {
             return;
         }
         this.clean();
-        if (!this.onCanceled) {
+        if (this.ignoreHideEvent) {
+            this.ignoreHideEvent = false;
             return;
         }
-        this.onCanceled();
+        this.callbacks.onCanceled();
     };
 
     private processCompletionTimer = (): void => {
