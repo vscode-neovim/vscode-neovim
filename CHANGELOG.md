@@ -2,7 +2,7 @@
 
 ## [0.0.49]
 
-- Use command line completion only for command line originated via `:` command
+- Use command line completion only for command line originated via `:` command ( #146 )
 
 ## [0.0.48]
 
