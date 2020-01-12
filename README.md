@@ -16,6 +16,10 @@ Please report any issues/suggestions to [vscode-neovim repository](https://githu
 
 **Neovim 0.4+** is required. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
 
+### WSL
+
+If you want to use WSL version of neovim, set `useWSL` configuration toggle and specify linux path to nvim binary. `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through `$PATH` linux env setting.
+
 ## Features
 
 * Almost fully feature-complete VIM integration by utilizing neovim
