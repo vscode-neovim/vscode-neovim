@@ -5,6 +5,7 @@
 - Fix incorrect cursor for multibyte single column width characters ( #142 )
 - Fix vim-easymotion decorators drifting when text has multi-byte characters ( #144 )
 - Disabled vim modeline processing
+- Force vim folds to be always opened to prevent problems
 
 ## [0.0.47]
 

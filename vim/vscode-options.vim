@@ -39,3 +39,7 @@ set noruler
 " Disable modeline processing. It's being used for tab related settings usually and we don't want to override ours
 set nomodeline
 set modelines=0
+
+" Turn off auto-folding
+set nofoldenable
+set foldmethod='manual'
