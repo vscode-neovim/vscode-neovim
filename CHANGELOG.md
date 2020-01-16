@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.50]
+
+- Fix cursor & extension hang for some cases ( #153 )
+
 ## [0.0.49]
 
 - Use command line completion only for command line originated via `:` command ( #146 )

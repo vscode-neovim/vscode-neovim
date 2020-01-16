@@ -329,4 +329,72 @@ describe("Basic editing and navigation", () => {
             client,
         );
     });
+
+    it("Cursor pos in large files - 1", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("yy210p");
+        await wait(1000);
+
+        await sendVSCodeKeys("G");
+        await assertContent(
+            {
+                cursor: [210, 0],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("gg");
+        await assertContent(
+            {
+                cursor: [0, 0],
+            },
+            client,
+        );
+    });
+
+    it("Cursor pos in large files - 2", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("yy800p");
+        await wait(1000);
+
+        await sendVSCodeKeys("G");
+        await assertContent(
+            {
+                cursor: [800, 0],
+            },
+            client,
+        );
+        await sendVSCodeKeys("k");
+        await assertContent(
+            {
+                cursor: [799, 0],
+            },
+            client,
+        );
+        await sendVSCodeKeys("j");
+        await assertContent(
+            {
+                cursor: [800, 0],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("gg");
+        await assertContent(
+            {
+                cursor: [0, 0],
+            },
+            client,
+        );
+    });
 });

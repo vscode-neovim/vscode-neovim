@@ -41,7 +41,7 @@ export function processLineNumberStringFromEvent(
             lineNumStr += text;
         }
     }
-    const newStr = prevString.slice(0, colStart) + lineNumStr;
+    const newStr = prevString.slice(0, colStart) + lineNumStr + prevString.slice(colStart + lineNumStr.length);
     return newStr;
 }
 
