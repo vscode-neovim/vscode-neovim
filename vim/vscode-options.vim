@@ -12,6 +12,7 @@ set noswapfile
 set noautoread
 set scrolloff=100
 set conceallevel=0
+set nocursorline
 
 " do not hide buffers
 set nohidden
