@@ -1,16 +1,14 @@
 import * as vscode from "vscode";
 
 import { NVIMPluginController } from "./controller";
-
-const EXT_NAME = "vscode-neovim";
-const EXT_ID = `asvetliakov.${EXT_NAME}`;
+import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME } from "./utils";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const ext = vscode.extensions.getExtension(EXT_ID)!;
     const settings = vscode.workspace.getConfiguration(EXT_NAME);
-    const neovimPath = process.env.NEOVIM_PATH || settings.get("neovimPath");
+    const neovimPath = getNeovimPath();
     if (!neovimPath) {
         vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
         return;
@@ -23,7 +21,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = settings.get("useWSL", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
-    const customInit = settings.get("neovimInitPath", "");
+    const customInit = getNeovimInitPath() ?? "";
+
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
 
