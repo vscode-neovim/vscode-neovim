@@ -538,7 +538,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         "nvim_win_set_cursor",
                         [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, change.range.start)],
                     ]);
-                    edits.push(["nvim_paste", [change.text.split(eol).join("\n"), false, -1]]);
+                    edits.push(["nvim_paste", [change.text, true, -1]]);
                     // paste is single tick
                     skipTickCount++;
                 }
