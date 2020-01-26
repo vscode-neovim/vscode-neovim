@@ -491,7 +491,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.documentLastChangedVersion.get(uri) === version) {
             return;
         }
-        // const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+        const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
         const buf = this.uriToBuffer.get(uri);
         if (!buf) {
             return;
@@ -504,20 +504,16 @@ export class NVIMPluginController implements vscode.Disposable {
             this.isInsertMode &&
             this.editorColumnIdToWinId.get(vscode.window.activeTextEditor.viewColumn || -1)
         ) {
-            // const winId = this.editorColumnIdToWinId.get(vscode.window.activeTextEditor.viewColumn!)!;
-            // const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
-            // const win = this.editorColumnIdToWinId.get(vscode.window.activeTextEditor.viewColumn!)!;
-            const edits: [string, unknown[]][] = [];
             // vscode may send multiple changes, sort them from last line change to first one to avoid dealing with subsequent changed lines
             const sortedChanges = [...e.contentChanges].sort((a, b) =>
                 a.range.start.line > b.range.start.line ? -1 : a.range.start.line < b.range.start.line ? 1 : 0,
             );
-            let skipTickCount = 0;
             for (const change of sortedChanges) {
                 // if range length is > 0 then it's either delete or replace operation - we need to delete the text then put
                 // TODO: is there any way to send num<Del> without exiting insert mode?
                 // delete can be only either from left to right, or right to left, the second case is more useful
                 if (change.rangeLength) {
+                    const edits: [string, unknown[]][] = [];
                     edits.push(["nvim_win_set_cursor", [0, [change.range.end.line + 1, change.range.end.character]]]);
                     let delLength = change.rangeLength;
                     // need to account into crlf - it has rangeLength for 2 characters
@@ -528,31 +524,42 @@ export class NVIMPluginController implements vscode.Disposable {
                         delLength -= change.range.end.line - change.range.start.line;
                     }
                     const deleteStr = [...new Array(delLength).keys()].map(() => "<BS>").join("");
+                    // edits.push(...deleteEdits);
+                    // !Important: looks like nvim_paste/nvim_put followed by nvim_input doesn't work in call_atomic, so delete first in separate request
                     edits.push(["nvim_input", [deleteStr]]);
+                    // const currTick = this.currBufferTick.get(buf.id) || 0;
                     // multiple <BS> are multiple ticks
-                    skipTickCount += delLength;
+                    // this.skipBufferTickUpdate.set(buf.id, currTick + delLength);
+                    await this.client.callAtomic(edits);
                 }
                 if (change.text) {
+                    const edits: [string, unknown[]][] = [];
+                    if (!change.rangeLength) {
+                        // cursor is correct now after delete/replace edit
+                        edits.push([
+                            "nvim_win_set_cursor",
+                            [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, change.range.start)],
+                        ]);
+                    }
+                    // nvim_paste doesn't work with recording :(
+                    // edits.push(["nvim_paste", [change.text, true, -1]]);
+                    // edits.push(["nvim_put", [change.text.split(eol), "c", true, true]]);
                     edits.push([
-                        "nvim_win_set_cursor",
-                        [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, change.range.start)],
+                        "nvim_input",
+                        [
+                            change.text
+                                // normalize text
+                                .split(eol)
+                                .join("\n")
+                                .replace("<", "<LT>"),
+                        ],
                     ]);
-                    edits.push(["nvim_paste", [change.text, true, -1]]);
                     // paste is single tick
-                    skipTickCount++;
+                    // const currTick = this.currBufferTick.get(buf.id) || 0;
+                    // this.skipBufferTickUpdate.set(buf.id, currTick + 1);
+                    await this.client.callAtomic(edits);
                 }
             }
-            // first change is last line edit - cursor
-            // const firstChange = sortedChanges[0];
-            // if (firstChange) {
-            //     edits.push([
-            //         "nvim_win_set_cursor",
-            //         [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, firstChange.range.end)],
-            //     ]);
-            // }
-            const currTick = this.currBufferTick.get(buf.id) || 0;
-            this.skipBufferTickUpdate.set(buf.id, currTick + skipTickCount);
-            await this.client.callAtomic(edits);
         } else {
             const changed = this.documentChangesInInsertMode.get(uri);
             if (!changed) {
