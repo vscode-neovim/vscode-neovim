@@ -117,6 +117,10 @@ export class NVIMPluginController implements vscode.Disposable {
      */
     private skipBufferTickUpdate: Map<number, number> = new Map();
     /**
+     * Current buffer tick count
+     */
+    private currBufferTick: Map<number, number> = new Map();
+    /**
      * Track last changed version. Used to skip neovim update when in insert mode
      */
     private documentLastChangedVersion: Map<string, number> = new Map();
@@ -473,6 +477,8 @@ export class NVIMPluginController implements vscode.Disposable {
         requests.push(["nvim_buf_set_option", [buf.id, "buflisted", true]]);
         // this.editorPendingCursor.set(e, { line: cursor.line, col: cursor.character, screenRow: 0, totalSkips: 0 });
         await this.client.callAtomic(requests);
+        const tick = await buf.changedtick;
+        this.currBufferTick.set(buf.id, tick || 0);
         this.bufferIdToUri.set(buf.id, uri);
         this.uriToBuffer.set(uri, buf);
         buf.listen("lines", this.onNeovimBufferEvent);
@@ -486,7 +492,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.documentLastChangedVersion.get(uri) === version) {
             return;
         }
-        // const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+        const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
         const buf = this.uriToBuffer.get(uri);
         if (!buf) {
             return;
@@ -494,12 +500,68 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!this.managedBufferIds.has(buf.id)) {
             return;
         }
-        const changed = this.documentChangesInInsertMode.get(uri);
-        if (!changed) {
-            this.documentChangesInInsertMode.set(uri, true);
-        }
-        if (!this.isInsertMode) {
-            this.uploadDocumentChangesToNeovim();
+        if (
+            vscode.window.activeTextEditor?.document.uri.toString() === e.document.uri.toString() &&
+            this.isInsertMode &&
+            this.editorColumnIdToWinId.get(vscode.window.activeTextEditor.viewColumn || -1)
+        ) {
+            // const winId = this.editorColumnIdToWinId.get(vscode.window.activeTextEditor.viewColumn!)!;
+            // const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
+            // const win = this.editorColumnIdToWinId.get(vscode.window.activeTextEditor.viewColumn!)!;
+            const edits: [string, unknown[]][] = [];
+            // vscode may send multiple changes, sort them from last line change to first one to avoid dealing with subsequent changed lines
+            const sortedChanges = [...e.contentChanges].sort((a, b) =>
+                a.range.start.line > b.range.start.line ? -1 : a.range.start.line < b.range.start.line ? 1 : 0,
+            );
+            let skipTickCount = 0;
+            for (const change of sortedChanges) {
+                // if range length is > 0 then it's either delete or replace operation - we need to delete the text then put
+                // TODO: is there any way to send num<Del> without exiting insert mode?
+                // delete can be only either from left to right, or right to left, the second case is more useful
+                if (change.rangeLength) {
+                    edits.push(["nvim_win_set_cursor", [0, [change.range.end.line + 1, change.range.end.character]]]);
+                    let delLength = change.rangeLength;
+                    // need to account into crlf - it has rangeLength for 2 characters
+                    if (
+                        change.range.end.line - change.range.start.line > 0 &&
+                        e.document.eol === vscode.EndOfLine.CRLF
+                    ) {
+                        delLength -= change.range.end.line - change.range.start.line;
+                    }
+                    const deleteStr = [...new Array(delLength).keys()].map(() => "<BS>").join("");
+                    edits.push(["nvim_input", [deleteStr]]);
+                    // multiple <BS> are multiple ticks
+                    skipTickCount += delLength;
+                }
+                if (change.text) {
+                    edits.push([
+                        "nvim_win_set_cursor",
+                        [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, change.range.start)],
+                    ]);
+                    edits.push(["nvim_paste", [change.text.split(eol).join("\n"), false, -1]]);
+                    // paste is single tick
+                    skipTickCount++;
+                }
+            }
+            // first change is last line edit - cursor
+            // const firstChange = sortedChanges[0];
+            // if (firstChange) {
+            //     edits.push([
+            //         "nvim_win_set_cursor",
+            //         [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, firstChange.range.end)],
+            //     ]);
+            // }
+            const currTick = this.currBufferTick.get(buf.id) || 0;
+            this.skipBufferTickUpdate.set(buf.id, currTick + skipTickCount);
+            await this.client.callAtomic(edits);
+        } else {
+            const changed = this.documentChangesInInsertMode.get(uri);
+            if (!changed) {
+                this.documentChangesInInsertMode.set(uri, true);
+            }
+            if (!this.isInsertMode) {
+                this.uploadDocumentChangesToNeovim();
+            }
         }
     };
 
@@ -887,11 +949,11 @@ export class NVIMPluginController implements vscode.Disposable {
         linedata: string[],
         _more: boolean,
     ): void => {
-        // ignore in insert mode. This breaks o and O commands with <count> prefix but since we're rebinding them
-        // to vscode commands it's not a big problem and anyway not supported (at least for now)
-        // if (this.isInsertMode) {
-        //     return;
-        // }
+        // since we now send edits immediately in insert mode it's important to return here
+        if (this.isInsertMode) {
+            this.currBufferTick.set(buffer.id, tick);
+            return;
+        }
         // vscode disallow to do multiple edits without awaiting textEditor.edit result
         // so we'll process all changes in slightly throttled function
         this.pendingBufChangesQueue.push({ buffer, firstLine, lastLine, data: linedata, tick });
@@ -924,6 +986,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     { lines: string[]; editor: vscode.TextEditor; changed: boolean }
                 > = new Map();
                 for (const { buffer, data, firstLine, lastLine, tick } of edits) {
+                    this.currBufferTick.set(buffer.id, tick);
                     const uri = this.bufferIdToUri.get(buffer.id);
                     if (!uri) {
                         continue;
@@ -2217,7 +2280,7 @@ export class NVIMPluginController implements vscode.Disposable {
         // const buf = await this.client.buffer;
         // const lines = await buf.lines;
         // console.log("====LINES====");
-        // console.log(lines.length);
+        // // console.log(lines.length);
         // console.log(lines.join("\n"));
         // console.log("====END====");
     };
