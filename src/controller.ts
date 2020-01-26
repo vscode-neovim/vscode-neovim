@@ -74,7 +74,6 @@ const NUMBER_COLUMN_WIDTH = 8;
 
 export class NVIMPluginController implements vscode.Disposable {
     private isInsertMode = false;
-    private isRecording = false;
     /**
      * Current vim mode
      */
@@ -492,7 +491,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.documentLastChangedVersion.get(uri) === version) {
             return;
         }
-        const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+        // const eol = e.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
         const buf = this.uriToBuffer.get(uri);
         if (!buf) {
             return;
@@ -919,7 +918,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!this.isInit) {
             return;
         }
-        if (!this.isInsertMode || this.isRecording) {
+        if (!this.isInsertMode) {
             this.client.input(this.normalizeKey(type.text));
         } else {
             vscode.commands.executeCommand("default:type", { text: type.text });
@@ -1164,10 +1163,6 @@ export class NVIMPluginController implements vscode.Disposable {
                                         }
                                     }
                                 }
-                            } else if (this.isRecording) {
-                                editor.selections = [
-                                    new vscode.Selection(editor.selection.active, editor.selection.active),
-                                ];
                             }
                             this.documentText.set(uri, editor.document.getText());
                         }
@@ -1689,19 +1684,11 @@ export class NVIMPluginController implements vscode.Disposable {
 
     private handleModeChange = (modeName: string): void => {
         this.isInsertMode = modeName === "insert";
-        if (this.isInsertMode && this.typeHandlerDisplose && !this.isRecording) {
+        if (this.isInsertMode && this.typeHandlerDisplose) {
             this.typeHandlerDisplose.dispose();
             this.typeHandlerDisplose = undefined;
         } else if (!this.isInsertMode && !this.typeHandlerDisplose) {
             this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
-        }
-        if (this.isRecording) {
-            if (modeName === "insert") {
-                vscode.commands.executeCommand("setContext", "neovim.recording", true);
-            } else {
-                this.isRecording = false;
-                vscode.commands.executeCommand("setContext", "neovim.recording", false);
-            }
         }
         this.currentModeName = modeName;
         const e = vscode.window.activeTextEditor;
@@ -2155,10 +2142,6 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (close === "all") {
                     await vscode.commands.executeCommand("workbench.action.closeOtherEditors");
                 }
-                break;
-            }
-            case "notify-recording": {
-                this.isRecording = true;
                 break;
             }
             case "insert-line": {

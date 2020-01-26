@@ -144,14 +144,6 @@ function! s:runFileTypeDetection()
     set syntax=off
 endfunction
 
-function! s:onInsertEnter()
-    let reg = reg_recording()
-    if reg != ""
-        call VSCodeExtensionCall('notify-recording', reg)
-    endif
-endfunction
-
-
 " Load altercmd first
 execute 'source ' . s:currDir . '/vim-altercmd/plugin/altercmd.vim'
 execute 'source ' . s:currDir . '/vscode-insert.vim'
@@ -167,7 +159,6 @@ autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 " Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
 autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
 autocmd WinEnter * call <SID>onWinEnter()
-autocmd InsertEnter * call <SID>onInsertEnter()
 autocmd BufAdd * call <SID>runFileTypeDetection()
 " Looks like external windows are coming with "set wrap" set automatically, disable them
 autocmd WinNew,WinEnter * :set nowrap
