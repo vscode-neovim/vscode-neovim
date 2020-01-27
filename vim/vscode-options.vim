@@ -44,3 +44,7 @@ set modelines=0
 " Turn off auto-folding
 set nofoldenable
 set foldmethod='manual'
+
+" Turn off smart/auto-indenting
+set noautoindent
+set nosmartindent

@@ -504,16 +504,19 @@ export class NVIMPluginController implements vscode.Disposable {
             this.isInsertMode &&
             this.editorColumnIdToWinId.get(vscode.window.activeTextEditor.viewColumn || -1)
         ) {
+            const currSelections = vscode.window.activeTextEditor.selections;
             // vscode may send multiple changes, sort them from last line change to first one to avoid dealing with subsequent changed lines
             const sortedChanges = [...e.contentChanges].sort((a, b) =>
                 a.range.start.line > b.range.start.line ? -1 : a.range.start.line < b.range.start.line ? 1 : 0,
             );
+            const edits: [string, unknown[]][] = [];
             for (const change of sortedChanges) {
                 // if range length is > 0 then it's either delete or replace operation - we need to delete the text then put
                 // TODO: is there any way to send num<Del> without exiting insert mode?
                 // delete can be only either from left to right, or right to left, the second case is more useful
+                let editStr = "";
                 if (change.rangeLength) {
-                    const edits: [string, unknown[]][] = [];
+                    // const edits: [string, unknown[]][] = [];
                     edits.push(["nvim_win_set_cursor", [0, [change.range.end.line + 1, change.range.end.character]]]);
                     let delLength = change.rangeLength;
                     // need to account into crlf - it has rangeLength for 2 characters
@@ -523,17 +526,9 @@ export class NVIMPluginController implements vscode.Disposable {
                     ) {
                         delLength -= change.range.end.line - change.range.start.line;
                     }
-                    const deleteStr = [...new Array(delLength).keys()].map(() => "<BS>").join("");
-                    // edits.push(...deleteEdits);
-                    // !Important: looks like nvim_paste/nvim_put followed by nvim_input doesn't work in call_atomic, so delete first in separate request
-                    edits.push(["nvim_input", [deleteStr]]);
-                    // const currTick = this.currBufferTick.get(buf.id) || 0;
-                    // multiple <BS> are multiple ticks
-                    // this.skipBufferTickUpdate.set(buf.id, currTick + delLength);
-                    await this.client.callAtomic(edits);
+                    editStr += [...new Array(delLength).keys()].map(() => "<BS>").join("");
                 }
                 if (change.text) {
-                    const edits: [string, unknown[]][] = [];
                     if (!change.rangeLength) {
                         // cursor is correct now after delete/replace edit
                         edits.push([
@@ -544,22 +539,25 @@ export class NVIMPluginController implements vscode.Disposable {
                     // nvim_paste doesn't work with recording :(
                     // edits.push(["nvim_paste", [change.text, true, -1]]);
                     // edits.push(["nvim_put", [change.text.split(eol), "c", true, true]]);
-                    edits.push([
-                        "nvim_input",
-                        [
-                            change.text
-                                // normalize text
-                                .split(eol)
-                                .join("\n")
-                                .replace("<", "<LT>"),
-                        ],
-                    ]);
-                    // paste is single tick
-                    // const currTick = this.currBufferTick.get(buf.id) || 0;
-                    // this.skipBufferTickUpdate.set(buf.id, currTick + 1);
-                    await this.client.callAtomic(edits);
+                    editStr += change.text
+                        .split(eol)
+                        .join("\n")
+                        .replace("<", "<LT>");
                 }
+                edits.push(["nvim_input", [editStr]]);
             }
+            // edits.push([
+            //     "nvim_win_set_cursor",
+            //     [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, cursor)],
+            // ]);
+            await this.client.callAtomic(edits);
+            // ! doesn't work when comibned with nvim_input edits
+            await this.client.request("nvim_win_set_cursor", [
+                0,
+                this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor),
+            ]);
+            // restore original cursor
+            vscode.window.activeTextEditor.selections = currSelections;
         } else {
             const changed = this.documentChangesInInsertMode.get(uri);
             if (!changed) {
