@@ -48,3 +48,6 @@ set foldmethod='manual'
 " Turn off smart/auto-indenting
 set noautoindent
 set nosmartindent
+
+" Remove indent from backspace otherwise it will break things
+set backspace=eol,start

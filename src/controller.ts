@@ -510,12 +510,21 @@ export class NVIMPluginController implements vscode.Disposable {
                 a.range.start.line > b.range.start.line ? -1 : a.range.start.line < b.range.start.line ? 1 : 0,
             );
             const edits: [string, unknown[]][] = [];
+            const {
+                options: { insertSpaces },
+            } = vscode.window.activeTextEditor;
+            let restoreShiftWidth = false;
             for (const change of sortedChanges) {
                 // if range length is > 0 then it's either delete or replace operation - we need to delete the text then put
                 // TODO: is there any way to send num<Del> without exiting insert mode?
                 // delete can be only either from left to right, or right to left, the second case is more useful
                 let editStr = "";
                 if (change.rangeLength) {
+                    // ! without shiftwidth override it may break things since single <BS> will delete multiple spaces/tabs
+                    if (insertSpaces && !restoreShiftWidth) {
+                        edits.push(["nvim_win_set_option", [0, "shiftwidth", 1]]);
+                        restoreShiftWidth = true;
+                    }
                     // const edits: [string, unknown[]][] = [];
                     edits.push(["nvim_win_set_cursor", [0, [change.range.end.line + 1, change.range.end.character]]]);
                     let delLength = change.rangeLength;
@@ -533,7 +542,8 @@ export class NVIMPluginController implements vscode.Disposable {
                         // cursor is correct now after delete/replace edit
                         edits.push([
                             "nvim_win_set_cursor",
-                            [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, change.range.start)],
+                            // [0, this.getNeovimCursorPosForEditor(vscode.window.activeTextEditor, change.range.start)],
+                            [0, [change.range.start.line + 1, change.range.start.character]],
                         ]);
                     }
                     // nvim_paste doesn't work with recording :(
@@ -545,6 +555,9 @@ export class NVIMPluginController implements vscode.Disposable {
                         .replace("<", "<LT>");
                 }
                 edits.push(["nvim_input", [editStr]]);
+            }
+            if (restoreShiftWidth) {
+                edits.push(["nvim_win_set_option", [0, "shiftwidth", null]]);
             }
             // edits.push([
             //     "nvim_win_set_cursor",
