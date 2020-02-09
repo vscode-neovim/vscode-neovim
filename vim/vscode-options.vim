@@ -43,4 +43,4 @@ set modelines=0
 
 " Turn off auto-folding
 set nofoldenable
-set foldmethod='manual'
+set foldmethod=manual

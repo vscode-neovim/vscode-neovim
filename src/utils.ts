@@ -1,5 +1,5 @@
 import { Diff } from "fast-diff";
-import { TextEditor } from "vscode";
+import { TextEditor, TextDocumentContentChangeEvent, Position } from "vscode";
 import wcwidth from "ts-wcwidth";
 
 export interface EditRange {
@@ -285,4 +285,51 @@ export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: 
         line: cursorLine,
         col,
     };
+}
+
+export function isChangeSubsequentToChange(
+    change: TextDocumentContentChangeEvent,
+    lastChange: TextDocumentContentChangeEvent,
+): boolean {
+    const lastChangeTextLength = lastChange.text.length;
+    const lastChangeOffsetStart = lastChange.rangeOffset;
+    const lastChangeOffsetEnd = lastChange.rangeOffset + lastChangeTextLength;
+    if (!change.rangeLength) {
+        // next character
+        if (lastChangeOffsetEnd === change.rangeOffset) {
+            return true;
+        }
+    } else {
+        if (!lastChange.rangeLength) {
+            // removed added text - may be single character or some word
+            if (change.rangeOffset === lastChange.rangeOffset && change.rangeLength === lastChangeTextLength) {
+                return true;
+            }
+            // delete from end of previous change
+            if (change.rangeOffset + change.rangeLength === lastChangeOffsetEnd) {
+                return true;
+            }
+        } else {
+            if (change.rangeOffset + change.rangeLength === lastChangeOffsetStart) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+export function isCursorChange(change: TextDocumentContentChangeEvent, cursor: Position, eol: string): boolean {
+    if (change.range.contains(cursor)) {
+        return true;
+    }
+    if (change.range.isSingleLine && change.text) {
+        const lines = change.text.split(eol);
+        const lineLength = lines.length;
+        const newEndLineRange = change.range.start.line + lineLength - 1;
+        const newEndLastLineCharRange = change.range.end.character + lines.slice(-1)[0].length;
+        if (newEndLineRange >= cursor.line && newEndLastLineCharRange >= cursor.character) {
+            return true;
+        }
+    }
+    return false;
 }
