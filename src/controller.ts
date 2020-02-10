@@ -60,10 +60,6 @@ interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
 }
 
-interface ActiveChange {
-    delLength: number;
-}
-
 // to not deal with screenrow positioning, we set height to high value and scrolloff to value / 2. so screenrow will be always constant
 // big scrolloff is needed to make sure that editor visible space will be always within virtual vim boundaries, regardless of current
 // cursor positioning
@@ -2306,7 +2302,6 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!this.isInit) {
             return;
         }
-        // need <Esc> first otherwise it won't allow to switch the buffer
         if (this.isInsertMode) {
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
