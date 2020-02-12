@@ -20,7 +20,7 @@ https://github.com/asvetliakov/vscode-neovim[vscode-neovim repository]
 
 toc::[]
 
-=== Installation
+== Installation
 
 * Install
 https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim[vscode-neovim]
@@ -36,14 +36,14 @@ prevent potential breakings and problems
 linux distributions have an *old* version of neovim in their package
 repo - always check what version are you installing.
 
-==== WSL
+=== WSL
 
 If you want to use WSL version of neovim, set `useWSL` configuration
 toggle and specify linux path to nvim binary. `wsl.exe` windows binary
 and `wslpath` linux binary are required for this. `wslpath` must be
 available through `$PATH` linux env setting.
 
-=== Features
+== Features
 
 * Almost fully feature-complete VIM integration by utilizing neovim
 * First-class VSCode insert mode. The plugin unbinds self from the
@@ -54,7 +54,7 @@ definition/snippets/multiple cursors/etc…
 * vimrc/vim plugins/etc are supported (few plugins don’t make sense with
 vscode, such as nerdtree)
 
-=== Requirements
+== Requirements
 
 Neovim 0.4.2 or greater
 
@@ -62,7 +62,7 @@ Neovim 0.4.2 or greater
 *Important* you must specify full path to neovim, like
 `C:\Neovim\bin\nvim.exe` or `/usr/local/bin/nvim`
 
-=== Important
+== Important
 
 * Visual modes are not producing real vscode selections (few versions
 had this feature previously, but it was implemented through ugly & hacky
@@ -91,7 +91,7 @@ scripts/keybindings, they won’t work.
 * It’s better to use spaces instead of tabs for file indent. `<C-v>` is
 broken for tab indents
 
-=== VSCode specific features and differences
+== VSCode specific features and differences
 
 * O, o keys mapped to vscode
 `editor.action.insertLineBefore/insertLineAfter` command thus dont
@@ -115,7 +115,7 @@ tab and go to the file under cursor, but vscode/vim window/tabs
 metaphors are completely different, so it’s useful to do slighlty
 different thing here)
 
-=== Performance/Latency problems
+== Performance/Latency problems
 
 If you have any performance problems (cursor jitter usually) make sure
 you’re not using these kinds of extensions:
@@ -145,7 +145,7 @@ completion, lsp plugins as well any plugins that spawn windows/buffers
 keep navigation/text-objects/text-editing/etc plugins - they should be
 fine.
 
-=== Enabling jj or jk as escape keys from the insert mode
+== Enabling jj or jk as escape keys from the insert mode
 
 Put into your keybindings.json:
 
@@ -173,7 +173,7 @@ to enable `jk` add also:
     }
 ----
 
-=== Determining if running in vscode in your init.vim
+== Determining if running in vscode in your init.vim
 
 This should do the trick:
 
@@ -186,7 +186,7 @@ else
 endif
 ----
 
-=== Invoking vscode actions from neovim
+== Invoking vscode actions from neovim
 
 There are
 https://github.com/asvetliakov/vscode-neovim/blob/ecd361ff1968e597e2500e8ce1108830e918cfb8/vim/vscode-neovim.vim#L17-L39[few
@@ -247,13 +247,13 @@ Open definition aside (default binding):
 nnoremap <silent> <C-w>gd :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 ....
 
-=== Jumplist
+== Jumplist
 
 Jumplist lifetime is mapped to vscode’s view column lifetime and not
 persisted between restarts. Also jumplist is not inherited for
 `split`/etc… commands
 
-=== Wildmenu completion
+== Wildmenu completion
 
 Command menu has the wildmenu completion on type. The completion options
 appear after 1.5s (to not bother you when you write `:w` or `:noh`).
@@ -261,9 +261,12 @@ appear after 1.5s (to not bother you when you write `:w` or `:noh`).
 
 image:/images/wildmenu.gif[wildmenu]
 
-=== Multiple cursors
+== Multiple cursors
 
-Multiple cursors work in: 1. Insert mode 2. (Optional) Visual line mode
+Multiple cursors work in:
+
+1. Insert mode
+2. (Optional) Visual line mode
 3. (Optional) Visual block mode
 
 To spawn multiple cursors from visual line/block modes type `ma`/`mA` or
@@ -278,7 +281,7 @@ See gif in action:
 
 image:/images/multicursor.gif[multicursors]
 
-=== Custom keymaps for scrolling/window/tab/etc… management
+== Custom keymaps for scrolling/window/tab/etc… management
 
 * See link:/vim/vscode-scrolling.vim[vscode-scrolling.vim] for scrolling
 commands reference
@@ -289,162 +292,203 @@ commands reference
 * See link:/vim/vscode-window-commands.vim[vscode-window-commands.vim]
 for window commands reference
 
-=== File/Tab management commands
+== File/Tab management commands
 
-`:e[dit]` or `ex` * `:e` without argument and without bang (`!`) - opens
+`:e[dit]` or `ex`
+
+* `:e` without argument and without bang (`!`) - opens
 quickopen window * `:e!` without argument and with bang - opens open
 file dialog * `:e [filename]` , e.g. `:e $MYVIMRC` - opens a file in new
 tab. The file must exist * `:e! [filename]`, e.g. `:e! $MYVIMRC` -
 closes current file (discard any changes) and opens a file. The file
 must exist
 
-[source,ene[w]```]
-----
+``ene[w]``
+
 * ```enew``` Creates new untitled document in vscode
 * ```enew!``` closes current file (discard any changes) and creates new untitled document
 
-```fin[d]```
+``fin[d]``
+
 * Opens vscode's quick open window. Arguments and count are not supported
 
-```w[rite]```
+``w[rite]``
+
 * Without bang (```!```) saves current file
 * With bang opens 'save as' dialog
 
-```sav[eas]```
+``sav[eas]``
+
 * Opens 'save as' dialog
 
-```wa[ll]```
+``wa[ll]``
+
 * Saves all files. Bang is not doing anything
 
-```q[uit]``` or keys ```<C-w> q``` / ```<C-w> c```
+``q[uit]`` or keys ``<C-w> q`` / ``<C-w> c``
+
 * Closes the active editor
 
-```wq```
+``wq``
+
 * Saves and closes the active editor
 
-```qa[ll]```
+``qa[ll]``
+
 * Closes all editors, but doesn't quit vscode. Acts like ```qall!```, so beware for a nonsaved changes
 
-```wqa[ll]```/```xa[ll]```
+``wqa[ll]``/``xa[ll]``
+
 * Saves all editors & close
 
-```tabe[dit]```
+``tabe[dit]``
+
 * Similar to ```e[dit]```. Without argument opens quickopen, with argument opens the file in new tab
 
-```tabnew```
+``tabnew``
+
 * Opens new untitled file
 
-```tabf[ind]```
+``tabf[ind]``
+
 * Opens quickopen window
 
-```tab```/```tabs```
+``tab``/``tabs``
+
 * Not supported. Doesn't make sense with vscode
 
-```tabc[lose]```
+``tabc[lose]``
+
 * Closes active editor (tab)
 
-```tabo[nly]```
+``tabo[nly]``
+
 * Closes other tabs in vscode **group** (pane). This differs from vim where a `tab` is a like a new window, but doesn't make sense in vscode.
 
-```tabn[ext]``` or key ```gt```
+``tabn[ext]`` or key ``gt``
+
 * Switches to next (or ```count``` tabs if argument is given) in the active vscode **group** (pane)
 
-```tabp[revious]``` or key ```gT```
+``tabp[revious]`` or key ``gT``
+
 * Switches to previous (or ```count``` tabs if argument is given) in the active vscode **group** (pane)
 
-```tabfir[st]```
+``tabfir[st]``
+
 * Switches to the first tab in the active editor group
 
-```tabl[ast]```
+``tabl[ast]``
+
 * Switches to the last tab in the active edtior group
 
-```tabm[ove]```
+``tabm[ove]``
+
 * Not supported yet
 
-Keys ```ZZ``` and ```ZQ``` are bound to ```:wq``` and ```q!``` respectively
+Keys ``ZZ`` and ``ZQ`` are bound to ``:wq`` and ``q!`` respectively
 
 ## Buffer/window management commands
 
-*Note*: split size distribution is controlled by ```workbench.editor.splitSizing``` setting. By default it's `distribute`, which is mapped to vim's ```equalalways``` and ```eadirection = 'both'``` (default)
+*Note*: split size distribution is controlled by ``workbench.editor.splitSizing`` setting. By default it's `distribute`, which is mapped to vim's ``equalalways`` and ``eadirection = 'both'`` (default)
 
-```sp[lit]``` or key ```<C-w> s```
-* Split editor horizontally. When argument given opens the specified file in the argument, e.g ```:sp $MYVIMRC```. File must exist
+``sp[lit]`` or key ``<C-w> s``
 
-```vs[plit]``` or key ```<C-w> v```
+* Split editor horizontally. When argument given opens the specified file in the argument, e.g ``:sp $MYVIMRC``. File must exist
+
+``vs[plit]`` or key ``<C-w> v``
+
 * Split editor vertically. When argument given opens the specified file in the argument. File must exist
 
-```new``` or key ```<C-w> n```
-* Like ```sp[lit]``` but creates new untitled file if no argument given
+``new`` or key ``<C-w> n``
 
-```vne[w]```
-* Like ```vs[plit]``` but creates new untitled file if no argument given
+* Like ``sp[lit]`` but creates new untitled file if no argument given
 
-```<C-w> ^```
+``vne[w]``
+
+* Like ``vs[plit]`` but creates new untitled file if no argument given
+
+``<C-w> ^``
+
 * Not supported yet
 
-```vert[ical]```/```lefta[bove]```/etc...
+``vert[ical]``/``lefta[bove]``/etc...
+
 * Not supported yet
 
-```on[ly]``` or key ```<C-w> o```
-* Without bang (```!```) Merges all editor groups into the one. **Doesn't** close editors
+``on[ly]`` or key ``<C-w> o``
+
+* Without bang (``!``) Merges all editor groups into the one. **Doesn't** close editors
 * With bang closes all editors from all groups except current one
 
-```<C-w> j/k/h/l```
+``<C-w> j/k/h/l``
+
 * Focus group below/above/left/right
 
-```<C-w> <C-j>/<C-i>/<C-h>/<C-l>```
-* Move editor to group below/above/left/right. Vim doesn't have analogue mappings. **Note**: ```<C-w> <C-i>``` moves editor up. Logically it should be ```<C-w> <C-k>``` but vscode has many commands mapped to ```<C-k> [key]``` and doesn't allow to use ```<C-w> <C-k>``` without unbinding them first
+``<C-w> <C-j>/<C-i>/<C-h>/<C-l>``
 
-```<C-w> r/R/x```
-* Not supported use ```<C-w> <C-j>``` and similar to move editors
+* Move editor to group below/above/left/right. Vim doesn't have analogue mappings. **Note**: ``<C-w> <C-i>`` moves editor up. Logically it should be ``<C-w> <C-k>`` but vscode has many commands mapped to ``<C-k> [key]`` and doesn't allow to use ``<C-w> <C-k>`` without unbinding them first
 
-```<C-w> w``` or ```<C-w> <C-w>```
+``<C-w> r/R/x``
+
+* Not supported use ``<C-w> <C-j>`` and similar to move editors
+
+``<C-w> w`` or ``<C-w> <C-w>``
+
 * Focus next group. The behavior may differ than in vim
 
-```<C-w> W``` or ```<C-w> p```
-* Focus previous group. The behavior may differ than in vim. ```<C-w> p``` is completely different than in vim
+``<C-w> W`` or ``<C-w> p``
 
-```<C-w> t```
+* Focus previous group. The behavior may differ than in vim. ``<C-w> p`` is completely different than in vim
+
+``<C-w> t``
+
 * Focus first editor group (most top-left)
 
-```<C-w> b```
+``<C-w> b``
+
 * Focus last editor group (most bottom-right)
 
-```<C-w> H/K/J/L```
+``<C-w> H/K/J/L``
+
 * Not supported yet
 
-```<C-w> =```
+``<C-w> =``
+
 * Align all editors to have the same width
 
-```[count]<C-w> >``` or ```[count]<C-w> +```
+``[count]<C-w> >`` or ``[count]<C-w> +``
+
 * Increase editor size by count. Both width & height are increased since in vscode it's not possible to control individual width/height
 
-```[count]<C-w> <``` or ```[count]<C-w> -```
+``[count]<C-w> <`` or ``[count]<C-w> -``
+
 * Decrease editor size by count. Both width & height are increased since in vscode it's not possible to control individual width/height
 
-```<C-w> _```
+``<C-w> _``
+
 * Toggle maximized editor size. Pressing again will restore the size
 
 ## Insert mode special keys
 
-Enabled by ```useCtrlKeysForInsertMode = true``` (default true)
+Enabled by ``useCtrlKeysForInsertMode = true`` (default true)
 
-Key | Desc | Status
---- | ---- | ------
-```CTRL-r [0-9a-z"%#*+:.-=]``` | Paste from register | Works
-```CTRL-a``` | Paste previous inserted content | Works
-```CTRL-u``` | Delete all text till begining of line, if empty - delete newline | Bound to VSCode key
-```CTRL-w``` | Delete word left | Bound to VSCode key
-```CTRL-h``` | Delete character left | Bound to VSCode key
-```CTRL-t``` | Indent lines right | Bound to VSCode indent line
-```CTRL-d``` | Indent lines left | Bound to VSCode outindent line
-```CTRL-j``` | Insert line | Bound to VSCode insert line after
+|===================
+|Key | Desc | Status
+|``CTRL-r [0-9a-z"%#*+:.-=]`` | Paste from register | Works
+|``CTRL-a`` | Paste previous inserted content | Works
+|``CTRL-u`` | Delete all text till begining of line, if empty - delete newline | Bound to VSCode key
+|``CTRL-w`` | Delete word left | Bound to VSCode key
+|``CTRL-h`` | Delete character left | Bound to VSCode key
+|``CTRL-t`` | Indent lines right | Bound to VSCode indent line
+|``CTRL-d`` | Indent lines left | Bound to VSCode outindent line
+|``CTRL-j`` | Insert line | Bound to VSCode insert line after
+|===================
 
 Other keys are not supported in insert mode
 
 ## Normal mode control keys
 
-Enabled by ```useCtrlKeysForNormalMode = true``` (default true)
+Enabled by ``useCtrlKeysForNormalMode = true`` (default true)
 
 Refer to vim manual to get help what they're doing
 
@@ -485,7 +529,8 @@ Other control keys are not being sent (Usually useless with vscode)
 
 ### To pass additional ctrl key sequence, for example <C-Tab> add to your keybindings.json:
 
-```json
+[source,json]
+----
     {
         "command": "vscode-neovim.send",
         "key": "ctrl+tab",
@@ -494,7 +539,7 @@ Other control keys are not being sent (Usually useless with vscode)
     }
 ----
 
-==== To disable existing ctrl key sequence, for example Ctrl+A add to your keybindings.json
+=== To disable existing ctrl key sequence, for example Ctrl+A add to your keybindings.json
 
 [source,json]
 ----
@@ -504,7 +549,7 @@ Other control keys are not being sent (Usually useless with vscode)
     }
 ----
 
-=== Vim-easymotion
+== Vim-easymotion
 
 Speaking honestly, original
 https://github.com/easymotion/vim-easymotion[vim-easymotion] works fine
@@ -520,7 +565,7 @@ motions won’t work (obviously) so don’t use them. Happy jumping!
 
 image:/images/easy-motion-vscode.png[easymotion]
 
-=== Vim-commentary
+== Vim-commentary
 
 You can use https://github.com/tpope/vim-commentary[vim-commentary] if
 you like it. But vscode already has such functionality so why don’t use
@@ -537,11 +582,11 @@ Similar to vim-commentary, gcc is comment line (accept count), use gc
 with motion/in visual mode. `VSCodeCommentary` is just a simple function
 which calls `editor.action.commentLine`
 
-=== Known Issues
+== Known Issues
 
 See https://github.com/asvetliakov/vscode-neovim/issues[Issues section]
 
-=== How it works
+== How it works
 
 * VScode connects to neovim instance
 * When opening a some file, a scratch buffer is created in nvim and
@@ -554,7 +599,7 @@ communication is being performed here)
 * After pressing escape key from the insert mode, extension sends
 changes obtained from the insert mode to neovim
 
-=== Credits & External Resources
+== Credits & External Resources
 
 * https://github.com/kana/vim-altercmd[vim-altercmd] - Used for
 rebinding default commands to call vscode command
