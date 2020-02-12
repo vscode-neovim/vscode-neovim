@@ -1,4 +1,7 @@
 = Neo Vim (VS Code Neovim)
+:toc: macro
+:toclevels: 1
+:toc-title:
 
 Neovim integration for Visual Studio Code
 
@@ -14,6 +17,8 @@ implementation for anything else.
 
 Please report any issues/suggestions to
 https://github.com/asvetliakov/vscode-neovim[vscode-neovim repository]
+
+toc::[]
 
 === Installation
 
