@@ -48,8 +48,8 @@ nnoremap <silent> <C-w>n :<C-u>call <SID>splitNew('h', '__vscode_new__')<CR>
 xnoremap <silent> <C-w>n :<C-u>call <SID>splitNew('h', '__vscode_new__')<CR>
 
 nnoremap <silent> <C-w>q :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
-nnoremap <silent> <C-w>q :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
-xnoremap <silent> <C-w>c :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
+xnoremap <silent> <C-w>q :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
+nnoremap <silent> <C-w>c :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
 xnoremap <silent> <C-w>c :<C-u>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
 
 nnoremap <silent> <C-w>o :<C-u>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
