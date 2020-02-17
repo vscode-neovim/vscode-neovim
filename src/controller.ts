@@ -126,6 +126,10 @@ export class NVIMPluginController implements vscode.Disposable {
     private documentChangesInInsertMode: Map<string, boolean> = new Map();
     private documentText: Map<string, string> = new Map();
     /**
+     * Last subsequent related changes. Used for dot-repeat workaround
+     */
+    private lastChanges: vscode.TextDocumentContentChangeEvent[] = [];
+    /**
      * Vscode doesn't allow to apply multiple edits to the save document without awaiting previous reuslt.
      * So we'll accumulate neovim buffer updates here, then apply
      */
@@ -493,6 +497,26 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         if (!this.managedBufferIds.has(buf.id)) {
             return;
+        }
+        const currEditor = vscode.window.activeTextEditor;
+        if (
+            currEditor &&
+            currEditor.document.uri.toString() === e.document.uri.toString() &&
+            this.isInsertMode &&
+            this.editorColumnIdToWinId.get(currEditor.viewColumn || -1)
+        ) {
+            const eol = currEditor.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+            const cursor = currEditor.selection.active;
+            for (const change of e.contentChanges) {
+                if (Utils.isCursorChange(change, cursor, eol)) {
+                    const lastChange = this.lastChanges.slice(-1)[0];
+                    if (lastChange && Utils.isChangeSubsequentToChange(change, lastChange)) {
+                        this.lastChanges.push(change);
+                    } else {
+                        this.lastChanges = [change];
+                    }
+                }
+            }
         }
         const changed = this.documentChangesInInsertMode.get(uri);
         if (!changed) {
@@ -2118,6 +2142,75 @@ export class NVIMPluginController implements vscode.Disposable {
         return res;
     };
 
+    private syncLastChangesWithDotRepeat = async (): Promise<void> => {
+        // dot-repeat executes last change across all buffers. So we'll create a temporary buffer & window,
+        // replay last changes here to trick neovim and destroy it after
+        if (!this.lastChanges.length) {
+            return;
+        }
+        const currEditor = vscode.window.activeTextEditor;
+        if (!currEditor) {
+            return;
+        }
+        const currBuf = this.uriToBuffer.get(currEditor.document.uri.toString());
+        if (!currBuf) {
+            return;
+        }
+        const eol = currEditor.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
+        const currWinId = this.editorColumnIdToWinId.get(currEditor.viewColumn || -1);
+        if (!currWinId) {
+            return;
+        }
+
+        // temporary buffer to replay the changes
+        const buf = await this.client.createBuffer(true, true);
+        if (typeof buf === "number") {
+            return;
+        }
+        // create temporary win
+        const win = await this.client.openWindow(buf, true, {
+            external: true,
+            width: NVIM_WIN_WIDTH,
+            height: NVIM_WIN_HEIGHT,
+        });
+        if (typeof win === "number") {
+            return;
+        }
+        const edits: [string, unknown[]][] = [];
+
+        // for delete changes we need an actual text, so let's prefill with something
+        // accumulate all possible lengths of deleted text to be safe
+        const delRangeLength = this.lastChanges.reduce((total, change) => {
+            return total + change.rangeLength;
+        }, 0);
+        if (delRangeLength) {
+            const stub = new Array(delRangeLength).fill("x").join("");
+            edits.push(["nvim_buf_set_lines", [buf.id, 0, 0, false, [stub]]]);
+        }
+        if (delRangeLength) {
+            edits.push(["nvim_win_set_cursor", [win.id, [1, delRangeLength]]]);
+        }
+        let editStr = "";
+        for (const change of this.lastChanges) {
+            if (change.rangeLength) {
+                editStr += [...new Array(change.rangeLength).keys()].map(() => "<BS>").join("");
+            }
+            editStr += change.text
+                .split(eol)
+                .join("\n")
+                .replace("<", "<LT>");
+        }
+        edits.push(["nvim_input", [editStr]]);
+        // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
+        await this.client.callAtomic(edits);
+
+        const cleanEdits: [string, unknown[]][] = [];
+        cleanEdits.push(["nvim_set_current_win", [currWinId]]);
+        cleanEdits.push(["nvim_win_close", [win.id, true]]);
+        cleanEdits.push(["nvim_command", [`bwipeout! ${buf.id}`]]);
+        await this.client.callAtomic(cleanEdits);
+    };
+
     private uploadDocumentChangesToNeovim = async (): Promise<void> => {
         const requests: [string, unknown[]][] = [];
         for (const [uri, changed] of this.documentChangesInInsertMode) {
@@ -2212,7 +2305,9 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.isInsertMode) {
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
+            await this.syncLastChangesWithDotRepeat();
         }
+        this.lastChanges = [];
         await this.client.input("<Esc>");
         // const buf = await this.client.buffer;
         // const lines = await buf.lines;
