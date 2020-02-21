@@ -26,10 +26,10 @@ function! s:manageEditorSize(...)
     endfor
 endfunction
 
-command! -nargs=? Split call <SID>split('h', <q-args>)
-command! -nargs=? Vsplit call <SID>split('v', <q-args>)
-command! -nargs=? New call <SID>split('h', '__vscode_new__')
-command! -nargs=? Vnew call <SID>split('v', '__vscode_new__')
+command! -complete=file -nargs=? Split call <SID>split('h', <q-args>)
+command! -complete=file -nargs=? Vsplit call <SID>split('v', <q-args>)
+command! -complete=file -nargs=? New call <SID>split('h', '__vscode_new__')
+command! -complete=file -nargs=? Vnew call <SID>split('v', '__vscode_new__')
 command! -bang Only if <q-bang> == '!' | call <SID>closeOtherEditors() | else | call VSCodeNotify('workbench.action.joinAllGroups') | endif
 
 AlterCommand sp[lit] Split
