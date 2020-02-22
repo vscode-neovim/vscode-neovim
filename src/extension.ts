@@ -22,22 +22,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = settings.get("useWSL", false);
+    const neovimWidth = settings.get("neovimWidth", 1000);
     const customInit = settings.get("neovimInitPath", "");
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
-    const plugin = new NVIMPluginController(
-        neovimPath,
-        context.extensionPath,
-        {
+
+    const plugin = new NVIMPluginController({
+        customInitFile: customInit,
+        extensionPath: context.extensionPath,
+        highlightsConfiguration: {
             highlights: highlightConfHighlights,
             ignoreHighlights: highlightConfIgnore,
             unknownHighlight: highlightConfUnknown,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
-        mouseVisualSelection,
-        ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
-        customInit,
-    );
+        mouseSelection: mouseVisualSelection,
+        neovimPath: neovimPath,
+        neovimViewportHeight: 201,
+        useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
+        neovimViewportWidth: neovimWidth,
+    });
     context.subscriptions.push(plugin);
     await plugin.init();
 }

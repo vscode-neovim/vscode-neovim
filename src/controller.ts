@@ -60,19 +60,29 @@ interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
 }
 
-// to not deal with screenrow positioning, we set height to high value and scrolloff to value / 2. so screenrow will be always constant
-// big scrolloff is needed to make sure that editor visible space will be always within virtual vim boundaries, regardless of current
-// cursor positioning
-const NVIM_WIN_HEIGHT = 201;
-const NVIM_WIN_WIDTH = 500;
-
-const FIRST_SCREEN_LINE = 0;
-const LAST_SCREEN_LINE = 200;
-
 // set numberwidth=8
 const NUMBER_COLUMN_WIDTH = 8;
 
+export interface ControllerSettings {
+    neovimPath: string;
+    extensionPath: string;
+    highlightsConfiguration: HighlightConfiguration;
+    mouseSelection: boolean;
+    useWsl: boolean;
+    customInitFile: string;
+    neovimViewportWidth: number;
+    neovimViewportHeight: number;
+}
+
 export class NVIMPluginController implements vscode.Disposable {
+    // to not deal with screenrow positioning, we set height to high value and scrolloff to value / 2. so screenrow will be always constant
+    // big scrolloff is needed to make sure that editor visible space will be always within virtual vim boundaries, regardless of current
+    // cursor positioning
+    private NEOVIM_WIN_HEIGHT = 201;
+    private NEOVIM_WIN_WIDTH = 1000;
+    private FIRST_SCREEN_LINE = 0;
+    private LAST_SCREEN_LINE = 200;
+
     private isInsertMode = false;
     private isRecording = false;
     /**
@@ -214,19 +224,14 @@ export class NVIMPluginController implements vscode.Disposable {
      */
     private compositeEscapeFirstPressTimestamp?: number;
 
-    public constructor(
-        neovimPath: string,
-        extensionPath: string,
-        highlightsConfiguration: HighlightConfiguration,
-        mouseSelection: boolean,
-        useWsl: boolean,
-        customInit = "",
-    ) {
-        if (!neovimPath) {
+    public constructor(settings: ControllerSettings) {
+        this.NEOVIM_WIN_HEIGHT = settings.neovimViewportHeight;
+        this.NEOVIM_WIN_WIDTH = settings.neovimViewportWidth;
+        if (!settings.neovimPath) {
             throw new Error("Neovim path is not defined");
         }
-        this.mouseSelectionEnabled = mouseSelection;
-        this.highlightProvider = new HighlightProvider(highlightsConfiguration);
+        this.mouseSelectionEnabled = settings.mouseSelection;
+        this.highlightProvider = new HighlightProvider(settings.highlightsConfiguration);
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument));
         this.disposables.push(vscode.window.onDidChangeVisibleTextEditors(this.onChangedEdtiors));
@@ -260,21 +265,21 @@ export class NVIMPluginController implements vscode.Disposable {
             ),
         );
 
-        const neovimSupportScriptPath = path.join(extensionPath, "vim", "vscode-neovim.vim");
-        const neovimOptionScriptPath = path.join(extensionPath, "vim", "vscode-options.vim");
+        const neovimSupportScriptPath = path.join(settings.extensionPath, "vim", "vscode-neovim.vim");
+        const neovimOptionScriptPath = path.join(settings.extensionPath, "vim", "vscode-options.vim");
 
         const args = [
             "-N",
             "--embed",
             // load options after user config
             "-c",
-            useWsl ? `source $(wslpath '${neovimOptionScriptPath}')` : `source ${neovimOptionScriptPath}`,
+            settings.useWsl ? `source $(wslpath '${neovimOptionScriptPath}')` : `source ${neovimOptionScriptPath}`,
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
-            useWsl ? `source $(wslpath '${neovimSupportScriptPath}')` : `source ${neovimSupportScriptPath}`,
+            settings.useWsl ? `source $(wslpath '${neovimSupportScriptPath}')` : `source ${neovimSupportScriptPath}`,
         ];
-        if (useWsl) {
-            args.unshift(neovimPath);
+        if (settings.useWsl) {
+            args.unshift(settings.neovimPath);
         }
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
@@ -284,10 +289,10 @@ export class NVIMPluginController implements vscode.Disposable {
                 `${process.env.NEOVIM_DEBUG_HOST || "127.0.0.1"}:${process.env.NEOVIM_DEBUG_PORT || 4000}`,
             );
         }
-        if (customInit) {
-            args.push("-u", customInit);
+        if (settings.customInitFile) {
+            args.push("-u", settings.customInitFile);
         }
-        this.nvimProc = spawn(useWsl ? "C:\\Windows\\system32\\wsl.exe" : neovimPath, args, {});
+        this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
         this.client = attach({ proc: this.nvimProc });
         this.statusLine = new StatusLineController();
         this.commandsController = new CommandsController(this.client);
@@ -309,7 +314,7 @@ export class NVIMPluginController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        await this.client.uiAttach(NVIM_WIN_WIDTH, NVIM_WIN_HEIGHT, {
+        await this.client.uiAttach(this.NEOVIM_WIN_WIDTH, this.NEOVIM_WIN_HEIGHT, {
             rgb: true,
             // override: true,
             /* eslint-disable @typescript-eslint/camelcase */
@@ -360,8 +365,8 @@ export class NVIMPluginController implements vscode.Disposable {
                     false,
                     {
                         external: true,
-                        width: NVIM_WIN_WIDTH,
-                        height: NVIM_WIN_HEIGHT,
+                        width: this.NEOVIM_WIN_WIDTH,
+                        height: this.NEOVIM_WIN_HEIGHT,
                     },
                 ],
             ]);
@@ -1459,11 +1464,11 @@ export class NVIMPluginController implements vscode.Disposable {
                     // align topScreenLine if needed. we need to look for both FIRST_SCREEN_LINE and LAST_SCREEN_LINE because nvim may replace lines only at bottom/top
                     const firstLinesEvents = gridEvents.filter(
                         ([, line, , cells]) =>
-                            line === FIRST_SCREEN_LINE && cells[0] && cells[0][1] === this.numberLineHlId,
+                            line === this.FIRST_SCREEN_LINE && cells[0] && cells[0][1] === this.numberLineHlId,
                     );
                     const lastLinesEvents = gridEvents.filter(
                         ([, line, , cells]) =>
-                            line === LAST_SCREEN_LINE && cells[0] && cells[0][1] === this.numberLineHlId,
+                            line === this.LAST_SCREEN_LINE && cells[0] && cells[0][1] === this.numberLineHlId,
                     );
                     for (const evt of firstLinesEvents) {
                         const [grid] = evt;
@@ -1486,7 +1491,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             gridConf.topScreenLineStr,
                         );
                         const topLine = Utils.getLineFromLineNumberString(topLineStr);
-                        const bottomLine = topLine + LAST_SCREEN_LINE;
+                        const bottomLine = topLine + this.LAST_SCREEN_LINE;
                         const bottomLineStr = Utils.convertLineNumberToString(bottomLine + 1);
 
                         gridConf.topScreenLineStr = topLineStr;
@@ -1515,7 +1520,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             gridConf.bottomScreenLineStr,
                         );
                         const bottomLine = Utils.getLineFromLineNumberString(bottomLineStr);
-                        const topLine = bottomLine - LAST_SCREEN_LINE;
+                        const topLine = bottomLine - this.LAST_SCREEN_LINE;
                         //
                         const topLineStr = Utils.convertLineNumberToString(topLine + 1);
                         gridConf.bottomScreenLineStr = bottomLineStr;
@@ -1525,7 +1530,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
                     // eslint-disable-next-line prefer-const
                     for (let [grid, row, colStart, cells] of gridEvents) {
-                        if (row > LAST_SCREEN_LINE) {
+                        if (row > this.LAST_SCREEN_LINE) {
                             continue;
                         }
                         const gridConf = this.grids.get(grid);
@@ -2170,8 +2175,8 @@ export class NVIMPluginController implements vscode.Disposable {
         // create temporary win
         const win = await this.client.openWindow(buf, true, {
             external: true,
-            width: NVIM_WIN_WIDTH,
-            height: NVIM_WIN_HEIGHT,
+            width: this.NEOVIM_WIN_WIDTH,
+            height: this.NEOVIM_WIN_HEIGHT,
         });
         if (typeof win === "number") {
             return;

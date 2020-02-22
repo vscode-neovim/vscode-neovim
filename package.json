@@ -48,6 +48,12 @@
 					"title": "Custom init.vim path",
 					"description": "Full path to custom neovim init file, equals to startup option -u. If checked useWSL flag specify a Linux path. You can also use exists('g:vscode') in your init.vim to check if neovim is being run in vscode and share init file between neovim/vscode"
 				},
+				"vscode-neovim.neovimWidth": {
+					"type": "number",
+					"default": 1000,
+					"title": "Neovim width",
+					"description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
+				},
 				"vscode-neovim.useCtrlKeysForNormalMode": {
 					"type": "boolean",
 					"default": true,
