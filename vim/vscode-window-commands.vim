@@ -1,5 +1,5 @@
 
-function! s:split(...)
+function! s:split(...) abort
     let direction = a:1
     let file = a:2
     call VSCodeCall(direction == 'h' ? 'workbench.action.splitEditorDown' : 'workbench.action.splitEditorRight')

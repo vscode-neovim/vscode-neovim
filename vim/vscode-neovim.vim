@@ -14,15 +14,15 @@ let s:vscodePluginEventName = "vscode-neovim"
 
 " RPC and global functions
 
-function! VSCodeCall(cmd, ...)
+function! VSCodeCall(cmd, ...) abort
     call rpcrequest(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
 endfunction
 
-function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...)
+function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
     call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, 0, 0, a:leaveSelection, a:000)
 endfunction
 
-function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
+function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
     call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
 endfunction
 
@@ -38,11 +38,11 @@ function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ..
     call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
 endfunction
 
-function! VSCodeExtensionCall(cmd, ...)
+function! VSCodeExtensionCall(cmd, ...) abort
     call rpcrequest(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
-function! VSCodeExtensionNotify(cmd, ...)
+function! VSCodeExtensionNotify(cmd, ...) abort
     call rpcnotify(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 

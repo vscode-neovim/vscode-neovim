@@ -15,12 +15,12 @@ function! s:editOrNew(...)
     endif
 endfunction
 
-function! s:saveAndClose()
+function! s:saveAndClose() abort
     call VSCodeCall('workbench.action.files.save')
     call VSCodeNotify('workbench.action.closeActiveEditor')
 endfunction
 
-function! s:saveAllAndClose()
+function! s:saveAllAndClose() abort
     call VSCodeCall('workbench.action.files.saveAll')
     call VSCodeNotify('workbench.action.closeAllEditors')
 endfunction
