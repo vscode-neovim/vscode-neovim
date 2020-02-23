@@ -347,7 +347,7 @@ function getSystemSpecificSetting(
     legacySetting: { environmentVariableName?: "NEOVIM_PATH"; vscodeSettingName: LegacySettingName },
 ): string | undefined {
     const settings = workspace.getConfiguration(EXT_NAME);
-    const isWindowsSubsystemForLinux = settings.get("useWSL");
+    const isUseWindowsSubsystemForLinux = settings.get("useWSL");
 
     //https://github.com/microsoft/vscode/blob/master/src/vs/base/common/platform.ts#L63
     const platform = process.platform as "win32" | "darwin" | "linux";
@@ -359,7 +359,7 @@ function getSystemSpecificSetting(
     const legacySettingValue = legacyEnvironmentVariable || settings.get(legacySetting.vscodeSettingName);
     if (legacySettingValue) {
         return legacySettingValue;
-    } else if (isWindowsSubsystemForLinux) {
+    } else if (isUseWindowsSubsystemForLinux && platform !== "darwin") {
         return settings.get(`${settingPrefix}.${"linux" as Platform}`);
     } else {
         return settings.get(`${settingPrefix}.${platform}`);
