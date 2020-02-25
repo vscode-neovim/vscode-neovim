@@ -359,7 +359,7 @@ function getSystemSpecificSetting(
     const legacySettingValue = legacyEnvironmentVariable || settings.get(legacySetting.vscodeSettingName);
     if (legacySettingValue) {
         return legacySettingValue;
-    } else if (isUseWindowsSubsystemForLinux && platform !== "darwin") {
+    } else if (isUseWindowsSubsystemForLinux && platform === "win32") {
         return settings.get(`${settingPrefix}.${"linux" as Platform}`);
     } else {
         return settings.get(`${settingPrefix}.${platform}`);
