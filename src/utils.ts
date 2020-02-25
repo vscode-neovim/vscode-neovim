@@ -370,13 +370,13 @@ export function getNeovimPath(): string | undefined {
     const legacySettingInfo = {
         vscodeSettingName: "neovimPath",
         environmentVariableName: "NEOVIM_PATH",
-    } as Parameters<typeof getSystemSpecificSetting>[1];
+    } as const;
     return getSystemSpecificSetting("neovimExecutablePaths", legacySettingInfo);
 }
 
 export function getNeovimInitPath(): string | undefined {
     const legacySettingInfo = {
         vscodeSettingName: "neovimInitPath",
-    } as Parameters<typeof getSystemSpecificSetting>[1];
+    } as const;
     return getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
 }
