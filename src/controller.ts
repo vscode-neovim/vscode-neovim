@@ -1278,6 +1278,9 @@ export class NVIMPluginController implements vscode.Disposable {
                     // If allContent ends with a tab and pos is at the end of the command, the completion must not have triggered,
                     // so send a backspace to remove it.
                     if (allContent.endsWith("\t") && pos == allContent.length) {
+                        if (this.commandLine) {
+                            this.commandLine.setCompletionItems([]);
+                        }
                         this.client.input("<BS>");
                     }
                     // !note: neovim can send cmdline_hide followed by cmdline_show events
