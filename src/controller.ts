@@ -1272,6 +1272,14 @@ export class NVIMPluginController implements vscode.Disposable {
                         number,
                     ];
                     const allContent = content.map(([, str]) => str).join("");
+                    // In onCmdChange, <Tab> gets appended to trigger completions. In some situations instead of triggering a completion,
+                    // neovim puts a tab character at the end of the command. This can be a ploblem for substitute and global commands.
+                    // For example, "s/foo/bar" will insert a tab after the replacement.
+                    // If allContent ends with a tab and pos is at the end of the command, the completion must not have triggered,
+                    // so send a backspace to remove it.
+                    if (allContent.endsWith("\t") && pos == allContent.length) {
+                        this.client.input("<BS>");
+                    }
                     // !note: neovim can send cmdline_hide followed by cmdline_show events
                     // !since quickpick can be destroyed slightly at later time after handling cmdline_hide we want to create new command line
                     // !controller and input for every visible cmdline_show event
