@@ -87,7 +87,7 @@ to enable `jk` add also:
 ```json
     {
         "command": "vscode-neovim.compositeEscape2",
-        "key": "k",
+        "key": "j",
         "when": "neovim.mode == insert",
         "args": "k"
     }
