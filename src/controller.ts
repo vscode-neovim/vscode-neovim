@@ -888,7 +888,6 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         if (!this.isInsertMode || this.isRecording) {
             this.client.input(this.normalizeKey(type.text));
-           // this.client.input(this.normalizeKey("i" + JSON.stringify(type.text)));
         } else {
             vscode.commands.executeCommand("default:type", { text: type.text });
         }
@@ -1655,21 +1654,6 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private handleModeChange = (modeName: string): void => {
-        // this.isInsertMode = modeName === "insert";
-        // if (this.isInsertMode && this.typeHandlerDisplose && !this.isRecording) {
-        //     this.typeHandlerDisplose.dispose();
-        //     this.typeHandlerDisplose = undefined;
-        // } else if (!this.isInsertMode && !this.typeHandlerDisplose) {
-        //     this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
-        // }
-        // if (this.isRecording) {
-        //     if (modeName === "insert") {
-        //         vscode.commands.executeCommand("setContext", "neovim.recording", true);
-        //     } else {
-        //         this.isRecording = false;
-        //         vscode.commands.executeCommand("setContext", "neovim.recording", false);
-        //     }
-        // }
         this.currentModeName = modeName;
         const e = vscode.window.activeTextEditor;
         if (!e) {
