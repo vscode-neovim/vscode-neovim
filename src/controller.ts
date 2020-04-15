@@ -1654,6 +1654,14 @@ export class NVIMPluginController implements vscode.Disposable {
     };
 
     private handleModeChange = (modeName: string): void => {
+        if (this.isRecording) {
+            if (modeName === "insert") {
+                vscode.commands.executeCommand("setContext", "neovim.recording", true);
+            } else {
+                this.isRecording = false;
+                vscode.commands.executeCommand("setContext", "neovim.recording", false);
+            }
+        }
         this.currentModeName = modeName;
         const e = vscode.window.activeTextEditor;
         if (!e) {
