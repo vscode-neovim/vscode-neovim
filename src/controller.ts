@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from "child_process";
+import { spawn, ChildProcess, execSync } from "child_process";
 import path from "path";
 
 import vscode from "vscode";
@@ -265,18 +265,23 @@ export class NVIMPluginController implements vscode.Disposable {
             ),
         );
 
-        const neovimSupportScriptPath = path.join(settings.extensionPath, "vim", "vscode-neovim.vim");
-        const neovimOptionScriptPath = path.join(settings.extensionPath, "vim", "vscode-options.vim");
+        let extensionPath = settings.extensionPath;
+        if (settings.useWsl) {
+            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath ${extensionPath}`).toString();
+        }
+
+        const neovimSupportScriptPath = path.join(extensionPath, "vim", "vscode-neovim.vim");
+        const neovimOptionScriptPath = path.join(extensionPath, "vim", "vscode-options.vim");
 
         const args = [
             "-N",
             "--embed",
             // load options after user config
             "-c",
-            settings.useWsl ? `source $(wslpath '${neovimOptionScriptPath}')` : `source ${neovimOptionScriptPath}`,
+            `source ${neovimOptionScriptPath}`,
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
-            settings.useWsl ? `source $(wslpath '${neovimSupportScriptPath}')` : `source ${neovimSupportScriptPath}`,
+            `source ${neovimSupportScriptPath}`,
         ];
         if (settings.useWsl) {
             args.unshift(settings.neovimPath);
