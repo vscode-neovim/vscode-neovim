@@ -380,3 +380,8 @@ export function getNeovimInitPath(): string | undefined {
     } as const;
     return getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
 }
+
+export function getEasymotionOnTop(): boolean | undefined {
+    const settings = workspace.getConfiguration(EXT_NAME);
+    return settings.get("easymotionOnTop");
+}

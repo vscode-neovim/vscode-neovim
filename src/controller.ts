@@ -1899,18 +1899,38 @@ export class NVIMPluginController implements vscode.Disposable {
                 for (const [colNum, text] of cols) {
                     // vim sends column in bytes, need to convert to characters
                     // const col = colNum - 1;
-                    const col = Utils.convertByteNumToCharNum(line, colNum - 1);
-                    const opt: vscode.DecorationOptions = {
-                        range: new vscode.Range(lineNum, col, lineNum, col),
-                        renderOptions: {
-                            before: {
-                                ...conf,
-                                ...conf.before,
-                                contentText: text,
+                    const col = Utils.convertByteNumToCharNum(line, colNum + text.length - 1);
+                    const width = text.length * 8;
+                    if (Utils.getEasymotionOnTop()) {
+                        const opt: vscode.DecorationOptions = {
+                            range: new vscode.Range(lineNum, col, lineNum, col),
+                            renderOptions: {
+                                // Lifted from https://github.com/VSCodeVim/Vim/blob/badecf1b7ecd239e3ed58720245b6f4a74e439b7/src/actions/plugins/easymotion/easymotion.ts#L64
+                                after: {
+                                    margin: `0 0 0 -${width}px`,
+                                    ...conf,
+                                    ...conf.before,
+                                    // This is a tricky part. Set position and z-index property along with width
+                                    // to bring markers to front
+                                    width: `${width}px; position:absoulute; z-index:99;`,
+                                    contentText: text,
+                                },
                             },
-                        },
-                    };
-                    options.push(opt);
+                        };
+                        options.push(opt);
+                    } else {
+                        const opt: vscode.DecorationOptions = {
+                            range: new vscode.Range(lineNum, col, lineNum, col),
+                            renderOptions: {
+                                before: {
+                                    ...conf,
+                                    ...conf.before,
+                                    contentText: text,
+                                }
+                            },
+                        };
+                        options.push(opt);
+                    }
                 }
             } catch {
                 // ignore
