@@ -197,7 +197,18 @@
 				"vscode-neovim.highlightGroups.highlights": {
 					"type": "object",
 					"title": "Highlight Groups Configuration",
-					"description": "Define colors for various VIM highlight groups. Can accept either 'vim' to use colors from vim or text decoration properties object",
+					"description": "Define colors for various VIM highlight groups. Values may be 'vim' to use colors from vim or text decoration properties object",
+					"additionalProperties": {
+						"oneOf": [
+							{
+								"type": "object"
+							},
+							{
+								"type": "string",
+								"const": "vim"
+							}
+						]
+					},
 					"default": {
 						"Directory": "vim",
 						"IncSearch": {
@@ -216,7 +227,15 @@
 					}
 				},
 				"vscode-neovim.highlightGroups.unknownHighlight": {
-					"type": "object",
+					"oneOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"const": "vim"
+						}
+					],
 					"title": "Unknown Highlight Groups",
 					"description": "Highlight Configuration for non defined group. Can accept 'vim' to use colors coming from vim or text decoration properties object",
 					"default": "vim"
