@@ -1891,34 +1891,47 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         const conf = this.highlightProvider.getDecoratorOptions(decorator);
         const options: vscode.DecorationOptions[] = [];
+        // Keep track of where VSCode will attach our decorations
+        var drawnAt = new Map();
         for (const [lineStr, cols] of decorations) {
             try {
                 const lineNum = parseInt(lineStr, 10) - 1;
                 const line = editor.document.lineAt(lineNum).text;
 
                 for (const [colNum, text] of cols) {
-                    // vim sends column in bytes, need to convert to characters
-                    // const col = colNum - 1;
-                    const col = Utils.convertByteNumToCharNum(line, colNum + text.length - 1);
-                    const width = text.length * 8;
                     if (Utils.getEasymotionOnTop()) {
-                        const opt: vscode.DecorationOptions = {
-                            range: new vscode.Range(lineNum, col, lineNum, col),
-                            renderOptions: {
-                                // Lifted from https://github.com/VSCodeVim/Vim/blob/badecf1b7ecd239e3ed58720245b6f4a74e439b7/src/actions/plugins/easymotion/easymotion.ts#L64
-                                after: {
-                                    margin: `0 0 0 -${width}px`,
-                                    ...conf,
-                                    ...conf.before,
-                                    // This is a tricky part. Set position and z-index property along with width
-                                    // to bring markers to front
-                                    width: `${width}px; position:absoulute; z-index:99;`,
-                                    contentText: text,
+                        // 8 seems to be a magic number. It works for me, but I'm not sure why...
+                        const width = text.length * 8;
+                        // vim sends column in bytes, need to convert to characters
+                        const col = Utils.convertByteNumToCharNumOnTop(line, colNum);
+
+                        const mapKey = [lineNum, Math.min(col + text.length - 1, line.length)].toString();
+                        if (drawnAt.has(mapKey)) {
+                            // If we try to draw too many things off the edge of the screen, just use one decoration.
+                            // Otherwise, one of them won't get rendered.
+                            const ogText = drawnAt.get(mapKey).renderOptions.after.contentText
+                            drawnAt.get(mapKey).renderOptions.after.contentText = (text[0] + ogText).substr(0, ogText.length);
+                        } else {
+                            const opt: vscode.DecorationOptions = {
+                                range: new vscode.Range(lineNum, col + text.length - 1, lineNum, col + text.length - 1),
+                                renderOptions: {
+                                    // Inspired by https://github.com/VSCodeVim/Vim/blob/badecf1b7ecd239e3ed58720245b6f4a74e439b7/src/actions/plugins/easymotion/easymotion.ts#L64
+                                    after: {
+                                        // If we try to draw off the end of the screen, VSCode will move the tet to the left.
+                                        // Each move VSCode makes to the left for us is one more we don't want to do.
+                                        margin: `0 0 0 -${(Math.min(text.length - ((col + text.length - 1) - line.length), text.length)) * 8}px`,
+                                        ...conf,
+                                        ...conf.before,
+                                        width: `${width}px; position:absoulute; z-index:99;`,
+                                        contentText: text,
+                                    },
                                 },
-                            },
-                        };
-                        options.push(opt);
+                            };
+                            drawnAt.set(mapKey, opt);
+                            options.push(opt);
+                        }
                     } else {
+                        const col = Utils.convertByteNumToCharNum(line, colNum - 1);
                         const opt: vscode.DecorationOptions = {
                             range: new vscode.Range(lineNum, col, lineNum, col),
                             renderOptions: {

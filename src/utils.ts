@@ -256,6 +256,19 @@ export function convertByteNumToCharNum(line: string, col: number): number {
     return currCharNum;
 }
 
+export function convertByteNumToCharNumOnTop(line: string, col: number): number {
+    let totalBytes = 0;
+    let currCharNum = 0;
+    while (totalBytes < col) {
+        if (currCharNum >= line.length) {
+            return currCharNum + (col - totalBytes);
+        }
+        totalBytes += getBytesFromCodePoint(line.codePointAt(currCharNum));
+        currCharNum++;
+    }
+    return currCharNum;
+}
+
 export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
     if (screenCol === 0 || !line) {
         return 0;
