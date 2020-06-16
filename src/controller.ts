@@ -307,7 +307,7 @@ export class NVIMPluginController implements vscode.Disposable {
         let resolveInitPromise: () => void = () => {
             /* ignore */
         };
-        this.nvimInitPromise = new Promise(res => {
+        this.nvimInitPromise = new Promise((res) => {
             resolveInitPromise = res;
         });
         await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
@@ -317,7 +317,6 @@ export class NVIMPluginController implements vscode.Disposable {
         await this.client.uiAttach(this.NEOVIM_WIN_WIDTH, this.NEOVIM_WIN_HEIGHT, {
             rgb: true,
             // override: true,
-            /* eslint-disable @typescript-eslint/camelcase */
             ext_cmdline: true,
             ext_linegrid: true,
             ext_hlstate: true,
@@ -326,7 +325,6 @@ export class NVIMPluginController implements vscode.Disposable {
             ext_popupmenu: true,
             ext_tabline: true,
             ext_wildmenu: true,
-            /* eslint-enable @typescript-eslint/camelcase */
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
 
@@ -442,7 +440,7 @@ export class NVIMPluginController implements vscode.Disposable {
             const bufId = this.pendingBuffers.get(uri);
             this.pendingBuffers.delete(uri);
             const buffers = await this.client.buffers;
-            buf = buffers.find(b => b.id === bufId);
+            buf = buffers.find((b) => b.id === bufId);
         } else {
             // creating initially not listed buffer to prevent firing autocmd events when
             // buffer name/lines are not yet set. We'll set buflisted after setup
@@ -537,7 +535,7 @@ export class NVIMPluginController implements vscode.Disposable {
         let resolvePromise = (): void => {
             /* ignore */
         };
-        this.editorChangedPromise = new Promise(res => {
+        this.editorChangedPromise = new Promise((res) => {
             resolvePromise = res;
         });
         const requests: [string, unknown[]][] = [];
@@ -598,7 +596,7 @@ export class NVIMPluginController implements vscode.Disposable {
             if (buffer.id === this.noEditorBuffer.id) {
                 continue;
             }
-            if (!vscode.workspace.textDocuments.find(d => d.uri.toString() === uri)) {
+            if (!vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri)) {
                 wipeoutBuffers.add(buffer.id);
                 buffer.unlisten("lines", this.onNeovimBufferEvent);
                 this.bufferIdToUri.delete(buffer.id);
@@ -786,7 +784,7 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!winId) {
             return;
         }
-        const gridConf = [...this.grids].find(g => g[1].winId === winId);
+        const gridConf = [...this.grids].find((g) => g[1].winId === winId);
         if (!gridConf) {
             return;
         }
@@ -935,7 +933,7 @@ export class NVIMPluginController implements vscode.Disposable {
             const edits = this.pendingBufChangesQueue.splice(0);
             if (!edits.length) {
                 let timeout: NodeJS.Timeout | undefined;
-                this.bufQueuePromise = new Promise(res => {
+                this.bufQueuePromise = new Promise((res) => {
                     this.resolveBufQueuePromise = res;
                     // not necessary to timeout at all, but let's make sure
                     // !note looks like needed - increasing value starting to produce buffer desync. Because of this?
@@ -962,7 +960,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         this.externalBuffersShowOnNextChange.delete(buffer.id);
                         textEditor = await vscode.window.showTextDocument(vscode.Uri.parse(uri));
                     } else {
-                        textEditor = vscode.window.visibleTextEditors.find(e => e.document.uri.toString() === uri);
+                        textEditor = vscode.window.visibleTextEditors.find((e) => e.document.uri.toString() === uri);
                     }
                     if (!textEditor) {
                         continue;
@@ -1067,7 +1065,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         }
                         this.documentLastChangedVersion.set(uri, editor.document.version + 1);
                         // const cursor = editor.selection.active;
-                        const success = await editor.edit(builder => {
+                        const success = await editor.edit((builder) => {
                             for (const range of ranges) {
                                 const text = lines.slice(range.newStart, range.newEnd + 1);
                                 if (range.type === "removed") {
@@ -1264,6 +1262,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 case "cmdline_show": {
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const [content, pos, firstc, prompt, indent, level] = firstArg as [
+                        // eslint-disable-next-line @typescript-eslint/ban-types
                         [object, string][],
                         number,
                         string,
@@ -1542,7 +1541,7 @@ export class NVIMPluginController implements vscode.Disposable {
                             continue;
                         }
 
-                        const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnToWinId[0]);
+                        const editor = vscode.window.visibleTextEditors.find((e) => e.viewColumn === columnToWinId[0]);
                         if (!editor) {
                             continue;
                         }
@@ -1561,7 +1560,7 @@ export class NVIMPluginController implements vscode.Disposable {
                         let finalStartCol = 0;
                         if (cells[0] && cells[0][1] === this.numberLineHlId) {
                             // remove linenumber cells
-                            const firstTextIdx = cells.findIndex(c => c[1] != null && c[1] !== this.numberLineHlId);
+                            const firstTextIdx = cells.findIndex((c) => c[1] != null && c[1] !== this.numberLineHlId);
                             if (firstTextIdx === -1) {
                                 continue;
                             }
@@ -1606,7 +1605,7 @@ export class NVIMPluginController implements vscode.Disposable {
             if (!columnConf) {
                 continue;
             }
-            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnConf[0]);
+            const editor = vscode.window.visibleTextEditors.find((e) => e.viewColumn === columnConf[0]);
             if (!editor) {
                 continue;
             }
@@ -1636,7 +1635,7 @@ export class NVIMPluginController implements vscode.Disposable {
             if (!columnToWinId) {
                 continue;
             }
-            const editor = vscode.window.visibleTextEditors.find(e => e.viewColumn === columnToWinId[0]);
+            const editor = vscode.window.visibleTextEditors.find((e) => e.viewColumn === columnToWinId[0]);
             if (!editor) {
                 continue;
             }
@@ -1801,7 +1800,7 @@ export class NVIMPluginController implements vscode.Disposable {
             if (!buf) {
                 return;
             }
-            const doc = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri);
+            const doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri);
             if (doc) {
                 // vim may send two requests, for example for :help - first it opens buffer with empty content in new window
                 // then read file and reload the buffer
@@ -1815,7 +1814,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 editor.options.insertSpaces = true;
                 editor.options.tabSize = tabStop;
                 // using replace produces ugly selection effect, try to avoid it by using insert
-                editor.edit(b => b.insert(new vscode.Position(0, 0), lines.join("\n")));
+                editor.edit((b) => b.insert(new vscode.Position(0, 0), lines.join("\n")));
                 vscode.commands.executeCommand("editor.action.indentationToSpaces");
             }
             return;
@@ -1826,14 +1825,14 @@ export class NVIMPluginController implements vscode.Disposable {
 
         const buffers = await this.client.buffers;
         // get buffer handle
-        const buf = buffers.find(b => b.id === id);
+        const buf = buffers.find((b) => b.id === id);
         if (!buf) {
             return;
         }
         // :help, PlugStatus etc opens new window. close it and attach to existing window instead
         const windows = await this.client.windows;
         const possibleBufWindow = windows.find(
-            w => ![...this.editorColumnIdToWinId].find(([, winId]) => w.id === winId),
+            (w) => ![...this.editorColumnIdToWinId].find(([, winId]) => w.id === winId),
         );
         if (possibleBufWindow && vscode.window.activeTextEditor) {
             const winBuf = await possibleBufWindow.buffer;
@@ -1860,7 +1859,7 @@ export class NVIMPluginController implements vscode.Disposable {
         const uri = doc.uri.toString();
         this.uriToBuffer.set(uri, buf);
         this.bufferIdToUri.set(id, uri);
-        if (!lines.length || lines.every(l => !l.length)) {
+        if (!lines.length || lines.every((l) => !l.length)) {
             this.externalBuffersShowOnNextChange.add(buf.id);
         } else {
             const editor = await vscode.window.showTextDocument(doc, {
@@ -2041,7 +2040,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     // !Important: we only allow to open uri from neovim side when jumping. Otherwise it may break vscode editor management
                     // !and produce ugly switching effects
                     try {
-                        let doc = vscode.workspace.textDocuments.find(d => d.uri.toString() === name);
+                        let doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === name);
                         if (!doc) {
                             doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(name, true));
                         }
@@ -2200,10 +2199,7 @@ export class NVIMPluginController implements vscode.Disposable {
             if (change.rangeLength) {
                 editStr += [...new Array(change.rangeLength).keys()].map(() => "<BS>").join("");
             }
-            editStr += change.text
-                .split(eol)
-                .join("\n")
-                .replace("<", "<LT>");
+            editStr += change.text.split(eol).join("\n").replace("<", "<LT>");
         }
         edits.push(["nvim_input", [editStr]]);
         // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
@@ -2227,7 +2223,7 @@ export class NVIMPluginController implements vscode.Disposable {
             if (origText == null) {
                 continue;
             }
-            const document = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri);
+            const document = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri);
             if (!document) {
                 continue;
             }
