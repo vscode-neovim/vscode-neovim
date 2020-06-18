@@ -1901,7 +1901,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 for (const [colNum, text] of cols) {
                     if (Utils.getEasymotionOnTop()) {
                         // 8 seems to be a magic number. It works for me, but I'm not sure why...
-                        const width = text.length * 8;
+                        const width = text.length;
                         // vim sends column in bytes, need to convert to characters
                         const col = Utils.convertByteNumToCharNumOnTop(line, colNum);
 
@@ -1919,10 +1919,10 @@ export class NVIMPluginController implements vscode.Disposable {
                                     after: {
                                         // If we try to draw off the end of the screen, VSCode will move the tet to the left.
                                         // Each move VSCode makes to the left for us is one more we don't want to do.
-                                        margin: `0 0 0 -${(Math.min(text.length - ((col + text.length - 1) - line.length), text.length)) * 8}px`,
+                                        margin: `0 0 0 -${(Math.min(text.length - ((col + text.length - 1) - line.length), text.length))}ch`,
                                         ...conf,
                                         ...conf.before,
-                                        width: `${width}px; position:absoulute; z-index:99;`,
+                                        width: `${width}ch; position:absoulute; z-index:99;`,
                                         contentText: text,
                                     },
                                 },
