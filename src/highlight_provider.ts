@@ -412,11 +412,7 @@ export class HighlightProvider {
                 continue;
             }
             const decoratorRanges = ranges.map(
-<<<<<<< HEAD
-                r => new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1)
-=======
                 (r) => new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1),
->>>>>>> 54e46eac62a9c537bad55073293763ff434982f1
             );
             result.push([decorator, decoratorRanges]);
         }
