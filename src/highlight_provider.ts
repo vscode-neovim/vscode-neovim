@@ -1,4 +1,5 @@
-import { Range, TextEditorDecorationType, ThemableDecorationRenderOptions, ThemeColor, window } from "vscode";
+import { Range, TextEditorDecorationType, ThemableDecorationRenderOptions, ThemeColor, window, TextEditor } from "vscode";
+import * as Utils from "./utils";
 
 export interface VimHighlightUIAttributes {
     foreground?: number;
@@ -327,10 +328,11 @@ export class HighlightProvider {
         }
     }
 
-    public getGridHighlights(grid: number, topLine: number): [TextEditorDecorationType, Range[]][] {
+    public getGridHighlights(editor: TextEditor, grid: number, topLine: number): [TextEditorDecorationType, Range[]][] {
         const result: [TextEditorDecorationType, Range[]][] = [];
         const hlRanges: Map<string, Array<{ lineS: number; lineE: number; colS: number; colE: number }>> = new Map();
         const gridHl = this.highlights.get(grid);
+        const tabSize = editor.options.tabSize as number;
 
         if (gridHl) {
             // let currHlId = 0;
@@ -339,8 +341,22 @@ export class HighlightProvider {
             let currHlEndRow = 0;
             let currHlStartCol = 0;
             let currHlEndCol = 0;
+                
             // forEach faster than for in/of for arrays while iterating on array with empty values
             gridHl.forEach((rowHighlights, rowIdx) => {
+                // Create a mapping from columns to characters
+                let line = topLine + rowIdx < editor.document.lineCount ? editor.document.lineAt(topLine + rowIdx).text : "";
+                let colToChar: number[] = [];
+                for (let i = 0; i < line.length; i++) {
+                    if (line[i] === "\t") {
+                        let currentCol = colToChar.length;
+                        for (let j = 0; j < tabSize - (currentCol % tabSize); j++) {
+                            colToChar.push(i);
+                        }
+                    } else {
+                        colToChar.push(i);
+                    }
+                }
                 rowHighlights.forEach((cellHlId, cellIdx) => {
                     const cellHlName = this.highlightIdToGroupName.get(cellHlId);
                     if (
@@ -350,7 +366,7 @@ export class HighlightProvider {
                         currHlEndRow === rowIdx &&
                         currHlEndCol === cellIdx - 1
                     ) {
-                        currHlEndCol = cellIdx;
+                        currHlEndCol = colToChar[cellIdx];
                     } else {
                         if (currHlName) {
                             if (!hlRanges.has(currHlName)) {
@@ -372,8 +388,8 @@ export class HighlightProvider {
                             currHlName = cellHlName;
                             currHlStartRow = rowIdx;
                             currHlEndRow = rowIdx;
-                            currHlStartCol = cellIdx;
-                            currHlEndCol = cellIdx;
+                            currHlStartCol = colToChar[cellIdx] == undefined ? cellIdx : colToChar[cellIdx];
+                            currHlEndCol = colToChar[cellIdx] == undefined ? cellIdx : colToChar[cellIdx];
                         }
                     }
                 });
@@ -396,7 +412,7 @@ export class HighlightProvider {
                 continue;
             }
             const decoratorRanges = ranges.map(
-                r => new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1),
+                r => new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1)
             );
             result.push([decorator, decoratorRanges]);
         }

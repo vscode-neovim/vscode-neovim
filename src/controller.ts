@@ -466,10 +466,10 @@ export class NVIMPluginController implements vscode.Disposable {
         const requests: [string, VimValue[]][] = [];
         requests.push(["nvim_win_set_buf", [winId, buf.id]]);
         requests.push(["nvim_buf_set_option", [buf.id, "expandtab", insertSpaces as boolean]]);
-        // we must use tabstop with value 1 so one tab will be count as one character for highlight
-        requests.push(["nvim_buf_set_option", [buf.id, "tabstop", insertSpaces ? (tabSize as number) : 1]]);
+        // Set tabstop equal to vscode's tabsize setting
+        requests.push(["nvim_buf_set_option", [buf.id, "tabstop", (tabSize as number)]]);
         // same for shiftwidth - don't want to shift more than one tabstop
-        requests.push(["nvim_buf_set_option", [buf.id, "shiftwidth", insertSpaces ? (tabSize as number) : 1]]);
+        requests.push(["nvim_buf_set_option", [buf.id, "shiftwidth", (tabSize as number)]]);
         // requests.push(["nvim_buf_set_option", [buf.id, "softtabstop", tabSize as number]]);
 
         requests.push(["nvim_buf_set_lines", [buf.id, 0, 1, false, lines]]);
@@ -1571,8 +1571,8 @@ export class NVIMPluginController implements vscode.Disposable {
                         } else {
                             const line = editor.document.lineAt(highlightLine).text;
                             // shift left start col (in vim linenumber is accounted, while in vscode don't)
-                            // finalStartCol = Utils.getStartColForHL(line, colStart - NUMBER_COLUMN_WIDTH);
-                            finalStartCol = Utils.calculateEditorColFromVimScreenCol(
+                            finalStartCol = Utils.getEditorColFromHighlightCol(
+                                editor,
                                 line,
                                 colStart - NUMBER_COLUMN_WIDTH,
                             );
@@ -1641,6 +1641,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 continue;
             }
             const hls = this.highlightProvider.getGridHighlights(
+                editor,
                 grid,
                 Utils.getLineFromLineNumberString(gridConf.topScreenLineStr),
             );
@@ -1869,6 +1870,8 @@ export class NVIMPluginController implements vscode.Disposable {
                 viewColumn: vscode.ViewColumn.Active,
             });
             // need always to use spaces otherwise col will be different and vim HL will be incorrect
+            // The comment above is only partially accurate now but spaces are
+            // still less sketchily implemented so I'm leaving it.
             editor.options.insertSpaces = true;
             editor.options.tabSize = tabStop;
             vscode.commands.executeCommand("editor.action.indentationToSpaces");

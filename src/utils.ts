@@ -1,10 +1,12 @@
-import { workspace, TextEditor, TextDocumentContentChangeEvent, Position } from "vscode";
+import { workspace, TextEditor, TextDocumentContentChangeEvent, Position, window } from "vscode";
 
 import { Diff } from "fast-diff";
 import wcwidth from "ts-wcwidth";
 
 export const EXT_NAME = "vscode-neovim";
 export const EXT_ID = `asvetliakov.${EXT_NAME}`;
+
+export const logger = window.createOutputChannel("Neovim Logs");
 
 export interface EditRange {
     start: number;
@@ -269,18 +271,38 @@ export function convertByteNumToCharNumOnTop(line: string, col: number): number 
     return currCharNum;
 }
 
-export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
+// This and the function below it are similar enough that I'm suspicious that
+// I've made a mistake. Until I find an error though, I'll keep it.
+export function calculateEditorColFromVimScreenCol(editor: TextEditor, line: string, screenCol: number): number {
+    const tabSize = editor.options.tabSize as number;
     if (screenCol === 0 || !line) {
         return 0;
     }
     let currentCharIdx = 0;
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
-        currentVimCol += line[currentCharIdx] === "\t" ? tabSize : wcwidth(line[currentCharIdx]);
+        currentVimCol += line[currentCharIdx] === "\t" ? tabSize - (currentVimCol % tabSize) : wcwidth(line[currentCharIdx]);
 
         currentCharIdx++;
         if (currentCharIdx >= line.length) {
             return currentCharIdx;
+        }
+    }
+    return currentCharIdx;
+}
+
+export function getEditorColFromHighlightCol(editor: TextEditor, line: string, screenCol: number): number {
+    if (screenCol === 0 || !line) {
+        return 0;
+    }
+    let currentCharIdx = 0;
+    let currentVimCol = 0;
+    while (currentVimCol < screenCol) {
+        currentVimCol += line[currentCharIdx] === "\t" ? 1 : wcwidth(line[currentCharIdx]);
+
+        currentCharIdx++;
+        if (currentCharIdx >= line.length) {
+            return screenCol;
         }
     }
     return currentCharIdx;
@@ -297,7 +319,7 @@ export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: 
         };
     }
     const line = editor.document.lineAt(cursorLine).text;
-    const col = calculateEditorColFromVimScreenCol(line, conf.screenPos);
+    const col = calculateEditorColFromVimScreenCol(editor, line, conf.screenPos);
     return {
         line: cursorLine,
         col,
