@@ -80,7 +80,7 @@ export class CommandLineController implements Disposable {
     }
 
     public setCompletionItems(items: string[]): void {
-        this.completionItems = items.map(i => ({ label: i, alwaysShow: true }));
+        this.completionItems = items.map((i) => ({ label: i, alwaysShow: true }));
         if (this.completionAllowed) {
             this.input.items = this.completionItems;
         }
@@ -172,11 +172,7 @@ export class CommandLineController implements Disposable {
             return;
         }
 
-        this.input.value = this.input.value
-            .trimRight()
-            .split(" ")
-            .slice(0, -1)
-            .join(" ");
+        this.input.value = this.input.value.trimRight().split(" ").slice(0, -1).join(" ");
         this.onChange(this.input.value);
     };
 
@@ -201,11 +197,7 @@ export class CommandLineController implements Disposable {
         if (!sel) {
             return;
         }
-        this.input.value = this.input.value
-            .split(" ")
-            .slice(0, -1)
-            .concat(sel.label)
-            .join(" ");
+        this.input.value = this.input.value.split(" ").slice(0, -1).concat(sel.label).join(" ");
         this.onChange(this.input.value);
     };
 

@@ -1,5 +1,4 @@
 import { workspace, TextEditor, TextDocumentContentChangeEvent, Position, window } from "vscode";
-
 import { Diff } from "fast-diff";
 import wcwidth from "ts-wcwidth";
 
