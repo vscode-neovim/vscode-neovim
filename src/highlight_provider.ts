@@ -342,7 +342,8 @@ export class HighlightProvider {
             let currHlStartCol = 0;
             let currHlEndCol = 0;
                 
-            // forEach faster than for in/of for arrays while iterating on array with empty values
+            // forEach faster than for in/of for arrays while iterating on array
+            // with empty values
             gridHl.forEach((rowHighlights, rowIdx) => {
                 // Create a mapping from columns to characters
                 let line = topLine + rowIdx < editor.document.lineCount ? editor.document.lineAt(topLine + rowIdx).text : "";
@@ -364,7 +365,7 @@ export class HighlightProvider {
                         currHlName === cellHlName &&
                         // allow to extend prev HL if on same row and next cell OR previous row and end of range is end col
                         currHlEndRow === rowIdx &&
-                        currHlEndCol === cellIdx - 1
+                        currHlEndCol === colToChar[cellIdx] - 1
                     ) {
                         currHlEndCol = colToChar[cellIdx];
                     } else {
@@ -388,8 +389,8 @@ export class HighlightProvider {
                             currHlName = cellHlName;
                             currHlStartRow = rowIdx;
                             currHlEndRow = rowIdx;
-                            currHlStartCol = colToChar[cellIdx] == undefined ? cellIdx : colToChar[cellIdx];
-                            currHlEndCol = colToChar[cellIdx] == undefined ? cellIdx : colToChar[cellIdx];
+                            currHlStartCol = colToChar[cellIdx] == null ? cellIdx : colToChar[cellIdx];
+                            currHlEndCol = colToChar[cellIdx] == null ? cellIdx : colToChar[cellIdx];
                         }
                     }
                 });

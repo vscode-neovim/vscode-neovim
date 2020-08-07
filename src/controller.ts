@@ -1144,6 +1144,10 @@ export class NVIMPluginController implements vscode.Disposable {
                         "vscode-neovim: Error applying neovim edits, please report a bug, error: " + e.message,
                     );
                 }
+                // Sometimes, Vim sends highlight changes before sending buffer
+                // changes. this line makes sure we always update highlights
+                // correctly particularly when tabs are involved.
+                this.applyRedrawUpdate(undefined, new Set(), new Set(this.grids.keys()), false);
             }
         }
     };
