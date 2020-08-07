@@ -42,7 +42,7 @@ endfunction
 function! s:openVSCodeCommandsInVisualMode()
     normal! gv
     let visualmode = visualmode()
-    if visualmode == "V"
+    if visualmode ==# "V"
         let startLine = line("v")
         let endLine = line(".")
         call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
