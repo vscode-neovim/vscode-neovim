@@ -49,7 +49,7 @@ function! s:openVSCodeCommandsInVisualMode()
     else
         let startPos = getpos("v")
         let endPos = getpos(".")
-        call VSCodeNotifyRangePos("workbench.action.showCommands", startPos[1], endPos[1], startPos[2], endPos[2], 1)
+        call VSCodeNotifyRangePos("workbench.action.showCommands", startPos[1], endPos[1], startPos[2], endPos[2] + 1, 1)
     endif
 endfunction
 
