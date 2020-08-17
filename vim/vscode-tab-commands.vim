@@ -2,16 +2,16 @@ function! s:switchEditor(...) abort
     let count = a:1
     let direction = a:2
     for i in range(1, count ? count : 1)
-        call VSCodeCall(direction == 'next' ? 'workbench.action.nextEditorInGroup' : 'workbench.action.previousEditorInGroup')
+        call VSCodeCall(direction ==# 'next' ? 'workbench.action.nextEditorInGroup' : 'workbench.action.previousEditorInGroup')
     endfor
 endfunction
 
-command! -complete=file -nargs=? Tabedit if <q-args> == '' | call VSCodeNotify('workbench.action.quickOpen') | else | call VSCodeExtensionNotify('open-file', expand(<q-args>), 0) | endif
+command! -complete=file -nargs=? Tabedit if empty(<q-args>) | call VSCodeNotify('workbench.action.quickOpen') | else | call VSCodeExtensionNotify('open-file', expand(<q-args>), 0) | endif
 command! -complete=file Tabnew call VSCodeExtensionNotify('open-file', '__vscode_new__', 0)
 command! Tabfind call VSCodeNotify('workbench.action.quickOpen')
 command! Tab echoerr 'Not supported'
 command! Tabs echoerr 'Not supported'
-command! -bang Tabclose if <q-bang> == '!' | call VSCodeNotify('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeNotify('workbench.action.closeActiveEditor') | endif
+command! -bang Tabclose if <q-bang> ==# '!' | call VSCodeNotify('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeNotify('workbench.action.closeActiveEditor') | endif
 command! Tabonly call VSCodeNotify('workbench.action.closeOtherEditors')
 command! -nargs=? Tabnext call <SID>switchEditor(<q-args>, 'next')
 command! -nargs=? Tabprevious call <SID>switchEditor(<q-args>, 'prev')

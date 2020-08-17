@@ -9,7 +9,7 @@ endfunction
 
 function! s:vscodeMultipleCursorsVisualMode(append, skipEmpty)
     let m = visualmode()
-    if m == "V" || m == "\<C-v>"
+    if m ==# "V" || m ==# "\<C-v>"
         startinsert
         call VSCodeExtensionNotify('visual-edit', a:append, m, line("'<"), line("'>"), a:skipEmpty)
     endif
