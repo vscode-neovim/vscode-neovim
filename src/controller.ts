@@ -221,6 +221,8 @@ export class NVIMPluginController implements vscode.Disposable {
 
     /**
      * Special variable to hint dot repeat if the insert mode was started through o or O
+     * Note: vscode doesn't tell if a change was originated through a command (such as insertLineBefore/After) or through a keystroke (e.g. Enter),
+     * And we're using vscode version of o/O because of indent (VIM shouldn't know about syntax/indent), so need an internal state
      */
     private dotRepeatInsertModeStartHint?: "o" | "O";
 
