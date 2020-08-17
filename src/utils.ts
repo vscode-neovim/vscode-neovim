@@ -25,6 +25,28 @@ export interface GridConf {
 
 export type GridLineEvent = [number, number, number, [string, number, number][]];
 
+/**
+ * Simplified vscode.TextDocumentChangeEvent with start mode hint additions
+ */
+export interface DotRepeatChange {
+    /**
+     * Num of deleted characters, 0 when only added
+     */
+    rangeLength: number;
+    /**
+     * Stored range offset
+     */
+    rangeOffset: number;
+    /**
+     * New text. May contin new line
+     */
+    text: string;
+    /**
+     * Set if it was the first change and started either through o or O
+     */
+    startMode?: "o" | "O";
+}
+
 export function processLineNumberStringFromEvent(
     event: GridLineEvent,
     lineNumberHlId: number,
@@ -292,7 +314,7 @@ export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: 
 
 export function isChangeSubsequentToChange(
     change: TextDocumentContentChangeEvent,
-    lastChange: TextDocumentContentChangeEvent,
+    lastChange: DotRepeatChange,
 ): boolean {
     const lastChangeTextLength = lastChange.text.length;
     const lastChangeOffsetStart = lastChange.rangeOffset;
@@ -378,4 +400,16 @@ export function getNeovimInitPath(): string | undefined {
         vscodeSettingName: "neovimInitPath",
     } as const;
     return getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
+}
+
+export function normalizeDotRepeatChange(
+    change: TextDocumentContentChangeEvent,
+    startMode?: "o" | "O",
+): DotRepeatChange {
+    return {
+        rangeLength: change.rangeLength,
+        rangeOffset: change.rangeOffset,
+        text: change.text,
+        startMode,
+    };
 }

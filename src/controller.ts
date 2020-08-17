@@ -138,7 +138,7 @@ export class NVIMPluginController implements vscode.Disposable {
     /**
      * Last subsequent related changes. Used for dot-repeat workaround
      */
-    private lastChanges: vscode.TextDocumentContentChangeEvent[] = [];
+    private lastChanges: Utils.DotRepeatChange[] = [];
     /**
      * Vscode doesn't allow to apply multiple edits to the save document without awaiting previous reuslt.
      * So we'll accumulate neovim buffer updates here, then apply
@@ -218,6 +218,11 @@ export class NVIMPluginController implements vscode.Disposable {
      * Cursor updates originated through neovim or neovim changes. Key is the "line.col"
      */
     private neovimCursorUpdates: WeakMap<vscode.TextEditor, { [key: string]: boolean }> = new WeakMap();
+
+    /**
+     * Special variable to hint dot repeat if the insert mode was started through o or O
+     */
+    private dotRepeatInsertModeStartHint?: "o" | "O";
 
     /**
      * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
@@ -502,6 +507,8 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         const currEditor = vscode.window.activeTextEditor;
+        const startModeHint = this.dotRepeatInsertModeStartHint;
+        this.dotRepeatInsertModeStartHint = undefined;
         if (
             currEditor &&
             currEditor.document.uri.toString() === e.document.uri.toString() &&
@@ -514,9 +521,9 @@ export class NVIMPluginController implements vscode.Disposable {
                 if (Utils.isCursorChange(change, cursor, eol)) {
                     const lastChange = this.lastChanges.slice(-1)[0];
                     if (lastChange && Utils.isChangeSubsequentToChange(change, lastChange)) {
-                        this.lastChanges.push(change);
+                        this.lastChanges.push(Utils.normalizeDotRepeatChange(change, startModeHint));
                     } else {
-                        this.lastChanges = [change];
+                        this.lastChanges = [Utils.normalizeDotRepeatChange(change, startModeHint)];
                     }
                 }
             }
@@ -2131,6 +2138,7 @@ export class NVIMPluginController implements vscode.Disposable {
                 // need to ignore cursor update to prevent cursor jumping
                 this.ignoreNextCursorUpdate = true;
                 await this.client.command("startinsert");
+                this.dotRepeatInsertModeStartHint = type === "before" ? "O" : "o";
                 await vscode.commands.executeCommand(
                     type === "before" ? "editor.action.insertLineBefore" : "editor.action.insertLineAfter",
                 );
@@ -2189,12 +2197,16 @@ export class NVIMPluginController implements vscode.Disposable {
         }, 0);
         if (delRangeLength) {
             const stub = new Array(delRangeLength).fill("x").join("");
-            edits.push(["nvim_buf_set_lines", [buf.id, 0, 0, false, [stub]]]);
-        }
-        if (delRangeLength) {
-            edits.push(["nvim_win_set_cursor", [win.id, [1, delRangeLength]]]);
+            edits.push(
+                ["nvim_buf_set_lines", [buf.id, 0, 0, false, [stub]]],
+                ["nvim_win_set_cursor", [win.id, [1, delRangeLength]]],
+            );
         }
         let editStr = "";
+        if (this.lastChanges[0]?.startMode) {
+            const firstChange = this.lastChanges.shift();
+            editStr += `<Esc>${firstChange?.startMode === "O" ? "mO" : "mo"}`;
+        }
         for (const change of this.lastChanges) {
             if (change.rangeLength) {
                 editStr += [...new Array(change.rangeLength).keys()].map(() => "<BS>").join("");

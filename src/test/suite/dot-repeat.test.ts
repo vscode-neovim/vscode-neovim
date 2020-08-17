@@ -232,4 +232,40 @@ describe("Dot-repeat", () => {
             client,
         );
     });
+
+    it("O and o", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2", "test3"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+        await sendVSCodeKeys("jl");
+        await sendVSCodeKeys("o");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+
+        // reset cursor to 0.0
+        await sendVSCodeKeys("0ggll");
+        await sendVSCodeKeys(".");
+
+        await assertContent(
+            {
+                content: ["test1", "blah", "test2", "blah", "test3"],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("0ggjO");
+        await sendVSCodeKeys("blah2");
+        await sendEscapeKey();
+
+        await sendVSCodeKeys("0ggll");
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["blah2", "test1", "blah2", "blah", "test2", "blah", "test3"],
+            },
+            client,
+        );
+    });
 });
