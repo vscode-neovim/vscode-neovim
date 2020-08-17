@@ -1024,7 +1024,7 @@
 	},
 	"dependencies": {
 		"fast-diff": "^1.2.0",
-		"lodash": "^4.17.15",
+		"lodash": "^4.17.19",
 		"neovim": "^4.7.0",
 		"ts-wcwidth": "^2.0.0"
 	}
