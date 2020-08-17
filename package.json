@@ -1016,7 +1016,7 @@
 		"eslint-plugin-import": "^2.19.1",
 		"eslint-plugin-prettier": "^3.1.2",
 		"glob": "^7.1.6",
-		"mocha": "^8.0.1",
+		"mocha": "^8.1.1",
 		"prettier": "^2.0.5",
 		"source-map-support": "^0.5.16",
 		"typescript": "^3.7.4",

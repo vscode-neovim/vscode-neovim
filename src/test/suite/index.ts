@@ -13,7 +13,6 @@ export async function run(): Promise<void> {
         slow: 20000,
         fullStackTrace: true,
     });
-    mocha.useColors(true);
     const testsRoot = path.resolve(__dirname, "..");
     return new Promise((c, e) => {
         glob("**/**.test.js", { cwd: testsRoot }, (err, files) => {
