@@ -268,4 +268,25 @@ describe("Dot-repeat", () => {
             client,
         );
     });
+
+    it("inew word inside line", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0ll");
+        await sendVSCodeKeys("inew word");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0jll");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["tenew wordst1", "tenew wordst2"],
+            },
+            client,
+        );
+    });
 });
