@@ -244,7 +244,6 @@ describe("Dot-repeat", () => {
         await sendVSCodeKeys("blah");
         await sendEscapeKey();
 
-        // reset cursor to 0.0
         await sendVSCodeKeys("0ggll");
         await sendVSCodeKeys(".");
 
