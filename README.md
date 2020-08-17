@@ -80,7 +80,7 @@ for `jj`
     {
         "command": "vscode-neovim.compositeEscape1",
         "key": "j",
-        "when": "neovim.mode == insert",
+        "when": "neovim.mode == insert && editorTextFocus",
         "args": "j"
     }
 ```
@@ -90,7 +90,7 @@ to enable `jk` add also:
     {
         "command": "vscode-neovim.compositeEscape2",
         "key": "k",
-        "when": "neovim.mode == insert",
+        "when": "neovim.mode == insert && editorTextFocus",
         "args": "k"
     }
 ```
