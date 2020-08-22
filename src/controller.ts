@@ -138,7 +138,7 @@ export class NVIMPluginController implements vscode.Disposable {
     /**
      * Last subsequent related changes. Used for dot-repeat workaround
      */
-    private lastChanges: Utils.DotRepeatChange[] = [];
+    private lastChange?: Utils.DotRepeatChange;
     /**
      * Vscode doesn't allow to apply multiple edits to the save document without awaiting previous reuslt.
      * So we'll accumulate neovim buffer updates here, then apply
@@ -521,11 +521,10 @@ export class NVIMPluginController implements vscode.Disposable {
             const cursor = currEditor.selection.active;
             for (const change of e.contentChanges) {
                 if (Utils.isCursorChange(change, cursor, eol)) {
-                    const lastChange = this.lastChanges.slice(-1)[0];
-                    if (lastChange && Utils.isChangeSubsequentToChange(change, lastChange)) {
-                        this.lastChanges.push(Utils.normalizeDotRepeatChange(change, startModeHint));
+                    if (this.lastChange && Utils.isChangeSubsequentToChange(change, this.lastChange)) {
+                        this.lastChange = Utils.accumulateDotRepeatChange(change, this.lastChange);
                     } else {
-                        this.lastChanges = [Utils.normalizeDotRepeatChange(change, startModeHint)];
+                        this.lastChange = Utils.normalizeDotRepeatChange(change, startModeHint);
                     }
                 }
             }
@@ -2159,7 +2158,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private syncLastChangesWithDotRepeat = async (): Promise<void> => {
         // dot-repeat executes last change across all buffers. So we'll create a temporary buffer & window,
         // replay last changes here to trick neovim and destroy it after
-        if (!this.lastChanges.length) {
+        if (!this.lastChange) {
             return;
         }
         const currEditor = vscode.window.activeTextEditor;
@@ -2194,9 +2193,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
         // for delete changes we need an actual text, so let's prefill with something
         // accumulate all possible lengths of deleted text to be safe
-        const delRangeLength = this.lastChanges.reduce((total, change) => {
-            return total + change.rangeLength;
-        }, 0);
+        const delRangeLength = this.lastChange.rangeLength;
         if (delRangeLength) {
             const stub = new Array(delRangeLength).fill("x").join("");
             edits.push(
@@ -2205,16 +2202,17 @@ export class NVIMPluginController implements vscode.Disposable {
             );
         }
         let editStr = "";
-        if (this.lastChanges[0]?.startMode) {
-            const firstChange = this.lastChanges.shift();
-            editStr += `<Esc>${firstChange?.startMode === "O" ? "mO" : "mo"}`;
-        }
-        for (const change of this.lastChanges) {
-            if (change.rangeLength) {
-                editStr += [...new Array(change.rangeLength).keys()].map(() => "<BS>").join("");
+        if (this.lastChange.startMode) {
+            editStr += `<Esc>${this.lastChange.startMode === "O" ? "mO" : "mo"}`;
+            // remove EOL from first change
+            if (this.lastChange.text.startsWith(eol)) {
+                this.lastChange.text = this.lastChange.text.slice(eol.length);
             }
-            editStr += change.text.split(eol).join("\n").replace("<", "<LT>");
         }
+        if (this.lastChange.rangeLength) {
+            editStr += [...new Array(this.lastChange.rangeLength).keys()].map(() => "<BS>").join("");
+        }
+        editStr += this.lastChange.text.split(eol).join("\n").replace("<", "<LT>");
         edits.push(["nvim_input", [editStr]]);
         // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
         await this.client.callAtomic(edits);
@@ -2322,7 +2320,7 @@ export class NVIMPluginController implements vscode.Disposable {
             await this.uploadDocumentChangesToNeovim();
             await this.syncLastChangesWithDotRepeat();
         }
-        this.lastChanges = [];
+        this.lastChange = undefined;
         await this.client.input("<Esc>");
         // const buf = await this.client.buffer;
         // const lines = await buf.lines;

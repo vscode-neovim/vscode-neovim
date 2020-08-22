@@ -26,7 +26,7 @@ export interface GridConf {
 export type GridLineEvent = [number, number, number, [string, number, number][]];
 
 /**
- * Simplified vscode.TextDocumentChangeEvent with start mode hint additions
+ * Stores last changes information for dot repeat
  */
 export interface DotRepeatChange {
     /**
@@ -34,11 +34,11 @@ export interface DotRepeatChange {
      */
     rangeLength: number;
     /**
-     * Stored range offset
+     * Range offset
      */
     rangeOffset: number;
     /**
-     * New text. May contin new line
+     * Change text
      */
     text: string;
     /**
@@ -319,28 +319,42 @@ export function isChangeSubsequentToChange(
     const lastChangeTextLength = lastChange.text.length;
     const lastChangeOffsetStart = lastChange.rangeOffset;
     const lastChangeOffsetEnd = lastChange.rangeOffset + lastChangeTextLength;
-    if (!change.rangeLength) {
-        // next character
-        if (lastChangeOffsetEnd === change.rangeOffset) {
-            return true;
-        }
-    } else {
-        if (!lastChange.rangeLength) {
-            // removed added text - may be single character or some word
-            if (change.rangeOffset === lastChange.rangeOffset && change.rangeLength === lastChangeTextLength) {
-                return true;
-            }
-            // delete from end of previous change
-            if (change.rangeOffset + change.rangeLength === lastChangeOffsetEnd) {
-                return true;
-            }
-        } else {
-            if (change.rangeOffset + change.rangeLength === lastChangeOffsetStart) {
-                return true;
-            }
-        }
+
+    if (change.rangeOffset >= lastChangeOffsetStart && change.rangeOffset <= lastChangeOffsetEnd) {
+        return true;
     }
+
+    if (
+        change.rangeOffset < lastChangeOffsetStart &&
+        change.rangeOffset + change.rangeLength >= lastChangeOffsetStart
+    ) {
+        return true;
+    }
+
     return false;
+
+    // if (!change.rangeLength) {
+    //     // next character
+    //     if (lastChangeOffsetEnd === change.rangeOffset) {
+    //         return true;
+    //     }
+    // } else {
+    //     if (!lastChange.rangeLength) {
+    //         // removed added text - may be single character or some word
+    //         if (change.rangeOffset === lastChange.rangeOffset && change.rangeLength === lastChangeTextLength) {
+    //             return true;
+    //         }
+    //         // delete from end of previous change
+    //         if (change.rangeOffset + change.rangeLength === lastChangeOffsetEnd) {
+    //             return true;
+    //         }
+    //     } else {
+    //         if (change.rangeOffset + change.rangeLength === lastChangeOffsetStart) {
+    //             return true;
+    //         }
+    //     }
+    // }
+    // return false;
 }
 
 export function isCursorChange(change: TextDocumentContentChangeEvent, cursor: Position, eol: string): boolean {
@@ -412,4 +426,42 @@ export function normalizeDotRepeatChange(
         text: change.text,
         startMode,
     };
+}
+
+export function accumulateDotRepeatChange(
+    change: TextDocumentContentChangeEvent,
+    lastChange: DotRepeatChange,
+): DotRepeatChange {
+    const newLastChange: DotRepeatChange = {
+        ...lastChange,
+    };
+
+    const removedLength =
+        change.rangeOffset <= lastChange.rangeOffset
+            ? change.rangeOffset - lastChange.rangeOffset + change.rangeLength
+            : change.rangeLength;
+
+    const sliceBeforeStart = 0;
+    const sliceBeforeEnd =
+        change.rangeOffset <= lastChange.rangeOffset
+            ? // ? sliceBeforeStart + removedLength
+              0
+            : change.rangeOffset - lastChange.rangeOffset;
+
+    const sliceAfterStart = change.rangeOffset - lastChange.rangeOffset + removedLength;
+
+    // adjust text
+    // const sliceStart = change.rangeOffset <= lastChange.rangeOffset ? 0 : change.rangeOffset - lastChange.rangeOffset;
+    // const sliceEnd = change.rangeOffset <= lastChange.rangeOffset ? sliceStart + removedLength : ;
+
+    newLastChange.text =
+        lastChange.text.slice(sliceBeforeStart, sliceBeforeEnd) + change.text + lastChange.text.slice(sliceAfterStart);
+
+    // adjust offset & range length
+    // we need to account the case only when text was deleted before the original change
+    if (change.rangeOffset < lastChange.rangeOffset) {
+        newLastChange.rangeOffset = change.rangeOffset;
+        newLastChange.rangeLength += change.rangeLength;
+    }
+    return newLastChange;
 }

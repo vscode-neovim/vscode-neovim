@@ -288,4 +288,248 @@ describe("Dot-repeat", () => {
             client,
         );
     });
+
+    it("Single brackets", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A(");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1()", "test2()"],
+            },
+            client,
+        );
+    });
+
+    it("Brackets with a text inside", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A(blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1(blah)", "test2(blah)"],
+            },
+            client,
+        );
+    });
+
+    it("Inner brackets", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A(blah{blah2");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1(blah{blah2})", "test2(blah{blah2})"],
+            },
+            client,
+        );
+    });
+
+    it("Inner brackets 2", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A((blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1((blah))", "test2((blah))"],
+            },
+            client,
+        );
+    });
+
+    it("Inner brackets 3", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A({blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1({blah})", "test2({blah})"],
+            },
+            client,
+        );
+
+        test;
+    });
+
+    it("Deleting single brackets - 1", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A(");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1blah", "test2blah"],
+            },
+            client,
+        );
+    });
+
+    it("Deleting single brackets - 2", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A(ab");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1blah", "test2blah"],
+            },
+            client,
+        );
+    });
+
+    it("Deleting inner brackets - 1", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A({");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1blah", "test2blah"],
+            },
+            client,
+        );
+    });
+
+    it("Deleting inner brackets - 2", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A({ab");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1blah", "test2blah"],
+            },
+            client,
+        );
+    });
+
+    it("Deleting inner brackets - 3", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A(ab{c");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1(abblah)", "test2(abblah)"],
+            },
+            client,
+        );
+    });
+
+    it("Deleting inner brackets - 4", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("gg0A(ab{c");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeKeys("blah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0j");
+
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["test1blah", "test2blah"],
+            },
+            client,
+        );
+    });
 });
