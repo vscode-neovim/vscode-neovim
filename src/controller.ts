@@ -6,6 +6,8 @@ import { attach, Buffer as NeovimBuffer, NeovimClient, Window } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
 import { ATTACH } from "neovim/lib/api/Buffer";
 import diff from "fast-diff";
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { createLogger, transports as loggerTransports } from "winston";
 
 import * as Utils from "./utils";
 import { CommandLineController } from "./command_line";
@@ -300,7 +302,16 @@ export class NVIMPluginController implements vscode.Disposable {
             args.push("-u", settings.customInitFile);
         }
         this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
-        this.client = attach({ proc: this.nvimProc });
+        this.client = attach({
+            proc: this.nvimProc,
+            options: {
+                logger: createLogger({
+                    transports: [new loggerTransports.Console()],
+                    level: "error",
+                    exitOnError: false,
+                }),
+            },
+        });
         this.statusLine = new StatusLineController();
         this.commandsController = new CommandsController(this.client);
         this.disposables.push(this.statusLine);
