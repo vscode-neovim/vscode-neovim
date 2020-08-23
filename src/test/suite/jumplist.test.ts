@@ -136,6 +136,8 @@ describe("Jumplist & jump actions", () => {
         await wait(1000);
         await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
         await wait(1000);
+        await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
+        await wait(1000);
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
         await wait(1000);
         await assertContent(
@@ -146,7 +148,6 @@ describe("Jumplist & jump actions", () => {
         );
         await vscode.commands.executeCommand("workbench.action.gotoSymbol");
         await wait(1000);
-        await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
         await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
         await wait(1000);
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");

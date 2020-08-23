@@ -72,7 +72,7 @@ describe("VSCode integration specific stuff", () => {
 
     it("Editor cursor revealing", async () => {
         const doc = await vscode.workspace.openTextDocument(
-            path.join(__dirname, "../../../test_fixtures/scrolltest.txt"),
+            path.join(__dirname, "../../../test_fixtures/cursor-revealing.txt"),
         );
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait(1000);
@@ -179,6 +179,9 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two);
         await wait();
 
+        await vscode.commands.executeCommand("workbench.action.focusSecondEditorGroup");
+        await wait();
+
         await sendVSCodeKeys("i");
         await assertContent(
             {
@@ -219,7 +222,7 @@ describe("VSCode integration specific stuff", () => {
 
     // TODO: sometimes it fails
     it("Cursor is ok when go to def into editor in the other pane", async () => {
-        const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
+        const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/bb.ts"));
         await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
         await wait(1500);
         await sendVSCodeKeys("gg5j", 0);
@@ -244,7 +247,7 @@ describe("VSCode integration specific stuff", () => {
 
     it("Cursor is ok for incsearch after scroll", async () => {
         const doc = await vscode.workspace.openTextDocument(
-            path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
+            path.join(__dirname, "../../../test_fixtures/incsearch-scroll.ts"),
         );
         const e = await vscode.window.showTextDocument(doc);
         await wait(1000);
@@ -258,7 +261,7 @@ describe("VSCode integration specific stuff", () => {
 
     it("Cursor is preserved if same doc is opened in two editor columns", async () => {
         const doc = await vscode.workspace.openTextDocument(
-            path.join(__dirname, "../../../test_fixtures/scrolltest.txt"),
+            path.join(__dirname, "../../../test_fixtures/cursor-preserved-between-columns.txt"),
         );
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait(1000);
