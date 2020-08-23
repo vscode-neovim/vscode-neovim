@@ -31,7 +31,8 @@ jobs:
             - name: Lint
               run: yarn run lint
             - name: Test
-              uses: GabrielBB/xvfb-action@v1.2
+              # uses: GabrielBB/xvfb-action@v1.2
+              uses: Akuli/xvfb-action@fix10
               env:
                 NEOVIM_PATH: ${{ steps.vim.outputs.executable }}
                 NEOVIM_DEBUG: 1
