@@ -37,6 +37,4 @@ jobs:
                 NEOVIM_DEBUG_HOST: 127.0.0.1
                 NEOVIM_DEBUG_PORT: 4000
               with:
-                run: |
-                  echo $NEOVIM_PATH
-                  yarn run test
+                run: yarn run test

@@ -2,6 +2,8 @@ import * as path from "path";
 
 import { runTests } from "vscode-test";
 
+console.log("Nvim path: " + process.env.NEOVIM_PATH);
+
 async function main(): Promise<void> {
     try {
         // The folder containing the Extension Manifest package.json
