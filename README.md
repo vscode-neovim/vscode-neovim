@@ -31,7 +31,7 @@ If you want to use WSL version of neovim, set `useWSL` configuration toggle and 
 
 Neovim 0.4.2 or greater
 
-* Set neovim path in the extension settings and you're good to go. **Important** you must specify full path to neovim, like ```C:\Neovim\bin\nvim.exe``` or ```/usr/local/bin/nvim```
+* Set neovim path in the extension settings and you're good to go. **Important** you must specify full path to neovim, like ```C:\Neovim\bin\nvim.exe``` or ```/usr/local/bin/nvim```. **IMPORTANT 2:** the setting id is `vscode-neovim.neovimPath`
 
 ## Important
 
@@ -40,8 +40,8 @@ Neovim 0.4.2 or greater
 * When you type some commands they may be substituted for the another, like ```:write``` will be replaced by ```:Write```. This is normal.
 * File/tab/window management (```:w```/```q```/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindngs/commands. **DO NOT** use vim ```:w```, etc... in scripts/keybindings, they won't work.
 * It's better to use spaces instead of tabs for file indent. `<C-v>` is broken for tab indents
-* On a Mac, the ```h```, ```j```, ```k``` and ```l``` movement keys may not repeat in visual mode when held, to fix this open Terminal and execute the following command: 
-  ```defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false``` 
+* On a Mac, the ```h```, ```j```, ```k``` and ```l``` movement keys may not repeat in visual mode when held, to fix this open Terminal and execute the following command:
+  ```defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false```
 
 ## VSCode specific features and differences
 
