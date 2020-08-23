@@ -387,8 +387,6 @@ describe("Dot-repeat", () => {
             },
             client,
         );
-
-        test;
     });
 
     it("Deleting single brackets - 1", async () => {
@@ -516,6 +514,7 @@ describe("Dot-repeat", () => {
         await wait(1000);
 
         await sendVSCodeKeys("gg0A(ab{c");
+        await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");

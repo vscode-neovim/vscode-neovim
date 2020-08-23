@@ -332,29 +332,6 @@ export function isChangeSubsequentToChange(
     }
 
     return false;
-
-    // if (!change.rangeLength) {
-    //     // next character
-    //     if (lastChangeOffsetEnd === change.rangeOffset) {
-    //         return true;
-    //     }
-    // } else {
-    //     if (!lastChange.rangeLength) {
-    //         // removed added text - may be single character or some word
-    //         if (change.rangeOffset === lastChange.rangeOffset && change.rangeLength === lastChangeTextLength) {
-    //             return true;
-    //         }
-    //         // delete from end of previous change
-    //         if (change.rangeOffset + change.rangeLength === lastChangeOffsetEnd) {
-    //             return true;
-    //         }
-    //     } else {
-    //         if (change.rangeOffset + change.rangeLength === lastChangeOffsetStart) {
-    //             return true;
-    //         }
-    //     }
-    // }
-    // return false;
 }
 
 export function isCursorChange(change: TextDocumentContentChangeEvent, cursor: Position, eol: string): boolean {
@@ -451,9 +428,6 @@ export function accumulateDotRepeatChange(
     const sliceAfterStart = change.rangeOffset - lastChange.rangeOffset + removedLength;
 
     // adjust text
-    // const sliceStart = change.rangeOffset <= lastChange.rangeOffset ? 0 : change.rangeOffset - lastChange.rangeOffset;
-    // const sliceEnd = change.rangeOffset <= lastChange.rangeOffset ? sliceStart + removedLength : ;
-
     newLastChange.text =
         lastChange.text.slice(sliceBeforeStart, sliceBeforeEnd) + change.text + lastChange.text.slice(sliceAfterStart);
 
