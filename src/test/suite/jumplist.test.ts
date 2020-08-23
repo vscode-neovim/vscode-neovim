@@ -136,6 +136,8 @@ describe("Jumplist & jump actions", () => {
         await wait(1000);
         await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
         await wait(1000);
+        await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
+        await wait(1000);
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
         await wait(1000);
         await assertContent(
@@ -146,7 +148,6 @@ describe("Jumplist & jump actions", () => {
         );
         await vscode.commands.executeCommand("workbench.action.gotoSymbol");
         await wait(1000);
-        await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
         await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
         await wait(1000);
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
@@ -199,14 +200,14 @@ describe("Jumplist & jump actions", () => {
             path.join(__dirname, "../../../test_fixtures/go-to-def-same-file.ts"),
         );
         await vscode.window.showTextDocument(doc1);
-        await wait(1000);
+        await wait(2000);
 
         await sendVSCodeKeys("49jm'", 0);
-        await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
+        await vscode.commands.executeCommand("editor.action.revealDefinition", doc1.uri, new vscode.Position(5, 1));
         await wait(1500);
 
         await sendVSCodeKeys("j");
-        await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
+        await vscode.commands.executeCommand("editor.action.revealDefinition", doc1.uri, new vscode.Position(5, 1));
         await wait(1500);
 
         await assertContent(
