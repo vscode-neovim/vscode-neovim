@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.52]
+
+- Implement dot repeat command ( #209 , #173 ). Also fixes `<count>` insert comamnds, like #255 , #249
+
 ## [0.0.50]
 
 - Fix cursor & extension hang for some cases ( #153 )

@@ -18,6 +18,10 @@ endfunction
 nnoremap <silent> O :<C-u> call<SID>vscodeInsertBefore()<CR>
 nnoremap <silent> o :<C-u> call<SID>vscodeInsertAfter()<CR>
 
+" For calling original vim o/O, used for dot-repeat
+nnoremap <silent> mO O
+nnoremap <silent> mo o
+
 " Multiple cursors support for visual line/block modes
 xnoremap <silent> ma :<C-u>call <SID>vscodeMultipleCursorsVisualMode(1, 1)<CR>
 xnoremap <silent> mi :<C-u>call <SID>vscodeMultipleCursorsVisualMode(0, 1)<CR>
