@@ -329,6 +329,7 @@ export class NVIMPluginController implements vscode.Disposable {
             resolveInitPromise = res;
         });
         await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
+        await this.checkNeovimVersion();
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
@@ -2454,4 +2455,18 @@ export class NVIMPluginController implements vscode.Disposable {
             await vscode.commands.executeCommand("default:type", { text: key });
         }
     };
+
+    private async checkNeovimVersion(): Promise<void> {
+        const [, info] = await this.client.apiInfo;
+        if (info.version.major === 0 && info.version.minor < 4) {
+            // suggest to use 0.5.0 dev from beginning
+            vscode.window.showErrorMessage("The extension requires neovim 0.5 dev or greater");
+            return;
+        }
+        if (!info.ui_events.find((e) => e.name === "win_viewport")) {
+            vscode.window.showWarningMessage(
+                "Next version of vscode-neovim will require neovim 0.5 dev version, please upgrade",
+            );
+        }
+    }
 }
