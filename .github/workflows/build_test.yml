@@ -20,6 +20,7 @@ jobs:
                 node-version: '12'
             - name: Install Neovim
               uses: rhysd/action-setup-vim@v1
+              id: vim
               with:
                 neovim: true
                 version: nightly
