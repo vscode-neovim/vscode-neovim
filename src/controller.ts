@@ -1911,7 +1911,7 @@ export class NVIMPluginController implements vscode.Disposable {
         const conf = this.highlightProvider.getDecoratorOptions(decorator);
         const options: vscode.DecorationOptions[] = [];
         // Keep track of where VSCode will attach our decorations
-        var drawnAt = new Map();
+        const drawnAt = new Map();
         for (const [lineStr, cols] of decorations) {
             try {
                 const lineNum = parseInt(lineStr, 10) - 1;
@@ -1928,8 +1928,11 @@ export class NVIMPluginController implements vscode.Disposable {
                         if (drawnAt.has(mapKey)) {
                             // If we try to draw too many things off the edge of the screen, just use one decoration.
                             // Otherwise, one of them won't get rendered.
-                            const ogText = drawnAt.get(mapKey).renderOptions.after.contentText
-                            drawnAt.get(mapKey).renderOptions.after.contentText = (text[0] + ogText).substr(0, ogText.length);
+                            const ogText = drawnAt.get(mapKey).renderOptions.after.contentText;
+                            drawnAt.get(mapKey).renderOptions.after.contentText = (text[0] + ogText).substr(
+                                0,
+                                ogText.length,
+                            );
                         } else {
                             const opt: vscode.DecorationOptions = {
                                 range: new vscode.Range(lineNum, col + text.length - 1, lineNum, col + text.length - 1),
@@ -1938,7 +1941,10 @@ export class NVIMPluginController implements vscode.Disposable {
                                     after: {
                                         // If we try to draw off the end of the screen, VSCode will move the tet to the left.
                                         // Each move VSCode makes to the left for us is one more we don't want to do.
-                                        margin: `0 0 0 -${(Math.min(text.length - ((col + text.length - 1) - line.length), text.length))}ch`,
+                                        margin: `0 0 0 -${Math.min(
+                                            text.length - (col + text.length - 1 - line.length),
+                                            text.length,
+                                        )}ch`,
                                         ...conf,
                                         ...conf.before,
                                         width: `${width}ch; position:absoulute; z-index:99;`,
@@ -1958,7 +1964,7 @@ export class NVIMPluginController implements vscode.Disposable {
                                     ...conf,
                                     ...conf.before,
                                     contentText: text,
-                                }
+                                },
                             },
                         };
                         options.push(opt);
