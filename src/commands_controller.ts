@@ -10,9 +10,9 @@ export class CommandsController implements vscode.Disposable {
         this.client = client;
 
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-a-insert", this.ctrlAInsert));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.send", key => this.sendToVim(key)));
+        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.send", (key) => this.sendToVim(key)));
         this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.paste-register", reg => this.pasteFromRegister(reg)),
+            vscode.commands.registerCommand("vscode-neovim.paste-register", (reg) => this.pasteFromRegister(reg)),
         );
     }
 
@@ -36,7 +36,7 @@ export class CommandsController implements vscode.Disposable {
         if (!lines.length) {
             return;
         }
-        await editor.edit(b => b.insert(editor.selection.active, lines.join("\n")));
+        await editor.edit((b) => b.insert(editor.selection.active, lines.join("\n")));
     };
 
     private async pasteFromRegister(registerName: string): Promise<void> {
@@ -49,6 +49,6 @@ export class CommandsController implements vscode.Disposable {
         if (content === "") {
             return;
         }
-        await editor.edit(b => b.insert(editor.selection.active, content));
+        await editor.edit((b) => b.insert(editor.selection.active, content));
     }
 }
