@@ -86,6 +86,7 @@ export class NVIMPluginController implements vscode.Disposable {
     private LAST_SCREEN_LINE = 200;
 
     private isInsertMode = false;
+    private isExitingInsertMode = false;
     private isRecording = false;
     /**
      * Current vim mode
@@ -141,6 +142,7 @@ export class NVIMPluginController implements vscode.Disposable {
      * Last subsequent related changes. Used for dot-repeat workaround
      */
     private lastChange?: Utils.DotRepeatChange;
+    private exitingInsertModePendingKeys: string[] = [];
     /**
      * Vscode doesn't allow to apply multiple edits to the save document without awaiting previous reuslt.
      * So we'll accumulate neovim buffer updates here, then apply
@@ -906,6 +908,8 @@ export class NVIMPluginController implements vscode.Disposable {
         }
         if (!this.isInsertMode || this.isRecording) {
             this.client.input(this.normalizeKey(type.text));
+        } else if (this.isExitingInsertMode) {
+            this.exitingInsertModePendingKeys.push(type.text);
         } else {
             vscode.commands.executeCommand("default:type", { text: type.text });
         }
@@ -1677,8 +1681,11 @@ export class NVIMPluginController implements vscode.Disposable {
         if (this.isInsertMode && this.typeHandlerDisplose && !this.isRecording) {
             this.typeHandlerDisplose.dispose();
             this.typeHandlerDisplose = undefined;
-        } else if (!this.isInsertMode && !this.typeHandlerDisplose) {
-            this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
+        } else if (!this.isInsertMode) {
+            this.isExitingInsertMode = false;
+            if (!this.typeHandlerDisplose) {
+                this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
+            }
         }
         if (this.isRecording) {
             if (modeName === "insert") {
@@ -2173,6 +2180,8 @@ export class NVIMPluginController implements vscode.Disposable {
         if (!this.lastChange) {
             return;
         }
+        const lastChange = { ...this.lastChange };
+        this.lastChange = undefined;
         const currEditor = vscode.window.activeTextEditor;
         if (!currEditor) {
             return;
@@ -2188,7 +2197,7 @@ export class NVIMPluginController implements vscode.Disposable {
         }
 
         // temporary buffer to replay the changes
-        const buf = await this.client.createBuffer(true, true);
+        const buf = await this.client.createBuffer(false, true);
         if (typeof buf === "number") {
             return;
         }
@@ -2205,7 +2214,7 @@ export class NVIMPluginController implements vscode.Disposable {
 
         // for delete changes we need an actual text, so let's prefill with something
         // accumulate all possible lengths of deleted text to be safe
-        const delRangeLength = this.lastChange.rangeLength;
+        const delRangeLength = lastChange.rangeLength;
         if (delRangeLength) {
             const stub = new Array(delRangeLength).fill("x").join("");
             edits.push(
@@ -2214,17 +2223,17 @@ export class NVIMPluginController implements vscode.Disposable {
             );
         }
         let editStr = "";
-        if (this.lastChange.startMode) {
-            editStr += `<Esc>${this.lastChange.startMode === "O" ? "mO" : "mo"}`;
+        if (lastChange.startMode) {
+            editStr += `<Esc>${lastChange.startMode === "O" ? "mO" : "mo"}`;
             // remove EOL from first change
-            if (this.lastChange.text.startsWith(eol)) {
-                this.lastChange.text = this.lastChange.text.slice(eol.length);
+            if (lastChange.text.startsWith(eol)) {
+                lastChange.text = lastChange.text.slice(eol.length);
             }
         }
-        if (this.lastChange.rangeLength) {
-            editStr += [...new Array(this.lastChange.rangeLength).keys()].map(() => "<BS>").join("");
+        if (lastChange.rangeLength) {
+            editStr += [...new Array(lastChange.rangeLength).keys()].map(() => "<BS>").join("");
         }
-        editStr += this.lastChange.text.split(eol).join("\n").replace("<", "<LT>");
+        editStr += lastChange.text.split(eol).join("\n").replace("<", "<LT>");
         edits.push(["nvim_input", [editStr]]);
         // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
         await this.client.callAtomic(edits);
@@ -2328,12 +2337,17 @@ export class NVIMPluginController implements vscode.Disposable {
             return;
         }
         if (this.isInsertMode) {
+            this.isExitingInsertMode = true;
+            // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
+            // see https://github.com/asvetliakov/vscode-neovim/issues/324
+            this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
             await this.syncLastChangesWithDotRepeat();
         }
-        this.lastChange = undefined;
-        await this.client.input("<Esc>");
+        const keys = this.exitingInsertModePendingKeys.map((k) => this.normalizeKey(k)).join("");
+        this.exitingInsertModePendingKeys = [];
+        await this.client.input(`<Esc>${keys}`);
         // const buf = await this.client.buffer;
         // const lines = await buf.lines;
         // console.log("====LINES====");
