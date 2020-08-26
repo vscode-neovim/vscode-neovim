@@ -2340,7 +2340,9 @@ export class NVIMPluginController implements vscode.Disposable {
             this.isExitingInsertMode = true;
             // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
             // see https://github.com/asvetliakov/vscode-neovim/issues/324
-            this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
+            if (!this.typeHandlerDisplose) {
+                this.typeHandlerDisplose = vscode.commands.registerTextEditorCommand("type", this.onVSCodeType);
+            }
             this.leaveMultipleCursorsForVisualMode = false;
             await this.uploadDocumentChangesToNeovim();
             await this.syncLastChangesWithDotRepeat();
