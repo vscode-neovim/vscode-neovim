@@ -16,7 +16,7 @@
 		"email": "devpieron@gmail.com"
 	},
 	"engines": {
-		"vscode": "^1.40.0"
+		"vscode": "^1.48.0"
 	},
 	"keywords": [
 		"keybindings",
@@ -1008,7 +1008,7 @@
 		"@types/mocha": "^7.0.2",
 		"@types/msgpack-lite": "^0.1.7",
 		"@types/node": "^14.0.13",
-		"@types/vscode": "^1.40.0",
+		"@types/vscode": "^1.48.0",
 		"@typescript-eslint/eslint-plugin": "^3.3.0",
 		"@typescript-eslint/parser": "^3.3.0",
 		"eslint": "^7.2.0",
@@ -1019,7 +1019,7 @@
 		"mocha": "^8.1.1",
 		"prettier": "^2.0.5",
 		"source-map-support": "^0.5.16",
-		"typescript": "^3.7.4",
+		"typescript": "^4.0.2",
 		"vscode-test": "^1.3.0"
 	},
 	"dependencies": {

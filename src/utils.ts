@@ -439,3 +439,10 @@ export function accumulateDotRepeatChange(
     }
     return newLastChange;
 }
+
+export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, number] {
+    const cursor = editor.selection.active;
+    const lineText = editor.document.lineAt(cursor.line).text;
+    const byteCol = convertCharNumToByteNum(lineText, cursor.character);
+    return [cursor.line + 1, byteCol];
+}

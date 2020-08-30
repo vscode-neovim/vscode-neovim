@@ -15,7 +15,9 @@ set conceallevel=0
 set nocursorline
 
 " do not hide buffers
-set nohidden
+" set nohidden
+set hidden
+set bufhidden=wipe
 " do not attempt autowrite any buffers
 set noautowrite
 " Disable shada session storing
@@ -44,3 +46,20 @@ set modelines=0
 " Turn off auto-folding
 set nofoldenable
 set foldmethod=manual
+
+function s:forceLocalOptions()
+    setlocal nowrap
+    setlocal conceallevel=0
+    setlocal scrolloff=100
+    setlocal hidden
+    setlocal bufhidden=wipe
+    setlocal noautowrite
+    setlocal nonumber
+    setlocal norelativenumber
+    setlocal listchars+=eol:$
+    setlocal syntax=off
+    setlocal nofoldenable
+    setlocal foldmethod=manual
+endfunction
+
+autocmd BufEnter,FileType * call <SID>forceLocalOptions()
