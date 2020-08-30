@@ -1,8 +1,9 @@
 import { debounce } from "lodash";
-import { Buffer, NeovimClient } from "neovim";
-import { Disposable, EndOfLine, TextDocument, TextEditor, window } from "vscode";
+import { Buffer, NeovimClient, Window } from "neovim";
+import { Disposable, EndOfLine, TextDocument, TextEditor, window, workspace } from "vscode";
 
 import { Logger } from "./logger";
+import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { getNeovimCursorPosFromEditor } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
@@ -15,35 +16,34 @@ export interface BufferManagerSettings {
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
  */
-export class BufferManager implements Disposable {
+export class BufferManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];
-
     /**
      * Internal sync promise
      */
     private changeLayoutPromise?: Promise<void>;
     private changeLayoutPromiseResolve?: () => void;
-
     /**
      * Currently opened editors
      * !Note: Order can be any, it doesn't relate to visible order
      */
     private openedEditors: TextEditor[] = [];
-
     /**
      * Mapping of vscode documents -> neovim buffer id
      */
-    private textDocumentToBufferId: WeakMap<TextDocument, number> = new WeakMap();
-
+    private textDocumentToBufferId: Map<TextDocument, number> = new Map();
     /**
      * Mapping of editor column -> neovim win id
      */
     private editorColumnsToWinId: Map<number, number> = new Map();
-
     /**
      * Mapping of vscode "temp" (without viewColumn) editor -> win id
      */
     private noColumnEditorsToWinId: Map<TextEditor, number> = new Map();
+    /**
+     * Current grid configurations
+     */
+    private grids: Map<number, { winId: number }> = new Map();
 
     /**
      * Buffer event delegate
@@ -57,9 +57,12 @@ export class BufferManager implements Disposable {
         more: boolean,
     ) => void;
 
+    public onBufferInit?: (bufferId: number, textDocument: TextDocument) => void;
+
     public constructor(private logger: Logger, private client: NeovimClient, private settings: BufferManagerSettings) {
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
+        this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
     }
 
     public dispose(): void {
@@ -78,6 +81,71 @@ export class BufferManager implements Disposable {
             await this.changeLayoutPromise;
         }
     }
+
+    public getTextDocumentForBufferId(id: number): TextDocument | undefined {
+        const doc = [...this.textDocumentToBufferId].find(([, bufId]) => id === bufId)?.[0];
+        return doc && !doc.isClosed ? doc : undefined;
+    }
+
+    public getBufferIdForTextDocument(doc: TextDocument): number | undefined {
+        return this.textDocumentToBufferId.get(doc);
+    }
+
+    public getGridIdForWinId(winId: number): number | undefined {
+        const grid = [...this.grids].find(([, conf]) => conf.winId === winId);
+        return grid ? grid[0] : undefined;
+    }
+
+    public getWinIdForGridId(gridId: number): number | undefined {
+        return this.grids.get(gridId)?.winId;
+    }
+
+    public getWinIdForTextEditor(editor: TextEditor): number | undefined {
+        if (editor.viewColumn) {
+            return this.editorColumnsToWinId.get(editor.viewColumn);
+        } else {
+            return this.noColumnEditorsToWinId.get(editor);
+        }
+    }
+
+    public getEditorFromWinId(winId: number): TextEditor | undefined {
+        // try first noColumnEditors
+        const noColumnEditor = [...this.noColumnEditorsToWinId].find(([, id]) => id === winId);
+        if (noColumnEditor) {
+            return noColumnEditor[0];
+        }
+        const viewColumnId = [...this.editorColumnsToWinId].find(([, id]) => id === winId)?.[0];
+        if (!viewColumnId) {
+            return;
+        }
+        const editor = this.openedEditors.find((e) => e.viewColumn === viewColumnId);
+        return editor;
+    }
+
+    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
+        for (const [name, ...args] of batch) {
+            // const firstArg = args[0] || [];
+            switch (name) {
+                case "win_external_pos":
+                case "win_pos": {
+                    for (const [grid, win] of args as [number, Window][]) {
+                        this.grids.set(grid, { winId: win.id });
+                    }
+                    break;
+                }
+                case "win_close": {
+                    for (const [grid] of args as [number][]) {
+                        this.grids.delete(grid);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private onDidCloseTextDocument = (e: TextDocument): void => {
+        this.textDocumentToBufferId.delete(e);
+    };
 
     private onDidChangeVisibleTextEditors = (): void => {
         // !since onDidChangeVisibleTextEditors/onDidChangeActiveTextEditor are synchronyous
@@ -298,6 +366,9 @@ export class BufferManager implements Disposable {
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
         ];
         await this.client.callAtomic(requests);
+        if (this.onBufferInit) {
+            this.onBufferInit(bufId, document);
+        }
         // start listen for buffer changes
         buffer.listen("lines", this.receivedBufferEvent);
     }

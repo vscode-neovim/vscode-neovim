@@ -1,4 +1,4 @@
-import { workspace, TextEditor, TextDocumentContentChangeEvent, Position } from "vscode";
+import { workspace, TextEditor, TextDocumentContentChangeEvent, Position, TextDocument, EndOfLine } from "vscode";
 import { Diff } from "fast-diff";
 import wcwidth from "ts-wcwidth";
 
@@ -45,6 +45,10 @@ export interface DotRepeatChange {
      * Set if it was the first change and started either through o or O
      */
     startMode?: "o" | "O";
+    /**
+     * Text eol
+     */
+    eol: string;
 }
 
 export function processLineNumberStringFromEvent(
@@ -395,6 +399,7 @@ export function getNeovimInitPath(): string | undefined {
 
 export function normalizeDotRepeatChange(
     change: TextDocumentContentChangeEvent,
+    eol: string,
     startMode?: "o" | "O",
 ): DotRepeatChange {
     return {
@@ -402,6 +407,7 @@ export function normalizeDotRepeatChange(
         rangeOffset: change.rangeOffset,
         text: change.text,
         startMode,
+        eol,
     };
 }
 
@@ -440,9 +446,17 @@ export function accumulateDotRepeatChange(
     return newLastChange;
 }
 
+export function editorPositionToNeovimPosition(editor: TextEditor, position: Position): [number, number] {
+    const lineText = editor.document.lineAt(position.line).text;
+    const byteCol = convertCharNumToByteNum(lineText, position.character);
+    return [position.line + 1, byteCol];
+}
+
 export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, number] {
-    const cursor = editor.selection.active;
-    const lineText = editor.document.lineAt(cursor.line).text;
-    const byteCol = convertCharNumToByteNum(lineText, cursor.character);
-    return [cursor.line + 1, byteCol];
+    return editorPositionToNeovimPosition(editor, editor.selection.active);
+}
+
+export function getDocumentLineArray(doc: TextDocument): string[] {
+    const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
+    return doc.getText().split(eol);
 }

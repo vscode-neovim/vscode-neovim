@@ -235,6 +235,8 @@ export class NVIMPluginController implements vscode.Disposable {
      */
     private compositeEscapeFirstPressTimestamp?: number;
 
+    private test: vscode.TextEditor[] = [];
+
     public constructor(settings: ControllerSettings) {
         this.NEOVIM_WIN_HEIGHT = settings.neovimViewportHeight;
         this.NEOVIM_WIN_WIDTH = settings.neovimViewportWidth;
@@ -538,7 +540,7 @@ export class NVIMPluginController implements vscode.Disposable {
                     if (this.lastChange && Utils.isChangeSubsequentToChange(change, this.lastChange)) {
                         this.lastChange = Utils.accumulateDotRepeatChange(change, this.lastChange);
                     } else {
-                        this.lastChange = Utils.normalizeDotRepeatChange(change, startModeHint);
+                        this.lastChange = Utils.normalizeDotRepeatChange(change, eol, startModeHint);
                     }
                 }
             }
