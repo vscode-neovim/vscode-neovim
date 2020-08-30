@@ -460,3 +460,7 @@ export function getDocumentLineArray(doc: TextDocument): string[] {
     const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
     return doc.getText().split(eol);
 }
+
+export function normalizeInputString(str: string): string {
+    return str.replace("\n", "<CR>").replace("<", "<LT>");
+}

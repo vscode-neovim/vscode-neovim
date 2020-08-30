@@ -1,3 +1,5 @@
+import { EventEmitter } from "events";
+
 import { commands, Disposable } from "vscode";
 
 import { Logger } from "./logger";
@@ -15,6 +17,8 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
      * True when macro recording in insert mode
      */
     private isRecording = false;
+
+    private eventEmitter = new EventEmitter();
 
     public constructor(private logger: Logger) {}
 
@@ -39,7 +43,11 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
     }
 
     public get isRecordingInInsertMode(): boolean {
-        return this.isRecordingInInsertMode;
+        return this.isRecording;
+    }
+
+    public onModeChange(callback: (newMode: string) => void): void {
+        this.eventEmitter.on("neovimModeChanged", callback);
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
@@ -55,6 +63,7 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
                     commands.executeCommand("setContext", "neovim.recording", false);
                 }
                 commands.executeCommand("setContext", "neovim.mode", this.mode);
+                this.eventEmitter.emit("neovimModeChanged", modeName);
             }
         }
     }
