@@ -100,26 +100,6 @@ function! VSCodeGetRegister(reg)
     return getreg(a:reg)
 endfunction
 
-function! VSCodeClearJumpIfFirstWin()
-    let currWin = nvim_get_current_win()
-    if currWin == g:vscode_primary_win && w:vscode_clearjump
-        let w:vscode_clearjump = 0
-        clearjumps
-    endif
-endfunction
-
-function! VSCodeStoreJumpForWin(winId)
-    " Seems causing troubles
-    " let currWin = nvim_get_current_win()
-    " if currWin != a:winId
-    "     call nvim_set_current_win(a:winId)
-    " endif
-    exe "normal! m'"
-    " if currWin != a:winId
-    "     call nvim_set_current_win(currWin)
-    " endif
-endfunction
-
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
     set conceallevel=0
@@ -129,13 +109,6 @@ function! s:onBufEnter(name, id)
         let isJumping = g:isJumping
     endif
     call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop, isJumping)
-endfunction
-
-function! s:onWinEnter()
-    if exists("w:vscode_clearjump") && w:vscode_clearjump
-        let w:vscode_clearjump = 0
-        clearjumps
-    endif
 endfunction
 
 function! s:runFileTypeDetection()
@@ -166,8 +139,7 @@ execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 " Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
 " autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
-autocmd WinEnter * call <SID>onWinEnter()
 autocmd InsertEnter * call <SID>onInsertEnter()
 autocmd BufAdd * call <SID>runFileTypeDetection()
 " Looks like external windows are coming with "set wrap" set automatically, disable them
-autocmd WinNew,WinEnter * :set nowrap
+" autocmd WinNew,WinEnter * :set nowrap

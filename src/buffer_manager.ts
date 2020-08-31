@@ -4,7 +4,7 @@ import { commands, Disposable, EndOfLine, TextDocument, TextEditor, Uri, ViewCol
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { getNeovimCursorPosFromEditor } from "./utils";
+import { callAtomic, getNeovimCursorPosFromEditor } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 
@@ -363,7 +363,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     nvimRequests.push(["nvim_win_close", [winId, true]]);
                 }
             }
-            await this.client.callAtomic(nvimRequests);
+            await callAtomic(this.client, nvimRequests, this.logger, LOG_PREFIX);
 
             // remember new visible editors
             this.openedEditors = currentVisibleEditors;
@@ -452,7 +452,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
         ];
-        await this.client.callAtomic(requests);
+        await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
         if (this.onBufferInit) {
             this.onBufferInit(bufId, document);
         }
@@ -478,10 +478,16 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (typeof win === "number") {
             throw new Error(`Unable to create a new neovim window, code: ${win}`);
         }
-        await this.client.callAtomic([
-            ["nvim_buf_set_option", [buf.id, "hidden", true]],
-            ["nvim_buf_set_option", [buf.id, "bufhidden", "wipe"]],
-        ]);
+        await callAtomic(
+            this.client,
+            [
+                ["nvim_win_set_var", [win.id, "vscode_clearjumps", true]],
+                ["nvim_buf_set_option", [buf.id, "hidden", true]],
+                ["nvim_buf_set_option", [buf.id, "bufhidden", "wipe"]],
+            ],
+            this.logger,
+            LOG_PREFIX,
+        );
         return win.id;
     }
 

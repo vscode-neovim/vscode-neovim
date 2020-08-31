@@ -1,6 +1,9 @@
 import { workspace, TextEditor, TextDocumentContentChangeEvent, Position, TextDocument, EndOfLine } from "vscode";
 import { Diff } from "fast-diff";
 import wcwidth from "ts-wcwidth";
+import { NeovimClient } from "neovim";
+
+import { Logger } from "./logger";
 
 export const EXT_NAME = "vscode-neovim";
 export const EXT_ID = `asvetliakov.${EXT_NAME}`;
@@ -471,5 +474,36 @@ export function findLastEvent(name: string, batch: [string, ...unknown[]][]): [s
         if (event === name) {
             return batch[i];
         }
+    }
+}
+
+/**
+ * Wrap nvim callAtomic and check for any errors in result
+ * @param client
+ * @param requests
+ * @param logger
+ * @param prefix
+ */
+export async function callAtomic(
+    client: NeovimClient,
+    requests: [string, unknown[]][],
+    logger: Logger,
+    prefix = "",
+): Promise<void> {
+    const res = await client.callAtomic(requests);
+    const errors: string[] = [];
+    if (res && Array.isArray(res) && Array.isArray(res[0])) {
+        res[0].forEach((res, idx) => {
+            if (res) {
+                const call = requests[idx];
+                const requestName = call?.[0];
+                if (requestName !== "nvim_input") {
+                    errors.push(`${call?.[0] || "Unknown"}: ${res}`);
+                }
+            }
+        });
+    }
+    if (errors.length) {
+        logger.error(`${prefix}:\n${errors.join("\n")}`);
     }
 }

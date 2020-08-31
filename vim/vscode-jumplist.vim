@@ -10,6 +10,32 @@ function s:jump(forward)
     let g:isJumping = 0
 endfunction
 
+function! s:clearJumplist()
+    if exists("w:vscode_clearjumps") && w:vscode_clearjumps
+        let w:vscode_clearjumps = 0
+        clearjumps
+    endif
+endfunction
+
+function! VSCodeStoreJumpForWin(winId)
+    " Seems causing troubles
+    " let currWin = nvim_get_current_win()
+    " if currWin != a:winId
+    "     call nvim_set_current_win(a:winId)
+    " endif
+    exe "normal! m'"
+    " if currWin != a:winId
+    "     call nvim_set_current_win(currWin)
+    " endif
+endfunction
+
+
+augroup VscodeJumplist
+    autocmd!
+    autocmd WinEnter * call <SID>clearJumplist()
+augroup END
+
+
 nnoremap <silent> <C-o> :<C-u>call <SID>jump(0)<CR>
 nnoremap <silent> <C-i> :<C-u>call <SID>jump(1)<CR>
 nnoremap <silent> <Tab> :<C-u>call <SID>jump(1)<CR>

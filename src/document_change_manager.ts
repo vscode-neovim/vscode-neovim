@@ -18,6 +18,7 @@ import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
     accumulateDotRepeatChange,
+    callAtomic,
     diffLineToChars,
     DotRepeatChange,
     getDocumentLineArray,
@@ -95,6 +96,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
 
     public getDocumentChangeCompletionLock(doc: TextDocument): Promise<void> {
         return this.textDocumentChangePromise.get(doc)?.promise || Promise.resolve();
+    }
+
+    public hasDocumentChangeCompletionLock(doc: TextDocument): boolean {
+        return this.textDocumentChangePromise.has(doc);
     }
 
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
@@ -203,7 +208,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         if (!requests.length) {
             return;
         }
-        await this.client.callAtomic(requests);
+        await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
     }
 
     public async syncDotRepatWithNeovim(): Promise<void> {
@@ -258,12 +263,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         editStr += dotRepeatChange.text.split(dotRepeatChange.eol).join("\n").replace("<", "<LT>");
         edits.push(["nvim_input", [editStr]]);
         // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
-        await this.client.callAtomic(edits);
+        await callAtomic(this.client, edits, this.logger, LOG_PREFIX);
 
         const cleanEdits: [string, unknown[]][] = [];
         cleanEdits.push(["nvim_set_current_win", [currWin.id]]);
         cleanEdits.push(["nvim_win_close", [win.id, true]]);
-        await this.client.callAtomic(cleanEdits);
+        await callAtomic(this.client, cleanEdits, this.logger, LOG_PREFIX);
     }
 
     private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {

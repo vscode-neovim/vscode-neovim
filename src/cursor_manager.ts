@@ -16,7 +16,7 @@ import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
 import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { editorPositionToNeovimPosition, getNeovimCursorPosFromEditor } from "./utils";
+import { callAtomic, editorPositionToNeovimPosition, getNeovimCursorPosFromEditor } from "./utils";
 
 const LOG_PREFIX = "CursorManager";
 
@@ -125,11 +125,13 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: cursorPos.col });
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-            const queueUpdate = async (): Promise<void> => {
-                await this.changeManager.getDocumentChangeCompletionLock(editor.document);
+            if (this.changeManager.hasDocumentChangeCompletionLock(editor.document)) {
+                this.changeManager.getDocumentChangeCompletionLock(editor.document).then(() => {
+                    this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
+                });
+            } else {
                 this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
-            };
-            queueUpdate();
+            }
         }
         winCursorsUpdates.clear();
     }
@@ -144,6 +146,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
         const { textEditor, kind, selections } = e;
         this.logger.debug(`${LOG_PREFIX}: SelectionChanged`);
+
+        if (kind === TextEditorSelectionChangeKind.Command) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping command kind`);
+            return;
+        }
 
         // wait for possible layout updates first
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
@@ -199,7 +206,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     `${LOG_PREFIX}: Updating cursor pos, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
                 );
                 requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
-                this.client.callAtomic(requests);
+                await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
             }
         } else {
             const createJumpEntry =
@@ -219,7 +226,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             if (createJumpEntry) {
                 requests.push(["nvim_call_function", ["VSCodeStoreJumpForWin", [winId]]]);
             }
-            await this.client.callAtomic(requests);
+            await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
         }
     };
 

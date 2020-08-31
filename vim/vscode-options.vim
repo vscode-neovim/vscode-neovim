@@ -53,6 +53,7 @@ function s:forceLocalOptions()
     setlocal scrolloff=100
     setlocal hidden
     setlocal bufhidden=wipe
+    "setlocal bufhidden=unload
     setlocal noautowrite
     setlocal nonumber
     setlocal norelativenumber
@@ -62,4 +63,7 @@ function s:forceLocalOptions()
     setlocal foldmethod=manual
 endfunction
 
-autocmd BufEnter,FileType * call <SID>forceLocalOptions()
+augroup VscodeForceOptions
+    autocmd!
+    autocmd BufEnter,FileType * call <SID>forceLocalOptions()
+augroup END
