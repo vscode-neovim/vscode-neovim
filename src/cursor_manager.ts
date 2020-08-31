@@ -1,4 +1,4 @@
-import { NeovimClient } from "neovim";
+import { NeovimClient, Window } from "neovim";
 import {
     Disposable,
     Range,
@@ -44,6 +44,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable {
         private settings: CursorManagerSettings,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
+        this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
     }
 
     public dispose(): void {
@@ -57,8 +58,15 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable {
             switch (name) {
                 case "win_viewport": {
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [grid, win, topline, botline, curline, curcol] of args as number[][]) {
-                        winCursorsUpdates.set(win, { line: curline, col: curcol });
+                    for (const [grid, win, topline, botline, curline, curcol] of args as [
+                        number,
+                        Window,
+                        number,
+                        number,
+                        number,
+                        number,
+                    ][]) {
+                        winCursorsUpdates.set(win.id, { line: curline, col: curcol });
                     }
                     break;
                 }
@@ -99,7 +107,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable {
             };
             queueUpdate();
         }
+        winCursorsUpdates.clear();
     }
+
+    private onDidChangeVisibleTextEditors = (): void => {
+        this.updateCursorStyle(this.modeManager.currentMode);
+    };
 
     private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
         if (this.modeManager.isInsertMode) {

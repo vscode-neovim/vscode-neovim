@@ -260,7 +260,7 @@ export class MainController implements vscode.Disposable {
         if (!settings.neovimPath) {
             throw new Error("Neovim path is not defined");
         }
-        this.logger = new Logger(LogLevel.debug);
+        this.logger = new Logger(LogLevel.debug, true);
         this.disposables.push(this.logger);
         // this.mouseSelectionEnabled = settings.mouseSelection;
         // this.highlightProvider = new HighlightProvider(settings.highlightsConfiguration);
@@ -488,7 +488,7 @@ export class MainController implements vscode.Disposable {
         // const currRedrawNotifications: [string, ...any[]][] = [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const redrawEvents = events as [string, ...any[]][];
-        const hasFlush = !!events.reverse().find(([name]) => name === "flush");
+        const hasFlush = Utils.findLastEvent("flush", events);
 
         // let flush = false;
         // for (const [name, ...args] of events) {
@@ -504,6 +504,64 @@ export class MainController implements vscode.Disposable {
             // this.processRedrawBatch(batch);
         } else {
             this.currentRedrawBatch.push(...redrawEvents);
+        }
+    };
+
+    private handleCustomRequest = async (
+        eventName: string,
+        eventArgs: [string, ...unknown[]],
+        response: RequestResponse,
+    ): Promise<void> => {
+        const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [this.modeManager, this.changeManager];
+        const vscodeCommandManagers: NeovimCommandProcessable[] = [];
+        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [];
+        try {
+            let result: unknown;
+            if (eventName === "vscode-command") {
+                const [vscodeCommand, commandArgs] = eventArgs as [string, unknown[]];
+                const results = await Promise.all(
+                    vscodeCommandManagers.map((m) =>
+                        m.handleVSCodeCommand(vscodeCommand, Array.isArray(commandArgs) ? commandArgs : [commandArgs]),
+                    ),
+                );
+                // use first non nullable result
+                result = results.find((r) => r != null);
+            } else if (eventName === "vscode-range-command") {
+                const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, commandArgs] = eventArgs as [
+                    string,
+                    number,
+                    number,
+                    number,
+                    number,
+                    number,
+                    unknown[],
+                ];
+                const results = await Promise.all(
+                    vscodeRangeCommandManagers.map((m) =>
+                        m.handleVSCodeRangeCommand(
+                            vscodeCommand,
+                            line1,
+                            line2,
+                            pos1,
+                            pos2,
+                            !!leaveSelection,
+                            Array.isArray(commandArgs) ? commandArgs : [commandArgs],
+                        ),
+                    ),
+                );
+                // use first non nullable result
+                result = results.find((r) => r != null);
+            } else if (eventName === "vscode-neovim") {
+                const [command, commandArgs] = eventArgs as [string, unknown[]];
+                const results = await Promise.all(
+                    extensionCommandManagers.map((m) => m.handleExtensionRequest(command, commandArgs)),
+                );
+                // use first non nullable result
+                result = results.find((r) => r != null);
+            }
+            response.send(result || "", false);
+        } catch (e) {
+            response.send(e.message, true);
         }
     };
 
@@ -1125,47 +1183,47 @@ export class MainController implements vscode.Disposable {
         editor.setDecorations(decorator, options);
     }
 
-    private handleCustomRequest = async (
-        eventName: string,
-        eventArgs: [string, ...unknown[]],
-        response: RequestResponse,
-    ): Promise<void> => {
-        try {
-            let result: unknown;
-            if (eventName === "vscode-command") {
-                const [vscodeCommand, commandArgs] = eventArgs as [string, unknown[]];
-                result = await this.handleVSCodeCommand(
-                    vscodeCommand,
-                    Array.isArray(commandArgs) ? commandArgs : [commandArgs],
-                );
-            } else if (eventName === "vscode-range-command") {
-                const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, commandArgs] = eventArgs as [
-                    string,
-                    number,
-                    number,
-                    number,
-                    number,
-                    number,
-                    unknown[],
-                ];
-                result = await this.handleVSCodeRangeCommand(
-                    vscodeCommand,
-                    line1,
-                    line2,
-                    pos1,
-                    pos2,
-                    !!leaveSelection,
-                    Array.isArray(commandArgs) ? commandArgs : [commandArgs],
-                );
-            } else if (eventName === "vscode-neovim") {
-                const [command, commandArgs] = eventArgs as [string, unknown[]];
-                result = await this.handleExtensionRequest(command, commandArgs);
-            }
-            response.send(result || "", false);
-        } catch (e) {
-            response.send(e.message, true);
-        }
-    };
+    // private handleCustomRequest = async (
+    //     eventName: string,
+    //     eventArgs: [string, ...unknown[]],
+    //     response: RequestResponse,
+    // ): Promise<void> => {
+    //     try {
+    //         let result: unknown;
+    //         if (eventName === "vscode-command") {
+    //             const [vscodeCommand, commandArgs] = eventArgs as [string, unknown[]];
+    //             result = await this.handleVSCodeCommand(
+    //                 vscodeCommand,
+    //                 Array.isArray(commandArgs) ? commandArgs : [commandArgs],
+    //             );
+    //         } else if (eventName === "vscode-range-command") {
+    //             const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, commandArgs] = eventArgs as [
+    //                 string,
+    //                 number,
+    //                 number,
+    //                 number,
+    //                 number,
+    //                 number,
+    //                 unknown[],
+    //             ];
+    //             result = await this.handleVSCodeRangeCommand(
+    //                 vscodeCommand,
+    //                 line1,
+    //                 line2,
+    //                 pos1,
+    //                 pos2,
+    //                 !!leaveSelection,
+    //                 Array.isArray(commandArgs) ? commandArgs : [commandArgs],
+    //             );
+    //         } else if (eventName === "vscode-neovim") {
+    //             const [command, commandArgs] = eventArgs as [string, unknown[]];
+    //             result = await this.handleExtensionRequest(command, commandArgs);
+    //         }
+    //         response.send(result || "", false);
+    //     } catch (e) {
+    //         response.send(e.message, true);
+    //     }
+    // };
 
     private async handleVSCodeCommand(command: string, args: unknown[]): Promise<unknown> {
         return await this.runVSCodeCommand(command, ...args);

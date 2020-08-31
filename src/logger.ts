@@ -13,7 +13,7 @@ export class Logger implements Disposable {
 
     private channel: OutputChannel;
 
-    public constructor(private logLevel: LogLevel) {
+    public constructor(private logLevel: LogLevel, private outputToConsole = false) {
         this.channel = window.createOutputChannel(EXT_NAME);
         this.disposables.push(this.channel);
     }
@@ -25,12 +25,18 @@ export class Logger implements Disposable {
     public debug(msg: string): void {
         if (this.logLevel >= LogLevel.debug) {
             this.channel.appendLine(msg);
+            if (this.outputToConsole) {
+                console.log(msg);
+            }
         }
     }
 
     public warn(msg: string): void {
         if (this.logLevel >= LogLevel.warn) {
             this.channel.appendLine(msg);
+            if (this.outputToConsole) {
+                console.log(msg);
+            }
         }
     }
 
@@ -38,6 +44,9 @@ export class Logger implements Disposable {
         if (this.logLevel >= LogLevel.error) {
             this.channel.appendLine(msg);
             window.showErrorMessage(msg);
+            if (this.outputToConsole) {
+                console.log(msg);
+            }
         }
     }
 }

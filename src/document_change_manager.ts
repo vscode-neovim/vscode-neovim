@@ -288,6 +288,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         const skipTick = this.bufferSkipTicks.get(bufId) || 0;
         if (skipTick >= tick) {
             this.logger.debug(`${LOG_PREFIX}: BufId: ${bufId} skipping tick: ${tick}`);
+            return;
         }
         // happens after undo
         if (firstLine === lastLine && linedata.length === 0) {

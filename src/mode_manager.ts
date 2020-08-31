@@ -4,6 +4,7 @@ import { commands, Disposable } from "vscode";
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
+import { findLastEvent } from "./utils";
 
 const LOG_PREFIX = "ModeManager";
 
@@ -51,7 +52,7 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        const lastModeChange = batch.reverse().find(([event]) => event === "mode_change");
+        const lastModeChange = findLastEvent("mode_change", batch);
         if (lastModeChange) {
             const modeArg = lastModeChange[1] as [string, never] | undefined;
             if (modeArg && modeArg[0] && modeArg[0] !== this.mode) {
@@ -69,7 +70,7 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
     }
 
     public async handleExtensionRequest(name: string): Promise<void> {
-        if (name !== "notify-recording") {
+        if (name === "notify-recording") {
             this.logger.debug(`${LOG_PREFIX}: setting recording flag`);
             this.isRecording = true;
             commands.executeCommand("setContext", "neovim.recording", true);

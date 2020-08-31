@@ -263,6 +263,15 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                     );
                     continue;
                 }
+                const document = prevVisibleEditor.document;
+                if (!currentVisibleEditors.find((e) => e.document === document)) {
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible, removing mapping to bufId: ${this.textDocumentToBufferId.get(
+                            document,
+                        )}`,
+                    );
+                    this.textDocumentToBufferId.delete(document);
+                }
                 if (!prevVisibleEditor.viewColumn || !keepViewColumns.has(prevVisibleEditor.viewColumn)) {
                     const winId = prevVisibleEditor.viewColumn
                         ? this.editorColumnsToWinId.get(prevVisibleEditor.viewColumn)
@@ -283,7 +292,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                     nvimRequests.push(["nvim_win_close", [winId, true]]);
                 }
             }
-            await this.client.callAtomic(nvimRequests);
+            const res = await this.client.callAtomic(nvimRequests);
 
             // remember new visible editors
             this.openedEditors = currentVisibleEditors;

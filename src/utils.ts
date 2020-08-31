@@ -464,3 +464,12 @@ export function getDocumentLineArray(doc: TextDocument): string[] {
 export function normalizeInputString(str: string): string {
     return str.replace("\n", "<CR>").replace("<", "<LT>");
 }
+
+export function findLastEvent(name: string, batch: [string, ...unknown[]][]): [string, ...unknown[]] | undefined {
+    for (let i = batch.length - 1; i >= 0; i--) {
+        const [event] = batch[i];
+        if (event === name) {
+            return batch[i];
+        }
+    }
+}
