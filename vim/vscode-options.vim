@@ -53,7 +53,6 @@ function s:forceLocalOptions()
     setlocal scrolloff=100
     setlocal hidden
     setlocal bufhidden=wipe
-    "setlocal bufhidden=unload
     setlocal noautowrite
     setlocal nonumber
     setlocal norelativenumber

@@ -17,19 +17,6 @@ function! s:clearJumplist()
     endif
 endfunction
 
-function! VSCodeStoreJumpForWin(winId)
-    " Seems causing troubles
-    " let currWin = nvim_get_current_win()
-    " if currWin != a:winId
-    "     call nvim_set_current_win(a:winId)
-    " endif
-    exe "normal! m'"
-    " if currWin != a:winId
-    "     call nvim_set_current_win(currWin)
-    " endif
-endfunction
-
-
 augroup VscodeJumplist
     autocmd!
     autocmd WinEnter * call <SID>clearJumplist()

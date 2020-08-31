@@ -209,23 +209,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
             }
         } else {
-            const createJumpEntry =
-                (!e.kind || e.kind === TextEditorSelectionChangeKind.Command) &&
-                e.textEditor === window.activeTextEditor;
-
             const cursorPos = getNeovimCursorPosFromEditor(textEditor);
             this.logger.debug(
-                `${LOG_PREFIX}: Updating cursor pos, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}], createJumpEntry: ${createJumpEntry}`,
+                `${LOG_PREFIX}: Updating cursor pos, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
             );
-            // const skipJump = this.skipJumpsForUris.get(e.textEditor.document.uri.toString());
-            // if (skipJump) {
-            //     createJumpEntry = false;
-            //     this.skipJumpsForUris.delete(e.textEditor.document.uri.toString());
-            // }
             const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
-            if (createJumpEntry) {
-                requests.push(["nvim_call_function", ["VSCodeStoreJumpForWin", [winId]]]);
-            }
             await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
         }
     };

@@ -102,6 +102,9 @@ endfunction
 
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
+    if exists('b:vscode_temp') && b:vscode_temp
+        return
+    endif
     set conceallevel=0
     let tabstop = &tabstop
     let isJumping = 0
@@ -135,11 +138,14 @@ execute 'source ' . s:currDir . '/vscode-file-commands.vim'
 execute 'source ' . s:currDir . '/vscode-tab-commands.vim'
 execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 
-" autocmd BufWinEnter,WinNew,WinEnter * :only
-autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
-" Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
-" autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
-autocmd InsertEnter * call <SID>onInsertEnter()
-autocmd BufAdd * call <SID>runFileTypeDetection()
-" Looks like external windows are coming with "set wrap" set automatically, disable them
-" autocmd WinNew,WinEnter * :set nowrap
+augroup VscodeGeneral
+    autocmd!
+    " autocmd BufWinEnter,WinNew,WinEnter * :only
+    autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
+    " Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
+    " autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
+    autocmd InsertEnter * call <SID>onInsertEnter()
+    autocmd BufAdd * call <SID>runFileTypeDetection()
+    " Looks like external windows are coming with "set wrap" set automatically, disable them
+    " autocmd WinNew,WinEnter * :set nowrap
+augroup END

@@ -195,10 +195,24 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     try {
                         let doc = workspace.textDocuments.find((d) => d.uri.toString() === name);
                         if (!doc) {
+                            this.logger.debug(`${LOG_PREFIX}: Opening a doc: ${name}`);
                             doc = await workspace.openTextDocument(Uri.parse(name, true));
                         }
+                        let forceTabOptions = false;
+                        if (!this.textDocumentToBufferId.has(doc)) {
+                            this.logger.debug(
+                                `${LOG_PREFIX}: No doc -> buffer mapping exists, assigning mapping and init buffer options`,
+                            );
+                            const buffers = await this.client.buffers;
+                            const buf = buffers.find((b) => b.id === id);
+                            if (buf) {
+                                forceTabOptions = true;
+                                await this.initBufferForDocument(doc, buf);
+                            }
+                            this.textDocumentToBufferId.set(doc, id);
+                        }
                         // this.skipJumpsForUris.set(name, true);
-                        await window.showTextDocument(doc, {
+                        const editor = await window.showTextDocument(doc, {
                             // viewColumn: vscode.ViewColumn.Active,
                             // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
                             viewColumn: window.activeTextEditor
@@ -207,6 +221,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                             preserveFocus: false,
                             preview: false,
                         });
+                        if (forceTabOptions) {
+                            await this.resyncBufferTabOptions(editor, id);
+                        }
                     } catch {
                         // todo: show error
                     }
@@ -271,7 +288,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                         this.logger.error(`${LOG_PREFIX}: Cannot create a buffer, code: ${buf}`);
                         continue;
                     }
-                    await this.initBufferForDocument(visibleEditor.document, visibleEditor, buf);
+                    await this.initBufferForDocument(visibleEditor.document, buf, visibleEditor);
 
                     this.logger.debug(
                         `${LOG_PREFIX}: Document: ${visibleEditor.document.uri.toString()}, BufId: ${buf.id}`,
@@ -422,7 +439,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Set buffer options from vscode document
      * @param document
      */
-    private async initBufferForDocument(document: TextDocument, editor: TextEditor, buffer: Buffer): Promise<void> {
+    private async initBufferForDocument(document: TextDocument, buffer: Buffer, editor?: TextEditor): Promise<void> {
         const bufId = buffer.id;
         this.logger.debug(`${LOG_PREFIX}: Init buffer for ${bufId}, doc: ${document.uri.toString()}`);
 
@@ -431,13 +448,13 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         // !It's possible to set expandtab/tabstop/shiftwidth when switching editors, but rare case
         const {
             options: { insertSpaces, tabSize },
-        } = editor;
+        } = editor || { options: { insertSpaces: true, tabSize: 4 } };
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
 
         const requests: [string, unknown[]][] = [
             ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
-            // we must use tabstop with value 1 so one tab will be count as one character for highlight
+            // we must use tabstop with value 1 so one tab will be counted as one character for highlight
             ["nvim_buf_set_option", [bufId, "tabstop", insertSpaces ? tabSize : 1]],
             // same for shiftwidth - don't want to shift more than one tabstop
             ["nvim_buf_set_option", [bufId, "shiftwidth", insertSpaces ? (tabSize as number) : 1]],
@@ -458,6 +475,21 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
         // start listen for buffer changes
         buffer.listen("lines", this.receivedBufferEvent);
+    }
+
+    private async resyncBufferTabOptions(editor: TextEditor, bufId: number): Promise<void> {
+        const {
+            options: { insertSpaces, tabSize },
+        } = editor;
+
+        const requests: [string, unknown[]][] = [
+            ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
+            // we must use tabstop with value 1 so one tab will be counted as one character for highlight
+            ["nvim_buf_set_option", [bufId, "tabstop", insertSpaces ? tabSize : 1]],
+            // same for shiftwidth - don't want to shift more than one tabstop
+            ["nvim_buf_set_option", [bufId, "shiftwidth", insertSpaces ? (tabSize as number) : 1]],
+        ];
+        await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
     }
 
     /**
@@ -482,7 +514,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.client,
             [
                 ["nvim_win_set_var", [win.id, "vscode_clearjumps", true]],
-                ["nvim_buf_set_option", [buf.id, "hidden", true]],
+                ["nvim_buf_set_option", [buf.id, "vscode_temp", true]],
+                ["nvim_buf_set_option", [buf.id, "hidden", false]],
                 ["nvim_buf_set_option", [buf.id, "bufhidden", "wipe"]],
             ],
             this.logger,
