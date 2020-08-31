@@ -14,11 +14,13 @@ export class Logger implements Disposable {
 
     private fd = 0;
 
-    public constructor(private logLevel: LogLevel, private filePath: string, private outputToConsole = false) {
-        try {
-            this.fd = fs.openSync(filePath, "w");
-        } catch {
-            // ignore
+    public constructor(private logLevel: LogLevel, filePath: string, private outputToConsole = false) {
+        if (logLevel !== LogLevel.none) {
+            try {
+                this.fd = fs.openSync(filePath, "w");
+            } catch {
+                // ignore
+            }
         }
         // this.channel = window.createOutputChannel(EXT_NAME);
         // this.disposables.push(this.channel);
