@@ -15,7 +15,7 @@ import { BufferManager } from "./buffer_manager";
 import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
 import { ModeManager } from "./mode_manager";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
+import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { editorPositionToNeovimPosition, getNeovimCursorPosFromEditor } from "./utils";
 
 const LOG_PREFIX = "CursorManager";
@@ -28,7 +28,7 @@ interface CursorInfo {
     cursorShape: "block" | "horizontal" | "vertical";
 }
 
-export class CursorManager implements Disposable, NeovimRedrawProcessable {
+export class CursorManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
     /**
      * Vim cursor mode mappings
@@ -49,6 +49,23 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable {
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
+    }
+
+    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
+        switch (name) {
+            case "visual-edit": {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [append, visualMode, startLine1Based, endLine1Based, skipEmpty] = args as any;
+                this.multipleCursorFromVisualMode(
+                    !!append,
+                    visualMode,
+                    startLine1Based - 1,
+                    endLine1Based - 1,
+                    !!skipEmpty,
+                );
+                break;
+            }
+        }
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
@@ -249,6 +266,40 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable {
                 editor.options.cursorStyle = TextEditorCursorStyle.Line;
             }
         }
+    }
+
+    private multipleCursorFromVisualMode(
+        append: boolean,
+        visualMode: string,
+        startLine: number,
+        endLine: number,
+        skipEmpty: boolean,
+    ): void {
+        // if (!vscode.window.activeTextEditor) {
+        //     return;
+        // }
+        // if (this.currentModeName !== "visual") {
+        //     return;
+        // }
+        // const currentCursorPos = vscode.window.activeTextEditor.selection.active;
+        // const newSelections: vscode.Selection[] = [];
+        // const doc = vscode.window.activeTextEditor.document;
+        // for (let line = startLine; line <= endLine; line++) {
+        //     const lineDef = doc.lineAt(line);
+        //     // always skip empty lines for visual block mode
+        //     if (lineDef.text.trim() === "" && (skipEmpty || visualMode !== "V")) {
+        //         continue;
+        //     }
+        //     let char = 0;
+        //     if (visualMode === "V") {
+        //         char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
+        //     } else {
+        //         char = append ? currentCursorPos.character + 1 : currentCursorPos.character;
+        //     }
+        //     newSelections.push(new vscode.Selection(line, char, line, char));
+        // }
+        // this.leaveMultipleCursorsForVisualMode = true;
+        // vscode.window.activeTextEditor.selections = newSelections;
     }
     // Following lines are enabling vim-style cursor follow on scroll
     // although it's working, unfortunately it breaks vscode jumplist when scrolling to definition from outline/etc

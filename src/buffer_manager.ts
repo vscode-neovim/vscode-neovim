@@ -1,9 +1,9 @@
 import { debounce } from "lodash";
 import { Buffer, NeovimClient, Window } from "neovim";
-import { Disposable, EndOfLine, TextDocument, TextEditor, window, workspace } from "vscode";
+import { commands, Disposable, EndOfLine, TextDocument, TextEditor, Uri, ViewColumn, window, workspace } from "vscode";
 
 import { Logger } from "./logger";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
+import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { getNeovimCursorPosFromEditor } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
@@ -18,7 +18,7 @@ const LOG_PREFIX = "BufferManager";
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
  */
-export class BufferManager implements Disposable, NeovimRedrawProcessable {
+export class BufferManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
     /**
      * Internal sync promise
@@ -124,6 +124,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
         return editor;
     }
 
+    public getEditorFromGridId(gridId: number): TextEditor | undefined {
+        const winId = this.getWinIdForGridId(gridId);
+        if (!winId) {
+            return;
+        }
+        return this.getEditorFromWinId(winId);
+    }
+
+    public isExternalTextDocument(textDoc: TextDocument): boolean {
+        return false;
+    }
+
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
         for (const [name, ...args] of batch) {
             // const firstArg = args[0] || [];
@@ -141,6 +153,65 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                     }
                     break;
                 }
+            }
+        }
+    }
+
+    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
+        switch (name) {
+            case "open-file": {
+                const [fileName, close] = args as [string, number | "all"];
+                const currEditor = window.activeTextEditor;
+                let doc: TextDocument | undefined;
+                if (fileName === "__vscode_new__") {
+                    doc = await workspace.openTextDocument();
+                } else {
+                    doc = await workspace.openTextDocument(fileName.trim());
+                }
+                if (!doc) {
+                    return;
+                }
+                let viewColumn: ViewColumn | undefined;
+                if (close && close !== "all" && currEditor) {
+                    viewColumn = currEditor.viewColumn;
+                    await commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
+                }
+                await window.showTextDocument(doc, viewColumn);
+                if (close === "all") {
+                    await commands.executeCommand("workbench.action.closeOtherEditors");
+                }
+                break;
+            }
+            case "external-buffer": {
+                const [name, idStr, expandTab, tabStop, isJumping] = args as [string, string, number, number, number];
+                const id = parseInt(idStr, 10);
+                if (!(name && /:\/\//.test(name))) {
+                    this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: ${name}`);
+                    await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
+                } else if (isJumping && name) {
+                    this.logger.debug(`${LOG_PREFIX}: Opening a ${name} because of jump`);
+                    // !Important: we only allow to open uri from neovim side when jumping. Otherwise it may break vscode editor management
+                    // !and produce ugly switching effects
+                    try {
+                        let doc = workspace.textDocuments.find((d) => d.uri.toString() === name);
+                        if (!doc) {
+                            doc = await workspace.openTextDocument(Uri.parse(name, true));
+                        }
+                        // this.skipJumpsForUris.set(name, true);
+                        await window.showTextDocument(doc, {
+                            // viewColumn: vscode.ViewColumn.Active,
+                            // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
+                            viewColumn: window.activeTextEditor
+                                ? window.activeTextEditor.viewColumn
+                                : ViewColumn.Active,
+                            preserveFocus: false,
+                            preview: false,
+                        });
+                    } catch {
+                        // todo: show error
+                    }
+                }
+                break;
             }
         }
     }
@@ -412,5 +483,91 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
             ["nvim_buf_set_option", [buf.id, "bufhidden", "wipe"]],
         ]);
         return win.id;
+    }
+
+    private async attachNeovimExternalBuffer(
+        name: string,
+        id: number,
+        expandTab: boolean,
+        tabStop: number,
+    ): Promise<void> {
+        // // already processed
+        // if (this.bufferIdToUri.has(id)) {
+        //     const uri = this.bufferIdToUri.get(id)!;
+        //     const buf = this.uriToBuffer.get(uri);
+        //     if (!buf) {
+        //         return;
+        //     }
+        //     const doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri);
+        //     if (doc) {
+        //         // vim may send two requests, for example for :help - first it opens buffer with empty content in new window
+        //         // then read file and reload the buffer
+        //         const lines = await buf.lines;
+        //         const editor = await vscode.window.showTextDocument(doc, {
+        //             preserveFocus: false,
+        //             preview: true,
+        //             viewColumn: vscode.ViewColumn.Active,
+        //         });
+        //         // need always to use spaces otherwise col will be different and vim HL will be incorrect
+        //         editor.options.insertSpaces = true;
+        //         editor.options.tabSize = tabStop;
+        //         // using replace produces ugly selection effect, try to avoid it by using insert
+        //         editor.edit((b) => b.insert(new vscode.Position(0, 0), lines.join("\n")));
+        //         vscode.commands.executeCommand("editor.action.indentationToSpaces");
+        //     }
+        //     return;
+        // }
+        // // if (!name) {
+        // // return;
+        // // }
+        // const buffers = await this.client.buffers;
+        // // get buffer handle
+        // const buf = buffers.find((b) => b.id === id);
+        // if (!buf) {
+        //     return;
+        // }
+        // // :help, PlugStatus etc opens new window. close it and attach to existing window instead
+        // const windows = await this.client.windows;
+        // const possibleBufWindow = windows.find(
+        //     (w) => ![...this.editorColumnIdToWinId].find(([, winId]) => w.id === winId),
+        // );
+        // if (possibleBufWindow && vscode.window.activeTextEditor) {
+        //     const winBuf = await possibleBufWindow.buffer;
+        //     if (winBuf.id === buf.id) {
+        //         const column = vscode.window.activeTextEditor.viewColumn || vscode.ViewColumn.One;
+        //         const winId = this.editorColumnIdToWinId.get(column)!;
+        //         await this.client.callAtomic([
+        //             ["nvim_win_set_buf", [winId, buf.id]],
+        //             ["nvim_win_close", [possibleBufWindow.id, false]],
+        //         ]);
+        //         // await this.client.request("nvim_win_close", [possibleBufWindow.id, false]);
+        //     }
+        // }
+        // // we want to send initial buffer content with nvim_buf_lines event but listen("lines") doesn't support it
+        // const p = buf[ATTACH](true);
+        // // this.client.attachBuffer(buf, "lines", this.onNeovimBufferEvent);
+        // await p;
+        // // buf.listen("lines", this.onNeovimBufferEvent);
+        // const lines = await buf.lines;
+        // // will trigger onOpenTextDocument but it's fine since the doc is not yet displayed and we won't process it
+        // const doc = await vscode.workspace.openTextDocument({
+        //     content: lines.join("\n"),
+        // });
+        // const uri = doc.uri.toString();
+        // this.uriToBuffer.set(uri, buf);
+        // this.bufferIdToUri.set(id, uri);
+        // if (!lines.length || lines.every((l) => !l.length)) {
+        //     this.externalBuffersShowOnNextChange.add(buf.id);
+        // } else {
+        //     const editor = await vscode.window.showTextDocument(doc, {
+        //         preserveFocus: false,
+        //         preview: true,
+        //         viewColumn: vscode.ViewColumn.Active,
+        //     });
+        //     // need always to use spaces otherwise col will be different and vim HL will be incorrect
+        //     editor.options.insertSpaces = true;
+        //     editor.options.tabSize = tabStop;
+        //     vscode.commands.executeCommand("editor.action.indentationToSpaces");
+        // }
     }
 }

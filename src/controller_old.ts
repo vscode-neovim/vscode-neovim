@@ -317,7 +317,7 @@ export class NVIMPluginControllerOld implements vscode.Disposable {
         this.statusLine = new StatusLineController();
         this.commandsController = new CommandsController(this.client);
         this.disposables.push(this.statusLine);
-        this.disposables.push(this.commandsController);
+        // this.disposables.push(this.commandsController);
 
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.handleCustomRequest);
