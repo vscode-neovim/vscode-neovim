@@ -260,7 +260,7 @@ export class MainController implements vscode.Disposable {
         if (!settings.neovimPath) {
             throw new Error("Neovim path is not defined");
         }
-        this.logger = new Logger(LogLevel.debug, true);
+        this.logger = new Logger(LogLevel.debug, "/tmp/test.txt", true);
         this.disposables.push(this.logger);
         // this.mouseSelectionEnabled = settings.mouseSelection;
         // this.highlightProvider = new HighlightProvider(settings.highlightsConfiguration);

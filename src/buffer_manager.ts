@@ -149,7 +149,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
         this.textDocumentToBufferId.delete(e);
     };
 
-    private onDidChangeVisibleTextEditors = (editors?: TextEditor[]): void => {
+    private onDidChangeVisibleTextEditors = (): void => {
         // !since onDidChangeVisibleTextEditors/onDidChangeActiveTextEditor are synchronyous
         // !and we debounce this event, and possible init new buffers in neovim in async way
         // !we need to wait to complete last call before processing onDidChangeActiveTextEditor
@@ -292,7 +292,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                     nvimRequests.push(["nvim_win_close", [winId, true]]);
                 }
             }
-            const res = await this.client.callAtomic(nvimRequests);
+            await this.client.callAtomic(nvimRequests);
 
             // remember new visible editors
             this.openedEditors = currentVisibleEditors;

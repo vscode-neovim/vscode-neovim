@@ -1,6 +1,6 @@
-import { Disposable, OutputChannel, window } from "vscode";
+import fs from "fs";
 
-import { EXT_NAME } from "./utils";
+import { Disposable, window } from "vscode";
 
 export enum LogLevel {
     error = 0,
@@ -11,20 +11,30 @@ export enum LogLevel {
 export class Logger implements Disposable {
     private disposables: Disposable[] = [];
 
-    private channel: OutputChannel;
+    private fd = 0;
 
-    public constructor(private logLevel: LogLevel, private outputToConsole = false) {
-        this.channel = window.createOutputChannel(EXT_NAME);
-        this.disposables.push(this.channel);
+    public constructor(private logLevel: LogLevel, private filePath: string, private outputToConsole = false) {
+        try {
+            this.fd = fs.openSync(filePath, "w");
+        } catch {
+            // ignore
+        }
+        // this.channel = window.createOutputChannel(EXT_NAME);
+        // this.disposables.push(this.channel);
     }
 
     public dispose(): void {
+        if (this.fd) {
+            fs.closeSync(this.fd);
+        }
         this.disposables.forEach((d) => d.dispose());
     }
 
     public debug(msg: string): void {
         if (this.logLevel >= LogLevel.debug) {
-            this.channel.appendLine(msg);
+            if (this.fd) {
+                fs.appendFileSync(this.fd, msg + "\n");
+            }
             if (this.outputToConsole) {
                 console.log(msg);
             }
@@ -33,7 +43,9 @@ export class Logger implements Disposable {
 
     public warn(msg: string): void {
         if (this.logLevel >= LogLevel.warn) {
-            this.channel.appendLine(msg);
+            if (this.fd) {
+                fs.appendFileSync(this.fd, msg + "\n");
+            }
             if (this.outputToConsole) {
                 console.log(msg);
             }
@@ -42,7 +54,9 @@ export class Logger implements Disposable {
 
     public error(msg: string): void {
         if (this.logLevel >= LogLevel.error) {
-            this.channel.appendLine(msg);
+            if (this.fd) {
+                fs.appendFileSync(this.fd, msg + "\n");
+            }
             window.showErrorMessage(msg);
             if (this.outputToConsole) {
                 console.log(msg);
