@@ -432,49 +432,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                         // we'll reject later
                         this.logger.warn(`${LOG_PREFIX}: Changes were not applied for ${doc.uri.toString()}`);
                     }
-                    // if (success) {
-                    //     // workaround for cursor moving after inserting some text
-                    //     // it's not the ideal solution since there is minor transition from selection to single cursor
-                    //     // todo: another solution is to combine ranges and replacing text starting by prev line when need to insert something
-                    //     // if (!editor.selection.anchor.isEqual(editor.selection.active)) {
-                    //     //     // workaround cursor in insert recording mode
-                    //     //     // todo: why it's needed???
-                    //     //     if (this.isRecording) {
-                    //     //         editor.selections = [
-                    //     //             new vscode.Selection(editor.selection.active, editor.selection.active),
-                    //     //         ];
-                    //     //     } else {
-                    //     //         editor.selections = [new vscode.Selection(cursor, cursor)];
-                    //     //     }
-                    //     // }
-                    //     if (!this.isInsertMode) {
-                    //         // vscode manages cursor after edits very differently so
-                    //         // try to set cursor pos for the one obtained from neovim. This may be wrong because of race conditions
-                    //         if (editor.viewColumn) {
-                    //             const winId = this.editorColumnIdToWinId.get(editor.viewColumn);
-                    //             if (winId) {
-                    //                 const gridConf = [...this.grids].find(([, conf]) => conf.winId === winId);
-                    //                 if (gridConf) {
-                    //                     const cursorPos = Utils.getEditorCursorPos(editor, gridConf[1]);
-                    //                     this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
-                    //                     // editor.selections = [
-                    //                     //     new vscode.Selection(
-                    //                     //         cursorPos.line,
-                    //                     //         cursorPos.col,
-                    //                     //         cursorPos.line,
-                    //                     //         cursorPos.col,
-                    //                     //     ),
-                    //                     // ];
-                    //                 }
-                    //             }
-                    //         }
-                    //     } else if (this.isRecording) {
-                    //         editor.selections = [
-                    //             new vscode.Selection(editor.selection.active, editor.selection.active),
-                    //         ];
-                    //     }
-                    //     this.documentText.set(uri, editor.document.getText());
-                    // }
                 } catch (e) {
                     this.logger.error(`${LOG_PREFIX}: Error applying neovim edits, error: ${e.message}`);
                 }

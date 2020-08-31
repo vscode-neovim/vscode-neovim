@@ -51,7 +51,6 @@ export class CustomCommandsManager implements Disposable, NeovimCommandProcessab
                     // ignore
                 }
             }
-            // this.shouldIgnoreMouseSelection = true;
             const prevSelections = [...e.selections];
             // startLine is visual start
             if (startLine > endLine) {
@@ -73,12 +72,10 @@ export class CustomCommandsManager implements Disposable, NeovimCommandProcessab
                     ),
                 ];
             }
-            // const res = await this.runVSCodeCommand(command, ...args);
             const res = await commands.executeCommand(command, ...args);
             if (!leaveSelection) {
                 e.selections = prevSelections;
             }
-            // this.shouldIgnoreMouseSelection = false;
             return res;
         }
     }
