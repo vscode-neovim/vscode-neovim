@@ -25,9 +25,9 @@ set noautowrite
 " set nonumber
 set norelativenumber
 " Render line number as "marker" of the visible top/bottom screen row
-set number
+set nonumber
 " up to 10 000 000
-set numberwidth=8
+set numberwidth=0
 " Need to know linebreaks for optimized HL
 set listchars+=eol:$
 set list
@@ -55,6 +55,7 @@ function s:forceLocalOptions()
     setlocal bufhidden=wipe
     setlocal noautowrite
     setlocal nonumber
+    setlocal numberwidth=0
     setlocal norelativenumber
     setlocal listchars+=eol:$
     setlocal syntax=off

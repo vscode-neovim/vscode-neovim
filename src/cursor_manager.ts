@@ -237,4 +237,73 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable {
             }
         }
     }
+    // Following lines are enabling vim-style cursor follow on scroll
+    // although it's working, unfortunately it breaks vscode jumplist when scrolling to definition from outline/etc
+    // I think it's better ot have more-less usable jumplist than such minor feature at this feature request will be implemented (https://github.com/microsoft/vscode/issues/84351)
+    // private onChangeVisibleRange = async (e: vscode.TextEditorVisibleRangesChangeEvent): Promise<void> => {
+    //     if (e.textEditor !== vscode.window.activeTextEditor) {
+    //         return;
+    //     }
+    //     const ranges = e.visibleRanges[0];
+    //     if (!ranges) {
+    //         return;
+    //     }
+    //     if (this.shouldIgnoreMouseSelection) {
+    //         return;
+    //     }
+    //     const editorRevealLine = this.textEditorsRevealing.get(e.textEditor);
+    //     if (editorRevealLine) {
+    //         if (editorRevealLine < ranges.start.line || editorRevealLine > ranges.end.line) {
+    //             return;
+    //         }
+    //         this.textEditorsRevealing.delete(e.textEditor);
+    //     }
+    //     if (!this.isInsertMode) {
+    //         this.commitScrolling(e.textEditor);
+    //     }
+    // };
+
+    // private commitScrolling = throttle(
+    //     (e: vscode.TextEditor) => {
+    //         if (vscode.window.activeTextEditor !== e) {
+    //             return;
+    //         }
+    //         const cursor = e.selection.active;
+    //         const visibleRange = e.visibleRanges[0];
+    //         if (!visibleRange) {
+    //             return;
+    //         }
+    //         let updateCursor = false;
+    //         if (cursor.line > visibleRange.end.line) {
+    //             updateCursor = true;
+    //             e.selections = [
+    //                 new vscode.Selection(
+    //                     visibleRange.end.line,
+    //                     cursor.character,
+    //                     visibleRange.end.line,
+    //                     cursor.character,
+    //                 ),
+    //             ];
+    //         } else if (cursor.line < visibleRange.start.line) {
+    //             updateCursor = true;
+    //             e.selections = [
+    //                 new vscode.Selection(
+    //                     visibleRange.start.line,
+    //                     cursor.character,
+    //                     visibleRange.start.line,
+    //                     cursor.character,
+    //                 ),
+    //             ];
+    //         }
+    //         if (updateCursor && e.viewColumn) {
+    //             const winId = this.editorColumnIdToWinId.get(e.viewColumn);
+    //             if (winId) {
+    //                 this.updateCursorPositionInNeovim(winId, e.selection.active.line, e.selection.active.character);
+    //             }
+    //         }
+    //     },
+    //     500,
+    //     { leading: false },
+    // );
+    // private commitScrollingFast = throttle(this.updateScreenRowFromScrolling, 200, { leading: false });
 }

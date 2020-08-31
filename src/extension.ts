@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { NVIMPluginController } from "./controller";
+import { MainController } from "./main_controller";
 import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME } from "./utils";
 
 // this method is called when your extension is activated
@@ -26,7 +26,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
 
-    const plugin = new NVIMPluginController({
+    const plugin = new MainController({
         customInitFile: customInit,
         extensionPath: context.extensionPath,
         highlightsConfiguration: {

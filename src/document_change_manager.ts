@@ -266,7 +266,8 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         await this.client.callAtomic(cleanEdits);
     }
 
-    private onBufferInit: BufferManager["onBufferInit"] = (_id, doc) => {
+    private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {
+        this.logger.debug(`${LOG_PREFIX}: Init buffer content for bufId: ${id}, uri: ${doc.uri.toString()}`);
         this.documentContentInNeovim.set(doc, doc.getText());
     };
 

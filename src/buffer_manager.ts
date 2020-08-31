@@ -13,6 +13,8 @@ export interface BufferManagerSettings {
     neovimViewportHeight: number;
 }
 
+const LOG_PREFIX = "BufferManager";
+
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
  */
@@ -70,14 +72,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
     }
 
     public forceResync(): void {
-        this.logger.debug("BufferManager: force resyncing layout");
+        this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
         this.onDidChangeVisibleTextEditors();
         this.onDidChangeActiveTextEditor();
     }
 
     public async waitForLayoutSync(): Promise<void> {
         if (this.changeLayoutPromise) {
-            this.logger.debug("Waiting for completing layout resyncing");
+            this.logger.debug(`${LOG_PREFIX}: Waiting for completing layout resyncing`);
             await this.changeLayoutPromise;
         }
     }
@@ -147,12 +149,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
         this.textDocumentToBufferId.delete(e);
     };
 
-    private onDidChangeVisibleTextEditors = (): void => {
+    private onDidChangeVisibleTextEditors = (editors?: TextEditor[]): void => {
         // !since onDidChangeVisibleTextEditors/onDidChangeActiveTextEditor are synchronyous
         // !and we debounce this event, and possible init new buffers in neovim in async way
         // !we need to wait to complete last call before processing onDidChangeActiveTextEditor
         // !for this init a promise early, then resolve it after processing
-        this.logger.debug("BufferManager: onDidChangeVisibleTextEditors");
+        this.logger.debug(`${LOG_PREFIX}: onDidChangeVisibleTextEditors`);
         if (!this.changeLayoutPromise) {
             this.changeLayoutPromise = new Promise((res) => (this.changeLayoutPromiseResolve = res));
         }
@@ -160,7 +162,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
     };
 
     private onDidChangeActiveTextEditor = (): void => {
-        this.logger.debug("BufferManager: onDidChangeActiveTextEditor");
+        this.logger.debug(`${LOG_PREFIX}: onDidChangeActiveTextEditor`);
         this.syncActiveEditor();
     };
 
@@ -168,7 +170,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
     // ! so lets debounce it slightly
     private syncLayout = debounce(
         async () => {
-            this.logger.debug("BufferManager: syncing layout");
+            this.logger.debug(`${LOG_PREFIX}: syncing layout`);
             // store in copy, just in case
             const currentVisibleEditors = [...window.visibleTextEditors];
             const prevVisibleEditors = this.openedEditors;
@@ -179,12 +181,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
 
             const nvimRequests: [string, unknown[]][] = [];
             // Open/change neovim windows
-            this.logger.debug("Processing new/changed editors/windows");
+            this.logger.debug(`${LOG_PREFIX}: new/changed editors/windows`);
             // store currently visible viewColumns, doesn't include undefined viewColumns
             const keepViewColumns: Set<number> = new Set();
             for (const visibleEditor of currentVisibleEditors) {
                 this.logger.debug(
-                    `Visible editor, viewColumn: ${
+                    `${LOG_PREFIX}: Visible editor, viewColumn: ${
                         visibleEditor.viewColumn
                     }, doc: ${visibleEditor.document.uri.toString()}`,
                 );
@@ -192,20 +194,22 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                 // creating initially not listed buffer to prevent firing autocmd events when
                 // buffer name/lines are not yet set. We'll set buflisted after setup
                 if (!this.textDocumentToBufferId.has(visibleEditor.document)) {
-                    this.logger.debug("Document not known, init in neovim");
+                    this.logger.debug(`${LOG_PREFIX}: Document not known, init in neovim`);
                     const buf = await this.client.createBuffer(false, true);
                     if (typeof buf === "number") {
-                        this.logger.error(`Cannot create a buffer, code: ${buf}`);
+                        this.logger.error(`${LOG_PREFIX}: Cannot create a buffer, code: ${buf}`);
                         continue;
                     }
                     await this.initBufferForDocument(visibleEditor.document, visibleEditor, buf);
 
-                    this.logger.debug(`Document: ${visibleEditor.document.uri.toString()}, BufId: ${buf}`);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Document: ${visibleEditor.document.uri.toString()}, BufId: ${buf.id}`,
+                    );
                     this.textDocumentToBufferId.set(visibleEditor.document, buf.id);
                 }
                 // editor wasn't changed, skip
                 if (prevVisibleEditors.includes(visibleEditor)) {
-                    this.logger.debug("Editor wasn't changed, skip");
+                    this.logger.debug(`${LOG_PREFIX}: Editor wasn't changed, skip`);
                     continue;
                 }
                 const editorBufferId = this.textDocumentToBufferId.get(visibleEditor.document)!;
@@ -214,7 +218,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                     // System editor, like peek view, search results, etc, has undefined viewColumn and we should always create new window for it
                     if (!visibleEditor.viewColumn || !this.editorColumnsToWinId.has(visibleEditor.viewColumn)) {
                         this.logger.debug(
-                            `Creating new neovim window for ${visibleEditor.viewColumn} column (undefined is OK here)`,
+                            `${LOG_PREFIX}: Creating new neovim window for ${visibleEditor.viewColumn} column (undefined is OK here)`,
                         );
                         winId = await this.createNeovimWindow();
                         if (visibleEditor.viewColumn) {
@@ -222,9 +226,13 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                         } else {
                             this.noColumnEditorsToWinId.set(visibleEditor, winId);
                         }
-                        this.logger.debug(`ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
+                        this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
                     } else {
                         winId = this.editorColumnsToWinId.get(visibleEditor.viewColumn);
+                    }
+
+                    if (!winId) {
+                        throw new Error("Invalid neovim window for editor");
                     }
                     if (visibleEditor.viewColumn) {
                         keepViewColumns.add(visibleEditor.viewColumn);
@@ -232,30 +240,26 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
 
                     const cursor = getNeovimCursorPosFromEditor(visibleEditor);
                     this.logger.debug(
-                        `Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
+                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
                     );
 
                     nvimRequests.push(
                         ["nvim_win_set_buf", [winId, editorBufferId]],
                         ["nvim_win_set_cursor", [winId, getNeovimCursorPosFromEditor(visibleEditor)]],
                     );
-
-                    if (!winId) {
-                        throw new Error("Invalid neovim window for editor");
-                    }
                 } catch (e) {
-                    this.logger.error(e.message);
+                    this.logger.error(`${LOG_PREFIX}: ${e.message}`);
                     continue;
                 }
             }
 
-            this.logger.debug("Closing non visible editors");
+            this.logger.debug(`${LOG_PREFIX}: Closing non visible editors`);
             // close any non visible neovim windows
             for (const prevVisibleEditor of prevVisibleEditors) {
                 // still visible, skip
                 if (currentVisibleEditors.includes(prevVisibleEditor)) {
                     this.logger.debug(
-                        `Editor viewColumn: ${prevVisibleEditor.viewColumn}, visibility hasn't changed, skip`,
+                        `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, visibility hasn't changed, skip`,
                     );
                     continue;
                 }
@@ -273,7 +277,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                         this.noColumnEditorsToWinId.delete(prevVisibleEditor);
                     }
 
-                    this.logger.debug(`Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
+                    );
                     nvimRequests.push(["nvim_win_close", [winId, true]]);
                 }
             }
@@ -292,7 +298,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
 
     private syncActiveEditor = debounce(
         async () => {
-            this.logger.debug("BufferManager: syncing active editor");
+            this.logger.debug(`${LOG_PREFIX}: syncing active editor`);
             if (this.changeLayoutPromise) {
                 await this.changeLayoutPromise;
             }
@@ -305,7 +311,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
                 : this.noColumnEditorsToWinId.get(activeEditor);
             if (!winId) {
                 this.logger.error(
-                    `Unable to determine neovim windows id for editor viewColumn: ${
+                    `${LOG_PREFIX}: Unable to determine neovim windows id for editor viewColumn: ${
                         activeEditor.viewColumn
                     }, docUri: ${activeEditor.document.uri.toString()}`,
                 );
@@ -313,7 +319,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
             }
             const cursor = getNeovimCursorPosFromEditor(activeEditor);
             this.logger.debug(
-                `Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
+                `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
             );
             await this.client.request("nvim_set_current_win", [winId]);
         },
@@ -338,6 +344,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
      */
     private async initBufferForDocument(document: TextDocument, editor: TextEditor, buffer: Buffer): Promise<void> {
         const bufId = buffer.id;
+        this.logger.debug(`${LOG_PREFIX}: Init buffer for ${bufId}, doc: ${document.uri.toString()}`);
 
         // !In vscode same document can have different insertSpaces/tabSize settings per editor
         // !however in neovim it's per buffer. We make assumption here that these settings are same for all editors
@@ -383,22 +390,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable {
         if (typeof buf === "number") {
             throw new Error(`Unable to create a temporary buffer for new neovim window, code: ${buf}`);
         }
-        const win = await this.client.request("nvim_open_win", [
-            buf.id,
-            false,
-            {
-                external: true,
-                width: this.settings.neovimViewportWidth,
-                height: this.settings.neovimViewportHeight,
-            },
-        ]);
-        if (typeof win !== "number") {
-            throw new Error("Unable to create a new neovim window");
+        const win = await this.client.openWindow(buf, false, {
+            external: true,
+            width: this.settings.neovimViewportWidth,
+            height: this.settings.neovimViewportHeight,
+        });
+        if (typeof win === "number") {
+            throw new Error(`Unable to create a new neovim window, code: ${win}`);
         }
         await this.client.callAtomic([
             ["nvim_buf_set_option", [buf.id, "hidden", true]],
             ["nvim_buf_set_option", [buf.id, "bufhidden", "wipe"]],
         ]);
-        return win;
+        return win.id;
     }
 }
