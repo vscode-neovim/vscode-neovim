@@ -3,15 +3,15 @@ function! s:editOrNew(...)
     let file = a:1
     let bang = a:2
 
-    if file == ''
-        if bang == '!'
+    if empty(file)
+        if bang ==# '!'
             call VSCodeNotify('workbench.action.files.openFile')
         else
             call VSCodeNotify('workbench.action.quickOpen')
         endif
     else
         " Last arg is to close previous file, e.g. e! ~/blah.txt will open blah.txt instead the current file
-        call VSCodeExtensionNotify('open-file', expand(file), bang == '!' ? 1 : 0)
+        call VSCodeExtensionNotify('open-file', expand(file), bang ==# '!' ? 1 : 0)
     endif
 endfunction
 
@@ -31,11 +31,11 @@ command! -bang -nargs=? Ex call <SID>editOrNew(<q-args>, <q-bang>)
 command! -bang Enew call <SID>editOrNew('__vscode_new__', <q-bang>)
 command! -bang Find call VSCodeNotify('workbench.action.quickOpen')
 
-command! -complete=file -bang Write if <q-bang> == '!' | call VSCodeNotify('workbench.action.files.saveAs') | else | call VSCodeNotify('workbench.action.files.save') | endif
+command! -complete=file -bang Write if <q-bang> ==# '!' | call VSCodeNotify('workbench.action.files.saveAs') | else | call VSCodeNotify('workbench.action.files.save') | endif
 command! -bang Saveas call VSCodeNotify('workbench.action.files.saveAs')
 
 command! -bang Wall call VSCodeNotify('workbench.action.files.saveAll')
-command! -bang Quit if <q-bang> == '!' | call VSCodeNotify('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeNotify('workbench.action.closeActiveEditor') | endif
+command! -bang Quit if <q-bang> ==# '!' | call VSCodeNotify('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeNotify('workbench.action.closeActiveEditor') | endif
 
 command! -bang Wq call <SID>saveAndClose()
 

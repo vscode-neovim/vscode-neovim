@@ -1,6 +1,6 @@
 " This file used to force set neovim options which may break the extension. Loaded after user config
 
-set shortmess="filnxtToOFI"
+set shortmess=filnxtToOFI
 set nowrap
 set mouse=a
 set cmdheight=1

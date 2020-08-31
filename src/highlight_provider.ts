@@ -194,7 +194,7 @@ export class HighlightProvider {
     public addHighlightGroup(id: number, name: string, vimUiAttrs: VimHighlightUIAttributes): void {
         if (
             this.configuration.ignoreHighlights.includes(name) ||
-            this.configuration.ignoreHighlights.find(i =>
+            this.configuration.ignoreHighlights.find((i) =>
                 i.startsWith("^") || i.endsWith("$") ? new RegExp(i).test(name) : false,
             )
         ) {
@@ -396,7 +396,7 @@ export class HighlightProvider {
                 continue;
             }
             const decoratorRanges = ranges.map(
-                r => new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1),
+                (r) => new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1),
             );
             result.push([decorator, decoratorRanges]);
         }

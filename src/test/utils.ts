@@ -26,7 +26,7 @@ import { TextEditor, window, TextEditorCursorStyle, commands, Range, EndOfLine, 
  */
 
 export async function wait(timeout = 1000): Promise<void> {
-    await new Promise(res => setTimeout(res, timeout));
+    await new Promise((res) => setTimeout(res, timeout));
 }
 
 export async function attachTestNvimClient(): Promise<NeovimClient> {
@@ -281,7 +281,7 @@ export async function setSelection(
     }
 
     editor.selections = selections.map(
-        s => new Selection(s.anchorPos[0], s.anchorPos[1], s.cursorPos[0], s.cursorPos[1]),
+        (s) => new Selection(s.anchorPos[0], s.anchorPos[1], s.cursorPos[0], s.cursorPos[1]),
     );
     await wait(waitTimeout);
 }

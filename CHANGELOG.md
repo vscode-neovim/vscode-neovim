@@ -1,5 +1,17 @@
 # Change Log
 
+## [0.0.52]
+
+- Implement dot repeat (`.`) command ( #209 , #173 ). Also fixes `<count>` insert comamnds, like #255 , #249
+- Removed file name from statusbar ( #291 , #230 ), thanks @Shatur95
+- Fix visual selection conversion ( #233 ), thanks @Shatur95
+- Fix wrong string comparsions ( #308 ), thanks @Shatur95
+- Make espace keys work only when editor has focus ( #290 ) , thanks @David-Else
+- Added some file name completion in commandline ( #192 ), thanks @ppwwyyxx
+- Fix missing `<C-w>c` mapping ( #180 ), thanks @trkoch
+- Add operating system dependent path settings ( #137 ), thanks @3nuc
+- bind gh to mousehover ( #107 ), thanks @kwonoj
+
 ## [0.0.50]
 
 - Fix cursor & extension hang for some cases ( #153 )
@@ -24,7 +36,7 @@
 
 ## [0.0.46]
 
-- Update `neovim-client` to latest version. This should eliminate delay between operations and generally improve the performance
+- Update `neovim-client` to latest version. This should eliminate delay between operations and generally improve the performance. Kudos to @kwonoj for impressive work here
 - Fix cursor movement for 2-byte chars ( #127 )
 
 ## [0.0.45]

@@ -437,4 +437,25 @@ describe("Insert mode and buffer syncronization", () => {
             client,
         );
     });
+
+    it("Handles keys typed immediately after sending escape key", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["blah1 blah2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("ea");
+        await sendVSCodeKeys("aaa");
+
+        await Promise.all([sendEscapeKey(1000), sendVSCodeKeys("$")]);
+
+        await assertContent(
+            {
+                cursor: [0, 13],
+                content: ["blah1aaa blah2"],
+            },
+            client,
+        );
+    });
 });

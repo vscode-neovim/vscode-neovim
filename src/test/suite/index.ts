@@ -13,7 +13,6 @@ export async function run(): Promise<void> {
         slow: 20000,
         fullStackTrace: true,
     });
-    mocha.useColors(true);
     const testsRoot = path.resolve(__dirname, "..");
     return new Promise((c, e) => {
         glob("**/**.test.js", { cwd: testsRoot }, (err, files) => {
@@ -21,10 +20,10 @@ export async function run(): Promise<void> {
                 return e(err);
             }
             // Add files to the test suite
-            files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+            files.forEach((f) => mocha.addFile(path.resolve(testsRoot, f)));
             try {
                 // Run the mocha test
-                mocha.run(failures => {
+                mocha.run((failures) => {
                     if (failures > 0) {
                         e(new Error(`${failures} tests failed.`));
                     } else {
