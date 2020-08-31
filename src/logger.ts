@@ -3,9 +3,10 @@ import fs from "fs";
 import { Disposable, window } from "vscode";
 
 export enum LogLevel {
-    error = 0,
-    warn = 1,
-    debug = 2,
+    none = 0,
+    error = 1,
+    warn = 2,
+    debug = 3,
 }
 
 export class Logger implements Disposable {
@@ -57,10 +58,10 @@ export class Logger implements Disposable {
             if (this.fd) {
                 fs.appendFileSync(this.fd, msg + "\n");
             }
-            window.showErrorMessage(msg);
             if (this.outputToConsole) {
                 console.log(msg);
             }
         }
+        window.showErrorMessage(msg);
     }
 }

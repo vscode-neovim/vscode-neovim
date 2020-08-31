@@ -6,7 +6,6 @@ import { attach, NeovimClient } from "neovim";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { createLogger, transports as loggerTransports } from "winston";
 
-import * as Utils from "./utils";
 import { HighlightConfiguration } from "./highlight_provider";
 import { CommandsController } from "./commands_controller";
 import { ModeManager } from "./mode_manager";
@@ -24,6 +23,8 @@ import {
 import { CommandLineManager } from "./command_line_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { HighlightManager } from "./highlight_manager";
+import { CustomCommandsManager } from "./custom_commands_manager";
+import { findLastEvent } from "./utils";
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
@@ -71,6 +72,7 @@ export class MainController implements vscode.Disposable {
     private commandLineManager!: CommandLineManager;
     private statusLineManager!: StatusLineManager;
     private highlightManager!: HighlightManager;
+    private customCommandsManager!: CustomCommandsManager;
 
     public constructor(settings: ControllerSettings) {
         this.settings = settings;
@@ -192,6 +194,9 @@ export class MainController implements vscode.Disposable {
         });
         this.disposables.push(this.highlightManager);
 
+        this.customCommandsManager = new CustomCommandsManager(this.logger);
+        this.disposables.push(this.customCommandsManager);
+
         this.logger.debug(`${LOG_PREFIX}: Attaching to neovim notifications`);
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.handleCustomRequest);
@@ -227,34 +232,57 @@ export class MainController implements vscode.Disposable {
             this.highlightManager,
             this.cursorManager,
         ];
-        const vscodeComandManagers: NeovimCommandProcessable[] = [];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [];
+        const vscodeComandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
+        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.customCommandsManager];
 
         if (method === "vscode-command") {
             const [vscodeCommand, commandArgs] = events as [string, unknown[]];
-            vscodeComandManagers.forEach((m) =>
-                m.handleVSCodeCommand(vscodeCommand, Array.isArray(commandArgs) ? commandArgs : [commandArgs]),
-            );
+            vscodeComandManagers.forEach(async (m) => {
+                try {
+                    await m.handleVSCodeCommand(
+                        vscodeCommand,
+                        Array.isArray(commandArgs) ? commandArgs : [commandArgs],
+                    );
+                } catch (e) {
+                    this.logger.error(
+                        `${vscodeCommand} failed, args: ${JSON.stringify(commandArgs)} error: ${e.message}`,
+                    );
+                }
+            });
             return;
         }
         if (method === "vscode-range-command") {
             const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, args] = events;
-            vscodeRangeCommandManagers.forEach((m) =>
-                m.handleVSCodeRangeCommand(
-                    vscodeCommand,
-                    line1,
-                    line2,
-                    pos1,
-                    pos2,
-                    !!leaveSelection,
-                    Array.isArray(args) ? args : [args],
-                ),
-            );
+            vscodeRangeCommandManagers.forEach((m) => {
+                try {
+                    m.handleVSCodeRangeCommand(
+                        vscodeCommand,
+                        line1,
+                        line2,
+                        pos1,
+                        pos2,
+                        !!leaveSelection,
+                        Array.isArray(args) ? args : [args],
+                    );
+                } catch (e) {
+                    this.logger.error(
+                        `${vscodeCommand} failed, range: [${line1}, ${line2}, ${pos1}, ${pos2}] args: ${JSON.stringify(
+                            args,
+                        )} error: ${e.message}`,
+                    );
+                }
+            });
             return;
         }
         if (method === "vscode-neovim") {
             const [command, args] = events;
-            extensionCommandManagers.forEach((m) => m.handleExtensionRequest(command, args));
+            extensionCommandManagers.forEach((m) => {
+                try {
+                    m.handleExtensionRequest(command, args);
+                } catch (e) {
+                    this.logger.error(`${command} failed, args: ${JSON.stringify(args)} error: ${e.message}`);
+                }
+            });
             return;
         }
         if (method !== "redraw") {
@@ -263,7 +291,7 @@ export class MainController implements vscode.Disposable {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const redrawEvents = events as [string, ...any[]][];
-        const hasFlush = Utils.findLastEvent("flush", events);
+        const hasFlush = findLastEvent("flush", events);
 
         if (hasFlush) {
             const batch = [...this.currentRedrawBatch.splice(0), ...redrawEvents];
@@ -286,8 +314,8 @@ export class MainController implements vscode.Disposable {
             this.highlightManager,
             this.cursorManager,
         ];
-        const vscodeCommandManagers: NeovimCommandProcessable[] = [];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [];
+        const vscodeCommandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
+        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.customCommandsManager];
         try {
             let result: unknown;
             if (eventName === "vscode-command") {
