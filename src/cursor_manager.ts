@@ -34,6 +34,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Vim cursor mode mappings
      */
     private cursorModes: Map<string, CursorInfo> = new Map();
+    /**
+     * Cursor positions per editor in neovim
+     * ! Note: we should track this because setting cursor as consequence of neovim event will trigger onDidChangeTextEditorSelection with Command kind
+     * ! And we should skip it and don't try to send cursor update into neovim again, otherwise few things may break, especially jumplist
+     */
+    private neovimCursorPosition: WeakMap<TextEditor, { line: number; col: number }> = new WeakMap();
 
     public constructor(
         private logger: Logger,
@@ -116,6 +122,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 this.logger.warn(`${LOG_PREFIX}: No editor for winId: ${winId}`);
                 continue;
             }
+            this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: cursorPos.col });
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
             const queueUpdate = async (): Promise<void> => {
@@ -154,6 +161,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             }], isMultiSelection: ${selections.length > 1}`,
         );
         if (!winId) {
+            return;
+        }
+        const neovimCursorPos = this.neovimCursorPosition.get(textEditor);
+        if (neovimCursorPos && neovimCursorPos.col === cursor.character && neovimCursorPos.line === cursor.line) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
             return;
         }
 
