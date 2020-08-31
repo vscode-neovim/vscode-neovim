@@ -49,7 +49,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      * Document version tracking
      * ! Same as previous property, but reverse
      */
-    private documentVersions: WeakMap<TextDocument, number> = new WeakMap();
+    private documentSkipVersionOnChange: WeakMap<TextDocument, number> = new WeakMap();
     /**
      * Pending document changes promise. Being set early when first change event for a document is received
      * ! Since operations are async it's possible we receive other updates (such as cursor, HL) for related editors with document before
@@ -57,7 +57,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      */
     private textDocumentChangePromise: Map<
         TextDocument,
-        { promise?: Promise<void>; resolve?: () => void; reject?: (err: Error) => void }
+        { promise?: Promise<void>; resolve?: () => void; reject?: () => void }
     > = new Map();
     /**
      * Holds document content last known to neovim.
@@ -296,7 +296,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             return;
         }
         if (!this.textDocumentChangePromise.has(doc)) {
-            const promiseDesc: { promise?: Promise<void>; resolve?: () => void; reject?: (err: Error) => void } = {};
+            const promiseDesc: { promise?: Promise<void>; resolve?: () => void; reject?: () => void } = {};
             promiseDesc.promise = new Promise<void>((res, rej) => {
                 promiseDesc.resolve = res;
                 promiseDesc.reject = rej;
@@ -395,7 +395,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     if (!ranges.length) {
                         continue;
                     }
-                    this.documentVersions.set(doc, doc.version + 1);
+                    this.documentSkipVersionOnChange.set(doc, doc.version + 1);
 
                     // const cursor = editor.selection.active;
                     const success = await editor.edit((builder) => {
@@ -480,7 +480,14 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                 }
             }
             // reject any left promises
-            [...promises.values()].forEach((p) => p.reject && p.reject(new Error("Edit was canceled")));
+            for (const [doc, promise] of promises) {
+                promise.promise?.catch(() =>
+                    this.logger.warn(`${LOG_PREFIX}: Edit was canceled for doc: ${doc.uri.toString()}`),
+                );
+                if (promise.reject) {
+                    promise.reject();
+                }
+            }
         },
         50,
         { leading: false, trailing: true },
@@ -490,8 +497,9 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         const { document, contentChanges } = e;
 
         this.logger.debug(`${LOG_PREFIX}: Change text document for uri: ${document.uri.toString()}`);
-        if (this.documentVersions.get(document) === document.version) {
-            this.logger.debug(`${LOG_PREFIX}: Skipping change since version equals`);
+        if (this.documentSkipVersionOnChange.get(document) === document.version) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping a change since versions equals`);
+            return;
         }
 
         const startModeHint = this.dotRepeatStartModeInsertHint;

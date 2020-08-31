@@ -275,31 +275,28 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         endLine: number,
         skipEmpty: boolean,
     ): void {
-        // if (!vscode.window.activeTextEditor) {
-        //     return;
-        // }
-        // if (this.currentModeName !== "visual") {
-        //     return;
-        // }
-        // const currentCursorPos = vscode.window.activeTextEditor.selection.active;
-        // const newSelections: vscode.Selection[] = [];
-        // const doc = vscode.window.activeTextEditor.document;
-        // for (let line = startLine; line <= endLine; line++) {
-        //     const lineDef = doc.lineAt(line);
-        //     // always skip empty lines for visual block mode
-        //     if (lineDef.text.trim() === "" && (skipEmpty || visualMode !== "V")) {
-        //         continue;
-        //     }
-        //     let char = 0;
-        //     if (visualMode === "V") {
-        //         char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
-        //     } else {
-        //         char = append ? currentCursorPos.character + 1 : currentCursorPos.character;
-        //     }
-        //     newSelections.push(new vscode.Selection(line, char, line, char));
-        // }
+        if (!window.activeTextEditor) {
+            return;
+        }
+        const currentCursorPos = window.activeTextEditor.selection.active;
+        const newSelections: Selection[] = [];
+        const doc = window.activeTextEditor.document;
+        for (let line = startLine; line <= endLine; line++) {
+            const lineDef = doc.lineAt(line);
+            // always skip empty lines for visual block mode
+            if (lineDef.text.trim() === "" && (skipEmpty || visualMode !== "V")) {
+                continue;
+            }
+            let char = 0;
+            if (visualMode === "V") {
+                char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
+            } else {
+                char = append ? currentCursorPos.character + 1 : currentCursorPos.character;
+            }
+            newSelections.push(new Selection(line, char, line, char));
+        }
         // this.leaveMultipleCursorsForVisualMode = true;
-        // vscode.window.activeTextEditor.selections = newSelections;
+        window.activeTextEditor.selections = newSelections;
     }
     // Following lines are enabling vim-style cursor follow on scroll
     // although it's working, unfortunately it breaks vscode jumplist when scrolling to definition from outline/etc
