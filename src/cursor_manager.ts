@@ -218,9 +218,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Updating cursor in editor, viewColumn: ${editor.viewColumn}, pos: [${newLine}, ${newCol}]`,
         );
-        // if (this.leaveMultipleCursorsForVisualMode) {
-        //     return;
-        // }
         const visibleRange = editor.visibleRanges[0];
         const revealCursor = new Selection(newLine, newCol, newLine, newCol);
         // if (!this.neovimCursorUpdates.has(editor)) {
@@ -278,6 +275,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!window.activeTextEditor) {
             return;
         }
+        this.logger.debug(
+            `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], mode: ${visualMode}, append: ${append}, skipEmpty: ${skipEmpty}`,
+        );
         const currentCursorPos = window.activeTextEditor.selection.active;
         const newSelections: Selection[] = [];
         const doc = window.activeTextEditor.document;
@@ -293,9 +293,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             } else {
                 char = append ? currentCursorPos.character + 1 : currentCursorPos.character;
             }
+            this.logger.debug(`${LOG_PREFIX}: Multiple cursor at: [${line}, ${char}]`);
             newSelections.push(new Selection(line, char, line, char));
         }
-        // this.leaveMultipleCursorsForVisualMode = true;
         window.activeTextEditor.selections = newSelections;
     }
     // Following lines are enabling vim-style cursor follow on scroll

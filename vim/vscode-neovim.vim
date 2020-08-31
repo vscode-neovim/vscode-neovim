@@ -165,7 +165,7 @@ execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 " autocmd BufWinEnter,WinNew,WinEnter * :only
 autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
 " Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
-autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
+" autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
 autocmd WinEnter * call <SID>onWinEnter()
 autocmd InsertEnter * call <SID>onInsertEnter()
 autocmd BufAdd * call <SID>runFileTypeDetection()
