@@ -48,6 +48,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      */
     private noColumnEditorsToWinId: Map<TextEditor, number> = new Map();
     /**
+     * Mapping of winId -> editor
+     */
+    private winIdToEditor: Map<number, TextEditor> = new Map();
+    /**
      * Current grid configurations
      */
     private grids: Map<number, { winId: number }> = new Map();
@@ -99,7 +103,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     public getGridIdForWinId(winId: number): number | undefined {
-        const grid = [...this.grids].find(([, conf]) => conf.winId === winId);
+        const grid = [...this.grids].reverse().find(([, conf]) => conf.winId === winId);
         return grid ? grid[0] : undefined;
     }
 
@@ -121,12 +125,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (noColumnEditor) {
             return noColumnEditor[0];
         }
-        const viewColumnId = [...this.editorColumnsToWinId].find(([, id]) => id === winId)?.[0];
-        if (!viewColumnId) {
-            return;
-        }
-        const editor = this.openedEditors.find((e) => e.viewColumn === viewColumnId);
-        return editor;
+        return this.winIdToEditor.get(winId);
+        // const viewColumnId = [...this.editorColumnsToWinId].find(([, id]) => id === winId)?.[0];
+        // if (!viewColumnId) {
+        //     return;
+        // }
+        // // find last, because there can be two editors with same column (when opening editor from search)
+        // const editor = [...this.openedEditors].reverse().find((e) => e.viewColumn === viewColumnId);
+        // return editor;
     }
 
     public getEditorFromGridId(gridId: number): TextEditor | undefined {
@@ -193,7 +199,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             case "external-buffer": {
                 const [name, idStr, expandTab, tabStop, isJumping] = args as [string, string, number, number, number];
                 const id = parseInt(idStr, 10);
-                if (!(name && /:\/\//.test(name))) {
+                if (!(name && this.isVscodeUriName(name))) {
                     this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: ${name}`);
                     await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
                 } else if (isJumping && name) {
@@ -201,7 +207,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     // !Important: we only allow to open uri from neovim side when jumping. Otherwise it may break vscode editor management
                     // !and produce ugly switching effects
                     try {
-                        let doc = workspace.textDocuments.find((d) => d.uri.toString() === name);
+                        let doc = this.findDocFromUri(name);
                         if (!doc) {
                             this.logger.debug(`${LOG_PREFIX}: Opening a doc: ${name}`);
                             doc = await workspace.openTextDocument(Uri.parse(name, true));
@@ -315,19 +321,26 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.textDocumentToBufferId.set(visibleEditor.document, buf.id);
                 }
                 // editor wasn't changed, skip
-                if (prevVisibleEditors.includes(visibleEditor)) {
-                    this.logger.debug(`${LOG_PREFIX}: Editor wasn't changed, skip`);
-                    continue;
-                }
+                // if (prevVisibleEditors.includes(visibleEditor)) {
+                //     this.logger.debug(`${LOG_PREFIX}: Editor wasn't changed, skip`);
+                //     if (visibleEditor.viewColumn) {
+                //         keepViewColumns.add(visibleEditor.viewColumn);
+                //     }
+                //     continue;
+                // }
                 const editorBufferId = this.textDocumentToBufferId.get(visibleEditor.document)!;
                 let winId: number | undefined;
                 try {
                     // System editor, like peek view, search results, etc, has undefined viewColumn and we should always create new window for it
-                    if (!visibleEditor.viewColumn || !this.editorColumnsToWinId.has(visibleEditor.viewColumn)) {
+                    if (
+                        (!visibleEditor.viewColumn && !this.noColumnEditorsToWinId.has(visibleEditor)) ||
+                        (visibleEditor.viewColumn && !this.editorColumnsToWinId.has(visibleEditor.viewColumn))
+                    ) {
                         this.logger.debug(
                             `${LOG_PREFIX}: Creating new neovim window for ${visibleEditor.viewColumn} column (undefined is OK here)`,
                         );
                         winId = await this.createNeovimWindow();
+                        this.logger.debug(`${LOG_PREFIX}: Created new window: ${winId}`);
                         if (visibleEditor.viewColumn) {
                             this.editorColumnsToWinId.set(visibleEditor.viewColumn, winId);
                         } else {
@@ -335,12 +348,17 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                         }
                         this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
                     } else {
-                        winId = this.editorColumnsToWinId.get(visibleEditor.viewColumn);
+                        winId = visibleEditor.viewColumn
+                            ? this.editorColumnsToWinId.get(visibleEditor.viewColumn)
+                            : this.noColumnEditorsToWinId.get(visibleEditor);
+                        this.logger.debug(`${LOG_PREFIX}: Using existing window: ${winId}`);
                     }
 
                     if (!winId) {
                         throw new Error("Invalid neovim window for editor");
                     }
+                    this.winIdToEditor.set(winId, visibleEditor);
+
                     if (visibleEditor.viewColumn) {
                         keepViewColumns.add(visibleEditor.viewColumn);
                     }
@@ -400,6 +418,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.logger.debug(
                         `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
                     );
+                    this.winIdToEditor.delete(winId);
                     nvimRequests.push(["nvim_win_close", [winId, true]]);
                 }
             }
@@ -555,6 +574,26 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         } catch (e) {
             this.logger.warn(`${LOG_PREFIX}: Can't unload the buffer: ${bufId}, err: ${e?.message}`);
         }
+    }
+
+    private isVscodeUriName(name: string): boolean {
+        if (/:\/\//.test(name)) {
+            return true;
+        }
+        if (name.startsWith("output:")) {
+            return true;
+        }
+        if (name.startsWith("/search-editor:")) {
+            return true;
+        }
+        return false;
+    }
+
+    private findDocFromUri(uri: string): TextDocument | undefined {
+        if (uri.startsWith("/search-editor")) {
+            uri = uri.slice(1);
+        }
+        return workspace.textDocuments.find((d) => d.uri.toString() === uri);
     }
 
     private async attachNeovimExternalBuffer(
