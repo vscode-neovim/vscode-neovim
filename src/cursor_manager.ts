@@ -1,3 +1,4 @@
+import { debounce } from "lodash";
 import { NeovimClient, Window } from "neovim";
 import {
     Disposable,
@@ -130,6 +131,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
                 });
             } else {
+                // !Sync calling helps with most common operations latency
                 this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
             }
         }
@@ -140,83 +142,90 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.updateCursorStyle(this.modeManager.currentMode);
     };
 
-    private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
-        if (this.modeManager.isInsertMode) {
-            return;
-        }
-        const { textEditor, kind, selections } = e;
-        this.logger.debug(`${LOG_PREFIX}: SelectionChanged`);
-
-        if (kind === TextEditorSelectionChangeKind.Command) {
-            this.logger.debug(`${LOG_PREFIX}: Skipping command kind`);
-            return;
-        }
-
-        // wait for possible layout updates first
-        this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
-        await this.bufferManager.waitForLayoutSync();
-        // wait for possible change document events
-        this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
-        await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
-
-        const winId = this.bufferManager.getWinIdForTextEditor(textEditor);
-        const cursor = selections[0].active;
-
-        this.logger.debug(
-            `${LOG_PREFIX}: kind: ${kind}, WinId: ${winId}, cursor: [${cursor.line}, ${
-                cursor.character
-            }], isMultiSelection: ${selections.length > 1}`,
-        );
-        if (!winId) {
-            return;
-        }
-        const neovimCursorPos = this.neovimCursorPosition.get(textEditor);
-        if (neovimCursorPos && neovimCursorPos.col === cursor.character && neovimCursorPos.line === cursor.line) {
-            this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
-            return;
-        }
-
-        if (e.selections.length > 1 || !e.selections[0].active.isEqual(e.selections[0].anchor)) {
-            if (e.kind !== TextEditorSelectionChangeKind.Mouse || !this.settings.mouseSelectionEnabled) {
+    // ! Need to debounce requests because setting cursor by consequence of neovim event will trigger this method
+    // ! and cursor may go out-of-sync and produce a jitter
+    private onSelectionChanged = debounce(
+        async (e: TextEditorSelectionChangeEvent): Promise<void> => {
+            if (this.modeManager.isInsertMode) {
                 return;
-            } else {
-                const grid = this.bufferManager.getGridIdForWinId(winId);
-                this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
-                const requests: [string, unknown[]][] = [];
-                if (!this.modeManager.isVisualMode && grid) {
-                    // need to start visual mode from anchor char
-                    const firstPos = e.selections[0].anchor;
-                    const mouseClickPos = editorPositionToNeovimPosition(textEditor, firstPos);
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
-                    );
-                    requests.push([
-                        "nvim_input_mouse",
-                        // nvim_input_mouse is zero based while getNeovimCursorPosForEditor() returns 1 based line
-                        ["left", "press", "", grid, mouseClickPos[0] - 1, mouseClickPos[1]],
-                    ]);
-                    requests.push(["nvim_input", ["v"]]);
-                }
-                const lastSelection = e.selections.slice(-1)[0];
-                if (!lastSelection) {
+            }
+            const { textEditor, kind, selections } = e;
+            this.logger.debug(`${LOG_PREFIX}: SelectionChanged`);
+
+            // ! Note: Unfortunately navigating from outline is Command kind, so we can't skip it :(
+            // if (kind === TextEditorSelectionChangeKind.Command) {
+            //     this.logger.debug(`${LOG_PREFIX}: Skipping command kind`);
+            //     return;
+            // }
+
+            // wait for possible layout updates first
+            this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
+            await this.bufferManager.waitForLayoutSync();
+            // wait for possible change document events
+            this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
+            await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
+
+            const winId = this.bufferManager.getWinIdForTextEditor(textEditor);
+            const cursor = selections[0].active;
+
+            this.logger.debug(
+                `${LOG_PREFIX}: kind: ${kind}, WinId: ${winId}, cursor: [${cursor.line}, ${
+                    cursor.character
+                }], isMultiSelection: ${selections.length > 1}`,
+            );
+            if (!winId) {
+                return;
+            }
+            const neovimCursorPos = this.neovimCursorPosition.get(textEditor);
+            if (neovimCursorPos && neovimCursorPos.col === cursor.character && neovimCursorPos.line === cursor.line) {
+                this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
+                return;
+            }
+
+            if (e.selections.length > 1 || !e.selections[0].active.isEqual(e.selections[0].anchor)) {
+                if (e.kind !== TextEditorSelectionChangeKind.Mouse || !this.settings.mouseSelectionEnabled) {
                     return;
+                } else {
+                    const grid = this.bufferManager.getGridIdForWinId(winId);
+                    this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
+                    const requests: [string, unknown[]][] = [];
+                    if (!this.modeManager.isVisualMode && grid) {
+                        // need to start visual mode from anchor char
+                        const firstPos = e.selections[0].anchor;
+                        const mouseClickPos = editorPositionToNeovimPosition(textEditor, firstPos);
+                        this.logger.debug(
+                            `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
+                        );
+                        requests.push([
+                            "nvim_input_mouse",
+                            // nvim_input_mouse is zero based while getNeovimCursorPosForEditor() returns 1 based line
+                            ["left", "press", "", grid, mouseClickPos[0] - 1, mouseClickPos[1]],
+                        ]);
+                        requests.push(["nvim_input", ["v"]]);
+                    }
+                    const lastSelection = e.selections.slice(-1)[0];
+                    if (!lastSelection) {
+                        return;
+                    }
+                    const cursorPos = editorPositionToNeovimPosition(e.textEditor, lastSelection.active);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Updating cursor pos, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
+                    );
+                    requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
+                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
                 }
-                const cursorPos = editorPositionToNeovimPosition(e.textEditor, lastSelection.active);
+            } else {
+                const cursorPos = getNeovimCursorPosFromEditor(textEditor);
                 this.logger.debug(
                     `${LOG_PREFIX}: Updating cursor pos, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
                 );
-                requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
+                const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
                 await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
             }
-        } else {
-            const cursorPos = getNeovimCursorPosFromEditor(textEditor);
-            this.logger.debug(
-                `${LOG_PREFIX}: Updating cursor pos, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
-            );
-            const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
-            await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
-        }
-    };
+        },
+        50,
+        { leading: false, trailing: true },
+    );
 
     /**
      * Update cursor in active editor. Coords are zero based
