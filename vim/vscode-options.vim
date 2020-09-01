@@ -17,7 +17,7 @@ set nocursorline
 " do not hide buffers
 " set nohidden
 set hidden
-set bufhidden=wipe
+set bufhidden=hide
 " do not attempt autowrite any buffers
 set noautowrite
 " Disable shada session storing
@@ -52,7 +52,9 @@ function s:forceLocalOptions()
     setlocal conceallevel=0
     setlocal scrolloff=100
     setlocal hidden
-    setlocal bufhidden=wipe
+    " setlocal bufhidden=wipe
+    " setlocal bufhidden=unload
+    setlocal bufhidden=hide
     setlocal noautowrite
     setlocal nonumber
     setlocal norelativenumber

@@ -7,6 +7,11 @@ import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./ne
 import { callAtomic, getNeovimCursorPosFromEditor } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
+// ! Integration notes:
+// ! When opening an editor with a document first time, a buffer is created in neovim
+// ! When switching off editor, the buffer is being hidden in neovim
+// ! When closing editor (and it was last editor for a document) we do bunload! bufId.
+// !    Unloading and not deleting / wiping here because later ones are breaking jumplist
 
 export interface BufferManagerSettings {
     neovimViewportWidth: number;
@@ -236,8 +241,20 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
     }
 
-    private onDidCloseTextDocument = (e: TextDocument): void => {
-        this.textDocumentToBufferId.delete(e);
+    /**
+     * !Note when closing text editor with document, vscode sends onDidCloseTextDocument first
+     * @param doc
+     */
+    private onDidCloseTextDocument = (doc: TextDocument): void => {
+        const hasVisibleEditor = !!this.openedEditors.find((d) => d.document === doc);
+        // we'll handle it in onDidChangeVisibleTextEditors()
+        if (!hasVisibleEditor) {
+            const bufId = this.textDocumentToBufferId.get(doc);
+            this.textDocumentToBufferId.delete(doc);
+            if (bufId) {
+                this.unloadBuffer(bufId);
+            }
+        }
     };
 
     private onDidChangeVisibleTextEditors = (): void => {
@@ -268,7 +285,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             // ! need to:
             // ! 1. Switch editors in neovim windows if vscode editor column was changed
             // ! 2. Delete any closed editor column in neovim
-            // ! We're forcing bufhidden=wipe, so no need to close buffers manually
 
             const nvimRequests: [string, unknown[]][] = [];
             // Open/change neovim windows
@@ -355,13 +371,17 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     continue;
                 }
                 const document = prevVisibleEditor.document;
-                if (!currentVisibleEditors.find((e) => e.document === document)) {
+                if (!currentVisibleEditors.find((e) => e.document === document) && document.isClosed) {
                     this.logger.debug(
-                        `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible, removing mapping to bufId: ${this.textDocumentToBufferId.get(
+                        `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
                             document,
                         )}`,
                     );
+                    const bufId = this.textDocumentToBufferId.get(document);
                     this.textDocumentToBufferId.delete(document);
+                    if (bufId) {
+                        nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
+                    }
                 }
                 if (!prevVisibleEditor.viewColumn || !keepViewColumns.has(prevVisibleEditor.viewColumn)) {
                     const winId = prevVisibleEditor.viewColumn
@@ -462,7 +482,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             // same for shiftwidth - don't want to shift more than one tabstop
             ["nvim_buf_set_option", [bufId, "shiftwidth", insertSpaces ? (tabSize as number) : 1]],
             // fill the buffer
-            ["nvim_buf_set_lines", [bufId, 0, 1, false, lines]],
+            ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
             // buffer name = document URI
@@ -503,7 +523,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * !Later we set actual buffer to this window and temporary buffer will be wiped out
      */
     private async createNeovimWindow(): Promise<number> {
-        const buf = await this.client.createBuffer(true, true);
+        const buf = await this.client.createBuffer(false, true);
         if (typeof buf === "number") {
             throw new Error(`Unable to create a temporary buffer for new neovim window, code: ${buf}`);
         }
@@ -520,13 +540,21 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             [
                 ["nvim_win_set_var", [win.id, "vscode_clearjumps", true]],
                 ["nvim_buf_set_option", [buf.id, "vscode_temp", true]],
-                ["nvim_buf_set_option", [buf.id, "hidden", false]],
+                ["nvim_buf_set_option", [buf.id, "hidden", true]],
                 ["nvim_buf_set_option", [buf.id, "bufhidden", "wipe"]],
             ],
             this.logger,
             LOG_PREFIX,
         );
         return win.id;
+    }
+
+    private async unloadBuffer(bufId: number): Promise<void> {
+        try {
+            await this.client.command(`bunload! ${bufId}`);
+        } catch (e) {
+            this.logger.warn(`${LOG_PREFIX}: Can't unload the buffer: ${bufId}, err: ${e?.message}`);
+        }
     }
 
     private async attachNeovimExternalBuffer(
