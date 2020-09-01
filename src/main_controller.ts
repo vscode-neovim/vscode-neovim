@@ -25,6 +25,7 @@ import { StatusLineManager } from "./status_line_manager";
 import { HighlightManager } from "./highlight_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
 import { findLastEvent } from "./utils";
+import { MutlilineMessagesManager } from "./multiline_messages_manager";
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
@@ -73,6 +74,7 @@ export class MainController implements vscode.Disposable {
     private statusLineManager!: StatusLineManager;
     private highlightManager!: HighlightManager;
     private customCommandsManager!: CustomCommandsManager;
+    private multilineMessagesManager!: MutlilineMessagesManager;
 
     public constructor(settings: ControllerSettings) {
         this.settings = settings;
@@ -197,6 +199,9 @@ export class MainController implements vscode.Disposable {
         this.customCommandsManager = new CustomCommandsManager(this.logger);
         this.disposables.push(this.customCommandsManager);
 
+        this.multilineMessagesManager = new MutlilineMessagesManager(this.logger);
+        this.disposables.push(this.multilineMessagesManager);
+
         this.logger.debug(`${LOG_PREFIX}: Attaching to neovim notifications`);
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.handleCustomRequest);
@@ -223,6 +228,7 @@ export class MainController implements vscode.Disposable {
             this.commandLineManager,
             this.statusLineManager,
             this.highlightManager,
+            this.multilineMessagesManager,
         ];
         const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
             this.modeManager,

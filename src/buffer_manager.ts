@@ -133,6 +133,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     public isExternalTextDocument(textDoc: TextDocument): boolean {
+        if (textDoc.uri.scheme === "output") {
+            return true;
+        }
         return false;
     }
 
@@ -466,6 +469,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_name", [bufId, document.uri.toString()]],
             // clear undo after setting initial lines
             ["nvim_call_function", ["VSCodeClearUndo", [bufId]]],
+            // Turn off modifications for external documents
+            ["nvim_buf_set_option", [bufId, "modifiable", !this.isExternalTextDocument(document)]],
             // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
         ];
