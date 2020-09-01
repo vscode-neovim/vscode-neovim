@@ -43,6 +43,24 @@ export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcess
                         this.showChannel();
                         this.channel.append(str);
                     }
+                    break;
+                }
+                case "msg_history_show": {
+                    let str = "\n";
+                    for (const arg of args as [string, [number, string][]][][][]) {
+                        for (const list of arg) {
+                            for (const [commandName, content] of list) {
+                                let cmdContent = "";
+                                for (const c of content) {
+                                    cmdContent += c[1];
+                                }
+                                str += `${commandName}: ${cmdContent}\n`;
+                            }
+                        }
+                    }
+                    this.showChannel();
+                    this.channel.append(str);
+                    break;
                 }
             }
         }
