@@ -321,6 +321,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.textDocumentToBufferId.set(visibleEditor.document, buf.id);
                 }
                 // editor wasn't changed, skip
+                // !Note always sync opened editors, it doesn't hurt and and solves the curious problem when there are
+                // !few visible editors with same viewColumn (happens when you open search editor, when jump to a file from it)
                 // if (prevVisibleEditors.includes(visibleEditor)) {
                 //     this.logger.debug(`${LOG_PREFIX}: Editor wasn't changed, skip`);
                 //     if (visibleEditor.viewColumn) {
