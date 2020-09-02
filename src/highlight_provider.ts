@@ -252,7 +252,6 @@ export class HighlightProvider {
         external: boolean,
         cells: [string, number?, number?][],
         line: string,
-        tabSize: number,
     ): void {
         let cellHlId = 0;
         let cellIdx = start;
@@ -264,6 +263,10 @@ export class HighlightProvider {
         for (const [text, hlId, repeat] of cells) {
             // 2+bytes chars (such as chinese characters) have "" as second cell
             if (text === "") {
+                continue;
+            }
+            // tab fill character
+            if (text === "♥") {
                 continue;
             }
             if (hlId != null) {
@@ -280,9 +283,9 @@ export class HighlightProvider {
                 }
                 break;
             }
-            const repeatTo =
-                text === "\t" || line[cellIdx] === "\t" ? Math.ceil((repeat || tabSize) / tabSize) : repeat || 1;
-            // const repeatTo = repeat || 1;
+            const repeatTo = text === "\t" || text === "❥" ? 1 : repeat || 1;
+            // const repeatTo =
+            //     text === "\t" || line[cellIdx] === "\t" ? Math.ceil((repeat || tabSize) / tabSize) : repeat || 1;
             for (let i = 0; i < repeatTo; i++) {
                 if (!gridHl[row]) {
                     gridHl[row] = [];

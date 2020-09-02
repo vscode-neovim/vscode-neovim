@@ -119,15 +119,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         const tabSize = editor.options.tabSize as number;
                         const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
                         const isExternal = this.bufferManager.isExternalTextDocument(editor.document);
-                        this.highlightProvider.processHLCellsEvent(
-                            grid,
-                            row,
-                            finalStartCol,
-                            isExternal,
-                            cells,
-                            line,
-                            tabSize,
-                        );
+                        this.highlightProvider.processHLCellsEvent(grid, row, finalStartCol, isExternal, cells, line);
                         gridHLUpdates.add(grid);
                     }
                     break;
