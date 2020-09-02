@@ -31,7 +31,8 @@ set nonumber
 " Need to know linebreaks for optimized HL
 set listchars+=eol:$
 set list
-set syntax=off
+" Allow to use vim HL for external buffers, vscode buffers explicitly disable it
+syntax on
 set signcolumn=no
 
 " Disable statusline and ruler since we don't need them anyway
@@ -59,7 +60,9 @@ function s:forceLocalOptions()
     setlocal nonumber
     setlocal norelativenumber
     setlocal listchars+=eol:$
-    setlocal syntax=off
+    if exists('b:vscode_controlled') && b:vscode_controlled
+        setlocal syntax=off
+    endif
     setlocal nofoldenable
     setlocal foldmethod=manual
 endfunction

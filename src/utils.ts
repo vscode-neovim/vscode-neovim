@@ -456,7 +456,11 @@ export function editorPositionToNeovimPosition(editor: TextEditor, position: Pos
 }
 
 export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, number] {
-    return editorPositionToNeovimPosition(editor, editor.selection.active);
+    try {
+        return editorPositionToNeovimPosition(editor, editor.selection.active);
+    } catch {
+        return [1, 0];
+    }
 }
 
 export function getDocumentLineArray(doc: TextDocument): string[] {

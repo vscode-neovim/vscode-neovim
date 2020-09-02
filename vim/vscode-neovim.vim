@@ -116,8 +116,10 @@ endfunction
 
 function! s:runFileTypeDetection()
     doautocmd BufRead
-    " make sure we disable syntax (global option seems doesn't take effect for 2nd+ windows)
-    set syntax=off
+    if exists('b:vscode_controlled') && b:vscode_controlled
+        " make sure we disable syntax (global option seems doesn't take effect for 2nd+ windows)
+        setlocal syntax=off
+    endif
 endfunction
 
 function! s:onInsertEnter()

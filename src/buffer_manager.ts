@@ -1,5 +1,6 @@
 import { debounce } from "lodash";
 import { Buffer, NeovimClient, Window } from "neovim";
+import { ATTACH } from "neovim/lib/api/Buffer";
 import { commands, Disposable, EndOfLine, TextDocument, TextEditor, Uri, ViewColumn, window, workspace } from "vscode";
 
 import { Logger } from "./logger";
@@ -35,6 +36,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * !Note: Order can be any, it doesn't relate to visible order
      */
     private openedEditors: TextEditor[] = [];
+    /**
+     * Text documents originated externally, as consequence of neovim command, like :help or :PlugStatus
+     */
+    private externalTextDocuments: WeakSet<TextDocument> = new Set();
     /**
      * Mapping of vscode documents -> neovim buffer id
      */
@@ -147,7 +152,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (textDoc.uri.scheme === "output") {
             return true;
         }
-        return false;
+        return this.externalTextDocuments.has(textDoc);
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
@@ -200,7 +205,11 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const [name, idStr, expandTab, tabStop, isJumping] = args as [string, string, number, number, number];
                 const id = parseInt(idStr, 10);
                 if (!(name && this.isVscodeUriName(name))) {
-                    this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: ${name}`);
+                    this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: ${name}, id: ${id}`);
+                    if (id === 1) {
+                        this.logger.debug(`${LOG_PREFIX}: ${id} is the first neovim buffer, skipping`);
+                        return;
+                    }
                     await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
                 } else if (isJumping && name) {
                     this.logger.debug(`${LOG_PREFIX}: Opening a ${name} because of jump`);
@@ -506,6 +515,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
+            // make sure to disable syntax (yeah we're doing it neovim files, but better to be safe than not)
+            ["nvim_buf_set_option", [bufId, "syntax", false]],
             // buffer name = document URI
             ["nvim_buf_set_name", [bufId, document.uri.toString()]],
             // clear undo after setting initial lines
@@ -604,83 +615,55 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         expandTab: boolean,
         tabStop: number,
     ): Promise<void> {
-        // // already processed
-        // if (this.bufferIdToUri.has(id)) {
-        //     const uri = this.bufferIdToUri.get(id)!;
-        //     const buf = this.uriToBuffer.get(uri);
-        //     if (!buf) {
-        //         return;
-        //     }
-        //     const doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri);
-        //     if (doc) {
-        //         // vim may send two requests, for example for :help - first it opens buffer with empty content in new window
-        //         // then read file and reload the buffer
-        //         const lines = await buf.lines;
-        //         const editor = await vscode.window.showTextDocument(doc, {
-        //             preserveFocus: false,
-        //             preview: true,
-        //             viewColumn: vscode.ViewColumn.Active,
-        //         });
-        //         // need always to use spaces otherwise col will be different and vim HL will be incorrect
-        //         editor.options.insertSpaces = true;
-        //         editor.options.tabSize = tabStop;
-        //         // using replace produces ugly selection effect, try to avoid it by using insert
-        //         editor.edit((b) => b.insert(new vscode.Position(0, 0), lines.join("\n")));
-        //         vscode.commands.executeCommand("editor.action.indentationToSpaces");
-        //     }
-        //     return;
-        // }
-        // // if (!name) {
-        // // return;
-        // // }
-        // const buffers = await this.client.buffers;
-        // // get buffer handle
-        // const buf = buffers.find((b) => b.id === id);
-        // if (!buf) {
-        //     return;
-        // }
-        // // :help, PlugStatus etc opens new window. close it and attach to existing window instead
-        // const windows = await this.client.windows;
-        // const possibleBufWindow = windows.find(
-        //     (w) => ![...this.editorColumnIdToWinId].find(([, winId]) => w.id === winId),
-        // );
-        // if (possibleBufWindow && vscode.window.activeTextEditor) {
-        //     const winBuf = await possibleBufWindow.buffer;
-        //     if (winBuf.id === buf.id) {
-        //         const column = vscode.window.activeTextEditor.viewColumn || vscode.ViewColumn.One;
-        //         const winId = this.editorColumnIdToWinId.get(column)!;
-        //         await this.client.callAtomic([
-        //             ["nvim_win_set_buf", [winId, buf.id]],
-        //             ["nvim_win_close", [possibleBufWindow.id, false]],
-        //         ]);
-        //         // await this.client.request("nvim_win_close", [possibleBufWindow.id, false]);
-        //     }
-        // }
-        // // we want to send initial buffer content with nvim_buf_lines event but listen("lines") doesn't support it
-        // const p = buf[ATTACH](true);
-        // // this.client.attachBuffer(buf, "lines", this.onNeovimBufferEvent);
-        // await p;
-        // // buf.listen("lines", this.onNeovimBufferEvent);
-        // const lines = await buf.lines;
-        // // will trigger onOpenTextDocument but it's fine since the doc is not yet displayed and we won't process it
-        // const doc = await vscode.workspace.openTextDocument({
-        //     content: lines.join("\n"),
-        // });
-        // const uri = doc.uri.toString();
-        // this.uriToBuffer.set(uri, buf);
-        // this.bufferIdToUri.set(id, uri);
-        // if (!lines.length || lines.every((l) => !l.length)) {
-        //     this.externalBuffersShowOnNextChange.add(buf.id);
-        // } else {
-        //     const editor = await vscode.window.showTextDocument(doc, {
-        //         preserveFocus: false,
-        //         preview: true,
-        //         viewColumn: vscode.ViewColumn.Active,
-        //     });
-        //     // need always to use spaces otherwise col will be different and vim HL will be incorrect
-        //     editor.options.insertSpaces = true;
-        //     editor.options.tabSize = tabStop;
-        //     vscode.commands.executeCommand("editor.action.indentationToSpaces");
-        // }
+        const buffers = await this.client.buffers;
+        const buf = buffers.find((b) => b.id === id);
+        if (!buf) {
+            return;
+        }
+        // don't bother with displaying empty buffer
+        const lines = await buf.lines;
+        if (!lines.length || (lines.length === 1 && !lines[0])) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping empty external buffer ${id}`);
+            return;
+        }
+        const doc = await workspace.openTextDocument({ content: lines.join("\n") });
+        this.externalTextDocuments.add(doc);
+        this.textDocumentToBufferId.set(doc, id);
+        this.onBufferInit && this.onBufferInit(id, doc);
+        buf.listen("lines", this.receivedBufferEvent);
+        await buf[ATTACH](true);
+
+        const windows = await this.client.windows;
+        let closeWinId = 0;
+        for (const window of windows) {
+            const buf = await window.buffer;
+            if (buf.id === id) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Found window assigned to external buffer ${id}, winId: ${
+                        window.id
+                    }, isKnownWindow: ${this.winIdToEditor.has(window.id)}`,
+                );
+                if (!this.winIdToEditor.has(window.id)) {
+                    closeWinId = window.id;
+                }
+            }
+        }
+
+        const editor = await window.showTextDocument(doc, {
+            preserveFocus: false,
+            preview: true,
+            viewColumn: ViewColumn.Active,
+        });
+        editor.options.insertSpaces = expandTab;
+        editor.options.tabSize = tabStop;
+
+        if (closeWinId) {
+            // ! must delay to get a time to switch buffer to other window, otherwise it will be closed
+            // TODO: Hacky, but seems external buffers won't be much often used
+            setTimeout(() => {
+                this.logger.debug(`${LOG_PREFIX}: Closing window ${closeWinId} for external buffer: ${id}`);
+                this.client.request("nvim_win_close", [closeWinId, true]);
+            }, 5000);
+        }
     }
 }
