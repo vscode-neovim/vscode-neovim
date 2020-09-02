@@ -75,6 +75,18 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                     }
                     break;
                 }
+                // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
+                case "grid_scroll": {
+                    for (const [grid, , , , , by] of args as [number, number, number, null, number, number, number][]) {
+                        if (grid === 1) {
+                            continue;
+                        }
+                        // by > 0 - scroll down, must remove existing elements from first and shift row hl left
+                        // by < 0 - scroll up, must remove existing elements from right shift row hl right
+                        this.highlightProvider.shiftGridHighlights(grid, by);
+                    }
+                    break;
+                }
                 case "grid_line": {
                     // [grid, row, colStart, cells: [text, hlId, repeat]]
                     const gridEvents = args as GridLineEvent[];
