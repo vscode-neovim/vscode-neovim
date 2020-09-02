@@ -63,7 +63,7 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
             }
             case "insert-line": {
                 const [type] = args as ["before" | "after"];
-                await this.client.command("startinsert");
+                // await this.client.command("startinsert");
                 await vscode.commands.executeCommand(
                     type === "before" ? "editor.action.insertLineBefore" : "editor.action.insertLineAfter",
                 );

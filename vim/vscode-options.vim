@@ -59,14 +59,13 @@ function s:forceLocalOptions()
     setlocal noautowrite
     setlocal nonumber
     setlocal norelativenumber
-    setlocal listchars+=eol:$
+    setlocal list
+    setlocal listchars=tab:❥♥
     if exists('b:vscode_controlled') && b:vscode_controlled
         setlocal syntax=off
     endif
     setlocal nofoldenable
     setlocal foldmethod=manual
-    set listchars=tab:❥♥
-    set list
 endfunction
 
 augroup VscodeForceOptions

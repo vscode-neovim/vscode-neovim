@@ -190,7 +190,7 @@ export class MainController implements vscode.Disposable {
         this.statusLineManager = new StatusLineManager(this.logger, this.client);
         this.disposables.push(this.statusLineManager);
 
-        this.highlightManager = new HighlightManager(this.logger, this.client, this.bufferManager, {
+        this.highlightManager = new HighlightManager(this.logger, this.client, this.bufferManager, this.changeManager, {
             highlight: this.settings.highlightsConfiguration,
             viewportHeight: this.settings.neovimViewportHeight,
         });
@@ -239,7 +239,7 @@ export class MainController implements vscode.Disposable {
             this.cursorManager,
         ];
         const vscodeComandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.customCommandsManager];
+        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
 
         if (method === "vscode-command") {
             const [vscodeCommand, commandArgs] = events as [string, unknown[]];
@@ -321,7 +321,7 @@ export class MainController implements vscode.Disposable {
             this.cursorManager,
         ];
         const vscodeCommandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.customCommandsManager];
+        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
         try {
             let result: unknown;
             if (eventName === "vscode-command") {

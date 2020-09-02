@@ -2,6 +2,7 @@ import { NeovimClient } from "neovim";
 import { DecorationOptions, Disposable, Range, window } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
+import { DocumentChangeManager } from "./document_change_manager";
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
@@ -38,6 +39,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
         private logger: Logger,
         private client: NeovimClient,
         private bufferManager: BufferManager,
+        private documentChangeManager: DocumentChangeManager,
         private settings: HighlightManagerSettings,
     ) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
@@ -106,6 +108,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         // by > 0 - scroll down, must remove existing elements from first and shift row hl left
                         // by < 0 - scroll up, must remove existing elements from right shift row hl right
                         this.highlightProvider.shiftGridHighlights(grid, by);
+                        // gridHLUpdates.add(grid);
                     }
                     break;
                 }
@@ -115,7 +118,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
                     // eslint-disable-next-line prefer-const
                     for (let [grid, row, colStart, cells] of gridEvents) {
-                        if (row > this.lastViewportRow) {
+                        if (row >= this.lastViewportRow) {
                             continue;
                         }
                         const lineInfo = this.gridLineInfo.get(grid);
@@ -134,6 +137,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             if (highlightLine > 0) {
                                 this.highlightProvider.cleanRow(grid, row);
+                                gridHLUpdates.add(grid);
                             }
                             continue;
                         }
@@ -148,17 +152,8 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                 }
             }
         }
-
-        for (const grid of gridHLUpdates) {
-            const gridConf = this.gridLineInfo.get(grid);
-            const editor = this.bufferManager.getEditorFromGridId(grid);
-            if (!editor || !gridConf) {
-                continue;
-            }
-            const hls = this.highlightProvider.getGridHighlights(grid, gridConf.topLine);
-            for (const [decorator, ranges] of hls) {
-                editor.setDecorations(decorator, ranges);
-            }
+        if (gridHLUpdates.size) {
+            this.applyHLGridUpdates(gridHLUpdates);
         }
     }
 
@@ -176,6 +171,20 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
     private get lastViewportRow(): number {
         return this.settings.viewportHeight - 1;
     }
+
+    private applyHLGridUpdates = (updates: Set<number>): void => {
+        for (const grid of updates) {
+            const gridConf = this.gridLineInfo.get(grid);
+            const editor = this.bufferManager.getEditorFromGridId(grid);
+            if (!editor || !gridConf) {
+                continue;
+            }
+            const hls = this.highlightProvider.getGridHighlights(grid, gridConf.topLine);
+            for (const [decorator, ranges] of hls) {
+                editor.setDecorations(decorator, ranges);
+            }
+        }
+    };
 
     /**
      * Apply text decorations from external command. Currently used by easymotion fork

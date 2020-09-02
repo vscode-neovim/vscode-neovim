@@ -1,6 +1,7 @@
 import { debounce } from "lodash";
 import { NeovimClient, Window } from "neovim";
 import {
+    commands,
     Disposable,
     Range,
     Selection,
@@ -16,7 +17,11 @@ import { BufferManager } from "./buffer_manager";
 import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
 import { ModeManager } from "./mode_manager";
-import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
+import {
+    NeovimExtensionRequestProcessable,
+    NeovimRangeCommandProcessable,
+    NeovimRedrawProcessable,
+} from "./neovim_events_processable";
 import { callAtomic, editorPositionToNeovimPosition, getNeovimCursorPosFromEditor } from "./utils";
 
 const LOG_PREFIX = "CursorManager";
@@ -29,7 +34,8 @@ interface CursorInfo {
     cursorShape: "block" | "horizontal" | "vertical";
 }
 
-export class CursorManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
+export class CursorManager
+    implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable, NeovimRangeCommandProcessable {
     private disposables: Disposable[] = [];
     /**
      * Vim cursor mode mappings
@@ -41,6 +47,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * ! And we should skip it and don't try to send cursor update into neovim again, otherwise few things may break, especially jumplist
      */
     private neovimCursorPosition: WeakMap<TextEditor, { line: number; col: number }> = new WeakMap();
+    /**
+     * Special workaround flag to ignore editor selection events
+     */
+    private ignoreSelectionEvents = false;
 
     public constructor(
         private logger: Logger,
@@ -53,7 +63,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
     }
-
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
     }
@@ -138,6 +147,75 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         winCursorsUpdates.clear();
     }
 
+    /**
+     * Produce vscode selection and execute command
+     * @param command VSCode command to execute
+     * @param startLine Start line to select. 1based
+     * @param endLine End line to select. 1based
+     * @param startPos Start pos to select. 1based. If 0 then whole line will be selected
+     * @param endPos End pos to select, 1based. If you then whole line will be selected
+     * @param leaveSelection When true won't clear vscode selection after running the command
+     * @param args Additional args
+     */
+    public async handleVSCodeRangeCommand(
+        command: string,
+        startLine: number,
+        endLine: number,
+        startPos: number,
+        endPos: number,
+        leaveSelection: boolean,
+        args: unknown[],
+    ): Promise<unknown> {
+        const e = window.activeTextEditor;
+        this.logger.debug(
+            `${LOG_PREFIX}: Range command: ${command}, range: [${startLine}, ${startPos}] - [${endLine}, ${endPos}], leaveSelection: ${leaveSelection}`,
+        );
+        if (e) {
+            // vi<obj> includes end of line from start pos. This is not very useful, so let's check and remove it
+            // vi<obj> always select from top to bottom
+            if (endLine > startLine) {
+                try {
+                    const lineDef = e.document.lineAt(startLine - 1);
+                    if (startPos > 0 && startPos - 1 >= lineDef.range.end.character) {
+                        startLine++;
+                        startPos = 0;
+                    }
+                } catch {
+                    // ignore
+                }
+            }
+            const prevSelections = [...e.selections];
+            this.ignoreSelectionEvents = true;
+            // startLine is visual start
+            if (startLine > endLine) {
+                e.selections = [
+                    new Selection(
+                        startLine - 1,
+                        startPos > 0 ? startPos - 1 : 9999999,
+                        endLine - 1,
+                        endPos > 0 ? endPos - 1 : 0,
+                    ),
+                ];
+            } else {
+                e.selections = [
+                    new Selection(
+                        startLine - 1,
+                        startPos > 0 ? startPos - 1 : 0,
+                        endLine - 1,
+                        endPos > 0 ? endPos - 1 : 9999999,
+                    ),
+                ];
+            }
+            const res = await commands.executeCommand(command, ...args);
+            this.logger.debug(`${LOG_PREFIX}: Range command completed`);
+            if (!leaveSelection) {
+                e.selections = prevSelections;
+            }
+            this.ignoreSelectionEvents = false;
+            return res;
+        }
+    }
+
     private onDidChangeVisibleTextEditors = (): void => {
         this.updateCursorStyle(this.modeManager.currentMode);
     };
@@ -147,6 +225,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     private onSelectionChanged = debounce(
         async (e: TextEditorSelectionChangeEvent): Promise<void> => {
             if (this.modeManager.isInsertMode) {
+                return;
+            }
+            if (this.ignoreSelectionEvents) {
                 return;
             }
             const { textEditor, kind, selections } = e;
@@ -231,6 +312,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Update cursor in active editor. Coords are zero based
      */
     private updateCursorPosInEditor = (editor: TextEditor, newLine: number, newCol: number): void => {
+        if (this.ignoreSelectionEvents) {
+            return;
+        }
         this.logger.debug(
             `${LOG_PREFIX}: Updating cursor in editor, viewColumn: ${editor.viewColumn}, pos: [${newLine}, ${newCol}]`,
         );
