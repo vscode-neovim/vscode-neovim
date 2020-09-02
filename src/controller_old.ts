@@ -1600,7 +1600,7 @@ export class NVIMPluginControllerOld implements vscode.Disposable {
                                 colStart - NUMBER_COLUMN_WIDTH,
                             );
                         }
-                        this.highlightProvider.processHLCellsEvent(grid, row, finalStartCol, isExternal, cells);
+                        this.highlightProvider.processHLCellsEvent(grid, row, finalStartCol, isExternal, cells, "", 1);
                         gridHLUpdates.add(grid);
                     }
                     break;

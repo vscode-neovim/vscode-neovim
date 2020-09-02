@@ -507,10 +507,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         const requests: [string, unknown[]][] = [
             ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
-            // we must use tabstop with value 1 so one tab will be counted as one character for highlight
-            ["nvim_buf_set_option", [bufId, "tabstop", insertSpaces ? tabSize : 1]],
-            // same for shiftwidth - don't want to shift more than one tabstop
-            ["nvim_buf_set_option", [bufId, "shiftwidth", insertSpaces ? (tabSize as number) : 1]],
+            ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
+            ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
             // fill the buffer
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
@@ -541,10 +539,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         const requests: [string, unknown[]][] = [
             ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
-            // we must use tabstop with value 1 so one tab will be counted as one character for highlight
-            ["nvim_buf_set_option", [bufId, "tabstop", insertSpaces ? tabSize : 1]],
-            // same for shiftwidth - don't want to shift more than one tabstop
-            ["nvim_buf_set_option", [bufId, "shiftwidth", insertSpaces ? (tabSize as number) : 1]],
+            ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
+            ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
         ];
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
     }

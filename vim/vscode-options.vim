@@ -29,8 +29,10 @@ set nonumber
 " up to 10 000 000
 " set numberwidth=8
 " Need to know linebreaks for optimized HL
-set listchars+=eol:$
-set list
+" set list
+" set listchars+=eol:$
+set listchars=
+set nolist
 " Allow to use vim HL for external buffers, vscode buffers explicitly disable it
 syntax on
 set signcolumn=no
@@ -65,6 +67,8 @@ function s:forceLocalOptions()
     endif
     setlocal nofoldenable
     setlocal foldmethod=manual
+    setlocal listchars=
+    setlocal nolist
 endfunction
 
 augroup VscodeForceOptions

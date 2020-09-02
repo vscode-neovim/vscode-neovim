@@ -291,7 +291,8 @@ export function calculateEditorColFromVimScreenCol(line: string, screenCol: numb
     let currentCharIdx = 0;
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
-        currentVimCol += line[currentCharIdx] === "\t" ? tabSize : wcwidth(line[currentCharIdx]);
+        currentVimCol +=
+            line[currentCharIdx] === "\t" ? tabSize - (currentVimCol % tabSize) : wcwidth(line[currentCharIdx]);
 
         currentCharIdx++;
         if (currentCharIdx >= line.length) {

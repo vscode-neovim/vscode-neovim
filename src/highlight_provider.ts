@@ -251,6 +251,8 @@ export class HighlightProvider {
         start: number,
         external: boolean,
         cells: [string, number?, number?][],
+        line: string,
+        tabSize: number,
     ): void {
         let cellHlId = 0;
         let cellIdx = start;
@@ -269,15 +271,19 @@ export class HighlightProvider {
             }
             const groupName = this.getHighlightGroupName(cellHlId, external);
             // end of the line - clean and exit
-            if (text === "$" && (groupName === "NonText" || this.highlightIdToGroupName.get(cellHlId) === "NonText")) {
+            if (cellIdx >= line.length - 1) {
                 if (cellIdx === 0) {
                     delete gridHl[row];
                 } else if (gridHl[row]) {
-                    gridHl[row].splice(cellIdx);
+                    gridHl[row][cellIdx] = cellHlId;
+                    gridHl[row].splice(cellIdx + 1);
                 }
                 break;
             }
-            for (let i = 0; i < (repeat || 1); i++) {
+            const repeatTo =
+                text === "\t" || line[cellIdx] === "\t" ? Math.ceil((repeat || tabSize) / tabSize) : repeat || 1;
+            // const repeatTo = repeat || 1;
+            for (let i = 0; i < repeatTo; i++) {
                 if (!gridHl[row]) {
                     gridHl[row] = [];
                 }
