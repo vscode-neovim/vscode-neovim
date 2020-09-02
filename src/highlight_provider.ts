@@ -425,6 +425,23 @@ export class HighlightProvider {
         return result;
     }
 
+    public clearHighlights(grid: number): [TextEditorDecorationType, Range[]][] {
+        const prevHighlights = this.prevGridHighlightsIds.get(grid);
+        this.highlights.delete(grid);
+        this.prevGridHighlightsIds.delete(grid);
+        if (!prevHighlights) {
+            return [];
+        }
+        const result: [TextEditorDecorationType, Range[]][] = [];
+        for (const groupName of prevHighlights) {
+            const decorator = this.getDecoratorForHighlightGroup(groupName);
+            if (decorator) {
+                result.push([decorator, []]);
+            }
+        }
+        return result;
+    }
+
     private createDecoratorForHighlightGroup(groupName: string, options: ThemableDecorationRenderOptions): void {
         const decorator = window.createTextEditorDecorationType(options);
         this.decoratorConfigurations.set(decorator, options);

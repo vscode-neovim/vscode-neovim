@@ -1,7 +1,18 @@
 import { debounce } from "lodash";
 import { Buffer, NeovimClient, Window } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
-import { commands, Disposable, EndOfLine, TextDocument, TextEditor, Uri, ViewColumn, window, workspace } from "vscode";
+import {
+    commands,
+    Disposable,
+    EndOfLine,
+    TextDocument,
+    TextEditor,
+    TextEditorOptionsChangeEvent,
+    Uri,
+    ViewColumn,
+    window,
+    workspace,
+} from "vscode";
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
@@ -79,6 +90,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
         this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
+        this.disposables.push(window.onDidChangeTextEditorOptions(this.onDidChangeEditorOptions));
     }
 
     public dispose(): void {
@@ -131,13 +143,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             return noColumnEditor[0];
         }
         return this.winIdToEditor.get(winId);
-        // const viewColumnId = [...this.editorColumnsToWinId].find(([, id]) => id === winId)?.[0];
-        // if (!viewColumnId) {
-        //     return;
-        // }
-        // // find last, because there can be two editors with same column (when opening editor from search)
-        // const editor = [...this.openedEditors].reverse().find((e) => e.viewColumn === viewColumnId);
-        // return editor;
+    }
+
+    public getGridIdFromEditor(editor: TextEditor): number | undefined {
+        return this.getGridIdForWinId(this.getWinIdForTextEditor(editor) || 0);
     }
 
     public getEditorFromGridId(gridId: number): TextEditor | undefined {
@@ -476,6 +485,17 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         50,
         { leading: false, trailing: true },
     );
+
+    private onDidChangeEditorOptions = (e: TextEditorOptionsChangeEvent): void => {
+        this.logger.debug(`${LOG_PREFIX}: Received onDidChangeEditorOptions`);
+        const bufId = this.textDocumentToBufferId.get(e.textEditor.document);
+        if (!bufId) {
+            this.logger.warn(`${LOG_PREFIX}: No buffer for onDidChangeEditorOptions, skipping`);
+            return;
+        }
+        this.logger.debug(`${LOG_PREFIX}: Updating tab options for bufferId: ${bufId}`);
+        this.resyncBufferTabOptions(e.textEditor, bufId);
+    };
 
     private receivedBufferEvent = (
         buffer: Buffer,

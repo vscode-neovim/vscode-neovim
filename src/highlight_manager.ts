@@ -1,3 +1,4 @@
+import { NeovimClient } from "neovim";
 import { DecorationOptions, Disposable, Range, window } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
@@ -22,6 +23,8 @@ interface GridLineInfo {
     bottomLine: number;
 }
 
+// const LOG_PREFIX = "HighlightManager";
+
 export class HighlightManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
 
@@ -29,16 +32,35 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private gridLineInfo: Map<number, GridLineInfo> = new Map();
 
+    private commandsDisposables: Disposable[] = [];
+
     public constructor(
         private logger: Logger,
+        private client: NeovimClient,
         private bufferManager: BufferManager,
         private settings: HighlightManagerSettings,
     ) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
+        // this.commandsDisposables.push(
+        //     commands.registerCommand("editor.action.indentationToTabs", () =>
+        //         this.resetHighlight("editor.action.indentationToTabs"),
+        //     ),
+        // );
+        // this.commandsDisposables.push(
+        //     commands.registerCommand("editor.action.indentationToSpaces", () =>
+        //         this.resetHighlight("editor.action.indentationToSpaces"),
+        //     ),
+        // );
+        // this.commandsDisposables.push(
+        //     commands.registerCommand("editor.action.reindentlines", () =>
+        //         this.resetHighlight("editor.action.reindentlines"),
+        //     ),
+        // );
     }
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
+        this.commandsDisposables.forEach((d) => d.dispose());
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
@@ -198,4 +220,40 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
         }
         editor.setDecorations(decorator, options);
     }
+
+    // TODO: Investigate why it doesn't work. You don't often to change indentation so seems minor
+    // private resetHighlight = async (cmd: string): Promise<void> => {
+    //     this.logger.debug(`${LOG_PREFIX}: Command wrapper: ${cmd}`);
+    //     this.commandsDisposables.forEach((d) => d.dispose());
+    //     await commands.executeCommand(cmd);
+    //     this.commandsDisposables.push(
+    //         commands.registerCommand("editor.action.indentationToTabs", () =>
+    //             this.resetHighlight("editor.action.indentationToTabs"),
+    //         ),
+    //     );
+    //     this.commandsDisposables.push(
+    //         commands.registerCommand("editor.action.indentationToSpaces", () =>
+    //             this.resetHighlight("editor.action.indentationToSpaces"),
+    //         ),
+    //     );
+    //     this.commandsDisposables.push(
+    //         commands.registerCommand("editor.action.reindentlines", () =>
+    //             this.resetHighlight("editor.action.reindentlines"),
+    //         ),
+    //     );
+    //     // Try clear highlights and force redraw
+    //     for (const editor of window.visibleTextEditors) {
+    //         const grid = this.bufferManager.getGridIdFromEditor(editor);
+    //         if (!grid) {
+    //             continue;
+    //         }
+    //         this.logger.debug(`${LOG_PREFIX}: Clearing HL ranges for grid: ${grid}`);
+    //         const reset = this.highlightProvider.clearHighlights(grid);
+    //         for (const [decorator, range] of reset) {
+    //             editor.setDecorations(decorator, range);
+    //         }
+    //     }
+    //     this.logger.debug(`${LOG_PREFIX}: Redrawing`);
+    //     this.client.command("redraw!");
+    // };
 }

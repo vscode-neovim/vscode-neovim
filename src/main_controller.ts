@@ -190,7 +190,7 @@ export class MainController implements vscode.Disposable {
         this.statusLineManager = new StatusLineManager(this.logger, this.client);
         this.disposables.push(this.statusLineManager);
 
-        this.highlightManager = new HighlightManager(this.logger, this.bufferManager, {
+        this.highlightManager = new HighlightManager(this.logger, this.client, this.bufferManager, {
             highlight: this.settings.highlightsConfiguration,
             viewportHeight: this.settings.neovimViewportHeight,
         });
