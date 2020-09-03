@@ -94,13 +94,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public getDocumentChangeCompletionLock(doc: TextDocument): Promise<void[]> {
-        return Promise.all(
-            this.textDocumentChangePromise
-                .get(doc)
-                ?.map((p) => p.promise!)
-                .filter(Boolean) || [],
-        );
+    public getDocumentChangeCompletionLock(doc: TextDocument): Promise<void[]> | undefined {
+        const promises = this.textDocumentChangePromise.get(doc);
+        if (!promises || !promises.length) {
+            return;
+        }
+        return Promise.all(promises.map((p) => p.promise).filter(Boolean));
     }
 
     public hasDocumentChangeCompletionLock(doc: TextDocument): boolean {
@@ -446,12 +445,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     });
                     if (success) {
                         docPromises.forEach((p) => p.resolve && p.resolve());
-                        // const promise = this.textDocumentChangePromise.get(doc);
-                        // if (promise && promise.resolve) {
-                        //     promise.resolve();
-                        // }
-                        // promises.delete(doc);
-                        this.textDocumentChangePromise.delete(doc);
                         this.logger.debug(`${LOG_PREFIX}: Changes succesfully applied for ${doc.uri.toString()}`);
                         this.documentContentInNeovim.set(doc, doc.getText());
                     } else {
@@ -461,23 +454,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                             );
                             p.reject && p.reject();
                         });
-                        // we'll reject later
                         this.logger.warn(`${LOG_PREFIX}: Changes were not applied for ${doc.uri.toString()}`);
                     }
                 } catch (e) {
                     this.logger.error(`${LOG_PREFIX}: Error applying neovim edits, error: ${e.message}`);
                 }
             }
-            // // reject any left promises
-            // for (const [doc, promise] of promises) {
-            //     promise.promise?.catch(() =>
-            //         this.logger.warn(`${LOG_PREFIX}: Edit was canceled for doc: ${doc.uri.toString()}`),
-            //     );
-            //     if (promise.reject) {
-            //         promise.reject();
-            //     }
-            //     this.textDocumentChangePromise.delete(doc);
-            // }
         },
         50,
         { leading: true, trailing: true },
@@ -493,11 +475,11 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         }
 
         const startModeHint = this.dotRepeatStartModeInsertHint;
-        this.dotRepeatStartModeInsertHint = undefined;
         const activeEditor = window.activeTextEditor;
 
         // Store dot repeat
         if (activeEditor && activeEditor.document === document && this.modeManager.isInsertMode) {
+            this.dotRepeatStartModeInsertHint = undefined;
             const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
             const cursor = activeEditor.selection.active;
             for (const change of contentChanges) {

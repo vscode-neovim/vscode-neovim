@@ -135,8 +135,9 @@ export class CursorManager
             this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: cursorPos.col });
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-            if (this.changeManager.hasDocumentChangeCompletionLock(editor.document)) {
-                this.changeManager.getDocumentChangeCompletionLock(editor.document).then(() => {
+            const docPromises = this.changeManager.getDocumentChangeCompletionLock(editor.document);
+            if (docPromises) {
+                docPromises.then(() => {
                     this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
                 });
             } else {

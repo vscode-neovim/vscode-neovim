@@ -118,7 +118,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
                     // eslint-disable-next-line prefer-const
                     for (let [grid, row, colStart, cells] of gridEvents) {
-                        if (row >= this.lastViewportRow) {
+                        if (row > this.lastViewportRow) {
                             continue;
                         }
                         const lineInfo = this.gridLineInfo.get(grid);

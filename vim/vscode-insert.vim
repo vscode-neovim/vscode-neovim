@@ -1,12 +1,10 @@
 
 function! s:vscodeInsertBefore()
     call VSCodeExtensionCall('insert-line', 'before')
-    startinsert
 endfunction
 
 function! s:vscodeInsertAfter()
     call VSCodeExtensionCall('insert-line', 'after')
-    startinsert
 endfunction
 
 function! s:vscodePrepareMultipleCursors(append, skipEmpty)
