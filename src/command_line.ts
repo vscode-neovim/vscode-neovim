@@ -38,6 +38,7 @@ export class CommandLineController implements Disposable {
         this.disposables.push(this.input.onDidAccept(this.onAccept));
         this.disposables.push(this.input.onDidChangeValue(this.onChange));
         this.disposables.push(this.input.onDidHide(this.onHide));
+        this.disposables.push(commands.registerCommand("vscode-neovim.commit-cmdline", this.onAccept));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-word-left-cmdline", this.deleteWord));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-all-cmdline", this.deleteAll));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-char-left-cmdline", this.deleteChar));

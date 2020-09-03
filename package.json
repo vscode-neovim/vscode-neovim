@@ -241,6 +241,10 @@
 				"title": "Escape key"
 			},
 			{
+				"command": "vscode-neovim.commit-cmdline",
+				"title": "Neovim: Accept cmdline"
+			},
+			{
 				"command": "vscode-neovim.delete-word-left-cmdline",
 				"title": "Neovim: Delete word cmdline"
 			},

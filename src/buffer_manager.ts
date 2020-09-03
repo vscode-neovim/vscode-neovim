@@ -5,6 +5,7 @@ import {
     commands,
     Disposable,
     EndOfLine,
+    Selection,
     TextDocument,
     TextEditor,
     TextEditorOptionsChangeEvent,
@@ -16,7 +17,7 @@ import {
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { callAtomic, getNeovimCursorPosFromEditor } from "./utils";
+import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromEditor } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -476,9 +477,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 );
                 return;
             }
-            const cursor = getNeovimCursorPosFromEditor(activeEditor);
+            // const cursor = getNeovimCursorPosFromEditor(activeEditor);
             this.logger.debug(
-                `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
+                `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
             );
             await this.client.request("nvim_set_current_win", [winId]);
         },
@@ -675,11 +676,42 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         editor.options.tabSize = tabStop;
 
         if (closeWinId) {
+            // !Another hack is to retrieve cursor with delay - when we receive an external buffer the cursor pos is not immediately available
+            // [1, 0]
+            setTimeout(async () => {
+                const neovimCursor: [number, number] = await this.client.request("nvim_win_get_cursor", [closeWinId]);
+                if (neovimCursor) {
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Adjusting cursor pos for external buffer: ${id}, originalPos: [${neovimCursor[0]}, ${neovimCursor[1]}]`,
+                    );
+                    const finalLine = neovimCursor[0] - 1;
+                    let finalCol = neovimCursor[1];
+                    try {
+                        finalCol = calculateEditorColFromVimScreenCol(
+                            doc.lineAt(neovimCursor[0]).text,
+                            neovimCursor[1],
+                            1,
+                            true,
+                        );
+                        this.logger.debug(`${LOG_PREFIX}: Adjusted cursor: [${finalLine}, ${finalCol}]`);
+                    } catch (e) {
+                        this.logger.warn(`${LOG_PREFIX}: Unable to get cursor pos for external buffer: ${id}`);
+                    }
+                    editor.selections = [new Selection(finalLine, finalCol, finalLine, finalCol)];
+                }
+            }, 1000);
+
             // ! must delay to get a time to switch buffer to other window, otherwise it will be closed
             // TODO: Hacky, but seems external buffers won't be much often used
             setTimeout(() => {
                 this.logger.debug(`${LOG_PREFIX}: Closing window ${closeWinId} for external buffer: ${id}`);
-                this.client.request("nvim_win_close", [closeWinId, true]);
+                try {
+                    this.client.request("nvim_win_close", [closeWinId, true]);
+                } catch (e) {
+                    this.logger.warn(
+                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${e.message}`,
+                    );
+                }
             }, 5000);
         }
     }
