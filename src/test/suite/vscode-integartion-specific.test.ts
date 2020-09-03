@@ -350,4 +350,14 @@ describe("VSCode integration specific stuff", () => {
         );
         await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
     });
+
+    it("Filetype detection", async () => {
+        const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/bb.ts"));
+        await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        await wait(1500);
+
+        const buf = await client.buffer;
+        const type = await client.request("nvim_buf_get_option", [buf.id, "filetype"]);
+        assert.strictEqual("typescript", type);
+    });
 });

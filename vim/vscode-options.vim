@@ -48,6 +48,9 @@ set modelines=0
 set nofoldenable
 set foldmethod=manual
 
+" Don't need indent
+filetype indent off
+
 function s:forceLocalOptions()
     setlocal nowrap
     setlocal conceallevel=0

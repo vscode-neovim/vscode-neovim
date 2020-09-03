@@ -534,7 +534,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
             // make sure to disable syntax (yeah we're doing it neovim files, but better to be safe than not)
-            ["nvim_buf_set_option", [bufId, "syntax", false]],
+            // !Setting to false breaks filetype detection
+            // ["nvim_buf_set_option", [bufId, "syntax", false]],
             // buffer name = document URI
             ["nvim_buf_set_name", [bufId, document.uri.toString()]],
             // Turn off modifications for external documents
