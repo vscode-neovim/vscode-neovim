@@ -12,6 +12,7 @@ import {
     wait,
     sendVSCodeKeys,
     assertContent,
+    sendNeovimKeys,
 } from "../utils";
 
 describe("Jumplist & jump actions", () => {
@@ -34,7 +35,7 @@ describe("Jumplist & jump actions", () => {
         await vscode.window.showTextDocument(doc);
         await wait(1000);
 
-        await sendVSCodeKeys("<C-o>");
+        await sendNeovimKeys(client, "<C-o>");
         await assertContent(
             {
                 content: ["1line", "1line"],
@@ -48,7 +49,7 @@ describe("Jumplist & jump actions", () => {
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two);
         await wait(1000);
 
-        await sendVSCodeKeys("<C-o>");
+        await sendNeovimKeys(client, "<C-o>");
         await assertContent(
             {
                 content: ["2line", "2line"],
@@ -58,13 +59,14 @@ describe("Jumplist & jump actions", () => {
 
         // close all and open new doc
         await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+        await wait(1000);
         const doc3 = await vscode.workspace.openTextDocument({
             content: ["3line", "3line"].join("\n"),
         });
         await vscode.window.showTextDocument(doc3);
         await wait(1000);
 
-        await sendVSCodeKeys("<C-o>");
+        await sendNeovimKeys(client, "<C-o>");
         await assertContent(
             {
                 content: ["3line", "3line"],
@@ -73,7 +75,8 @@ describe("Jumplist & jump actions", () => {
         );
     });
 
-    it("Switches to existing files and opens closed files", async () => {
+    // We don't set jump points anymore from vscode
+    it.skip("Switches to existing files and opens closed files", async () => {
         const doc1path = path.join(os.tmpdir(), Math.random().toString() + ".txt");
         const doc2path = path.join(os.tmpdir(), Math.random().toString() + ".txt");
         const doc3path = path.join(os.tmpdir(), Math.random().toString() + ".txt");
@@ -95,7 +98,7 @@ describe("Jumplist & jump actions", () => {
             client,
         );
 
-        await sendVSCodeKeys("<C-o>");
+        await sendNeovimKeys(client, "<C-o>");
         await assertContent(
             {
                 content: ["doc2"],
@@ -114,7 +117,7 @@ describe("Jumplist & jump actions", () => {
 
         await vscode.commands.executeCommand("workbench.action.closeOtherEditors");
         await wait(1000);
-        await sendVSCodeKeys("<C-o>");
+        await sendNeovimKeys(client, "<C-o>");
         await wait(1000);
         await assertContent(
             {
@@ -124,7 +127,8 @@ describe("Jumplist & jump actions", () => {
         );
     });
 
-    it("Editor actions create jump points", async () => {
+    // We don't set jump points anymore from vscode
+    it.skip("Editor actions create jump points", async () => {
         const doc1 = await vscode.workspace.openTextDocument(
             path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
         );
@@ -158,7 +162,7 @@ describe("Jumplist & jump actions", () => {
             },
             client,
         );
-        await sendVSCodeKeys("<C-o>");
+        await sendNeovimKeys(client, "<C-o>");
         await assertContent(
             {
                 cursor: [115, 16],
@@ -174,22 +178,21 @@ describe("Jumplist & jump actions", () => {
         // );
     });
 
-    it("Jump to definition to antoher file creates jump point", async () => {
+    it("Jump to definition to another file creates jump point from original file", async () => {
         const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
         await vscode.window.showTextDocument(doc1);
         await wait(1000);
 
         await sendVSCodeKeys("jjjjjl");
-        await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc1.uri, new vscode.Position(5, 1));
+        await sendVSCodeKeys("gd", 0);
         await wait(1500);
 
-        await sendVSCodeKeys("100k", 0);
-        await wait(100);
-        await sendVSCodeKeys("<C-o>", 0);
+        await sendNeovimKeys(client, "<C-o>");
+        // await sendVSCodeKeys("<C-o>", 0);
         await wait(1000);
         await assertContent(
             {
-                cursor: [115, 16],
+                cursor: [5, 1],
             },
             client,
         );
@@ -202,12 +205,12 @@ describe("Jumplist & jump actions", () => {
         await vscode.window.showTextDocument(doc1);
         await wait(2000);
 
-        await sendVSCodeKeys("49jm'", 0);
-        await vscode.commands.executeCommand("editor.action.revealDefinition", doc1.uri, new vscode.Position(5, 1));
+        await sendVSCodeKeys("49j", 0);
+        await sendVSCodeKeys("gd");
         await wait(1500);
 
         await sendVSCodeKeys("j");
-        await vscode.commands.executeCommand("editor.action.revealDefinition", doc1.uri, new vscode.Position(5, 1));
+        await sendVSCodeKeys("gd");
         await wait(1500);
 
         await assertContent(
@@ -217,15 +220,15 @@ describe("Jumplist & jump actions", () => {
             client,
         );
 
-        await sendVSCodeKeys("<C-o>", 0);
+        await sendNeovimKeys(client, "<C-o>");
         await wait(1000);
         await assertContent(
             {
-                cursor: [26, 9],
+                cursor: [27, 9],
             },
             client,
         );
-        await sendVSCodeKeys("<C-o>", 0);
+        await sendNeovimKeys(client, "<C-o>");
         await wait(1000);
         await assertContent(
             {
