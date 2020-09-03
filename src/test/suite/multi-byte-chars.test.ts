@@ -220,4 +220,55 @@ describe("Multi-width characters", () => {
         await sendEscapeKey();
         await assertContent({ vsCodeCursor: [0, 3] }, client);
     });
+
+    it("Multi byte with tabs", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["\t\t测试\t微服务"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("gg0");
+        await sendVSCodeKeys("l");
+        await assertContent(
+            {
+                vsCodeCursor: [0, 1],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("l");
+        await assertContent(
+            {
+                vsCodeCursor: [0, 2],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("x");
+        await assertContent(
+            {
+                content: ["\t\t试\t微服务"],
+                vsCodeCursor: [0, 2],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("ll");
+        await assertContent(
+            {
+                vsCodeCursor: [0, 4],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("x");
+        await assertContent(
+            {
+                content: ["\t\t试\t服务"],
+                vsCodeCursor: [0, 4],
+            },
+            client,
+        );
+    });
 });

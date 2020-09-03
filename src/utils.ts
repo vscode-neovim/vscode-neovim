@@ -284,7 +284,12 @@ export function convertByteNumToCharNum(line: string, col: number): number {
     return currCharNum;
 }
 
-export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
+export function calculateEditorColFromVimScreenCol(
+    line: string,
+    screenCol: number,
+    tabSize = 1,
+    useBytes = false,
+): number {
     if (screenCol === 0 || !line) {
         return 0;
     }
@@ -292,7 +297,11 @@ export function calculateEditorColFromVimScreenCol(line: string, screenCol: numb
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
         currentVimCol +=
-            line[currentCharIdx] === "\t" ? tabSize - (currentVimCol % tabSize) : wcwidth(line[currentCharIdx]);
+            line[currentCharIdx] === "\t"
+                ? tabSize - (currentVimCol % tabSize)
+                : useBytes
+                ? getBytesFromCodePoint(line.codePointAt(currentCharIdx))
+                : wcwidth(line[currentCharIdx]);
 
         currentCharIdx++;
         if (currentCharIdx >= line.length) {

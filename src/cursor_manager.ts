@@ -22,7 +22,12 @@ import {
     NeovimRangeCommandProcessable,
     NeovimRedrawProcessable,
 } from "./neovim_events_processable";
-import { callAtomic, editorPositionToNeovimPosition, getNeovimCursorPosFromEditor } from "./utils";
+import {
+    calculateEditorColFromVimScreenCol,
+    callAtomic,
+    editorPositionToNeovimPosition,
+    getNeovimCursorPosFromEditor,
+} from "./utils";
 
 const LOG_PREFIX = "CursorManager";
 
@@ -132,17 +137,39 @@ export class CursorManager
                 this.logger.warn(`${LOG_PREFIX}: No editor for winId: ${winId}`);
                 continue;
             }
-            this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: cursorPos.col });
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
             const docPromises = this.changeManager.getDocumentChangeCompletionLock(editor.document);
             if (docPromises) {
                 docPromises.then(() => {
-                    this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
+                    try {
+                        const finalCol = calculateEditorColFromVimScreenCol(
+                            editor.document.lineAt(cursorPos.line).text,
+                            cursorPos.col,
+                            // !For cursor updates tab is always counted as 1 col
+                            1,
+                            true,
+                        );
+                        this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
+                        this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
+                    } catch (e) {
+                        this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
+                    }
                 });
             } else {
-                // !Sync calling helps with most common operations latency
-                this.updateCursorPosInEditor(editor, cursorPos.line, cursorPos.col);
+                // !Sync call helps with most common operations latency
+                try {
+                    const finalCol = calculateEditorColFromVimScreenCol(
+                        editor.document.lineAt(cursorPos.line).text,
+                        cursorPos.col,
+                        1,
+                        true,
+                    );
+                    this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
+                    this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
+                } catch (e) {
+                    this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
+                }
             }
         }
         winCursorsUpdates.clear();
