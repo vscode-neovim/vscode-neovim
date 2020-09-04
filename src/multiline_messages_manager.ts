@@ -34,14 +34,19 @@ export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcess
                             this.channel.clear();
                             str = "";
                         }
+                        let contentStr = "";
                         for (const c of content) {
-                            str += c[1] + "\n";
+                            contentStr += c[1];
                         }
+                        // sometimes neovim sends linebreaks, sometimes not ¯\_(ツ)_/¯
+                        str += (contentStr[0] === "\n" ? "" : "\n") + contentStr;
                     }
                     // remove empty last line (since we always put \n at the end)
-                    const lines = str.split("\n").slice(0, -1);
+                    const lines = str.split("\n").slice(1);
                     if (lines.length > 1) {
                         this.showChannel();
+                        this.channel.append(str);
+                    } else if (this.isDisplayed) {
                         this.channel.append(str);
                     }
                     break;
