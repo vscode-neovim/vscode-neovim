@@ -444,7 +444,7 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "i",
-                vsCodeSelections: [new vscode.Selection(0, 7, 0, 7), new vscode.Selection(1, 7, 1, 7)],
+                vsCodeSelections: [new vscode.Selection(0, 6, 0, 6), new vscode.Selection(1, 6, 1, 6)],
             },
             client,
         );
@@ -454,11 +454,12 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "n",
-                content: ["blah1 atestbc", "blah2 atestbc", "blah3 abc"],
+                content: ["blah1 testabc", "blah2 testabc", "blah3 abc"],
             },
             client,
         );
 
+        await sendVSCodeKeys("l");
         await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
         await sendVSCodeKeys("lj");
@@ -475,7 +476,7 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "n",
-                content: ["blah1 atestbtestc", "blah2 atestbtestc", "blah3 abc"],
+                content: ["blah1 testabtestc", "blah2 testabtestc", "blah3 abc"],
             },
             client,
         );

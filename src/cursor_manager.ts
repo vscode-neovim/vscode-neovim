@@ -76,12 +76,13 @@ export class CursorManager
         switch (name) {
             case "visual-edit": {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [append, visualMode, startLine1Based, endLine1Based, skipEmpty] = args as any;
+                const [append, visualMode, startLine1Based, endLine1Based, endCol0based, skipEmpty] = args as any;
                 this.multipleCursorFromVisualMode(
                     !!append,
                     visualMode,
                     startLine1Based - 1,
                     endLine1Based - 1,
+                    endCol0based,
                     !!skipEmpty,
                 );
                 break;
@@ -399,15 +400,17 @@ export class CursorManager
         visualMode: string,
         startLine: number,
         endLine: number,
+        endCol: number,
         skipEmpty: boolean,
     ): void {
         if (!window.activeTextEditor) {
             return;
         }
         this.logger.debug(
-            `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], mode: ${visualMode}, append: ${append}, skipEmpty: ${skipEmpty}`,
+            `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], endCol: ${endCol} mode: ${visualMode}, append: ${append}, skipEmpty: ${skipEmpty}`,
         );
         const currentCursorPos = window.activeTextEditor.selection.active;
+        const startCol = currentCursorPos.character;
         const newSelections: Selection[] = [];
         const doc = window.activeTextEditor.document;
         for (let line = startLine; line <= endLine; line++) {
@@ -420,7 +423,7 @@ export class CursorManager
             if (visualMode === "V") {
                 char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
             } else {
-                char = append ? currentCursorPos.character + 1 : currentCursorPos.character;
+                char = append ? endCol : startCol;
             }
             this.logger.debug(`${LOG_PREFIX}: Multiple cursor at: [${line}, ${char}]`);
             newSelections.push(new Selection(line, char, line, char));

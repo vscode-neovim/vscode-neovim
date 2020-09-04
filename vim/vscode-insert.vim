@@ -1,12 +1,4 @@
 
-function! s:vscodeInsertBefore()
-    call VSCodeExtensionCall('insert-line', 'before')
-endfunction
-
-function! s:vscodeInsertAfter()
-    call VSCodeExtensionCall('insert-line', 'after')
-endfunction
-
 function! s:vscodePrepareMultipleCursors(append, skipEmpty)
     let m = visualmode()
     if m ==# "V" || m ==# "\<C-v>"
@@ -23,7 +15,7 @@ endfunction
 function! s:vscodeNotifyMultipleCursors()
     if exists('b:notifyMultipleCursors') && b:notifyMultipleCursors
         let b:notifyMultipleCursors = 0
-        call VSCodeExtensionNotify('visual-edit', b:multipleCursorsAppend, b:multipleCursorsVisualMode, line("'<"), line("'>"), b:multipleCursorsSkipEmpty)
+        call VSCodeExtensionNotify('visual-edit', b:multipleCursorsAppend, b:multipleCursorsVisualMode, line("'<"), line("'>"), col("'>"), b:multipleCursorsSkipEmpty)
     endif
 endfunction
 
@@ -31,13 +23,6 @@ augroup MultipleCursors
     autocmd!
     autocmd InsertEnter * call <SID>vscodeNotifyMultipleCursors()
 augroup END
-
-" nnoremap <silent> mO :<C-u> call<SID>vscodeInsertBefore()<CR>
-" nnoremap <silent> mo :<C-u> call<SID>vscodeInsertAfter()<CR>
-
-" For calling original vim o/O, used for dot-repeat
-" nnoremap <silent> mO O
-" nnoremap <silent> mo o
 
 " Multiple cursors support for visual line/block modes
 xnoremap <silent> ma :<C-u>call <SID>vscodePrepareMultipleCursors(1, 1)<CR>
