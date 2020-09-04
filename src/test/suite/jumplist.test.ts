@@ -203,15 +203,15 @@ describe("Jumplist & jump actions", () => {
             path.join(__dirname, "../../../test_fixtures/go-to-def-same-file.ts"),
         );
         await vscode.window.showTextDocument(doc1);
-        await wait(2000);
+        await wait(2500);
 
         await sendVSCodeKeys("49j", 0);
         await sendVSCodeKeys("gd");
-        await wait(1500);
+        await wait(2500);
 
         await sendVSCodeKeys("j");
         await sendVSCodeKeys("gd");
-        await wait(1500);
+        await wait(2500);
 
         await assertContent(
             {
@@ -221,7 +221,7 @@ describe("Jumplist & jump actions", () => {
         );
 
         await sendNeovimKeys(client, "<C-o>");
-        await wait(1000);
+        await wait(2500);
         await assertContent(
             {
                 cursor: [27, 9],
@@ -229,7 +229,7 @@ describe("Jumplist & jump actions", () => {
             client,
         );
         await sendNeovimKeys(client, "<C-o>");
-        await wait(1000);
+        await wait(2500);
         await assertContent(
             {
                 cursor: [49, 0],
