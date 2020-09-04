@@ -5,6 +5,7 @@ set nowrap
 set mouse=a
 set cmdheight=1
 set wildmode=list
+set wildchar=<C-e>
 
 set nobackup
 set nowb

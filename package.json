@@ -406,6 +406,12 @@
 				"args": "<C-l>"
 			},
 			{
+				"command": "vscode-neovim.send",
+				"key": "ctrl+e",
+				"when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+				"args": "<C-e>"
+			},
+			{
 				"command": "vscode-neovim.history-up-cmdline",
 				"key": "up",
 				"when": "neovim.mode == cmdline_normal"
