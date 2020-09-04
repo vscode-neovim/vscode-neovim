@@ -259,7 +259,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         }
         let editStr = "";
         if (dotRepeatChange.startMode) {
-            editStr += `<Esc>${dotRepeatChange.startMode === "O" ? "mO" : "mo"}`;
+            editStr += `<Esc>${dotRepeatChange.startMode}`;
             // remove EOL from first change
             if (dotRepeatChange.text.startsWith(dotRepeatChange.eol)) {
                 dotRepeatChange.text = dotRepeatChange.text.slice(dotRepeatChange.eol.length);

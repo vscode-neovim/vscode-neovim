@@ -32,12 +32,12 @@ augroup MultipleCursors
     autocmd InsertEnter * call <SID>vscodeNotifyMultipleCursors()
 augroup END
 
-nnoremap <silent> O :<C-u> call<SID>vscodeInsertBefore()<CR>
-nnoremap <silent> o :<C-u> call<SID>vscodeInsertAfter()<CR>
+" nnoremap <silent> mO :<C-u> call<SID>vscodeInsertBefore()<CR>
+" nnoremap <silent> mo :<C-u> call<SID>vscodeInsertAfter()<CR>
 
 " For calling original vim o/O, used for dot-repeat
-nnoremap <silent> mO O
-nnoremap <silent> mo o
+" nnoremap <silent> mO O
+" nnoremap <silent> mo o
 
 " Multiple cursors support for visual line/block modes
 xnoremap <silent> ma :<C-u>call <SID>vscodePrepareMultipleCursors(1, 1)<CR>

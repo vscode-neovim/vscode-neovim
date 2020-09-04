@@ -48,8 +48,9 @@ set modelines=0
 set nofoldenable
 set foldmethod=manual
 
-" Don't need indent
-filetype indent off
+" Turn on auto-indenting
+set autoindent
+set smartindent
 
 function s:forceLocalOptions()
     setlocal nowrap
