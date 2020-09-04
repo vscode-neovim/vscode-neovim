@@ -52,6 +52,9 @@ set foldmethod=manual
 set autoindent
 set smartindent
 
+" split/nosplit doesn't work currently, see https://github.com/asvetliakov/vscode-neovim/issues/329
+set inccommand=""
+
 function s:forceLocalOptions()
     setlocal nowrap
     setlocal conceallevel=0
