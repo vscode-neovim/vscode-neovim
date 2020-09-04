@@ -9,8 +9,9 @@ import {
     closeAllActiveEditors,
     wait,
     closeActiveEditor,
-    assertContent,
     sendVSCodeKeysAtomic,
+    getVScodeCursor,
+    getNeovimCursor,
 } from "../utils";
 
 describe("Neovim external buffers", () => {
@@ -64,12 +65,9 @@ describe("Neovim external buffers", () => {
         await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
         await wait(3000);
 
-        await assertContent(
-            {
-                // todo: col positions are not correct, but seems not a big issue for now
-                cursorLine: 186,
-            },
-            client,
-        );
+        const vscodeCursor = getVScodeCursor();
+        const neovimCursor = await getNeovimCursor(client);
+        assert.ok(vscodeCursor[0] >= 185 && vscodeCursor[0] <= 187);
+        assert.ok(neovimCursor[0] >= 185 && neovimCursor[0] <= 187);
     });
 });
