@@ -69,7 +69,7 @@ export class TypingManager implements Disposable {
 
     private onVSCodeType = (_editor: TextEditor, edit: TextEditorEdit, type: { text: string }): void => {
         if (!this.modeManager.isInsertMode || this.modeManager.isRecordingInInsertMode) {
-            this.client.input(normalizeInputString(type.text));
+            this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
         } else if (this.isExitingInsertMode) {
             this.pendingKeysAfterExit += type.text;
         } else {

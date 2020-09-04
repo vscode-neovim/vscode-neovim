@@ -26,7 +26,7 @@ describe("Macros", () => {
         await closeAllActiveEditors();
     });
 
-    it("Macros works", async () => {
+    it("Macros work", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["a1", "b2", "c3"].join("\n"),
         });

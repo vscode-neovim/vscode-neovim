@@ -460,9 +460,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     private syncActiveEditor = debounce(
         async () => {
             this.logger.debug(`${LOG_PREFIX}: syncing active editor`);
-            if (this.changeLayoutPromise) {
-                await this.changeLayoutPromise;
-            }
+            await this.waitForLayoutSync();
+
             const activeEditor = window.activeTextEditor;
             if (!activeEditor) {
                 return;
@@ -547,7 +546,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         ];
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
         // Looks like need to be in separate request
-        await this.client.callFunction("VSCodeClearUndo", bufId);
+        if (!this.isExternalTextDocument(document)) {
+            await this.client.callFunction("VSCodeClearUndo", bufId);
+        }
         if (this.onBufferInit) {
             this.onBufferInit(bufId, document);
         }

@@ -478,8 +478,12 @@ export function getDocumentLineArray(doc: TextDocument): string[] {
     return doc.getText().split(eol);
 }
 
-export function normalizeInputString(str: string): string {
-    return str.replace("\n", "<CR>").replace("<", "<LT>");
+export function normalizeInputString(str: string, wrapEnter = true): string {
+    let finalStr = str.replace("<", "<LT>");
+    if (wrapEnter) {
+        finalStr = finalStr.replace("\n", "<CR>");
+    }
+    return finalStr;
 }
 
 export function findLastEvent(name: string, batch: [string, ...unknown[]][]): [string, ...unknown[]] | undefined {
