@@ -35,10 +35,11 @@ export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcess
                             str = "";
                         }
                         for (const c of content) {
-                            str += c[1];
+                            str += c[1] + "\n";
                         }
                     }
-                    const lines = str.split("\n");
+                    // remove empty last line (since we always put \n at the end)
+                    const lines = str.split("\n").slice(0, -1);
                     if (lines.length > 1) {
                         this.showChannel();
                         this.channel.append(str);
