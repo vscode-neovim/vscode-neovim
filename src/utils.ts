@@ -479,9 +479,9 @@ export function getDocumentLineArray(doc: TextDocument): string[] {
 }
 
 export function normalizeInputString(str: string, wrapEnter = true): string {
-    let finalStr = str.replace("<", "<LT>");
+    let finalStr = str.replace(/</g, "<LT>");
     if (wrapEnter) {
-        finalStr = finalStr.replace("\n", "<CR>");
+        finalStr = finalStr.replace(/\n/g, "<CR>");
     }
     return finalStr;
 }
