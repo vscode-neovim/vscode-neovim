@@ -120,7 +120,11 @@ export class CommandLineController implements Disposable {
             e.charAt(0) !== "?" &&
             e.charAt(0) !== "/" &&
             !e.includes("s/") &&
-            !e.includes("substitute/");
+            !e.includes("substitute/") &&
+            !e.includes("g/") &&
+            !e.includes("global/") &&
+            !e.includes("v/") &&
+            !e.includes("vglobal/");
         if (!useCompletion) {
             this.cancelCompletions();
         }
