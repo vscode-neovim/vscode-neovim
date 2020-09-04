@@ -10,6 +10,7 @@ import {
     closeNvimClient,
     sendEscapeKey,
     sendVSCodeKeysAtomic,
+    sendNeovimKeys,
 } from "../utils";
 
 describe("Visual modes test", () => {
@@ -314,7 +315,7 @@ describe("Visual modes test", () => {
         await wait();
 
         await sendVSCodeKeys("ll");
-        await sendVSCodeKeys("<C-v>");
+        await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
 
         await sendVSCodeKeys("j");
@@ -345,7 +346,7 @@ describe("Visual modes test", () => {
         );
 
         await sendVSCodeKeys("0jjjjll");
-        await sendVSCodeKeys("<C-v>");
+        await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
         await sendVSCodeKeys("jj");
 
@@ -436,7 +437,7 @@ describe("Visual modes test", () => {
         await wait();
 
         await sendVSCodeKeys("jw");
-        await sendVSCodeKeys("<C-v>");
+        await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
         await sendVSCodeKeys("lk");
         await sendVSCodeKeys("mi");
@@ -458,7 +459,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("<C-v>");
+        await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
         await sendVSCodeKeys("lj");
         await sendVSCodeKeys("ma");

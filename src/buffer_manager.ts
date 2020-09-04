@@ -72,6 +72,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Current grid configurations
      */
     private grids: Map<number, { winId: number }> = new Map();
+    /**
+     * Tab configuration for each editor
+     */
+    private editorTabConfiguration: WeakMap<TextEditor, { tabSize: number; insertSpaces: boolean }> = new WeakMap();
 
     /**
      * Buffer event delegate
@@ -254,6 +258,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                                 : ViewColumn.Active,
                             preserveFocus: false,
                             preview: false,
+                        });
+                        this.editorTabConfiguration.set(editor, {
+                            insertSpaces: editor.options.insertSpaces as boolean,
+                            tabSize: editor.options.tabSize as number,
                         });
                         if (forceTabOptions) {
                             await this.resyncBufferTabOptions(editor, id);
@@ -495,7 +503,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             return;
         }
         this.logger.debug(`${LOG_PREFIX}: Updating tab options for bufferId: ${bufId}`);
-        this.resyncBufferTabOptions(e.textEditor, bufId);
+        const prevOptions = this.editorTabConfiguration.get(e.textEditor);
+        if (
+            !prevOptions ||
+            prevOptions.insertSpaces !== e.options.insertSpaces ||
+            prevOptions.tabSize !== e.options.tabSize
+        ) {
+            this.editorTabConfiguration.set(e.textEditor, {
+                insertSpaces: e.options.insertSpaces as boolean,
+                tabSize: e.options.tabSize as number,
+            });
+            this.resyncBufferTabOptions(e.textEditor, bufId);
+        }
     };
 
     private receivedBufferEvent = (
@@ -525,6 +544,13 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         } = editor || { options: { insertSpaces: true, tabSize: 4 } };
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
+
+        if (editor) {
+            this.editorTabConfiguration.set(editor, {
+                tabSize: tabSize as number,
+                insertSpaces: insertSpaces as boolean,
+            });
+        }
 
         const requests: [string, unknown[]][] = [
             ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
@@ -674,6 +700,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             preview: true,
             viewColumn: ViewColumn.Active,
         });
+        this.editorTabConfiguration.set(editor, { tabSize: tabStop, insertSpaces: expandTab });
         editor.options.insertSpaces = expandTab;
         editor.options.tabSize = tabStop;
 
