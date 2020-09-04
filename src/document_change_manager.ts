@@ -363,11 +363,17 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                 // 2. cleaned line but not deleted - first line is the changed line, lastLine + 1, linedata is ""
                 // 3. newline insert - firstLine = lastLine and linedata is "" or new data
                 // 4. line deleted - firstLine is changed line, lastLine + 1, linedata is empty []
+                // 5. multiple empty lines deleted (sometimes happens), firstLine is changedLine - shouldn't be deleted, lastLine + 1, linedata is ""
                 // LAST LINE is exclusive and can be out of the last editor line
-                if (firstLine !== lastLine && data.length === 1 && data[0] === "") {
+                if (firstLine !== lastLine && lastLine === firstLine + 1 && data.length === 1 && data[0] === "") {
                     // 2
                     for (let line = firstLine; line < lastLine; line++) {
                         lines[line] = "";
+                    }
+                } else if (firstLine !== lastLine && data.length === 1 && data[0] === "") {
+                    // 5
+                    for (let line = 1; line < lastLine - firstLine; line++) {
+                        lines.splice(firstLine, 1);
                     }
                 } else if (firstLine !== lastLine && !data.length) {
                     // 4
@@ -436,8 +442,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                                 } else {
                                     builder.delete(new Range(range.start, 0, range.end + 1, 0));
                                 }
+                                // this.highlightManager.cleanRangeForEditor(editor, range.start, range.end);
                             } else if (range.type === "changed") {
                                 builder.replace(new Range(range.start, 0, range.end, 999999), text.join("\n"));
+                                // this.highlightManager.cleanRangeForEditor(editor, range.start, range.end);
                             } else if (range.type === "added") {
                                 if (range.start >= editor.document.lineCount) {
                                     text.unshift(...new Array(range.start - (editor.document.lineCount - 1)).fill(""));
