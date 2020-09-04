@@ -179,18 +179,17 @@ describe("Jumplist & jump actions", () => {
         // );
     });
 
-    it("Jump to definition to another file creates jump point iin original file", async () => {
+    it("Jump to definition to another file creates jump point in original file", async () => {
         const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/b.ts"));
         await vscode.window.showTextDocument(doc1);
-        await wait(1000);
+        await wait(2500);
 
         await sendVSCodeKeys("jjjjjl");
         await sendVSCodeKeys("gd", 0);
         await wait(2500);
 
         await sendNeovimKeys(client, "<C-o>");
-        // await sendVSCodeKeys("<C-o>", 0);
-        await wait(2000);
+        await wait(2500);
         await assertContent(
             {
                 cursor: [5, 1],
