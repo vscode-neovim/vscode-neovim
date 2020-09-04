@@ -717,7 +717,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     let finalCol = neovimCursor[1];
                     try {
                         finalCol = calculateEditorColFromVimScreenCol(
-                            doc.lineAt(neovimCursor[0]).text,
+                            doc.lineAt(finalLine).text,
                             neovimCursor[1],
                             1,
                             true,
