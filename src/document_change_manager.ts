@@ -394,7 +394,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             // replacing lines with WorkspaceEdit() moves cursor to the end of the line, unfortunately this won't work
             // const workspaceEdit = new vscode.WorkspaceEdit();
             for (const [doc, newLines] of newTextByDoc) {
-                const docPromises = this.textDocumentChangePromise.get(doc)?.splice(0) || [];
+                const lastPromiseIdx = this.textDocumentChangePromise.get(doc)?.length || 0;
                 try {
                     this.logger.debug(`${LOG_PREFIX}: Applying edits for ${doc.uri.toString()}`);
                     if (doc.isClosed) {
@@ -443,6 +443,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                             }
                         }
                     });
+                    const docPromises = this.textDocumentChangePromise.get(doc)?.splice(0, lastPromiseIdx) || [];
                     if (success) {
                         docPromises.forEach((p) => p.resolve && p.resolve());
                         this.logger.debug(`${LOG_PREFIX}: Changes succesfully applied for ${doc.uri.toString()}`);

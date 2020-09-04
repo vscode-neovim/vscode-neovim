@@ -108,6 +108,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (this.changeLayoutPromise) {
             this.logger.debug(`${LOG_PREFIX}: Waiting for completing layout resyncing`);
             await this.changeLayoutPromise;
+            this.logger.debug(`${LOG_PREFIX}: Waiting done`);
         }
     }
 

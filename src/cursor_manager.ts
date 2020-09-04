@@ -273,6 +273,7 @@ export class CursorManager
             // wait for possible change document events
             this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
             await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
+            this.logger.debug(`${LOG_PREFIX}: Waiting done`);
 
             const winId = this.bufferManager.getWinIdForTextEditor(textEditor);
             const cursor = selections[0].active;
