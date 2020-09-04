@@ -164,7 +164,7 @@ Jumplist lifetime is mapped to vscode's view column lifetime and not persisted b
 
 ## Wildmenu completion
 
-Command menu has the wildmenu completion on type. The completion options appear after 1.5s (to not bother you when you write `:w` or `:noh`). `<C-n>/<C-p>` selects the option and `<Tab>` accepts it. See the gif:
+Command menu has the wildmenu completion on type. The completion options appear after 1.5s (to not bother you when you write `:w` or `:noh`). `<Up>/<Down>` selects the option and `<Tab>` accepts it. See the gif:
 
 ![wildmenu](/images/wildmenu.gif)
 
@@ -420,7 +420,8 @@ Other control keys are not being sent (Usually useless with vscode)
 -   CTRL-u (clear line)
 -   CTRL-g / CTRL-t (in incsearch mode moves to next/previous result)
 -   CTRL-l (add next character under the cursor to incsearch)
--   CTRL-n / CTRL-p (select next/previous wildmenu completion)
+-   CTRL-n / CTRL-p (go down/up history)
+-   `<Up>`/`<Down>` (Select next/prev suggestion) (no way to make up/down to navigate through history, vscode disallows remapping)
 -   Tab - Select suggestion
 
 ## Pass additional keys to neovim or disable existing ctrl keys mappings
