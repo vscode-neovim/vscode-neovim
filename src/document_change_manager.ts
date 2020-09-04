@@ -1,10 +1,10 @@
 import diff from "fast-diff";
-import { throttle } from "lodash";
 import { NeovimClient } from "neovim";
 import {
     Disposable,
     EndOfLine,
     Position,
+    ProgressLocation,
     Range,
     TextDocument,
     TextDocumentChangeEvent,
@@ -56,10 +56,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      * ! Since operations are async it's possible we receive other updates (such as cursor, HL) for related editors with document before
      * ! text change will be applied. In this case we need to queue such changes (through .then()) and wait for change operation completion
      */
-    private textDocumentChangePromise: WeakMap<
+    private textDocumentChangePromise: Map<
         TextDocument,
         Array<{ promise?: Promise<void>; resolve?: () => void; reject?: () => void }>
-    > = new WeakMap();
+    > = new Map();
     /**
      * Holds document content last known to neovim.
      * ! The original content is needed to calculate the difference when exiting the insert mode
@@ -78,6 +78,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      * A hint for dot-repeat indicating of how the insert mode was started
      */
     private dotRepeatStartModeInsertHint?: "o" | "O";
+    /**
+     * True when we're currently applying edits, so incoming changes will go into pending events queue
+     */
+    private applyingEdits = false;
 
     public constructor(
         private logger: Logger,
@@ -319,31 +323,31 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         });
         documentPromises.push(promiseDesc);
 
-        // if (!this.textDocumentChangePromise.has(doc)) {
-        //     const promiseDesc: { promise?: Promise<void>; resolve?: () => void; reject?: () => void } = {};
-        //     promiseDesc.promise = new Promise<void>((res, rej) => {
-        //         promiseDesc.resolve = res;
-        //         promiseDesc.reject = rej;
-        //     });
-        //     // put default catch block so promise reject won't be unhandled
-        //     promiseDesc.promise.catch((err) => {
-        //         this.logger.error(err);
-        //     });
-        //     this.textDocumentChangePromise.set(doc, promiseDesc);
-        // }
         this.pendingEvents.push([bufId, tick, firstLine, lastLine, linedata, more]);
-        this.applyEdits();
+        if (!this.applyingEdits) {
+            this.applyEdits();
+        }
     };
 
-    private applyEdits = throttle(
-        async () => {
-            this.logger.debug(`${LOG_PREFIX}: Applying neovim edits`);
-            const edits = this.pendingEvents.splice(0);
+    private applyEdits = async (): Promise<void> => {
+        this.applyingEdits = true;
+        this.logger.debug(`${LOG_PREFIX}: Applying neovim edits`);
+        // const edits = this.pendingEvents.splice(0);
+        let resolveProgress: undefined | (() => void);
+        const progressTimer = setTimeout(() => {
+            window.withProgress(
+                { location: ProgressLocation.Notification, title: "Applying neovim edits" },
+                () => new Promise((res) => (resolveProgress = res)),
+            );
+        }, 1000);
 
+        while (this.pendingEvents.length) {
             const newTextByDoc: Map<TextDocument, string[]> = new Map();
-
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            for (const [bufId, tick, firstLine, lastLine, data, more] of edits) {
+            let edit = this.pendingEvents.shift();
+            while (edit) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const [bufId, _tick, firstLine, lastLine, data, _more] = edit;
                 const doc = this.bufferManager.getTextDocumentForBufferId(bufId);
                 if (!doc) {
                     this.logger.warn(`${LOG_PREFIX}: No document for ${bufId}, skip`);
@@ -390,6 +394,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     lines = [...lines.slice(0, firstLine), ...data, ...lines.slice(lastLine)];
                 }
                 newTextByDoc.set(doc, lines);
+                edit = this.pendingEvents.shift();
             }
             // replacing lines with WorkspaceEdit() moves cursor to the end of the line, unfortunately this won't work
             // const workspaceEdit = new vscode.WorkspaceEdit();
@@ -461,10 +466,22 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     this.logger.error(`${LOG_PREFIX}: Error applying neovim edits, error: ${e.message}`);
                 }
             }
-        },
-        50,
-        { leading: true, trailing: true },
-    );
+        }
+        const promises = [...this.textDocumentChangePromise.values()].flatMap((p) => p);
+        this.textDocumentChangePromise.clear();
+        promises.forEach((p) => p.resolve && p.resolve());
+        // better to be safe - if event was inserted after exit the while() block but before exit the function
+        if (progressTimer) {
+            clearTimeout(progressTimer);
+        }
+        if (resolveProgress) {
+            resolveProgress();
+        }
+        if (this.pendingEvents.length) {
+            this.applyEdits();
+        }
+        this.applyingEdits = false;
+    };
 
     private onChangeTextDocument = (e: TextDocumentChangeEvent): void => {
         const { document, contentChanges } = e;
