@@ -61,8 +61,10 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
         await setCursor(2, 1);
+        await wait(1000);
 
         await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc.uri, new vscode.Position(2, 1));
+        await wait(2000);
 
         await assertContent(
             {
