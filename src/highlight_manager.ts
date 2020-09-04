@@ -1,8 +1,6 @@
-import { NeovimClient } from "neovim";
 import { DecorationOptions, Disposable, Range, window } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
-import { DocumentChangeManager } from "./document_change_manager";
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
@@ -37,9 +35,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     public constructor(
         private logger: Logger,
-        private client: NeovimClient,
         private bufferManager: BufferManager,
-        private documentChangeManager: DocumentChangeManager,
         private settings: HighlightManagerSettings,
     ) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
@@ -101,14 +97,22 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                 }
                 // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
                 case "grid_scroll": {
-                    for (const [grid, , , , , by] of args as [number, number, number, null, number, number, number][]) {
+                    for (const [grid, top, , , , by] of args as [
+                        number,
+                        number,
+                        number,
+                        null,
+                        number,
+                        number,
+                        number,
+                    ][]) {
                         if (grid === 1) {
                             continue;
                         }
                         // by > 0 - scroll down, must remove existing elements from first and shift row hl left
                         // by < 0 - scroll up, must remove existing elements from right shift row hl right
-                        this.highlightProvider.shiftGridHighlights(grid, by);
-                        // gridHLUpdates.add(grid);
+                        this.highlightProvider.shiftGridHighlights(grid, by, top);
+                        gridHLUpdates.add(grid);
                     }
                     break;
                 }
@@ -145,8 +149,17 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         const tabSize = editor.options.tabSize as number;
                         const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
                         const isExternal = this.bufferManager.isExternalTextDocument(editor.document);
-                        this.highlightProvider.processHLCellsEvent(grid, row, finalStartCol, isExternal, cells, line);
-                        gridHLUpdates.add(grid);
+                        const update = this.highlightProvider.processHLCellsEvent(
+                            grid,
+                            row,
+                            finalStartCol,
+                            isExternal,
+                            cells,
+                            line,
+                        );
+                        if (update) {
+                            gridHLUpdates.add(grid);
+                        }
                     }
                     break;
                 }

@@ -442,10 +442,8 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                                 } else {
                                     builder.delete(new Range(range.start, 0, range.end + 1, 0));
                                 }
-                                // this.highlightManager.cleanRangeForEditor(editor, range.start, range.end);
                             } else if (range.type === "changed") {
                                 builder.replace(new Range(range.start, 0, range.end, 999999), text.join("\n"));
-                                // this.highlightManager.cleanRangeForEditor(editor, range.start, range.end);
                             } else if (range.type === "added") {
                                 if (range.start >= editor.document.lineCount) {
                                     text.unshift(...new Array(range.start - (editor.document.lineCount - 1)).fill(""));

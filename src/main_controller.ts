@@ -166,6 +166,12 @@ export class MainController implements vscode.Disposable {
         });
         this.disposables.push(this.bufferManager);
 
+        this.highlightManager = new HighlightManager(this.logger, this.bufferManager, {
+            highlight: this.settings.highlightsConfiguration,
+            viewportHeight: this.settings.neovimViewportHeight,
+        });
+        this.disposables.push(this.highlightManager);
+
         this.changeManager = new DocumentChangeManager(this.logger, this.client, this.bufferManager, this.modeManager);
         this.disposables.push(this.changeManager);
 
@@ -189,12 +195,6 @@ export class MainController implements vscode.Disposable {
 
         this.statusLineManager = new StatusLineManager(this.logger, this.client);
         this.disposables.push(this.statusLineManager);
-
-        this.highlightManager = new HighlightManager(this.logger, this.client, this.bufferManager, this.changeManager, {
-            highlight: this.settings.highlightsConfiguration,
-            viewportHeight: this.settings.neovimViewportHeight,
-        });
-        this.disposables.push(this.highlightManager);
 
         this.customCommandsManager = new CustomCommandsManager(this.logger);
         this.disposables.push(this.customCommandsManager);

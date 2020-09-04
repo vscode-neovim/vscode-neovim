@@ -1458,14 +1458,22 @@ export class NVIMPluginControllerOld implements vscode.Disposable {
                 }
                 // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
                 case "grid_scroll": {
-                    for (const [grid, , , , , by] of args as [number, number, number, null, number, number, number][]) {
+                    for (const [grid, top, , , , by] of args as [
+                        number,
+                        number,
+                        number,
+                        null,
+                        number,
+                        number,
+                        number,
+                    ][]) {
                         if (grid === 1) {
                             continue;
                         }
                         gridCursorUpdates.add(grid);
                         // by > 0 - scroll down, must remove existing elements from first and shift row hl left
                         // by < 0 - scroll up, must remove existing elements from right shift row hl right
-                        this.highlightProvider.shiftGridHighlights(grid, by);
+                        this.highlightProvider.shiftGridHighlights(grid, by, top);
                     }
                     break;
                 }

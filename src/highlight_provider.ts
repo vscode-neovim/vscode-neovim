@@ -252,13 +252,14 @@ export class HighlightProvider {
         external: boolean,
         cells: [string, number?, number?][],
         line: string,
-    ): void {
+    ): boolean {
         let cellHlId = 0;
         let cellIdx = start;
         if (!this.highlights.has(grid)) {
             this.highlights.set(grid, []);
         }
         const gridHl = this.highlights.get(grid)!;
+        let hasUpdates = false;
 
         for (const [text, hlId, repeat] of cells) {
             // 2+bytes chars (such as chinese characters) have "" as second cell
@@ -291,16 +292,19 @@ export class HighlightProvider {
                     gridHl[row] = [];
                 }
                 if (groupName) {
+                    hasUpdates = true;
                     gridHl[row][cellIdx] = cellHlId;
-                } else {
+                } else if (gridHl[row][cellIdx]) {
+                    hasUpdates = true;
                     delete gridHl[row][cellIdx];
                 }
                 cellIdx++;
             }
         }
+        return hasUpdates;
     }
 
-    public shiftGridHighlights(grid: number, by: number): void {
+    public shiftGridHighlights(grid: number, by: number, from: number): void {
         const gridHl = this.highlights.get(grid);
         if (!gridHl) {
             return;
@@ -308,7 +312,7 @@ export class HighlightProvider {
         if (by > 0) {
             // remove clipped out rows
             for (let i = 0; i < by; i++) {
-                delete gridHl[i];
+                delete gridHl[from + i];
             }
             // first get non empty indexes, then process, seems faster than iterating whole array
             const idxs: number[] = [];
@@ -317,19 +321,25 @@ export class HighlightProvider {
             });
             // shift
             for (const idx of idxs) {
+                if (idx <= from) {
+                    continue;
+                }
                 gridHl[idx - by] = gridHl[idx];
                 delete gridHl[idx];
             }
         } else if (by < 0) {
             // remove clipped out rows
             for (let i = 0; i < Math.abs(by); i++) {
-                delete gridHl[gridHl.length - 1 - i];
+                delete gridHl[from !== 0 ? from + i : gridHl.length - 1 - i];
             }
             const idxs: number[] = [];
             gridHl.forEach((_row, idx) => {
                 idxs.push(idx);
             });
             for (const idx of idxs.reverse()) {
+                if (idx <= from) {
+                    continue;
+                }
                 gridHl[idx + Math.abs(by)] = gridHl[idx];
                 delete gridHl[idx];
             }
