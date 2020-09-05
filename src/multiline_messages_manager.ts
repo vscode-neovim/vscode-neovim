@@ -30,6 +30,9 @@ export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcess
                         if (type === "return_prompt") {
                             continue;
                         }
+                        if (type) {
+                            continue;
+                        }
                         if (clear) {
                             this.channel.clear();
                             str = "";
