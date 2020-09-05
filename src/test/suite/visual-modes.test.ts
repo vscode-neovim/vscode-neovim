@@ -10,6 +10,7 @@ import {
     closeNvimClient,
     sendEscapeKey,
     sendVSCodeKeysAtomic,
+    sendNeovimKeys,
 } from "../utils";
 
 describe("Visual modes test", () => {
@@ -314,7 +315,7 @@ describe("Visual modes test", () => {
         await wait();
 
         await sendVSCodeKeys("ll");
-        await sendVSCodeKeys("<C-v>");
+        await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
 
         await sendVSCodeKeys("j");
@@ -345,7 +346,7 @@ describe("Visual modes test", () => {
         );
 
         await sendVSCodeKeys("0jjjjll");
-        await sendVSCodeKeys("<C-v>");
+        await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
         await sendVSCodeKeys("jj");
 
@@ -436,14 +437,14 @@ describe("Visual modes test", () => {
         await wait();
 
         await sendVSCodeKeys("jw");
-        await sendVSCodeKeys("<C-v>");
+        await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
         await sendVSCodeKeys("lk");
         await sendVSCodeKeys("mi");
         await assertContent(
             {
                 mode: "i",
-                vsCodeSelections: [new vscode.Selection(0, 7, 0, 7), new vscode.Selection(1, 7, 1, 7)],
+                vsCodeSelections: [new vscode.Selection(0, 6, 0, 6), new vscode.Selection(1, 6, 1, 6)],
             },
             client,
         );
@@ -453,12 +454,13 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "n",
-                content: ["blah1 atestbc", "blah2 atestbc", "blah3 abc"],
+                content: ["blah1 testabc", "blah2 testabc", "blah3 abc"],
             },
             client,
         );
 
-        await sendVSCodeKeys("<C-v>");
+        await sendVSCodeKeys("l");
+        await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
         await sendVSCodeKeys("lj");
         await sendVSCodeKeys("ma");
@@ -474,7 +476,7 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "n",
-                content: ["blah1 atestbtestc", "blah2 atestbtestc", "blah3 abc"],
+                content: ["blah1 testabtestc", "blah2 testabtestc", "blah3 abc"],
             },
             client,
         );

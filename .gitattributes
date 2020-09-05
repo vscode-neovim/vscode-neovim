@@ -1,2 +1,6 @@
 * text eol=lf
 *.vim text eol=lf
+
+*.png binary
+*.gif binary
+images/** binary

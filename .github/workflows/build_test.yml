@@ -10,20 +10,22 @@ jobs:
         name: Build & Test
         strategy:
             matrix:
-                os: [macos-latest, ubuntu-latest, windows-latest]
+                # os: [macos-latest, ubuntu-latest, windows-latest]
+                # CI windows have some issues, i'm not sure why
+                os: [macos-latest, ubuntu-latest]
         runs-on: ${{ matrix.os }}
         steps:
             - uses: actions/checkout@v2
             - name: Setup Node
               uses: actions/setup-node@v1
               with:
-                node-version: '12'
+                  node-version: "12"
             - name: Install Neovim
               uses: rhysd/action-setup-vim@v1
               id: vim
               with:
-                neovim: true
-                version: nightly
+                  neovim: true
+                  version: nightly
             - name: Yarn install
               run: yarn --silent --frozen-lockfile
             - name: Build
@@ -31,12 +33,11 @@ jobs:
             - name: Lint
               run: yarn run lint
             - name: Test
-              # uses: GabrielBB/xvfb-action@v1.2
-              uses: Akuli/xvfb-action@fix10
+              uses: GabrielBB/xvfb-action@v1.4
               env:
-                NEOVIM_PATH: ${{ steps.vim.outputs.executable }}
-                NEOVIM_DEBUG: 1
-                NEOVIM_DEBUG_HOST: 127.0.0.1
-                NEOVIM_DEBUG_PORT: 4000
+                  NEOVIM_PATH: ${{ steps.vim.outputs.executable }}
+                  NEOVIM_DEBUG: 1
+                  NEOVIM_DEBUG_HOST: 127.0.0.1
+                  NEOVIM_DEBUG_PORT: 4000
               with:
-                run: yarn run test
+                  run: yarn run test

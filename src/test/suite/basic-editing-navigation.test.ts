@@ -397,4 +397,49 @@ describe("Basic editing and navigation", () => {
             client,
         );
     });
+
+    it("Navigating with tab indents", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["\t\tte\tst"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("gg0");
+        await sendVSCodeKeys("l");
+
+        await assertContent(
+            {
+                cursor: [0, 1],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("x");
+        await assertContent(
+            {
+                content: ["\tte\tst"],
+                cursor: [0, 1],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("lx");
+        await assertContent(
+            {
+                content: ["\tt\tst"],
+                cursor: [0, 2],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("llx");
+        await assertContent(
+            {
+                content: ["\tt\ts"],
+                cursor: [0, 3],
+            },
+            client,
+        );
+    });
 });

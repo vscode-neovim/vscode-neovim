@@ -1,27 +1,20 @@
 {
-	"compilerOptions": {
-		"module": "commonjs",
-		"target": "ES2015",
-		"outDir": "out",
-		"lib": [
-			"ES2015",
-			"ES2019.Array"
-		],
-		"sourceMap": true,
-		"rootDir": "src",
-		"types": ["node", "mocha"],
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"strict": true   /* enable all strict type-checking options */
-		/* Additional Checks */
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
-	},
-	"exclude": [
-		"node_modules",
-		".vscode-test",
-		"test_fixtures",
-	],
-	"include": ["src/**/*"]
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES2015",
+        "outDir": "out",
+        "lib": ["ES2017", "ES2019.Array"],
+        "sourceMap": true,
+        "rootDir": "src",
+        "types": ["node", "mocha"],
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "strict": true /* enable all strict type-checking options */
+        /* Additional Checks */
+        // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
+        // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
+        // "noUnusedParameters": true,  /* Report errors on unused parameters. */
+    },
+    "exclude": ["node_modules", ".vscode-test", "test_fixtures"],
+    "include": ["src/**/*"]
 }

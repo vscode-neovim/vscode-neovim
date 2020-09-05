@@ -1,6 +1,9 @@
-import { workspace, TextEditor, TextDocumentContentChangeEvent, Position } from "vscode";
+import { workspace, TextEditor, TextDocumentContentChangeEvent, Position, TextDocument, EndOfLine } from "vscode";
 import { Diff } from "fast-diff";
 import wcwidth from "ts-wcwidth";
+import { NeovimClient } from "neovim";
+
+import { Logger } from "./logger";
 
 export const EXT_NAME = "vscode-neovim";
 export const EXT_ID = `asvetliakov.${EXT_NAME}`;
@@ -45,6 +48,10 @@ export interface DotRepeatChange {
      * Set if it was the first change and started either through o or O
      */
     startMode?: "o" | "O";
+    /**
+     * Text eol
+     */
+    eol: string;
 }
 
 export function processLineNumberStringFromEvent(
@@ -277,14 +284,24 @@ export function convertByteNumToCharNum(line: string, col: number): number {
     return currCharNum;
 }
 
-export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
+export function calculateEditorColFromVimScreenCol(
+    line: string,
+    screenCol: number,
+    tabSize = 1,
+    useBytes = false,
+): number {
     if (screenCol === 0 || !line) {
         return 0;
     }
     let currentCharIdx = 0;
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
-        currentVimCol += line[currentCharIdx] === "\t" ? tabSize : wcwidth(line[currentCharIdx]);
+        currentVimCol +=
+            line[currentCharIdx] === "\t"
+                ? tabSize - (currentVimCol % tabSize)
+                : useBytes
+                ? getBytesFromCodePoint(line.codePointAt(currentCharIdx))
+                : wcwidth(line[currentCharIdx]);
 
         currentCharIdx++;
         if (currentCharIdx >= line.length) {
@@ -395,6 +412,7 @@ export function getNeovimInitPath(): string | undefined {
 
 export function normalizeDotRepeatChange(
     change: TextDocumentContentChangeEvent,
+    eol: string,
     startMode?: "o" | "O",
 ): DotRepeatChange {
     return {
@@ -402,6 +420,7 @@ export function normalizeDotRepeatChange(
         rangeOffset: change.rangeOffset,
         text: change.text,
         startMode,
+        eol,
     };
 }
 
@@ -438,4 +457,71 @@ export function accumulateDotRepeatChange(
         newLastChange.rangeLength += change.rangeLength;
     }
     return newLastChange;
+}
+
+export function editorPositionToNeovimPosition(editor: TextEditor, position: Position): [number, number] {
+    const lineText = editor.document.lineAt(position.line).text;
+    const byteCol = convertCharNumToByteNum(lineText, position.character);
+    return [position.line + 1, byteCol];
+}
+
+export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, number] {
+    try {
+        return editorPositionToNeovimPosition(editor, editor.selection.active);
+    } catch {
+        return [1, 0];
+    }
+}
+
+export function getDocumentLineArray(doc: TextDocument): string[] {
+    const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
+    return doc.getText().split(eol);
+}
+
+export function normalizeInputString(str: string, wrapEnter = true): string {
+    let finalStr = str.replace(/</g, "<LT>");
+    if (wrapEnter) {
+        finalStr = finalStr.replace(/\n/g, "<CR>");
+    }
+    return finalStr;
+}
+
+export function findLastEvent(name: string, batch: [string, ...unknown[]][]): [string, ...unknown[]] | undefined {
+    for (let i = batch.length - 1; i >= 0; i--) {
+        const [event] = batch[i];
+        if (event === name) {
+            return batch[i];
+        }
+    }
+}
+
+/**
+ * Wrap nvim callAtomic and check for any errors in result
+ * @param client
+ * @param requests
+ * @param logger
+ * @param prefix
+ */
+export async function callAtomic(
+    client: NeovimClient,
+    requests: [string, unknown[]][],
+    logger: Logger,
+    prefix = "",
+): Promise<void> {
+    const res = await client.callAtomic(requests);
+    const errors: string[] = [];
+    if (res && Array.isArray(res) && Array.isArray(res[0])) {
+        res[0].forEach((res, idx) => {
+            if (res) {
+                const call = requests[idx];
+                const requestName = call?.[0];
+                if (requestName !== "nvim_input") {
+                    errors.push(`${call?.[0] || "Unknown"}: ${res}`);
+                }
+            }
+        });
+    }
+    if (errors.length) {
+        logger.error(`${prefix}:\n${errors.join("\n")}`);
+    }
 }

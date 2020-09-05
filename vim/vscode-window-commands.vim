@@ -1,7 +1,7 @@
 
 function! s:split(...) abort
     let direction = a:1
-    let file = a:2
+    let file = exists('a:2') ? a:2 : ''
     call VSCodeCall(direction ==# 'h' ? 'workbench.action.splitEditorDown' : 'workbench.action.splitEditorRight')
     if file != ''
         call VSCodeExtensionNotify('open-file', expand(file), 'all')

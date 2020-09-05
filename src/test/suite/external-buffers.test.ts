@@ -8,9 +8,10 @@ import {
     closeNvimClient,
     closeAllActiveEditors,
     wait,
-    sendVSCodeKeys,
     closeActiveEditor,
-    assertContent,
+    sendVSCodeKeysAtomic,
+    getVScodeCursor,
+    getNeovimCursor,
 } from "../utils";
 
 describe("Neovim external buffers", () => {
@@ -33,15 +34,17 @@ describe("Neovim external buffers", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys(":help", 0);
-        await sendVSCodeKeys("\n", 0);
+        await sendVSCodeKeysAtomic(":help");
+        await wait(1000);
+        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
         await wait(2000);
 
         const text = vscode.window.activeTextEditor!.document.getText();
         assert.ok(text.indexOf("main help file") !== -1);
 
-        await sendVSCodeKeys(":help options", 0);
-        await sendVSCodeKeys("\n", 0);
+        await sendVSCodeKeysAtomic(":help options");
+        await wait(1000);
+        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
         await wait(2000);
 
         const text2 = vscode.window.activeTextEditor!.document.getText();
@@ -57,16 +60,14 @@ describe("Neovim external buffers", () => {
         await vscode.window.showTextDocument(doc);
         await wait();
 
-        await sendVSCodeKeys(":help local-options", 0);
-        await sendVSCodeKeys("\n", 0);
-        await wait(2000);
+        await sendVSCodeKeysAtomic(":help local-options");
+        await wait(1000);
+        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
+        await wait(3000);
 
-        await assertContent(
-            {
-                // todo: col positions are not correct, but seems not a big issue for now
-                cursorLine: 186,
-            },
-            client,
-        );
+        const vscodeCursor = getVScodeCursor();
+        const neovimCursor = await getNeovimCursor(client);
+        assert.ok(vscodeCursor[0] >= 185 && vscodeCursor[0] <= 187);
+        assert.ok(neovimCursor[0] >= 185 && neovimCursor[0] <= 187);
     });
 });

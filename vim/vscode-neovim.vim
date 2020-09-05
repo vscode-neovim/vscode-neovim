@@ -100,28 +100,11 @@ function! VSCodeGetRegister(reg)
     return getreg(a:reg)
 endfunction
 
-function! VSCodeClearJumpIfFirstWin()
-    let currWin = nvim_get_current_win()
-    if currWin == g:vscode_primary_win && w:vscode_clearjump
-        let w:vscode_clearjump = 0
-        clearjumps
-    endif
-endfunction
-
-function! VSCodeStoreJumpForWin(winId)
-    " Seems causing troubles
-    " let currWin = nvim_get_current_win()
-    " if currWin != a:winId
-    "     call nvim_set_current_win(a:winId)
-    " endif
-    exe "normal! m'"
-    " if currWin != a:winId
-    "     call nvim_set_current_win(currWin)
-    " endif
-endfunction
-
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
+    if exists('b:vscode_temp') && b:vscode_temp
+        return
+    endif
     set conceallevel=0
     let tabstop = &tabstop
     let isJumping = 0
@@ -131,17 +114,12 @@ function! s:onBufEnter(name, id)
     call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop, isJumping)
 endfunction
 
-function! s:onWinEnter()
-    if exists("w:vscode_clearjump") && w:vscode_clearjump
-        let w:vscode_clearjump = 0
-        clearjumps
-    endif
-endfunction
-
 function! s:runFileTypeDetection()
     doautocmd BufRead
-    " make sure we disable syntax (global option seems doesn't take effect for 2nd+ windows)
-    set syntax=off
+    if exists('b:vscode_controlled') && b:vscode_controlled
+        " make sure we disable syntax (global option seems doesn't take effect for 2nd+ windows)
+        setlocal syntax=off
+    endif
 endfunction
 
 function! s:onInsertEnter()
@@ -162,12 +140,14 @@ execute 'source ' . s:currDir . '/vscode-file-commands.vim'
 execute 'source ' . s:currDir . '/vscode-tab-commands.vim'
 execute 'source ' . s:currDir . '/vscode-window-commands.vim'
 
-" autocmd BufWinEnter,WinNew,WinEnter * :only
-autocmd BufEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
-" Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
-autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
-autocmd WinEnter * call <SID>onWinEnter()
-autocmd InsertEnter * call <SID>onInsertEnter()
-autocmd BufAdd * call <SID>runFileTypeDetection()
-" Looks like external windows are coming with "set wrap" set automatically, disable them
-autocmd WinNew,WinEnter * :set nowrap
+augroup VscodeGeneral
+    autocmd!
+    " autocmd BufWinEnter,WinNew,WinEnter * :only
+    autocmd BufWinEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
+    " Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
+    " autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
+    autocmd InsertEnter * call <SID>onInsertEnter()
+    autocmd BufAdd * call <SID>runFileTypeDetection()
+    " Looks like external windows are coming with "set wrap" set automatically, disable them
+    " autocmd WinNew,WinEnter * :set nowrap
+augroup END

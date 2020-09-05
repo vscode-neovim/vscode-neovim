@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { NVIMPluginController } from "./controller";
+import { MainController } from "./main_controller";
 import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME } from "./utils";
 
 // this method is called when your extension is activated
@@ -22,11 +22,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useWsl = settings.get("useWSL", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
     const customInit = getNeovimInitPath() ?? "";
+    const logPath = settings.get("logPath", "");
+    const logLevel = settings.get("logLevel", "none");
+    const outputToConsole = settings.get("logOutputToConsole", false);
 
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
 
-    const plugin = new NVIMPluginController({
+    const plugin = new MainController({
         customInitFile: customInit,
         extensionPath: context.extensionPath,
         highlightsConfiguration: {
@@ -40,6 +43,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         neovimViewportHeight: 201,
         useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
         neovimViewportWidth: neovimWidth,
+        logConf: {
+            logPath,
+            outputToConsole,
+            level: logLevel,
+        },
     });
     context.subscriptions.push(plugin);
     await plugin.init();

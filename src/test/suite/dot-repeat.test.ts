@@ -531,4 +531,39 @@ describe("Dot-repeat", () => {
             client,
         );
     });
+
+    it("With o and undo", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["test1", "test2", "test3"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("o\n\n\n");
+        await sendEscapeKey();
+
+        await sendVSCodeKeys("j.");
+        await assertContent(
+            {
+                content: ["test1", "", "", "", "", "test2", "", "", "", "", "test3"],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("u");
+        await assertContent(
+            {
+                content: ["test1", "", "", "", "", "test2", "test3"],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("u");
+        await assertContent(
+            {
+                content: ["test1", "test2", "test3"],
+            },
+            client,
+        );
+    });
 });

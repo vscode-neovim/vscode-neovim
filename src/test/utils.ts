@@ -136,6 +136,11 @@ export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<v
     }
 }
 
+export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTimeout = 1000): Promise<void> {
+    await client.input(keys);
+    await wait(waitTimeout);
+}
+
 export async function sendVSCodeKeysAtomic(keys: string, waitTimeout = 200): Promise<void> {
     await commands.executeCommand("type", { text: keys });
     await wait(waitTimeout);

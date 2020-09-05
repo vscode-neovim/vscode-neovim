@@ -26,7 +26,7 @@ describe("Macros", () => {
         await closeAllActiveEditors();
     });
 
-    it("Macros works", async () => {
+    it("Macros work", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["a1", "b2", "c3"].join("\n"),
         });
@@ -125,6 +125,56 @@ describe("Macros", () => {
             {
                 content: ["a1", "b", "c"],
                 cursor: [0, 1],
+            },
+            client,
+        );
+    });
+
+    it("Macros with o/O", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["a", "b", "c"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+        await sendVSCodeKeys("qa");
+        await sendVSCodeKeys("otest");
+        await sendEscapeKey();
+        await sendVSCodeKeys("q");
+
+        await assertContent(
+            {
+                content: ["a", "test", "b", "c"],
+                cursor: [1, 3],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("2@a");
+        await assertContent(
+            {
+                content: ["a", "test", "test", "test", "b", "c"],
+                cursor: [3, 3],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("qa");
+        await sendVSCodeKeys("Oblah");
+        await sendEscapeKey();
+        await sendVSCodeKeys("q");
+        await assertContent(
+            {
+                content: ["a", "test", "test", "blah", "test", "b", "c"],
+                cursor: [3, 3],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("2@a");
+        await assertContent(
+            {
+                content: ["a", "test", "test", "blah", "blah", "blah", "test", "b", "c"],
+                cursor: [3, 3],
             },
             client,
         );

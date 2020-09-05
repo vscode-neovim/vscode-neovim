@@ -38,6 +38,7 @@ export class CommandLineController implements Disposable {
         this.disposables.push(this.input.onDidAccept(this.onAccept));
         this.disposables.push(this.input.onDidChangeValue(this.onChange));
         this.disposables.push(this.input.onDidHide(this.onHide));
+        this.disposables.push(commands.registerCommand("vscode-neovim.commit-cmdline", this.onAccept));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-word-left-cmdline", this.deleteWord));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-all-cmdline", this.deleteAll));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-char-left-cmdline", this.deleteChar));
@@ -114,7 +115,19 @@ export class CommandLineController implements Disposable {
             this.input.items = [];
             this.completionItems = [];
         }
-        const useCompletion = mode === ":" && e.charAt(0) !== "?" && e.charAt(0) !== "/";
+        const useCompletion =
+            mode === ":" &&
+            e.charAt(0) !== "?" &&
+            e.charAt(0) !== "/" &&
+            !e.includes("s/") &&
+            !e.includes("substitute/") &&
+            !e.includes("g/") &&
+            !e.includes("global/") &&
+            !e.includes("v/") &&
+            !e.includes("vglobal/");
+        if (!useCompletion) {
+            this.cancelCompletions();
+        }
         this.callbacks.onChanged(e, useCompletion);
     };
 
@@ -136,6 +149,14 @@ export class CommandLineController implements Disposable {
             this.input.items = this.completionItems;
         }
         this.completionTimer = undefined;
+    };
+
+    private cancelCompletions = (): void => {
+        if (this.completionTimer) {
+            clearTimeout(this.completionTimer);
+            this.completionTimer = undefined;
+        }
+        this.input.items = [];
     };
 
     private getTitle(modeOrPrompt: string): string {

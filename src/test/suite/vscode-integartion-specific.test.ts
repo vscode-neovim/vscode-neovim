@@ -15,6 +15,8 @@ import {
     closeAllActiveEditors,
     sendEscapeKey,
     closeNvimClient,
+    getVScodeCursor,
+    sendVSCodeKeysAtomic,
 } from "../utils";
 
 describe("VSCode integration specific stuff", () => {
@@ -59,8 +61,10 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
         await setCursor(2, 1);
+        await wait(1000);
 
         await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc.uri, new vscode.Position(2, 1));
+        await wait(2000);
 
         await assertContent(
             {
@@ -100,7 +104,7 @@ describe("VSCode integration specific stuff", () => {
         await wait(1500);
 
         let visibleRange = editor.visibleRanges[0];
-        assert.equal(editor.selection.active.line, visibleRange.start.line);
+        assert.strictEqual(editor.selection.active.line, visibleRange.start.line);
         await assertContent(
             {
                 cursor: [editor.visibleRanges[0].start.line, 0],
@@ -110,10 +114,11 @@ describe("VSCode integration specific stuff", () => {
 
         await sendVSCodeKeys("L", 1500);
         visibleRange = editor.visibleRanges[0];
-        assert.equal(editor.selection.active.line, visibleRange.end.line);
+        const cursor = getVScodeCursor(editor);
+        assert.ok(cursor[0] <= visibleRange.end.line && cursor[0] >= visibleRange.end.line - 1);
         await assertContent(
             {
-                cursor: [editor.visibleRanges[0].end.line, 0],
+                cursor,
             },
             client,
         );
@@ -153,8 +158,7 @@ describe("VSCode integration specific stuff", () => {
 
         await assertContent(
             {
-                // todo: should be [4, 16]
-                cursor: [4, 0],
+                cursor: [4, 16],
                 content: [
                     'export const a = "blah";',
                     "",
@@ -240,7 +244,11 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("gg5j", 0);
         await wait(1000);
 
-        await vscode.commands.executeCommand("editor.action.revealDefinition", doc1.uri, new vscode.Position(5, 1));
+        await vscode.commands.executeCommand(
+            "editor.action.revealDefinitionAside",
+            doc1.uri,
+            new vscode.Position(5, 1),
+        );
         await wait(1500);
 
         await assertContent(
@@ -310,8 +318,10 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc);
         await wait(1000);
 
-        await sendVSCodeKeys(":e " + filePath, 0);
-        await sendVSCodeKeys("\n", 2000);
+        await sendVSCodeKeysAtomic(":e " + filePath);
+        await wait(1000);
+        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
+        await wait(1000);
 
         await assertContent(
             {
@@ -349,5 +359,15 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
         await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
+    });
+
+    it("Filetype detection", async () => {
+        const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/bb.ts"));
+        await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        await wait(1500);
+
+        const buf = await client.buffer;
+        const type = await client.request("nvim_buf_get_option", [buf.id, "filetype"]);
+        assert.strictEqual("typescript", type);
     });
 });

@@ -251,17 +251,23 @@ export class HighlightProvider {
         start: number,
         external: boolean,
         cells: [string, number?, number?][],
-    ): void {
+        line: string,
+    ): boolean {
         let cellHlId = 0;
         let cellIdx = start;
         if (!this.highlights.has(grid)) {
             this.highlights.set(grid, []);
         }
         const gridHl = this.highlights.get(grid)!;
+        let hasUpdates = false;
 
         for (const [text, hlId, repeat] of cells) {
             // 2+bytes chars (such as chinese characters) have "" as second cell
             if (text === "") {
+                continue;
+            }
+            // tab fill character
+            if (text === "♥") {
                 continue;
             }
             if (hlId != null) {
@@ -269,29 +275,36 @@ export class HighlightProvider {
             }
             const groupName = this.getHighlightGroupName(cellHlId, external);
             // end of the line - clean and exit
-            if (text === "$" && (groupName === "NonText" || this.highlightIdToGroupName.get(cellHlId) === "NonText")) {
+            if (cellIdx >= line.length - 1) {
                 if (cellIdx === 0) {
                     delete gridHl[row];
                 } else if (gridHl[row]) {
-                    gridHl[row].splice(cellIdx);
+                    gridHl[row][cellIdx] = cellHlId;
+                    gridHl[row].splice(cellIdx + 1);
                 }
                 break;
             }
-            for (let i = 0; i < (repeat || 1); i++) {
+            const repeatTo = text === "\t" || text === "❥" ? 1 : repeat || 1;
+            // const repeatTo =
+            //     text === "\t" || line[cellIdx] === "\t" ? Math.ceil((repeat || tabSize) / tabSize) : repeat || 1;
+            for (let i = 0; i < repeatTo; i++) {
                 if (!gridHl[row]) {
                     gridHl[row] = [];
                 }
                 if (groupName) {
+                    hasUpdates = true;
                     gridHl[row][cellIdx] = cellHlId;
-                } else {
+                } else if (gridHl[row][cellIdx]) {
+                    hasUpdates = true;
                     delete gridHl[row][cellIdx];
                 }
                 cellIdx++;
             }
         }
+        return hasUpdates;
     }
 
-    public shiftGridHighlights(grid: number, by: number): void {
+    public shiftGridHighlights(grid: number, by: number, from: number): void {
         const gridHl = this.highlights.get(grid);
         if (!gridHl) {
             return;
@@ -299,7 +312,7 @@ export class HighlightProvider {
         if (by > 0) {
             // remove clipped out rows
             for (let i = 0; i < by; i++) {
-                delete gridHl[i];
+                delete gridHl[from + i];
             }
             // first get non empty indexes, then process, seems faster than iterating whole array
             const idxs: number[] = [];
@@ -308,19 +321,25 @@ export class HighlightProvider {
             });
             // shift
             for (const idx of idxs) {
+                if (idx <= from) {
+                    continue;
+                }
                 gridHl[idx - by] = gridHl[idx];
                 delete gridHl[idx];
             }
         } else if (by < 0) {
             // remove clipped out rows
             for (let i = 0; i < Math.abs(by); i++) {
-                delete gridHl[gridHl.length - 1 - i];
+                delete gridHl[from !== 0 ? from + i : gridHl.length - 1 - i];
             }
             const idxs: number[] = [];
             gridHl.forEach((_row, idx) => {
                 idxs.push(idx);
             });
             for (const idx of idxs.reverse()) {
+                if (idx <= from) {
+                    continue;
+                }
                 gridHl[idx + Math.abs(by)] = gridHl[idx];
                 delete gridHl[idx];
             }
@@ -413,6 +432,23 @@ export class HighlightProvider {
             }
         }
         this.prevGridHighlightsIds.set(grid, new Set(hlRanges.keys()));
+        return result;
+    }
+
+    public clearHighlights(grid: number): [TextEditorDecorationType, Range[]][] {
+        const prevHighlights = this.prevGridHighlightsIds.get(grid);
+        this.highlights.delete(grid);
+        this.prevGridHighlightsIds.delete(grid);
+        if (!prevHighlights) {
+            return [];
+        }
+        const result: [TextEditorDecorationType, Range[]][] = [];
+        for (const groupName of prevHighlights) {
+            const decorator = this.getDecoratorForHighlightGroup(groupName);
+            if (decorator) {
+                result.push([decorator, []]);
+            }
+        }
         return result;
     }
 
