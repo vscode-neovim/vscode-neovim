@@ -1,8 +1,21 @@
 # Change Log
 
-## [0.0.53]
+## [0.0.60]
+
+Started from this version `neovim 0.5` nightly version is required
+Many things have been refactored/changed internally in this release. So if you see any regression - please fill an issue
 
 -   Turn on VIM smartindenting/autoindenting and remove custom vscode bindings to `o`/`O` (so it uses VIM ones)
+-   New buffer/window management. This makes the extension finally work with git diff view, peek views, search editor views and even in output channels! ( #53 , #187 , #220 , #223, #226)
+-   Implement multi-line messages pager. Things like `:registers`, `:changes`, `:jumps`, `:messages` are working correctly now ( #202 , #78 , #296 )
+-   Fix tab indent problems and sync vscode tab settings with neovim ( #275 , #239 , #264 , #167 , #100 , #152 , #289 )
+-   Fix few macro recording problems ( #207 )
+-   Fix adding keys after exiting insert mode ( #324 )
+-   Fix few command line problems ( #155 , #288 )
+-   Fix some buffer desync issues ( #312 )
+-   Fix `<C-w>v/<C-w>s` split shortcuts ( #331 )
+-   Fix brackets for substitute command ( #300 )
+-   Add logger and log-related configuration to options
 
 ## [0.0.52]
 
