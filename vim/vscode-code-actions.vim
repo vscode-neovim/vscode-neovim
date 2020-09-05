@@ -24,10 +24,10 @@ function! s:vscodeCommentary(...) abort
     call VSCodeCallRange("editor.action.commentLine", line1, line2, 0)
 endfunction
 
-function! s:vscodeGoToDefinition()
+function! s:vscodeGoToDefinition(str)
     if exists('b:vscode_controlled') && b:vscode_controlled
         exe "normal! m'"
-        call VSCodeNotify("editor.action.revealDefinition")
+        call VSCodeNotify("editor.action.reveal" . a:str)
     else
         " Allow to funcionar in help files
         exe "normal! \<C-]>"
@@ -65,26 +65,29 @@ nnoremap <expr> = <SID>vscodeFormat()
 nnoremap <expr> == <SID>vscodeFormat() . '_'
 
 " gf/gF . Map to go to definition for now
-nnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition()<CR>
-nnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition()<CR>
 nnoremap <silent> gh :<C-u>call VSCodeNotify('editor.action.showHover')<CR>
-nnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition()<CR>
-nnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
+nnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition("Declaration")<CR>
+nnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
+nnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
+nnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDeclaration')<CR>
 nnoremap <silent> gD :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
+nnoremap <silent> gH :<C-u>call VSCodeNotify('editor.action.referenceSearch.trigger')<CR>
 
-xnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition()<CR>
-xnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition()<CR>
 xnoremap <silent> gh :<C-u>call <SID>hover()<CR>
-xnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition()<CR>
-xnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
+xnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition("Declaration")<CR>
+xnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
+xnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
+xnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDeclaration')<CR>
 xnoremap <silent> gD :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
+xnoremap <silent> gH :<C-u>call VSCodeNotify('editor.action.referenceSearch.trigger')<CR>
+
 " <C-w> gf opens definition on the side
-nnoremap <silent> <C-w>gf :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
+nnoremap <silent> <C-w>gf :<C-u>call VSCodeNotify('editor.action.revealDeclarationAside')<CR>
 nnoremap <silent> <C-w>gd :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
-nnoremap <silent> <C-w>gF :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
-xnoremap <silent> <C-w>gf :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
+nnoremap <silent> <C-w>gF :<C-u>call VSCodeNotify('editor.action.revealDeclarationAside')<CR>
+xnoremap <silent> <C-w>gf :<C-u>call VSCodeNotify('editor.action.revealDeclarationAside')<CR>
 xnoremap <silent> <C-w>gd :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
-xnoremap <silent> <C-w>gF :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
+xnoremap <silent> <C-w>gF :<C-u>call VSCodeNotify('editor.action.revealDeclarationAside')<CR>
 
 " Bind C-/ to vscode commentary since calling from vscode produces double comments due to multiple cursors
 xnoremap <expr> <C-/> <SID>vscodeCommentary()
