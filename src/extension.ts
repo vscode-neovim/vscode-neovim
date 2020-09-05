@@ -22,6 +22,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useWsl = settings.get("useWSL", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
     const customInit = getNeovimInitPath() ?? "";
+    const logPath = settings.get("logPath", "");
+    const logLevel = settings.get("logLevel", "none");
+    const outputToConsole = settings.get("logOutputToConsole", false);
 
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
@@ -40,6 +43,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         neovimViewportHeight: 201,
         useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
         neovimViewportWidth: neovimWidth,
+        logConf: {
+            logPath,
+            outputToConsole,
+            level: logLevel,
+        },
     });
     context.subscriptions.push(plugin);
     await plugin.init();

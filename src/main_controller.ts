@@ -40,6 +40,11 @@ export interface ControllerSettings {
     customInitFile: string;
     neovimViewportWidth: number;
     neovimViewportHeight: number;
+    logConf: {
+        level: "none" | "error" | "warn" | "debug";
+        logPath: string;
+        outputToConsole: boolean;
+    };
 }
 
 const LOG_PREFIX = "MainController";
@@ -83,7 +88,11 @@ export class MainController implements vscode.Disposable {
         if (!settings.neovimPath) {
             throw new Error("Neovim path is not defined");
         }
-        this.logger = new Logger(LogLevel.debug, "/tmp/test.txt", true);
+        this.logger = new Logger(
+            LogLevel[settings.logConf.level],
+            settings.logConf.logPath,
+            settings.logConf.outputToConsole,
+        );
         this.disposables.push(this.logger);
 
         const neovimSupportScriptPath = path.join(settings.extensionPath, "vim", "vscode-neovim.vim");

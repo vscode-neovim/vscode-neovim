@@ -112,6 +112,27 @@
                     "default": false,
                     "markdownDescription": "Use neovim installed in WSL. If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting"
                 },
+                "vscode-neovim.logPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Log file path"
+                },
+                "vscode-neovim.logLevel": {
+                    "type": "string",
+                    "default": "none",
+                    "enum": [
+                        "none",
+                        "error",
+                        "warn",
+                        "debug"
+                    ],
+                    "description": "Log Level"
+                },
+                "vscode-neovim.logOutputToConsole": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When on, print log messages to vscode developer console (not output channel!)"
+                },
                 "vscode-neovim.highlightGroups.ignoreHighlights": {
                     "type": "array",
                     "title": "Ignore Highlighs Groups",
