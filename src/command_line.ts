@@ -206,6 +206,7 @@ export class CommandLineController implements Disposable {
         const res = await this.neovimClient.callFunction("getcmdline", []);
         if (res) {
             this.input.value = res;
+            this.input.show();
         }
     };
 
@@ -214,6 +215,7 @@ export class CommandLineController implements Disposable {
         const res = await this.neovimClient.callFunction("getcmdline", []);
         if (res) {
             this.input.value = res;
+            this.input.show();
         }
     };
 }
