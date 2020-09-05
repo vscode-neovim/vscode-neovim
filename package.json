@@ -2,6 +2,7 @@
     "name": "vscode-neovim",
     "displayName": "Neo Vim",
     "description": "Real VIM in your Visual Studio Code",
+	"icon": "images/icon.png",
     "publisher": "asvetliakov",
     "extensionKind": [
         "ui"
