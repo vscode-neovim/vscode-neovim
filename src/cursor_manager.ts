@@ -142,8 +142,12 @@ export class CursorManager
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
             const docPromises = this.changeManager.getDocumentChangeCompletionLock(editor.document);
             if (docPromises) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Waiting for document change completion before setting the cursor, winId: ${winId}`,
+                );
                 docPromises.then(() => {
                     try {
+                        this.logger.debug(`${LOG_PREFIX}: Waiting document change completion done, winId: ${winId}`);
                         const finalCol = calculateEditorColFromVimScreenCol(
                             editor.document.lineAt(cursorPos.line).text,
                             cursorPos.col,
@@ -159,6 +163,7 @@ export class CursorManager
                 });
             } else {
                 // !Sync call helps with most common operations latency
+                this.logger.debug(`${LOG_PREFIX}: No pending document changes, winId: ${winId}`);
                 try {
                     const finalCol = calculateEditorColFromVimScreenCol(
                         editor.document.lineAt(cursorPos.line).text,
