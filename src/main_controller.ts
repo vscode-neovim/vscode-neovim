@@ -95,10 +95,14 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.logger);
 
-        let extensionPath = settings.extensionPath;
-        if (settings.useWsl) {
-            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath ${extensionPath}`).toString();
-        }
+        // https://github.com/asvetliakov/vscode-neovim/issues/147
+        // let extensionPath = settings.extensionPath;
+        // if (settings.useWsl) {
+        //     extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath ${extensionPath}`).toString();
+        // }
+
+        // const neovimSupportScriptPath = path.join(extensionPath, "vim", "vscode-neovim.vim");
+        // const neovimOptionScriptPath = path.join(extensionPath, "vim", "vscode-options.vim");
 
         const neovimSupportScriptPath = path.join(settings.extensionPath, "vim", "vscode-neovim.vim");
         const neovimOptionScriptPath = path.join(settings.extensionPath, "vim", "vscode-options.vim");
@@ -108,10 +112,12 @@ export class MainController implements vscode.Disposable {
             "--embed",
             // load options after user config
             "-c",
-            `source ${neovimOptionScriptPath}`,
+            settings.useWsl ? `source $(wslpath '${neovimOptionScriptPath}')` : `source ${neovimOptionScriptPath}`,
+            // `source ${neovimOptionScriptPath}`,
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
-            `source ${neovimSupportScriptPath}`,
+            settings.useWsl ? `source $(wslpath '${neovimSupportScriptPath}')` : `source ${neovimSupportScriptPath}`,
+            // `source ${neovimSupportScriptPath}`,
         ];
         if (settings.useWsl) {
             args.unshift(settings.neovimPath);
