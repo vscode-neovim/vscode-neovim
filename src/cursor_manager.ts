@@ -353,6 +353,12 @@ export class CursorManager
         this.logger.debug(
             `${LOG_PREFIX}: Updating cursor in editor, viewColumn: ${editor.viewColumn}, pos: [${newLine}, ${newCol}]`,
         );
+        if (editor !== window.activeTextEditor) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Editor, viewColumn: ${editor.viewColumn} is not active text editor, skipping cursor setting`,
+            );
+            return;
+        }
         const visibleRange = editor.visibleRanges[0];
         const revealCursor = new Selection(newLine, newCol, newLine, newCol);
         // if (!this.neovimCursorUpdates.has(editor)) {
