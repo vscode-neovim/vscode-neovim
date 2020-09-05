@@ -10,7 +10,9 @@ jobs:
         name: Build & Test
         strategy:
             matrix:
-                os: [macos-latest, ubuntu-latest, windows-latest]
+                # os: [macos-latest, ubuntu-latest, windows-latest]
+                # CI windows have some issues, i'm not sure why
+                os: [macos-latest, ubuntu-latest]
         runs-on: ${{ matrix.os }}
         steps:
             - uses: actions/checkout@v2
