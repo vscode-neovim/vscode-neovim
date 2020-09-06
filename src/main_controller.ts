@@ -160,6 +160,14 @@ export class MainController implements vscode.Disposable {
 
     public async init(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: Init`);
+
+        this.logger.debug(`${LOG_PREFIX}: Attaching to neovim notifications`);
+        this.client.on("disconnect", () => {
+            this.logger.error(`${LOG_PREFIX}: Neovim was disconnected`);
+        });
+        this.client.on("notification", this.onNeovimNotification);
+        this.client.on("request", this.handleCustomRequest);
+
         await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
         await this.checkNeovimVersion();
         const channel = await this.client.channelId;
@@ -212,13 +220,6 @@ export class MainController implements vscode.Disposable {
 
         this.multilineMessagesManager = new MutlilineMessagesManager(this.logger);
         this.disposables.push(this.multilineMessagesManager);
-
-        this.logger.debug(`${LOG_PREFIX}: Attaching to neovim notifications`);
-        this.client.on("disconnect", () => {
-            this.logger.error(`${LOG_PREFIX}: Neovim was disconnected`);
-        });
-        this.client.on("notification", this.onNeovimNotification);
-        this.client.on("request", this.handleCustomRequest);
 
         this.logger.debug(`${LOG_PREFIX}: UIAttach`);
         // !Attach after setup of notifications, otherwise we can get blocking call and stuck
