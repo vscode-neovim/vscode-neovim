@@ -49,9 +49,12 @@ Neovim 0.4.2 or greater
 -   It's possible to call vscode commands from neovim. See `VSCodeCall/VSCodeNotify` vim functions in `vscode-neovim.vim` file. `VSCodeCall` is blocking request, while `VSCodeNotify` is not (see below)
 -   Scrolling is done by VSCode side. `<C-d>/<C-u>/etc...` are slighly different
 -   File management commands such as `e` / `w` / `q` etc are mapped to corresponding vscode commands and behavior may be different (see below)
--   `gf`/`gd`/`<C-]` are mapped to `editor.action.revealDefinition` (Shortcut `F12`). also `<C-]>` works in vim helps files
--   `gF`/`gD` are mapped to `editor.action.peekDefinition` (opens definition in peek)
--   `<C-w>gF`/`<C-w>gf`/`<C-w>gd` are mapped to `editor.action.revealDefinitionAside` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slighlty different thing here)
+-   `gd`/`<C-]` are mapped to `editor.action.revealDefinition` (Shortcut `F12`), also `<C-]>` works in vim help files
+-   `gf` is mapped to `editor.action.revealDeclaration`
+-   `gH` is mapped to `editor.action.referenceSearch.trigger`
+-   `gD`/`gF` are mapped to `editor.action.peekDefinition` and `editor.action.peekDeclaration` respectively (opens in peek)
+-   `<C-w>gd`/`<C-w>gf` are mapped to `editor.action.revealDefinitionAside` and `editor.action.revealDeclarationAside` respectively (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slightly different thing here)
+-   `gh` is mapped to `editor.action.showHover`
 -   Dot-repeat (`.`) . Works starting from `0.0.52` version. Moving cursor within a change range won't break the repeat sequence. I.e. in neovim, if you type `abc<cursor>` in insert mode then move cursor to `a<cursor>bc` and type `1` here the repeat sequence would be `1`. However in vscode it would be `a1bc`. Another difference that `.` repeat command when you delete some text only works from right-to-left. I.e. it will treat `<Del>` key as `<BS>` keys for dot repeat.
 -   Outline navigation doesn't create jumpoints
 
