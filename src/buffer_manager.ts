@@ -498,13 +498,13 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.logger.warn(`${LOG_PREFIX}: No buffer for onDidChangeEditorOptions, skipping`);
             return;
         }
-        this.logger.debug(`${LOG_PREFIX}: Updating tab options for bufferId: ${bufId}`);
         const prevOptions = this.editorTabConfiguration.get(e.textEditor);
         if (
             !prevOptions ||
             prevOptions.insertSpaces !== e.options.insertSpaces ||
             prevOptions.tabSize !== e.options.tabSize
         ) {
+            this.logger.debug(`${LOG_PREFIX}: Updating tab options for bufferId: ${bufId}`);
             this.editorTabConfiguration.set(e.textEditor, {
                 insertSpaces: e.options.insertSpaces as boolean,
                 tabSize: e.options.tabSize as number,

@@ -13,9 +13,10 @@ import {
     setSelection,
     copyVSCodeSelection,
     pasteVSCode,
+    sendVSCodeKeysAtomic,
 } from "../utils";
 
-describe("Insert mode and buffer syncronization", () => {
+describe.only("Insert mode and buffer syncronization", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
@@ -454,6 +455,28 @@ describe("Insert mode and buffer syncronization", () => {
             {
                 cursor: [0, 13],
                 content: ["blah1aaa blah2"],
+            },
+            client,
+        );
+    });
+
+    it("Insert mode racing with document changes", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["blah1 blah2 blah3"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("ee");
+        await assertContent({ cursor: [0, 10] }, client);
+
+        await sendVSCodeKeysAtomic("ciwtest", 1000);
+
+        await assertContent(
+            {
+                mode: "i",
+                content: ["blah1 test blah3"],
+                cursor: [0, 10],
             },
             client,
         );
