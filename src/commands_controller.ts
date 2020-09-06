@@ -2,6 +2,7 @@ import vscode, { Disposable } from "vscode";
 import { NeovimClient } from "neovim";
 
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
+import { EXT_NAME } from "./utils";
 
 export class CommandsController implements Disposable, NeovimExtensionRequestProcessable {
     private client: NeovimClient;
@@ -108,7 +109,9 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     };
 
     private scrollLine = (to: "up" | "down"): void => {
-        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: false });
+        const settings = vscode.workspace.getConfiguration(EXT_NAME);
+        const revealCursorScrollLine = settings.get("revealCursorScrollLine");
+        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: revealCursorScrollLine });
     };
 
     private goToLine = (to: "top" | "middle" | "bottom"): void => {
