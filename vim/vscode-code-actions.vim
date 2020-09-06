@@ -34,6 +34,11 @@ function! s:vscodeGoToDefinition(str)
     endif
 endfunction
 
+function! s:vscodeNotifyWithMark(command)
+  normal! m'
+  call VSCodeNotify(a:command)
+endfunction
+
 function! s:hover()
   normal! gv
   call VSCodeNotify('editor.action.showHover')
@@ -70,7 +75,7 @@ nnoremap <silent> gh :<C-u>call VSCodeNotify('editor.action.showHover')<CR>
 nnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition("Declaration")<CR>
 nnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
 nnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
-nnoremap <silent> gO :<C-u>call VSCodeNotify('workbench.action.gotoSymbol')<CR>
+nnoremap <silent> gO :<C-u>call <SID>vscodeNotifyWithMark('workbench.action.gotoSymbol')<CR>
 nnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDeclaration')<CR>
 nnoremap <silent> gD :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
 nnoremap <silent> gH :<C-u>call VSCodeNotify('editor.action.referenceSearch.trigger')<CR>
