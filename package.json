@@ -120,7 +120,7 @@
                 },
                 "vscode-neovim.logLevel": {
                     "type": "string",
-                    "default": "none",
+                    "default": "error",
                     "enum": [
                         "none",
                         "error",

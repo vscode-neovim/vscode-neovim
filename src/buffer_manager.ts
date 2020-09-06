@@ -102,10 +102,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public forceResync(): void {
+    public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
-        this.onDidChangeVisibleTextEditors();
-        this.onDidChangeActiveTextEditor();
+        await this.syncLayout();
+        await this.syncActiveEditor();
     }
 
     public async waitForLayoutSync(): Promise<void> {
@@ -300,200 +300,196 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!this.changeLayoutPromise) {
             this.changeLayoutPromise = new Promise((res) => (this.changeLayoutPromiseResolve = res));
         }
-        this.syncLayout();
+        this.syncLayoutDebounced();
     };
 
     private onDidChangeActiveTextEditor = (): void => {
         this.logger.debug(`${LOG_PREFIX}: onDidChangeActiveTextEditor`);
-        this.syncActiveEditor();
+        this.syncActiveEditorDebounced();
+    };
+
+    private syncLayout = async (): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX}: syncing layout`);
+        // store in copy, just in case
+        const currentVisibleEditors = [...window.visibleTextEditors];
+        const prevVisibleEditors = this.openedEditors;
+        // ! need to:
+        // ! 1. Switch editors in neovim windows if vscode editor column was changed
+        // ! 2. Delete any closed editor column in neovim
+
+        const nvimRequests: [string, unknown[]][] = [];
+        // Open/change neovim windows
+        this.logger.debug(`${LOG_PREFIX}: new/changed editors/windows`);
+        // store currently visible viewColumns, doesn't include undefined viewColumns
+        const keepViewColumns: Set<number> = new Set();
+        for (const visibleEditor of currentVisibleEditors) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Visible editor, viewColumn: ${
+                    visibleEditor.viewColumn
+                }, doc: ${visibleEditor.document.uri.toString()}`,
+            );
+            // create buffer first if not known to the system
+            // creating initially not listed buffer to prevent firing autocmd events when
+            // buffer name/lines are not yet set. We'll set buflisted after setup
+            if (!this.textDocumentToBufferId.has(visibleEditor.document)) {
+                this.logger.debug(`${LOG_PREFIX}: Document not known, init in neovim`);
+                const buf = await this.client.createBuffer(false, true);
+                if (typeof buf === "number") {
+                    this.logger.error(`${LOG_PREFIX}: Cannot create a buffer, code: ${buf}`);
+                    continue;
+                }
+                await this.initBufferForDocument(visibleEditor.document, buf, visibleEditor);
+
+                this.logger.debug(
+                    `${LOG_PREFIX}: Document: ${visibleEditor.document.uri.toString()}, BufId: ${buf.id}`,
+                );
+                this.textDocumentToBufferId.set(visibleEditor.document, buf.id);
+            }
+            // editor wasn't changed, skip
+            // !Note always sync opened editors, it doesn't hurt and and solves the curious problem when there are
+            // !few visible editors with same viewColumn (happens when you open search editor, when jump to a file from it)
+            // if (prevVisibleEditors.includes(visibleEditor)) {
+            //     this.logger.debug(`${LOG_PREFIX}: Editor wasn't changed, skip`);
+            //     if (visibleEditor.viewColumn) {
+            //         keepViewColumns.add(visibleEditor.viewColumn);
+            //     }
+            //     continue;
+            // }
+            const editorBufferId = this.textDocumentToBufferId.get(visibleEditor.document)!;
+            let winId: number | undefined;
+            try {
+                // System editor, like peek view, search results, etc, has undefined viewColumn and we should always create new window for it
+                if (
+                    (!visibleEditor.viewColumn && !this.noColumnEditorsToWinId.has(visibleEditor)) ||
+                    (visibleEditor.viewColumn && !this.editorColumnsToWinId.has(visibleEditor.viewColumn))
+                ) {
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Creating new neovim window for ${visibleEditor.viewColumn} column (undefined is OK here)`,
+                    );
+                    winId = await this.createNeovimWindow();
+                    this.logger.debug(`${LOG_PREFIX}: Created new window: ${winId}`);
+                    if (visibleEditor.viewColumn) {
+                        this.editorColumnsToWinId.set(visibleEditor.viewColumn, winId);
+                    } else {
+                        this.noColumnEditorsToWinId.set(visibleEditor, winId);
+                    }
+                    this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
+                } else {
+                    winId = visibleEditor.viewColumn
+                        ? this.editorColumnsToWinId.get(visibleEditor.viewColumn)
+                        : this.noColumnEditorsToWinId.get(visibleEditor);
+                    this.logger.debug(`${LOG_PREFIX}: Using existing window: ${winId}`);
+                }
+
+                if (!winId) {
+                    throw new Error("Invalid neovim window for editor");
+                }
+                this.winIdToEditor.set(winId, visibleEditor);
+
+                if (visibleEditor.viewColumn) {
+                    keepViewColumns.add(visibleEditor.viewColumn);
+                }
+
+                const cursor = getNeovimCursorPosFromEditor(visibleEditor);
+                this.logger.debug(
+                    `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
+                );
+
+                nvimRequests.push(
+                    ["nvim_win_set_buf", [winId, editorBufferId]],
+                    ["nvim_win_set_cursor", [winId, getNeovimCursorPosFromEditor(visibleEditor)]],
+                );
+            } catch (e) {
+                this.logger.error(`${LOG_PREFIX}: ${e.message}`);
+                continue;
+            }
+        }
+
+        this.logger.debug(`${LOG_PREFIX}: Closing non visible editors`);
+        // close any non visible neovim windows
+        for (const prevVisibleEditor of prevVisibleEditors) {
+            // still visible, skip
+            if (currentVisibleEditors.includes(prevVisibleEditor)) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, visibility hasn't changed, skip`,
+                );
+                continue;
+            }
+            const document = prevVisibleEditor.document;
+            if (!currentVisibleEditors.find((e) => e.document === document) && document.isClosed) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
+                        document,
+                    )}`,
+                );
+                const bufId = this.textDocumentToBufferId.get(document);
+                this.textDocumentToBufferId.delete(document);
+                if (bufId) {
+                    nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
+                }
+            }
+            if (!prevVisibleEditor.viewColumn || !keepViewColumns.has(prevVisibleEditor.viewColumn)) {
+                const winId = prevVisibleEditor.viewColumn
+                    ? this.editorColumnsToWinId.get(prevVisibleEditor.viewColumn)
+                    : this.noColumnEditorsToWinId.get(prevVisibleEditor);
+
+                if (!winId) {
+                    continue;
+                }
+                if (prevVisibleEditor.viewColumn) {
+                    this.editorColumnsToWinId.delete(prevVisibleEditor.viewColumn);
+                } else {
+                    this.noColumnEditorsToWinId.delete(prevVisibleEditor);
+                }
+
+                this.logger.debug(
+                    `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
+                );
+                this.winIdToEditor.delete(winId);
+                nvimRequests.push(["nvim_win_close", [winId, true]]);
+            }
+        }
+        await callAtomic(this.client, nvimRequests, this.logger, LOG_PREFIX);
+
+        // remember new visible editors
+        this.openedEditors = currentVisibleEditors;
+        if (this.changeLayoutPromiseResolve) {
+            this.changeLayoutPromiseResolve();
+        }
+        this.changeLayoutPromise = undefined;
     };
 
     // ! we're interested only in the editor final layout and vscode may call this function few times, e.g. when moving an editor to other group
     // ! so lets debounce it slightly
-    private syncLayout = debounce(
-        async () => {
-            this.logger.debug(`${LOG_PREFIX}: syncing layout`);
-            // store in copy, just in case
-            const currentVisibleEditors = [...window.visibleTextEditors];
-            const prevVisibleEditors = this.openedEditors;
-            // ! need to:
-            // ! 1. Switch editors in neovim windows if vscode editor column was changed
-            // ! 2. Delete any closed editor column in neovim
+    private syncLayoutDebounced = debounce(this.syncLayout, 100, { leading: false, trailing: true });
 
-            const nvimRequests: [string, unknown[]][] = [];
-            // Open/change neovim windows
-            this.logger.debug(`${LOG_PREFIX}: new/changed editors/windows`);
-            // store currently visible viewColumns, doesn't include undefined viewColumns
-            const keepViewColumns: Set<number> = new Set();
-            for (const visibleEditor of currentVisibleEditors) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Visible editor, viewColumn: ${
-                        visibleEditor.viewColumn
-                    }, doc: ${visibleEditor.document.uri.toString()}`,
-                );
-                // create buffer first if not known to the system
-                // creating initially not listed buffer to prevent firing autocmd events when
-                // buffer name/lines are not yet set. We'll set buflisted after setup
-                if (!this.textDocumentToBufferId.has(visibleEditor.document)) {
-                    this.logger.debug(`${LOG_PREFIX}: Document not known, init in neovim`);
-                    const buf = await this.client.createBuffer(false, true);
-                    if (typeof buf === "number") {
-                        this.logger.error(`${LOG_PREFIX}: Cannot create a buffer, code: ${buf}`);
-                        continue;
-                    }
-                    await this.initBufferForDocument(visibleEditor.document, buf, visibleEditor);
+    private syncActiveEditor = async (): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX}: syncing active editor`);
+        await this.waitForLayoutSync();
 
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Document: ${visibleEditor.document.uri.toString()}, BufId: ${buf.id}`,
-                    );
-                    this.textDocumentToBufferId.set(visibleEditor.document, buf.id);
-                }
-                // editor wasn't changed, skip
-                // !Note always sync opened editors, it doesn't hurt and and solves the curious problem when there are
-                // !few visible editors with same viewColumn (happens when you open search editor, when jump to a file from it)
-                // if (prevVisibleEditors.includes(visibleEditor)) {
-                //     this.logger.debug(`${LOG_PREFIX}: Editor wasn't changed, skip`);
-                //     if (visibleEditor.viewColumn) {
-                //         keepViewColumns.add(visibleEditor.viewColumn);
-                //     }
-                //     continue;
-                // }
-                const editorBufferId = this.textDocumentToBufferId.get(visibleEditor.document)!;
-                let winId: number | undefined;
-                try {
-                    // System editor, like peek view, search results, etc, has undefined viewColumn and we should always create new window for it
-                    if (
-                        (!visibleEditor.viewColumn && !this.noColumnEditorsToWinId.has(visibleEditor)) ||
-                        (visibleEditor.viewColumn && !this.editorColumnsToWinId.has(visibleEditor.viewColumn))
-                    ) {
-                        this.logger.debug(
-                            `${LOG_PREFIX}: Creating new neovim window for ${visibleEditor.viewColumn} column (undefined is OK here)`,
-                        );
-                        winId = await this.createNeovimWindow();
-                        this.logger.debug(`${LOG_PREFIX}: Created new window: ${winId}`);
-                        if (visibleEditor.viewColumn) {
-                            this.editorColumnsToWinId.set(visibleEditor.viewColumn, winId);
-                        } else {
-                            this.noColumnEditorsToWinId.set(visibleEditor, winId);
-                        }
-                        this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
-                    } else {
-                        winId = visibleEditor.viewColumn
-                            ? this.editorColumnsToWinId.get(visibleEditor.viewColumn)
-                            : this.noColumnEditorsToWinId.get(visibleEditor);
-                        this.logger.debug(`${LOG_PREFIX}: Using existing window: ${winId}`);
-                    }
-
-                    if (!winId) {
-                        throw new Error("Invalid neovim window for editor");
-                    }
-                    this.winIdToEditor.set(winId, visibleEditor);
-
-                    if (visibleEditor.viewColumn) {
-                        keepViewColumns.add(visibleEditor.viewColumn);
-                    }
-
-                    const cursor = getNeovimCursorPosFromEditor(visibleEditor);
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
-                    );
-
-                    nvimRequests.push(
-                        ["nvim_win_set_buf", [winId, editorBufferId]],
-                        ["nvim_win_set_cursor", [winId, getNeovimCursorPosFromEditor(visibleEditor)]],
-                    );
-                } catch (e) {
-                    this.logger.error(`${LOG_PREFIX}: ${e.message}`);
-                    continue;
-                }
-            }
-
-            this.logger.debug(`${LOG_PREFIX}: Closing non visible editors`);
-            // close any non visible neovim windows
-            for (const prevVisibleEditor of prevVisibleEditors) {
-                // still visible, skip
-                if (currentVisibleEditors.includes(prevVisibleEditor)) {
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, visibility hasn't changed, skip`,
-                    );
-                    continue;
-                }
-                const document = prevVisibleEditor.document;
-                if (!currentVisibleEditors.find((e) => e.document === document) && document.isClosed) {
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
-                            document,
-                        )}`,
-                    );
-                    const bufId = this.textDocumentToBufferId.get(document);
-                    this.textDocumentToBufferId.delete(document);
-                    if (bufId) {
-                        nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
-                    }
-                }
-                if (!prevVisibleEditor.viewColumn || !keepViewColumns.has(prevVisibleEditor.viewColumn)) {
-                    const winId = prevVisibleEditor.viewColumn
-                        ? this.editorColumnsToWinId.get(prevVisibleEditor.viewColumn)
-                        : this.noColumnEditorsToWinId.get(prevVisibleEditor);
-
-                    if (!winId) {
-                        continue;
-                    }
-                    if (prevVisibleEditor.viewColumn) {
-                        this.editorColumnsToWinId.delete(prevVisibleEditor.viewColumn);
-                    } else {
-                        this.noColumnEditorsToWinId.delete(prevVisibleEditor);
-                    }
-
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
-                    );
-                    this.winIdToEditor.delete(winId);
-                    nvimRequests.push(["nvim_win_close", [winId, true]]);
-                }
-            }
-            await callAtomic(this.client, nvimRequests, this.logger, LOG_PREFIX);
-
-            // remember new visible editors
-            this.openedEditors = currentVisibleEditors;
-            if (this.changeLayoutPromiseResolve) {
-                this.changeLayoutPromiseResolve();
-            }
-            this.changeLayoutPromise = undefined;
-        },
-        100,
-        { leading: false, trailing: true },
-    );
-
-    private syncActiveEditor = debounce(
-        async () => {
-            this.logger.debug(`${LOG_PREFIX}: syncing active editor`);
-            await this.waitForLayoutSync();
-
-            const activeEditor = window.activeTextEditor;
-            if (!activeEditor) {
-                return;
-            }
-            const winId = activeEditor.viewColumn
-                ? this.editorColumnsToWinId.get(activeEditor.viewColumn)
-                : this.noColumnEditorsToWinId.get(activeEditor);
-            if (!winId) {
-                this.logger.error(
-                    `${LOG_PREFIX}: Unable to determine neovim windows id for editor viewColumn: ${
-                        activeEditor.viewColumn
-                    }, docUri: ${activeEditor.document.uri.toString()}`,
-                );
-                return;
-            }
-            // const cursor = getNeovimCursorPosFromEditor(activeEditor);
-            this.logger.debug(
-                `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
+        const activeEditor = window.activeTextEditor;
+        if (!activeEditor) {
+            return;
+        }
+        const winId = activeEditor.viewColumn
+            ? this.editorColumnsToWinId.get(activeEditor.viewColumn)
+            : this.noColumnEditorsToWinId.get(activeEditor);
+        if (!winId) {
+            this.logger.error(
+                `${LOG_PREFIX}: Unable to determine neovim windows id for editor viewColumn: ${
+                    activeEditor.viewColumn
+                }, docUri: ${activeEditor.document.uri.toString()}`,
             );
-            await this.client.request("nvim_set_current_win", [winId]);
-        },
-        50,
-        { leading: false, trailing: true },
-    );
+            return;
+        }
+        // const cursor = getNeovimCursorPosFromEditor(activeEditor);
+        this.logger.debug(
+            `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
+        );
+        await this.client.request("nvim_set_current_win", [winId]);
+    };
+
+    private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 50, { leading: false, trailing: true });
 
     private onDidChangeEditorOptions = (e: TextEditorOptionsChangeEvent): void => {
         this.logger.debug(`${LOG_PREFIX}: Received onDidChangeEditorOptions`);

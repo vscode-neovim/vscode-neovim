@@ -139,6 +139,12 @@ export class MainController implements vscode.Disposable {
             }, args: ${JSON.stringify(args)}`,
         );
         this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
+        this.nvimProc.on("close", (code) => {
+            this.logger.error(`${LOG_PREFIX}: Neovim exited with code: ${code}`);
+        });
+        this.nvimProc.on("error", (err) => {
+            this.logger.error(`${LOG_PREFIX}: Neovim spawn error: ${err.message}`);
+        });
         this.logger.debug(`${LOG_PREFIX}: Attaching to neovim`);
         this.client = attach({
             proc: this.nvimProc,
@@ -158,21 +164,6 @@ export class MainController implements vscode.Disposable {
         await this.checkNeovimVersion();
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
-
-        this.logger.debug(`${LOG_PREFIX}: UIAttach`);
-        await this.client.uiAttach(this.NEOVIM_WIN_WIDTH, this.NEOVIM_WIN_HEIGHT, {
-            rgb: true,
-            // override: true,
-            ext_cmdline: true,
-            ext_linegrid: true,
-            ext_hlstate: true,
-            ext_messages: true,
-            ext_multigrid: true,
-            ext_popupmenu: true,
-            ext_tabline: true,
-            ext_wildmenu: true,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
 
         this.commandsController = new CommandsController(this.client);
         this.disposables.push(this.commandsController);
@@ -223,9 +214,29 @@ export class MainController implements vscode.Disposable {
         this.disposables.push(this.multilineMessagesManager);
 
         this.logger.debug(`${LOG_PREFIX}: Attaching to neovim notifications`);
+        this.client.on("disconnect", () => {
+            this.logger.error(`${LOG_PREFIX}: Neovim was disconnected`);
+        });
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.handleCustomRequest);
-        this.bufferManager.forceResync();
+
+        this.logger.debug(`${LOG_PREFIX}: UIAttach`);
+        // !Attach after setup of notifications, otherwise we can get blocking call and stuck
+        await this.client.uiAttach(this.NEOVIM_WIN_WIDTH, this.NEOVIM_WIN_HEIGHT, {
+            rgb: true,
+            // override: true,
+            ext_cmdline: true,
+            ext_linegrid: true,
+            ext_hlstate: true,
+            ext_messages: true,
+            ext_multigrid: true,
+            ext_popupmenu: true,
+            ext_tabline: true,
+            ext_wildmenu: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
+
+        await this.bufferManager.forceResync();
 
         await vscode.commands.executeCommand("setContext", "neovim.init", true);
         this.logger.debug(`${LOG_PREFIX}: Init completed`);

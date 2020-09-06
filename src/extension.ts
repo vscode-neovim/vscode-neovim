@@ -29,28 +29,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
 
-    const plugin = new MainController({
-        customInitFile: customInit,
-        extensionPath: context.extensionPath,
-        highlightsConfiguration: {
-            highlights: highlightConfHighlights,
-            ignoreHighlights: highlightConfIgnore,
-            unknownHighlight: highlightConfUnknown,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
-        mouseSelection: mouseVisualSelection,
-        neovimPath: neovimPath,
-        neovimViewportHeight: 201,
-        useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
-        neovimViewportWidth: neovimWidth,
-        logConf: {
-            logPath,
-            outputToConsole,
-            level: logLevel,
-        },
-    });
-    context.subscriptions.push(plugin);
-    await plugin.init();
+    try {
+        const plugin = new MainController({
+            customInitFile: customInit,
+            extensionPath: context.extensionPath,
+            highlightsConfiguration: {
+                highlights: highlightConfHighlights,
+                ignoreHighlights: highlightConfIgnore,
+                unknownHighlight: highlightConfUnknown,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any,
+            mouseSelection: mouseVisualSelection,
+            neovimPath: neovimPath,
+            neovimViewportHeight: 201,
+            useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
+            neovimViewportWidth: neovimWidth,
+            logConf: {
+                logPath,
+                outputToConsole,
+                level: logLevel,
+            },
+        });
+        context.subscriptions.push(plugin);
+        await plugin.init();
+    } catch (e) {
+        vscode.window.showErrorMessage(`Unable to init vscode-neovim: ${e.message}`);
+    }
 }
 
 // this method is called when your extension is deactivated
