@@ -565,6 +565,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_name", [bufId, document.uri.toString()]],
             // Turn off modifications for external documents
             ["nvim_buf_set_option", [bufId, "modifiable", !this.isExternalTextDocument(document)]],
+            // force nofile, just in case if the buffer was created externally
+            ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
             // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
         ];
