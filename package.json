@@ -432,13 +432,13 @@
                 "command": "vscode-neovim.send",
                 "key": "ctrl+shift+o",
                 "when": "editorTextFocus && neovim.mode != insert",
-                "args": "<C-S-O>"
+                "args": "gO"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "cmd+shift+o",
                 "when": "editorTextFocus && neovim.mode != insert",
-                "args": "<C-S-O>"
+                "args": "gO"
             },
             {
                 "command": "vscode-neovim.send",
