@@ -430,6 +430,18 @@
             },
             {
                 "command": "vscode-neovim.send",
+                "key": "ctrl+shift+o",
+                "when": "editorTextFocus && neovim.mode != insert",
+                "args": "gO"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "cmd+shift+o",
+                "when": "editorTextFocus && neovim.mode != insert",
+                "args": "gO"
+            },
+            {
+                "command": "vscode-neovim.send",
                 "key": "ctrl+g",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "<C-g>"
