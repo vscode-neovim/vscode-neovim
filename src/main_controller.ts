@@ -174,21 +174,6 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.logger.debug(`${LOG_PREFIX}: UIAttach`);
-        await this.client.uiAttach(this.NEOVIM_WIN_WIDTH, this.NEOVIM_WIN_HEIGHT, {
-            rgb: true,
-            // override: true,
-            ext_cmdline: true,
-            ext_linegrid: true,
-            ext_hlstate: true,
-            ext_messages: true,
-            ext_multigrid: true,
-            ext_popupmenu: true,
-            ext_tabline: true,
-            ext_wildmenu: true,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
-
         this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
         this.disposables.push(this.commandsController);
 
