@@ -1,5 +1,5 @@
 import { NeovimClient } from "neovim";
-import { commands, Disposable, TextEditor, TextEditorEdit } from "vscode";
+import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode";
 
 import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
@@ -19,9 +19,17 @@ export class TypingManager implements Disposable {
      */
     private isExitingInsertMode = false;
     /**
+     * Flag indicating that we're going to enter insert mode and there are pending document changes
+     */
+    private isEnteringInsertMode = false;
+    /**
      * Additional keys which were pressed after exiting insert mode. We'll replay them after buffer sync
      */
     private pendingKeysAfterExit = "";
+    /**
+     * Additional keys which were pressed after entering the insert mode
+     */
+    private pendingKeysAfterEnter = "";
     /**
      * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
      */
@@ -55,10 +63,32 @@ export class TypingManager implements Disposable {
 
     private onModeChange = (): void => {
         if (this.modeManager.isInsertMode && this.typeHandlerDisposable && !this.modeManager.isRecordingInInsertMode) {
-            this.logger.debug(`${LOG_PREFIX}: Disposing type handler`);
-            this.typeHandlerDisposable.dispose();
-            this.typeHandlerDisposable = undefined;
+            this.pendingKeysAfterEnter = "";
+            const editor = window.activeTextEditor;
+            if (editor && this.changeManager.hasDocumentChangeCompletionLock(editor.document)) {
+                this.isEnteringInsertMode = true;
+                this.logger.debug(
+                    `${LOG_PREFIX}: Waiting for document completion operation before disposing type handler`,
+                );
+                this.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
+                    this.isEnteringInsertMode = false;
+                    if (this.typeHandlerDisposable) {
+                        this.logger.debug(`${LOG_PREFIX}: Waiting done, disposing type handler`);
+                        this.typeHandlerDisposable.dispose();
+                        this.typeHandlerDisposable = undefined;
+                        if (this.pendingKeysAfterEnter) {
+                            commands.executeCommand("default:type", { text: this.pendingKeysAfterEnter });
+                            this.pendingKeysAfterEnter = "";
+                        }
+                    }
+                });
+            } else {
+                this.logger.debug(`${LOG_PREFIX}: Disposing type handler`);
+                this.typeHandlerDisposable.dispose();
+                this.typeHandlerDisposable = undefined;
+            }
         } else if (!this.modeManager.isInsertMode) {
+            this.isEnteringInsertMode = false;
             this.isExitingInsertMode = false;
             if (!this.typeHandlerDisposable) {
                 this.logger.debug(`${LOG_PREFIX}: Enabling type handler`);
@@ -68,8 +98,12 @@ export class TypingManager implements Disposable {
     };
 
     private onVSCodeType = (_editor: TextEditor, edit: TextEditorEdit, type: { text: string }): void => {
-        if (!this.modeManager.isInsertMode || this.modeManager.isRecordingInInsertMode) {
-            this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
+        if (!this.modeManager.isInsertMode || this.modeManager.isRecordingInInsertMode || this.isEnteringInsertMode) {
+            if (this.isEnteringInsertMode) {
+                this.pendingKeysAfterEnter += type.text;
+            } else {
+                this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
+            }
         } else if (this.isExitingInsertMode) {
             this.pendingKeysAfterExit += type.text;
         } else {
