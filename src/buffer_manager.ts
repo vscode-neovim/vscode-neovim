@@ -283,11 +283,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         const hasVisibleEditor = !!this.openedEditors.find((d) => d.document === doc);
         // we'll handle it in onDidChangeVisibleTextEditors()
         if (!hasVisibleEditor) {
-            const bufId = this.textDocumentToBufferId.get(doc);
+            // const bufId = this.textDocumentToBufferId.get(doc);
             this.textDocumentToBufferId.delete(doc);
-            if (bufId) {
-                this.unloadBuffer(bufId);
-            }
+            // buffer unloading breaks jumplist https://github.com/asvetliakov/vscode-neovim/issues/350
+            // if (bufId) {
+            //     this.unloadBuffer(bufId);
+            // }
         }
     };
 
@@ -425,7 +426,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const bufId = this.textDocumentToBufferId.get(document);
                 this.textDocumentToBufferId.delete(document);
                 if (bufId) {
-                    nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
+                    // buffer unloading breaks jumplist https://github.com/asvetliakov/vscode-neovim/issues/350
+                    // nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
                 }
             }
             if (!prevVisibleEditor.viewColumn || !keepViewColumns.has(prevVisibleEditor.viewColumn)) {
