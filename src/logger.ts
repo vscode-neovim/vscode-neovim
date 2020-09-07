@@ -34,6 +34,7 @@ export class Logger implements Disposable {
     }
 
     public debug(msg: string): void {
+        msg = `${this.getTimestamp()} ${msg}`;
         if (this.logLevel >= LogLevel.debug) {
             if (this.fd) {
                 fs.appendFileSync(this.fd, msg + "\n");
@@ -45,6 +46,7 @@ export class Logger implements Disposable {
     }
 
     public warn(msg: string): void {
+        msg = `${this.getTimestamp()} ${msg}`;
         if (this.logLevel >= LogLevel.warn) {
             if (this.fd) {
                 fs.appendFileSync(this.fd, msg + "\n");
@@ -56,6 +58,7 @@ export class Logger implements Disposable {
     }
 
     public error(msg: string): void {
+        msg = `${this.getTimestamp()} ${msg}`;
         if (this.logLevel >= LogLevel.error) {
             if (this.fd) {
                 fs.appendFileSync(this.fd, msg + "\n");
@@ -65,5 +68,9 @@ export class Logger implements Disposable {
             }
         }
         window.showErrorMessage(msg);
+    }
+
+    private getTimestamp(): string {
+        return new Date().toISOString();
     }
 }
