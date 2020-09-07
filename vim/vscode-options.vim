@@ -64,6 +64,7 @@ function s:forceLocalOptions()
     " setlocal bufhidden=wipe
     " setlocal bufhidden=unload
     setlocal bufhidden=hide
+    setlocal buftype=nofile
     setlocal noautowrite
     setlocal nonumber
     setlocal norelativenumber
