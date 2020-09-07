@@ -2,7 +2,6 @@ import vscode, { Disposable } from "vscode";
 import { NeovimClient } from "neovim";
 
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
-import { EXT_NAME } from "./utils";
 
 export class CommandsController implements Disposable, NeovimExtensionRequestProcessable {
     private client: NeovimClient;
