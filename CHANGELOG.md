@@ -1,6 +1,12 @@
 # Change Log
 
-## [0.0.60]
+## [0.0.62]
+
+-   Fix jumplist ( #350 )
+-   Add `K` and `gO` mappings (mapped to `showHover` and `goToSymbol`) ( #108 ) (@Shatur95)
+-   Fix images/icon (@Shatur95)
+
+## [0.0.60/61]
 
 Started from this version `neovim 0.5` nightly version is required
 Many things have been refactored/changed internally in this release. So if you see any regression - please fill an issue
