@@ -41,3 +41,24 @@ jobs:
                   NEOVIM_DEBUG_PORT: 4000
               with:
                   run: yarn run test
+    create:
+        name: Create extension
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Setup Node
+              uses: actions/setup-node@v1
+              with:
+                  node-version: "12"
+            - name: Yarn install
+              run: yarn --silent --frozen-lockfile
+            - name: Install VSCE
+              run: npm install -g vsce
+            - name: Create extension
+              run: vsce package --yarn -o vscode-neovim.vsix 
+            - name: Upload extension
+              if: runner.os == 'Linux'
+              uses: actions/upload-artifact@v2
+              with:
+                name: vscode-neovim-${{github.sha}}
+                path: vscode-neovim.vsix
