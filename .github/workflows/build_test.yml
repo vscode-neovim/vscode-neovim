@@ -55,10 +55,10 @@ jobs:
             - name: Install VSCE
               run: npm install -g vsce
             - name: Create extension
-              run: vsce package --yarn -o vscode-neovim.vsix 
+              run: vsce package --yarn -o vscode-neovim-${{github.sha}}.vsix 
             - name: Upload extension
               if: runner.os == 'Linux'
               uses: actions/upload-artifact@v2
               with:
-                name: vscode-neovim-${{github.sha}}
-                path: vscode-neovim.vsix
+                name: vscode-neovim
+                path: vscode-neovim-${{github.sha}}.vsix
