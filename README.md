@@ -29,9 +29,10 @@ If you want to use WSL version of neovim, set `useWSL` configuration toggle and 
 
 ## Requirements
 
-Neovim 0.4.2 or greater
+Neovim 0.5.0-nightly or greater
 
 -   Set neovim path in the extension settings and you're good to go. **Important** you must specify full path to neovim, like `C:\Neovim\bin\nvim.exe` or `/usr/local/bin/nvim`. **IMPORTANT 2:** the setting id is `vscode-neovim.neovimPath`
+-   Tip: You can install neovim-0.5.0-nightly separately for just vscode, outside of your system's package manager installation
 
 ## Important
 
