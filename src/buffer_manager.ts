@@ -283,11 +283,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         const hasVisibleEditor = !!this.openedEditors.find((d) => d.document === doc);
         // we'll handle it in onDidChangeVisibleTextEditors()
         if (!hasVisibleEditor) {
-            const bufId = this.textDocumentToBufferId.get(doc);
+            // const bufId = this.textDocumentToBufferId.get(doc);
             this.textDocumentToBufferId.delete(doc);
-            if (bufId) {
-                this.unloadBuffer(bufId);
-            }
+            // buffer unloading breaks jumplist https://github.com/asvetliakov/vscode-neovim/issues/350
+            // if (bufId) {
+            //     this.unloadBuffer(bufId);
+            // }
         }
     };
 
@@ -425,7 +426,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const bufId = this.textDocumentToBufferId.get(document);
                 this.textDocumentToBufferId.delete(document);
                 if (bufId) {
-                    nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
+                    // buffer unloading breaks jumplist https://github.com/asvetliakov/vscode-neovim/issues/350
+                    // nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
                 }
             }
             if (!prevVisibleEditor.viewColumn || !keepViewColumns.has(prevVisibleEditor.viewColumn)) {
@@ -563,6 +565,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_name", [bufId, document.uri.toString()]],
             // Turn off modifications for external documents
             ["nvim_buf_set_option", [bufId, "modifiable", !this.isExternalTextDocument(document)]],
+            // force nofile, just in case if the buffer was created externally
+            ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
             // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
         ];

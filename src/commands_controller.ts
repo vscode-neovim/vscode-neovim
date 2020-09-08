@@ -8,8 +8,11 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
 
     private disposables: Disposable[] = [];
 
-    public constructor(client: NeovimClient) {
+    private revealCursorScrollLine: boolean;
+
+    public constructor(client: NeovimClient, revealCursorScrollLine: boolean) {
         this.client = client;
+        this.revealCursorScrollLine = revealCursorScrollLine;
 
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-a-insert", this.ctrlAInsert));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.send", (key) => this.sendToVim(key)));
@@ -108,7 +111,7 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     };
 
     private scrollLine = (to: "up" | "down"): void => {
-        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: false });
+        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: this.revealCursorScrollLine });
     };
 
     private goToLine = (to: "top" | "middle" | "bottom"): void => {

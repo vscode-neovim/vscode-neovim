@@ -34,6 +34,11 @@ function! s:vscodeGoToDefinition(str)
     endif
 endfunction
 
+function! s:vscodeNotifyWithMark(command)
+  normal! m'
+  call VSCodeNotify(a:command)
+endfunction
+
 function! s:hover()
   normal! gv
   call VSCodeNotify('editor.action.showHover')
@@ -65,18 +70,22 @@ nnoremap <expr> = <SID>vscodeFormat()
 nnoremap <expr> == <SID>vscodeFormat() . '_'
 
 " gf/gF . Map to go to definition for now
+nnoremap <silent> K :<C-u>call VSCodeNotify('editor.action.showHover')<CR>
 nnoremap <silent> gh :<C-u>call VSCodeNotify('editor.action.showHover')<CR>
 nnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition("Declaration")<CR>
 nnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
 nnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
+nnoremap <silent> gO :<C-u>call <SID>vscodeNotifyWithMark('workbench.action.gotoSymbol')<CR>
 nnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDeclaration')<CR>
 nnoremap <silent> gD :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
 nnoremap <silent> gH :<C-u>call VSCodeNotify('editor.action.referenceSearch.trigger')<CR>
 
+xnoremap <silent> K :<C-u>call <SID>hover()<CR>
 xnoremap <silent> gh :<C-u>call <SID>hover()<CR>
 xnoremap <silent> gf :<C-u>call <SID>vscodeGoToDefinition("Declaration")<CR>
 xnoremap <silent> gd :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
 xnoremap <silent> <C-]> :<C-u>call <SID>vscodeGoToDefinition("Definition")<CR>
+xnoremap <silent> gO :<C-u>call <SID>vscodeNotifyWithMark('workbench.action.gotoSymbol')<CR>
 xnoremap <silent> gF :<C-u>call VSCodeNotify('editor.action.peekDeclaration')<CR>
 xnoremap <silent> gD :<C-u>call VSCodeNotify('editor.action.peekDefinition')<CR>
 xnoremap <silent> gH :<C-u>call VSCodeNotify('editor.action.referenceSearch.trigger')<CR>

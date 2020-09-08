@@ -7,7 +7,7 @@
     "extensionKind": [
         "ui"
     ],
-    "version": "0.0.61",
+    "version": "0.0.62",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -112,6 +112,11 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Use neovim installed in WSL. If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting"
+                },
+                "vscode-neovim.revealCursorScrollLine": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "If 'true' reveals the cursor when scrolling by line and if it is outside view port"
                 },
                 "vscode-neovim.logPath": {
                     "type": "string",
@@ -432,6 +437,18 @@
                 "command": "vscode-neovim.escape",
                 "key": "ctrl+[",
                 "when": "editorTextFocus && neovim.init"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "ctrl+shift+o",
+                "when": "editorTextFocus && neovim.mode != insert",
+                "args": "gO"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "cmd+shift+o",
+                "when": "editorTextFocus && neovim.mode != insert",
+                "args": "gO"
             },
             {
                 "command": "vscode-neovim.send",
