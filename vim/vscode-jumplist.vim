@@ -29,7 +29,7 @@ augroup VscodeJumplist
 augroup END
 
 
-onoremap <C-o> <Cmd>call <SID>jumpToMark()<CR>
+onoremap ` <Cmd>call <SID>jumpToMark()<CR>
 nnoremap <silent> <C-o> :<C-u>call <SID>jump(0)<CR>
 nnoremap <silent> <C-i> :<C-u>call <SID>jump(1)<CR>
 nnoremap <silent> <Tab> :<C-u>call <SID>jump(1)<CR>
