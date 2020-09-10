@@ -72,8 +72,8 @@ xnoremap <silent> <C-w>l :<C-u>call VSCodeNotify('workbench.action.focusRightGro
 nnoremap <silent> <C-w><C-l> :<C-u>call VSCodeNotify('workbench.action.moveEditorToRightGroup')<CR>
 xnoremap <silent> <C-w><C-l> :<C-u>call VSCodeNotify('workbench.action.moveEditorToRightGroup')<CR>
 nnoremap <silent> <C-w>w :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
-nnoremap <silent> <C-w>w :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
-xnoremap <silent> <C-w><C-w> :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
+xnoremap <silent> <C-w>w :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
+nnoremap <silent> <C-w><C-w> :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
 xnoremap <silent> <C-w><C-w> :<C-u>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
 nnoremap <silent> <C-w>W :<C-u>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
 xnoremap <silent> <C-w>W :<C-u>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
