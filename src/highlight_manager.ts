@@ -251,7 +251,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                                 renderOptions: {
                                     // Inspired by https://github.com/VSCodeVim/Vim/blob/badecf1b7ecd239e3ed58720245b6f4a74e439b7/src/actions/plugins/easymotion/easymotion.ts#L64
                                     after: {
-                                        // There's some weird complexity here.
                                         // What's up with the negative right
                                         // margin? That shifts the decoration to the
                                         // right. By default VSCode places the
@@ -260,10 +259,9 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                                         // it will be on top.
                                         // Why do all that math in the right
                                         // margin?  If we try to draw off the
-                                        // end of the screen, VSCode will move
-                                        // the text to the left. Each move
-                                        // VSCode makes to the left for us is
-                                        // one more we don't want to do ourselves.
+                                        // end of the screen, VSCode will place
+                                        // the text in a column we weren't
+                                        // expecting. This code accounts for that.
                                         margin: `0 0 0 -${Math.min(
                                             text.length - (col + text.length - 1 - line.length),
                                             text.length,
