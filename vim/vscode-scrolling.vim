@@ -1,22 +1,19 @@
-function s:reveal(direction, resetCursor, restoreVisual)
-    if a:restoreVisual
-        normal! gv
-    endif
+function s:reveal(direction, resetCursor)
     call VSCodeExtensionNotify('reveal', a:direction, a:resetCursor)
 endfunction
 
-nnoremap <silent> z<CR> :<C-u>call <SID>reveal('top', 1, 0)<CR>
-xnoremap <silent> z<CR> :<C-u>call <SID>reveal('top', 1, 1)<CR>
-nnoremap <silent> zt :<C-u>call <SID>reveal('top', 0, 0)<CR>
-xnoremap <silent> zt :<C-u>call <SID>reveal('top', 0, 1)<CR>
-nnoremap <silent> z. :<C-u>call <SID>reveal('center', 1, 0)<CR>
-xnoremap <silent> z. :<C-u>call <SID>reveal('center', 1, 1)<CR>
-nnoremap <silent> zz :<C-u>call <SID>reveal('center', 0, 0)<CR>
-xnoremap <silent> zz :<C-u>call <SID>reveal('center', 0, 1)<CR>
-nnoremap <silent> z- :<C-u>call <SID>reveal('bottom', 1, 0)<CR>
-xnoremap <silent> z- :<C-u>call <SID>reveal('bottom', 1, 1)<CR>
-nnoremap <silent> zb :<C-u>call <SID>reveal('bottom', 0, 0)<CR>
-xnoremap <silent> zb :<C-u>call <SID>reveal('bottom', 0, 1)<CR>
+nnoremap <silent> z<CR> <Cmd>call <SID>reveal('top', 1)<CR>
+xnoremap <silent> z<CR> <Cmd>call <SID>reveal('top', 1)<CR>
+nnoremap <silent> zt <Cmd>call <SID>reveal('top', 0)<CR>
+xnoremap <silent> zt <Cmd>call <SID>reveal('top', 0)<CR>
+nnoremap <silent> z. <Cmd>call <SID>reveal('center', 1)<CR>
+xnoremap <silent> z. <Cmd>call <SID>reveal('center', 1)<CR>
+nnoremap <silent> zz <Cmd>call <SID>reveal('center', 0)<CR>
+xnoremap <silent> zz <Cmd>call <SID>reveal('center', 0)<CR>
+nnoremap <silent> z- <Cmd>call <SID>reveal('bottom', 1)<CR>
+xnoremap <silent> z- <Cmd>call <SID>reveal('bottom', 1)<CR>
+nnoremap <silent> zb <Cmd>call <SID>reveal('bottom', 0)<CR>
+xnoremap <silent> zb <Cmd>call <SID>reveal('bottom', 0)<CR>
 
 nnoremap <silent> <expr> H VSCodeExtensionNotify('move-cursor', 'top')
 xnoremap <silent> <expr> H VSCodeExtensionNotify('move-cursor', 'top')
