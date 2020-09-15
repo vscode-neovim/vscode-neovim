@@ -25,7 +25,7 @@ augroup MultipleCursors
 augroup END
 
 " Multiple cursors support for visual line/block modes
-xnoremap <silent> ma <Cmd>call <SID>vscodePrepareMultipleCursors(1, 1)<CR>
-xnoremap <silent> mi <Cmd>call <SID>vscodePrepareMultipleCursors(0, 1)<CR>
-xnoremap <silent> mA <Cmd>call <SID>vscodePrepareMultipleCursors(1, 0)<CR>
-xnoremap <silent> mI <Cmd>call <SID>vscodePrepareMultipleCursors(0, 0)<CR>
+xnoremap <silent> ma :<C-u>call <SID>vscodePrepareMultipleCursors(1, 1)<CR>
+xnoremap <silent> mi :<C-u>call <SID>vscodePrepareMultipleCursors(0, 1)<CR>
+xnoremap <silent> mA :<C-u>call <SID>vscodePrepareMultipleCursors(1, 0)<CR>
+xnoremap <silent> mI :<C-u>call <SID>vscodePrepareMultipleCursors(0, 0)<CR>
