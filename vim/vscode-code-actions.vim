@@ -40,6 +40,7 @@ function! s:vscodeNotifyWithMark(command)
 endfunction
 
 function! s:openVSCodeCommandsInVisualMode()
+    normal! gv
     let visualmode = visualmode()
     if visualmode ==# "V"
         let startLine = line("v")
@@ -99,4 +100,4 @@ nnoremap gk <Cmd>call VSCodeCall('cursorMove', { 'to': 'up', 'by': 'wrappedLine'
 nnoremap gj <Cmd>call VSCodeCall('cursorMove', { 'to': 'down', 'by': 'wrappedLine', 'value': v:count ? v:count : 1 })<CR>
 
 " workaround for calling command picker in visual mode
-xnoremap <silent> <C-P> <Cmd>call <SID>openVSCodeCommandsInVisualMode()<CR>
+xnoremap <silent> <C-P> :<C-u>call <SID>openVSCodeCommandsInVisualMode()<CR>
