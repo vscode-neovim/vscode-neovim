@@ -34,7 +34,7 @@ AlterCommand tabfir[st] Tabfirst
 AlterCommand tabl[ast] Tablast
 AlterCommand tabm[ove] Tabmove
 
-nnoremap <silent> gt <Cmd>call <SID>switchEditor(v:count, 'next')<CR>
-xnoremap <silent> gt <Cmd>call <SID>switchEditor(v:count, 'next')<CR>
-nnoremap <silent> gT <Cmd>call <SID>switchEditor(v:count, 'prev')<CR>
-xnoremap <silent> gT <Cmd>call <SID>switchEditor(v:count, 'prev')<CR>
+nnoremap gt <Cmd>call <SID>switchEditor(v:count, 'next')<CR>
+xnoremap gt <Cmd>call <SID>switchEditor(v:count, 'next')<CR>
+nnoremap gT <Cmd>call <SID>switchEditor(v:count, 'prev')<CR>
+xnoremap gT <Cmd>call <SID>switchEditor(v:count, 'prev')<CR>

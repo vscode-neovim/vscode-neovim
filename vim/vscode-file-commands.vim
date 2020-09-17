@@ -57,5 +57,5 @@ AlterCommand qa[ll] Qall
 AlterCommand wqa[ll] Wqall
 AlterCommand xa[ll] Xall
 
-nnoremap <silent> ZZ :Wq<CR>
-nnoremap <silent> ZQ :Quit!<CR>
+nnoremap ZZ <Cmd>Wq<CR>
+nnoremap ZQ <Cmd>Quit!<CR>

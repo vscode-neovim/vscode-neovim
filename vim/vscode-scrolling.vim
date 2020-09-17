@@ -2,25 +2,25 @@ function s:reveal(direction, resetCursor)
     call VSCodeExtensionNotify('reveal', a:direction, a:resetCursor)
 endfunction
 
-nnoremap <silent> z<CR> <Cmd>call <SID>reveal('top', 1)<CR>
-xnoremap <silent> z<CR> <Cmd>call <SID>reveal('top', 1)<CR>
-nnoremap <silent> zt <Cmd>call <SID>reveal('top', 0)<CR>
-xnoremap <silent> zt <Cmd>call <SID>reveal('top', 0)<CR>
-nnoremap <silent> z. <Cmd>call <SID>reveal('center', 1)<CR>
-xnoremap <silent> z. <Cmd>call <SID>reveal('center', 1)<CR>
-nnoremap <silent> zz <Cmd>call <SID>reveal('center', 0)<CR>
-xnoremap <silent> zz <Cmd>call <SID>reveal('center', 0)<CR>
-nnoremap <silent> z- <Cmd>call <SID>reveal('bottom', 1)<CR>
-xnoremap <silent> z- <Cmd>call <SID>reveal('bottom', 1)<CR>
-nnoremap <silent> zb <Cmd>call <SID>reveal('bottom', 0)<CR>
-xnoremap <silent> zb <Cmd>call <SID>reveal('bottom', 0)<CR>
+nnoremap z<CR> <Cmd>call <SID>reveal('top', 1)<CR>
+xnoremap z<CR> <Cmd>call <SID>reveal('top', 1)<CR>
+nnoremap zt <Cmd>call <SID>reveal('top', 0)<CR>
+xnoremap zt <Cmd>call <SID>reveal('top', 0)<CR>
+nnoremap z. <Cmd>call <SID>reveal('center', 1)<CR>
+xnoremap z. <Cmd>call <SID>reveal('center', 1)<CR>
+nnoremap zz <Cmd>call <SID>reveal('center', 0)<CR>
+xnoremap zz <Cmd>call <SID>reveal('center', 0)<CR>
+nnoremap z- <Cmd>call <SID>reveal('bottom', 1)<CR>
+xnoremap z- <Cmd>call <SID>reveal('bottom', 1)<CR>
+nnoremap zb <Cmd>call <SID>reveal('bottom', 0)<CR>
+xnoremap zb <Cmd>call <SID>reveal('bottom', 0)<CR>
 
-nnoremap <silent> <expr> H VSCodeExtensionNotify('move-cursor', 'top')
-xnoremap <silent> <expr> H VSCodeExtensionNotify('move-cursor', 'top')
-nnoremap <silent> <expr> M VSCodeExtensionNotify('move-cursor', 'middle')
-xnoremap <silent> <expr> M VSCodeExtensionNotify('move-cursor', 'middle')
-nnoremap <silent> <expr> L VSCodeExtensionNotify('move-cursor', 'bottom')
-xnoremap <silent> <expr> L VSCodeExtensionNotify('move-cursor', 'bottom')
+nnoremap <expr> H VSCodeExtensionNotify('move-cursor', 'top')
+xnoremap <expr> H VSCodeExtensionNotify('move-cursor', 'top')
+nnoremap <expr> M VSCodeExtensionNotify('move-cursor', 'middle')
+xnoremap <expr> M VSCodeExtensionNotify('move-cursor', 'middle')
+nnoremap <expr> L VSCodeExtensionNotify('move-cursor', 'bottom')
+xnoremap <expr> L VSCodeExtensionNotify('move-cursor', 'bottom')
 
 " Disabled due to scroll problems (the ext binds them directly)
 " nnoremap <silent> <expr> <C-d> VSCodeExtensionCall('scroll', 'halfPage', 'down')
