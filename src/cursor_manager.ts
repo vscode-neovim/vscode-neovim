@@ -298,7 +298,11 @@ export class CursorManager
                 return;
             }
 
-            if (e.selections.length > 1 || !e.selections[0].active.isEqual(e.selections[0].anchor)) {
+            if (
+                e.selections.length > 1 ||
+                (e.kind === TextEditorSelectionChangeKind.Mouse &&
+                    !e.selections[0].active.isEqual(e.selections[0].anchor))
+            ) {
                 if (e.kind !== TextEditorSelectionChangeKind.Mouse || !this.settings.mouseSelectionEnabled) {
                     return;
                 } else {

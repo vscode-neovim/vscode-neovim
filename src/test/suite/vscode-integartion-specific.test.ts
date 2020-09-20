@@ -370,4 +370,38 @@ describe("VSCode integration specific stuff", () => {
         const type = await client.request("nvim_buf_get_option", [buf.id, "filetype"]);
         assert.strictEqual("typescript", type);
     });
+
+    it("Next search result works", async () => {
+        const doc = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/incsearch-scroll.ts"),
+        );
+        await vscode.window.showTextDocument(doc);
+        await wait();
+        await sendVSCodeKeys("gg");
+
+        await vscode.commands.executeCommand("workbench.action.findInFiles", { query: "blah" });
+        await wait(2000);
+
+        await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
+        await wait();
+
+        await vscode.commands.executeCommand("search.action.focusNextSearchResult");
+        await wait();
+
+        await assertContent(
+            {
+                cursor: [115, 20],
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("search.action.focusNextSearchResult");
+        await wait();
+        await assertContent(
+            {
+                cursor: [170, 20],
+            },
+            client,
+        );
+    });
 });
