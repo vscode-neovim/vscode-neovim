@@ -40,6 +40,7 @@ export interface ControllerSettings {
     customInitFile: string;
     neovimViewportWidth: number;
     neovimViewportHeight: number;
+    textDecorationsAtTop: boolean;
     revealCursorScrollLine: boolean;
     logConf: {
         level: "none" | "error" | "warn" | "debug";
@@ -189,6 +190,7 @@ export class MainController implements vscode.Disposable {
         this.highlightManager = new HighlightManager(this.logger, this.bufferManager, {
             highlight: this.settings.highlightsConfiguration,
             viewportHeight: this.settings.neovimViewportHeight,
+            textDecorationsAtTop: this.settings.textDecorationsAtTop,
         });
         this.disposables.push(this.highlightManager);
 

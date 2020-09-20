@@ -266,7 +266,12 @@
                     "title": "Unknown Highlight Groups",
                     "description": "Highlight Configuration for non defined group. Can accept 'vim' to use colors coming from vim or text decoration properties object",
                     "default": "vim"
-                }
+                },
+                "vscode-neovim.textDecorationsAtTop": {
+                    "type": "boolean",
+					"description": "If turned on, text decorations will appear on top of the associated text instead of behind it. Consider turning this on with the EasyMotion plugin.",
+					"default": false
+				}
             }
         },
         "commands": [
