@@ -154,7 +154,7 @@ describe("VSCode integration specific stuff", () => {
         await setCursor(3, 1);
 
         await vscode.commands.executeCommand("editor.action.goToTypeDefinition", doc2.uri, new vscode.Position(2, 1));
-        await wait(1500);
+        await wait(3000);
 
         await assertContent(
             {
