@@ -6,11 +6,11 @@ let s:currDir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
 let &runtimepath = &runtimepath . ',' . s:currDir . '/vim-altercmd'
 
 " Used to execute vscode command
-let s:vscodeCommandEventName = "vscode-command"
+let s:vscodeCommandEventName = 'vscode-command'
 " Used to execute vscode command with some range (the specified range will be selected and the command will be executed on this range)
-let s:vscodeRangeCommandEventName = "vscode-range-command"
+let s:vscodeRangeCommandEventName = 'vscode-range-command'
 " Used for externsion inter-communications
-let s:vscodePluginEventName = "vscode-neovim"
+let s:vscodePluginEventName = 'vscode-neovim'
 
 " RPC and global functions
 
@@ -108,7 +108,7 @@ function! s:onBufEnter(name, id)
     set conceallevel=0
     let tabstop = &tabstop
     let isJumping = 0
-    if exists("g:isJumping")
+    if exists('g:isJumping')
         let isJumping = g:isJumping
     endif
     call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop, isJumping)
@@ -124,7 +124,7 @@ endfunction
 
 function! s:onInsertEnter()
     let reg = reg_recording()
-    if reg != ""
+    if !empty(reg)
         call VSCodeExtensionCall('notify-recording', reg)
     endif
 endfunction

@@ -1,14 +1,14 @@
 
 function! s:vscodePrepareMultipleCursors(append, skipEmpty)
-    let m = visualmode()
-    if m ==# "V" || m ==# "\<C-v>"
+    let m = mode()
+    if m ==# 'V' || m ==# "\<C-v>"
         let b:notifyMultipleCursors = 1
         let b:multipleCursorsVisualMode = m
         let b:multipleCursorsAppend = a:append
         let b:multipleCursorsSkipEmpty = a:skipEmpty
         " We need to start insert, then spawn cursors otherwise they'll be destroyed
         " using feedkeys() here because :startinsert is being delayed
-        call feedkeys('i', 'n')
+        call feedkeys("o\<Esc>i", 'n')
     endif
 endfunction
 
@@ -25,7 +25,7 @@ augroup MultipleCursors
 augroup END
 
 " Multiple cursors support for visual line/block modes
-xnoremap <silent> ma :<C-u>call <SID>vscodePrepareMultipleCursors(1, 1)<CR>
-xnoremap <silent> mi :<C-u>call <SID>vscodePrepareMultipleCursors(0, 1)<CR>
-xnoremap <silent> mA :<C-u>call <SID>vscodePrepareMultipleCursors(1, 0)<CR>
-xnoremap <silent> mI :<C-u>call <SID>vscodePrepareMultipleCursors(0, 0)<CR>
+xnoremap ma <Cmd>call <SID>vscodePrepareMultipleCursors(1, 1)<CR>
+xnoremap mi <Cmd>call <SID>vscodePrepareMultipleCursors(0, 1)<CR>
+xnoremap mA <Cmd>call <SID>vscodePrepareMultipleCursors(1, 0)<CR>
+xnoremap mI <Cmd>call <SID>vscodePrepareMultipleCursors(0, 0)<CR>

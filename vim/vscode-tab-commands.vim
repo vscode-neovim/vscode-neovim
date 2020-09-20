@@ -34,8 +34,7 @@ AlterCommand tabfir[st] Tabfirst
 AlterCommand tabl[ast] Tablast
 AlterCommand tabm[ove] Tabmove
 
-" <C-u> is needed to clear prev count
-nnoremap <silent> gt :<C-U>call <SID>switchEditor(v:count, 'next')<CR>
-xnoremap <silent> gt :<C-U>call <SID>switchEditor(v:count, 'next')<CR>
-nnoremap <silent> gT :<C-U>call <SID>switchEditor(v:count, 'prev')<CR>
-xnoremap <silent> gT :<C-U>call <SID>switchEditor(v:count, 'prev')<CR>
+nnoremap gt <Cmd>call <SID>switchEditor(v:count, 'next')<CR>
+xnoremap gt <Cmd>call <SID>switchEditor(v:count, 'next')<CR>
+nnoremap gT <Cmd>call <SID>switchEditor(v:count, 'prev')<CR>
+xnoremap gT <Cmd>call <SID>switchEditor(v:count, 'prev')<CR>

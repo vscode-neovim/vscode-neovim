@@ -128,38 +128,36 @@ Produce linewise selection and show vscode commands (default binding)
 
 ```
 function! s:showCommands()
-    normal! gv
     let startLine = line("v")
     let endLine = line(".")
     call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
 endfunction
 
-xnoremap <silent> <C-P> :<C-u>call <SID>showCommands()<CR>
+xnoremap <silent> <C-P> <Cmd>call <SID>showCommands()<CR>
 ```
 
 Produce characterwise selection and show vscode commands (default binding):
 
 ```
 function! s:showCommands()
-    normal! gv
     let startPos = getpos("v")
     let endPos = getpos(".")
     call VSCodeNotifyRangePos("workbench.action.showCommands", startPos[1], endPos[1], startPos[2], endPos[2], 1)
 endfunction
 
-xnoremap <silent> <C-P> :<C-u>call <SID>showCommands()<CR>
+xnoremap <silent> <C-P> <Cmd>call <SID>showCommands()<CR>
 ```
 
 Run Find in files for word under cursor in vscode:
 
 ```
-nnoremap <silent> ? :<C-u>call VSCodeNotify('workbench.action.findInFiles', { 'query': expand('<cword>')})<CR>
+nnoremap <silent> ? <Cmd>call VSCodeNotify('workbench.action.findInFiles', { 'query': expand('<cword>')})<CR>
 ```
 
 Open definition aside (default binding):
 
 ```
-nnoremap <silent> <C-w>gd :<C-u>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
+nnoremap <silent> <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 ```
 
 ## Jumplist
