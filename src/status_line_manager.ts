@@ -23,7 +23,11 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
         let acceptPrompt = false;
-        for (const [name, ...args] of batch) {
+        // if there is mouse_on event after return prompt, then we don't need automatically accept it
+        // use case: easymotion search with jumping
+        let hasMouseOnAfterReturnPrompt = false;
+        batch.forEach(([name, ...args], idx) => {
+            // for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
                 case "msg_showcmd": {
@@ -50,6 +54,7 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
                         // }
                         if (type === "return_prompt") {
                             acceptPrompt = true;
+                            hasMouseOnAfterReturnPrompt = !!batch.slice(idx).find(([name]) => name === "mouse_on");
                         }
                         if (content) {
                             for (const c of content) {
@@ -83,8 +88,8 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
                     break;
                 }
             }
-        }
-        if (acceptPrompt) {
+        });
+        if (acceptPrompt && !hasMouseOnAfterReturnPrompt) {
             this.client.input("<CR>");
         }
     }
