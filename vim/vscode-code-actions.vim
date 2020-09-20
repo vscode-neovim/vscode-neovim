@@ -85,9 +85,9 @@ xnoremap gD <Cmd>call VSCodeNotify('editor.action.peekDefinition')<CR>
 xnoremap gH <Cmd>call VSCodeNotify('editor.action.referenceSearch.trigger')<CR>
 
 " <C-w> gf opens definition on the side
-nnoremap <C-w>gf <Cmd>call VSCodeNotify('editor.action.revealDeclarationAside')<CR>
+nnoremap <C-w>gf <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 nnoremap <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
-xnoremap <C-w>gf <Cmd>call VSCodeNotify('editor.action.revealDeclarationAside')<CR>
+xnoremap <C-w>gf <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 xnoremap <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 
 " Bind C-/ to vscode commentary since calling from vscode produces double comments due to multiple cursors

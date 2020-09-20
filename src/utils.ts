@@ -269,17 +269,14 @@ export function convertCharNumToByteNum(line: string, col: number): number {
 }
 
 export function convertByteNumToCharNum(line: string, col: number): number {
-    if (col === 0 || !line) {
-        return 0;
-    }
     let totalBytes = 0;
     let currCharNum = 0;
     while (totalBytes < col) {
+        if (currCharNum >= line.length) {
+            return currCharNum + (col - totalBytes);
+        }
         totalBytes += getBytesFromCodePoint(line.codePointAt(currCharNum));
         currCharNum++;
-        if (currCharNum >= line.length) {
-            return currCharNum;
-        }
     }
     return currCharNum;
 }

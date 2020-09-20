@@ -9,6 +9,7 @@ import { calculateEditorColFromVimScreenCol, convertByteNumToCharNum, GridLineEv
 export interface HighlightManagerSettings {
     highlight: HighlightConfiguration;
     viewportHeight: number;
+    textDecorationsAtTop: boolean;
 }
 
 interface GridLineInfo {
@@ -33,12 +34,15 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private commandsDisposables: Disposable[] = [];
 
+    private textDecorationsAtTop = false;
+
     public constructor(
         private logger: Logger,
         private bufferManager: BufferManager,
         private settings: HighlightManagerSettings,
     ) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
+        this.textDecorationsAtTop = settings.textDecorationsAtTop;
         // this.commandsDisposables.push(
         //     commands.registerCommand("editor.action.indentationToTabs", () =>
         //         this.resetHighlight("editor.action.indentationToTabs"),
@@ -219,22 +223,74 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
             try {
                 const lineNum = parseInt(lineStr, 10) - 1;
                 const line = editor.document.lineAt(lineNum).text;
+                const drawnAt = new Map();
 
                 for (const [colNum, text] of cols) {
-                    // vim sends column in bytes, need to convert to characters
-                    // const col = colNum - 1;
-                    const col = convertByteNumToCharNum(line, colNum - 1);
-                    const opt: DecorationOptions = {
-                        range: new Range(lineNum, col, lineNum, col),
-                        renderOptions: {
-                            before: {
-                                ...conf,
-                                ...conf.before,
-                                contentText: text,
+                    if (this.textDecorationsAtTop) {
+                        const width = text.length;
+                        // vim sends column in bytes, need to convert to characters
+                        const col = convertByteNumToCharNum(line, colNum);
+                        const mapKey = [lineNum, Math.min(col + text.length - 1, line.length)].toString();
+                        if (drawnAt.has(mapKey)) {
+                            // VSCode only lets us draw a single text decoration
+                            // at any given character. Any text decorations drawn
+                            // past the end of the line get moved back to the end of
+                            // the line. This becomes a problem if you have a
+                            // line with multiple 2 character marks right
+                            // next to each other at the end. The solution is to
+                            // use a single text decoration but modify it when a
+                            // new decoration would be pushed on top of it.
+                            const ogText = drawnAt.get(mapKey).renderOptions.after.contentText;
+                            drawnAt.get(mapKey).renderOptions.after.contentText = (text[0] + ogText).substr(
+                                0,
+                                ogText.length,
+                            );
+                        } else {
+                            const opt: DecorationOptions = {
+                                range: new Range(lineNum, col + text.length - 1, lineNum, col + text.length - 1),
+                                renderOptions: {
+                                    // Inspired by https://github.com/VSCodeVim/Vim/blob/badecf1b7ecd239e3ed58720245b6f4a74e439b7/src/actions/plugins/easymotion/easymotion.ts#L64
+                                    after: {
+                                        // What's up with the negative right
+                                        // margin? That shifts the decoration to the
+                                        // right. By default VSCode places the
+                                        // decoration behind the text. If we
+                                        // shift it one character to the right,
+                                        // it will be on top.
+                                        // Why do all that math in the right
+                                        // margin?  If we try to draw off the
+                                        // end of the screen, VSCode will place
+                                        // the text in a column we weren't
+                                        // expecting. This code accounts for that.
+                                        margin: `0 0 0 -${Math.min(
+                                            text.length - (col + text.length - 1 - line.length),
+                                            text.length,
+                                        )}ch`,
+                                        ...conf,
+                                        ...conf.before,
+                                        width: `${width}ch; position:absoulute; z-index:99;`,
+                                        contentText: text,
+                                    },
+                                },
+                            };
+                            drawnAt.set(mapKey, opt);
+                            options.push(opt);
+                        }
+                    } else {
+                        // vim sends column in bytes, need to convert to characters
+                        const col = convertByteNumToCharNum(line, colNum - 1);
+                        const opt: DecorationOptions = {
+                            range: new Range(lineNum, col, lineNum, col),
+                            renderOptions: {
+                                before: {
+                                    ...conf,
+                                    ...conf.before,
+                                    contentText: text,
+                                },
                             },
-                        },
-                    };
-                    options.push(opt);
+                        };
+                        options.push(opt);
+                    }
                 }
             } catch {
                 // ignore
