@@ -159,7 +159,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             finalStartCol,
                             isExternal,
                             cells,
-                            line,
                         );
                         if (update) {
                             gridHLUpdates.add(grid);

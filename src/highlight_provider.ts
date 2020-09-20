@@ -251,7 +251,6 @@ export class HighlightProvider {
         start: number,
         external: boolean,
         cells: [string, number?, number?][],
-        line: string,
     ): boolean {
         let cellHlId = 0;
         let cellIdx = start;
@@ -274,16 +273,6 @@ export class HighlightProvider {
                 cellHlId = hlId;
             }
             const groupName = this.getHighlightGroupName(cellHlId, external);
-            // end of the line - clean and exit
-            if (cellIdx >= line.length - 1) {
-                if (cellIdx === 0) {
-                    delete gridHl[row];
-                } else if (gridHl[row]) {
-                    gridHl[row][cellIdx] = cellHlId;
-                    gridHl[row].splice(cellIdx + 1);
-                }
-                break;
-            }
             const repeatTo = text === "\t" || text === "❥" ? 1 : repeat || 1;
             // const repeatTo =
             //     text === "\t" || line[cellIdx] === "\t" ? Math.ceil((repeat || tabSize) / tabSize) : repeat || 1;
