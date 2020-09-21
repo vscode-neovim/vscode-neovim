@@ -2,14 +2,14 @@
 
 ## [0.0.63]
 
--   Allow to write text decoration (usually EasyMotion ones) at top setting (`vscode-neovim.textDecorationsAtTop"`) ( #358 ), contributed by @jhgarner
+-   Allow to put text decorations (usually EasyMotion ones) at top setting (`vscode-neovim.textDecorationsAtTop`) ( #358 ), contributed by @jhgarner
 -   Fix incorrect `<C-w><C-w>/<C-w>w` mappings ( #359 ), contributed by @tschaei
--   Replace/modernize neovim vscode command line interop mappings with `<Cmd>call` ( #362 ), contributed by @theol0403
+-   Replace/modernize neovim vscode command line interop mappings by `<Cmd>call` ( #362 ), contributed by @theol0403
 -   Fix incorrect `<C-w>gf` mapping ( #365 ), contributed by @Yuuki77
 -   Fix applying vim HL (such as `MatchParen`) at end of a line ( #371 )
--   Fix incorrect cursor position when selecting next search result ( #366 )
+-   Fix incorrect cursor position when selecting next/prev search result ( #366 )
 -   Fix/improve behavior of auto-accepting vim return prompt `Press enter to continue`. In some cases it was excess ( #372 )
--   Bundle extension with webpack ( #377 )
+-   Bundle extension by webpack ( #377 )
 
 ## [0.0.62]
 
