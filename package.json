@@ -32,7 +32,7 @@
     "activationEvents": [
         "*"
     ],
-    "main": "./out/extension.js",
+    "main": "./dist/extension.js",
     "contributes": {
         "configuration": {
             "title": "Neovim",
@@ -269,9 +269,9 @@
                 },
                 "vscode-neovim.textDecorationsAtTop": {
                     "type": "boolean",
-					"description": "If turned on, text decorations will appear on top of the associated text instead of behind it. Consider turning this on with the EasyMotion plugin.",
-					"default": false
-				}
+                    "description": "If turned on, text decorations will appear on top of the associated text instead of behind it. Consider turning this on with the EasyMotion plugin.",
+                    "default": false
+                }
             }
         },
         "commands": [
@@ -1074,12 +1074,13 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "yarn run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "pretest": "yarn run compile",
         "lint": "eslint --ext .ts src",
-        "test": "node ./out/test/runTest.js"
+        "test": "node ./out/test/runTest.js",
+        "pretest": "yarn run test-compile",
+        "vscode:prepublish": "webpack --mode production",
+        "webpack": "webpack --mode development",
+        "webpack-dev": "webpack --mode development --watch --info-verbosity verbose",
+        "test-compile": "tsc -p ./"
     },
     "devDependencies": {
         "@types/glob": "^7.1.1",
@@ -1098,8 +1099,11 @@
         "mocha": "^8.1.1",
         "prettier": "^2.0.5",
         "source-map-support": "^0.5.16",
+        "ts-loader": "^8.0.4",
         "typescript": "^4.0.2",
-        "vscode-test": "^1.3.0"
+        "vscode-test": "^1.3.0",
+        "webpack": "^4.44.2",
+        "webpack-cli": "^3.3.12"
     },
     "dependencies": {
         "fast-diff": "^1.2.0",

@@ -29,7 +29,7 @@ jobs:
             - name: Yarn install
               run: yarn --silent --frozen-lockfile
             - name: Build
-              run: yarn run compile
+              run: yarn run test-compile
             - name: Lint
               run: yarn run lint
             - name: Test
@@ -55,10 +55,10 @@ jobs:
             - name: Install VSCE
               run: yarn add vsce
             - name: Create extension
-              run: yarn run vsce package -o vscode-neovim-${{github.sha}}.vsix 
+              run: yarn run vsce package -o vscode-neovim-${{github.sha}}.vsix
             - name: Upload extension
               if: runner.os == 'Linux'
               uses: actions/upload-artifact@v2
               with:
-                name: vscode-neovim
-                path: vscode-neovim-${{github.sha}}.vsix
+                  name: vscode-neovim
+                  path: vscode-neovim-${{github.sha}}.vsix
