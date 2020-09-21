@@ -301,7 +301,8 @@ export class CursorManager
             if (
                 e.selections.length > 1 ||
                 (e.kind === TextEditorSelectionChangeKind.Mouse &&
-                    !e.selections[0].active.isEqual(e.selections[0].anchor))
+                    !e.selections[0].active.isEqual(e.selections[0].anchor)) ||
+                this.modeManager.isVisualMode
             ) {
                 if (e.kind !== TextEditorSelectionChangeKind.Mouse || !this.settings.mouseSelectionEnabled) {
                     return;
