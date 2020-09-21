@@ -4,6 +4,8 @@
 
 const path = require("path");
 
+const webpack = require("webpack");
+
 /**@type {import('webpack').Configuration}*/
 const config = {
     target: "node", // vscode extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
@@ -37,5 +39,12 @@ const config = {
             },
         ],
     },
+    plugins: [
+        new webpack.EnvironmentPlugin({
+            // stop neovim winston spam
+            NVIM_NODE_LOG_LEVEL: "error",
+            ALLOW_CONSOLE: true,
+        }),
+    ],
 };
 module.exports = config;
