@@ -45,6 +45,44 @@
                     }
                 }
             }
+        },
+        {
+            "label": "Compile - Webpack",
+            "type": "npm",
+            "script": "webpack",
+            "isBackground": false,
+            "presentation": {
+                "echo": false,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Compile TS",
+            "type": "npm",
+            "script": "test-compile",
+            "isBackground": false,
+            "presentation": {
+                "echo": false,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": "$tsc"
+        },
+        {
+            "label": "Test PreLaunch",
+            "dependsOn": ["Compile TS", "Compile - Webpack"],
+            "dependsOrder": "parallel"
         }
     ]
 }

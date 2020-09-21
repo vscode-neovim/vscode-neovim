@@ -30,6 +30,8 @@ jobs:
               run: yarn --silent --frozen-lockfile
             - name: Build
               run: yarn run test-compile
+            - name: Webpack
+              run: yarn run webpack
             - name: Lint
               run: yarn run lint
             - name: Test

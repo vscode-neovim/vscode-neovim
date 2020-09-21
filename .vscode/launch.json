@@ -29,8 +29,8 @@
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
             ],
-            "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
-            "preLaunchTask": "npm: test-compile",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/out/test/**/*.js"],
+            "preLaunchTask": "Test PreLaunch",
             "env": {
                 "NEOVIM_DEBUG": "1",
                 "NEOVIM_DEBUG_HOST": "127.0.0.1",
