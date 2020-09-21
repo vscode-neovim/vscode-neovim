@@ -1,4 +1,4 @@
-import { debounce } from "lodash";
+import { debounce } from "lodash-es";
 import { Buffer, NeovimClient, Window } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
 import {

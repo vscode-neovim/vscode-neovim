@@ -34,6 +34,11 @@ const config = {
                 use: [
                     {
                         loader: "ts-loader",
+                        options: {
+                            compilerOptions: {
+                                module: "esnext",
+                            },
+                        },
                     },
                 ],
             },

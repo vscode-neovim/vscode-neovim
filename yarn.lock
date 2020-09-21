@@ -51,10 +51,17 @@
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
   integrity sha1-7ihweulOEdK4J7y+UnC86n8+ce4=
 
-"@types/lodash@^4.14.149":
-  version "4.14.155"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.155.tgz#e2b4514f46a261fd11542e47519c20ebce7bc23a"
-  integrity sha512-vEcX7S7aPhsBCivxMwAANQburHBtfN9RdyXFk84IJmu2Z4Hkg1tOFgaslRiEqqvoLtbCBi6ika1EMspE+NZ9Lg==
+"@types/lodash-es@^4.17.3":
+  version "4.17.3"
+  resolved "https://registry.yarnpkg.com/@types/lodash-es/-/lodash-es-4.17.3.tgz#87eb0b3673b076b8ee655f1890260a136af09a2d"
+  integrity sha512-iHI0i7ZAL1qepz1Y7f3EKg/zUMDwDfTzitx+AlHhJJvXwenP682ZyGbgPSc5Ej3eEAKVbNWKFuwOadCj5vBbYQ==
+  dependencies:
+    "@types/lodash" "*"
+
+"@types/lodash@*":
+  version "4.14.161"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.161.tgz#a21ca0777dabc6e4f44f3d07f37b765f54188b18"
+  integrity sha512-EP6O3Jkr7bXvZZSZYlsgt5DIjiGr0dXP1/jVEwVLTFgg0d+3lWVQkRavYVQszV7dYUwvg0B8R0MBDpcmXg7XIA==
 
 "@types/minimatch@*":
   version "3.0.3"
@@ -2451,6 +2458,11 @@ locate-path@^5.0.0:
   dependencies:
     p-locate "^4.1.0"
 
+lodash-es@^4.17.15:
+  version "4.17.15"
+  resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.15.tgz#21bd96839354412f23d7a10340e5eac6ee455d78"
+  integrity sha512-rlrc3yU3+JNOpZ9zj5pQtxnx2THmvRykwL4Xlxoa8I9lHBlVbbyPhgyPMioxVZ4NqyxaVVtaJnzsyOidQIhyyQ==
+
 lodash.defaults@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/lodash.defaults/-/lodash.defaults-4.2.0.tgz#d09178716ffea4dde9e5fb7b37f6f0802274580c"
@@ -2461,7 +2473,7 @@ lodash.omit@^4.5.0:
   resolved "https://registry.yarnpkg.com/lodash.omit/-/lodash.omit-4.5.0.tgz#6eb19ae5a1ee1dd9df0b969e66ce0b7fa30b5e60"
   integrity sha1-brGa5aHuHdnfC5aeZs4Lf6MLXmA=
 
-lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19:
+lodash@^4.17.14, lodash@^4.17.15:
   version "4.17.19"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.19.tgz#e48ddedbe30b3321783c5b4301fbd353bc1e4a4b"
   integrity sha512-JNvd8XER9GQX0v2qJgsaN/mzFCNA5BRe/j8JN9d+tWyGLSodKQHKFicdwNYzWwI3wjRnaKPsGj1XkBjx/F96DQ==
