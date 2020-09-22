@@ -16,6 +16,8 @@ Please report any issues/suggestions to [vscode-neovim repository](https://githu
 
 **Neovim 0.5+** is required. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
 
+If you get `Unable to init vscode-neovim: command 'type' already exists` message, try to uninstall other VSCode extensions, which register `type` command (i.e. [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
+
 ### WSL
 
 If you want to use WSL version of neovim, set `useWSL` configuration toggle and specify linux path to nvim binary. `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through `$PATH` linux env setting.
