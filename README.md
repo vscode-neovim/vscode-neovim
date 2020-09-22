@@ -16,7 +16,7 @@ Please report any issues/suggestions to [vscode-neovim repository](https://githu
 
 **Neovim 0.5+** is required. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
 
-If you get `Unable to init vscode-neovim: command 'type' already exists` message, try to uninstall other VSCode extensions, which register `type` command (i.e. [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or [overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
+If you get `Unable to init vscode-neovim: command 'type' already exists` message, try to uninstall other VSCode extensions, which register `type` command (i.e. [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 
 ### WSL
 
