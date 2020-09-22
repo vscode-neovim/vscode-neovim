@@ -78,7 +78,7 @@ export class TypingManager implements Disposable {
                         this.typeHandlerDisposable = undefined;
                     }
                     if (this.pendingKeysAfterEnter) {
-                        commands.executeCommand("default:type", { text: this.pendingKeysAfterEnter });
+                        commands.executeCommand(this.modeManager.isInsertMode ? "default:type" : "type", { text: this.pendingKeysAfterEnter });
                         this.pendingKeysAfterEnter = "";
                     }
                 });
