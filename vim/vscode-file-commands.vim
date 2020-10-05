@@ -38,6 +38,7 @@ command! -bang Wall call VSCodeNotify('workbench.action.files.saveAll')
 command! -bang Quit if <q-bang> ==# '!' | call VSCodeNotify('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeNotify('workbench.action.closeActiveEditor') | endif
 
 command! -bang Wq call <SID>saveAndClose()
+command! -bang Xit call <SID>saveAndClose()
 
 command! -bang Qall call VSCodeNotify('workbench.action.closeAllEditors')
 
@@ -53,7 +54,7 @@ AlterCommand sav[eas] Saveas
 AlterCommand wa[ll] Wall
 AlterCommand q[uit] Quit
 AlterCommand wq Wq
-AlterCommand x Wq
+AlterCommand x Xit
 AlterCommand qa[ll] Qall
 AlterCommand wqa[ll] Wqall
 AlterCommand xa[ll] Xall
