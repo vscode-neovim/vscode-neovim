@@ -54,7 +54,7 @@ AlterCommand sav[eas] Saveas
 AlterCommand wa[ll] Wall
 AlterCommand q[uit] Quit
 AlterCommand wq Wq
-AlterCommand x Xit
+AlterCommand x[it] Xit
 AlterCommand qa[ll] Qall
 AlterCommand wqa[ll] Wqall
 AlterCommand xa[ll] Xall
