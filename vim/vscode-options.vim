@@ -24,7 +24,7 @@ set bufhidden=hide
 " do not attempt autowrite any buffers
 set noautowrite
 " Disable shada session storing
-" set shada=
+set shada=
 " set nonumber
 set norelativenumber
 " Render line number as "marker" of the visible top/bottom screen row
