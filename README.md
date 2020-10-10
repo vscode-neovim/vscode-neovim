@@ -96,7 +96,7 @@ to enable `jk` add also:
 ```json
 {
     "command": "vscode-neovim.compositeEscape2",
-    "key": "j",
+    "key": "k",
     "when": "neovim.mode == insert && editorTextFocus",
     "args": "k"
 }
