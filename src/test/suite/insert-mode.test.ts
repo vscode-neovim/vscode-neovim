@@ -487,14 +487,14 @@ describe("Insert mode and buffer syncronization", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("i1"); 
+        await sendVSCodeKeys("i1");
         await sendEscapeKey(1000);
-        await sendVSCodeKeys("a2"); 
+        await sendVSCodeKeys("a2");
         await sendEscapeKey(1000);
-        await sendVSCodeKeys("a3"); 
+        await sendVSCodeKeys("a3");
         await sendEscapeKey(1000);
-        await sendVSCodeKeys("a"); 
-        vscode.commands.executeCommand("vscode-neovim.ctrl-a-insert")
+        await sendVSCodeKeys("a");
+        vscode.commands.executeCommand("vscode-neovim.ctrl-a-insert");
         await wait();
 
         await sendEscapeKey(1000);
