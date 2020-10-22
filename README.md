@@ -39,9 +39,9 @@ Neovim 0.5.0-nightly or greater
 ## Important
 
 -   Visual modes are not producing real vscode selections (few versions had this feature previously, but it was implemented through ugly & hacky workarounds). Any vscode commands expecting selection won't work. To round the corners, invoking VSCode command picker through the default hotkeys (`f1`/`ctrl/cmd+shift+p`) from visual mode converts vim selection to real vscode selection. Also commenting/indenting/formatting works out of the box too. If you're using some custom mapping for calling vscode commands and depends on real vscode selection, you can use `VSCodeNotifyRange`/`VSCodeNotifyRangePos` (the first one linewise, the latter characterwise) functions which will convert visual mode selection to vscode selection before calling the command. See [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54) and [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98)
--   The extenison for now works best if `editor.scrollBeyondLastLine` is disabled.
+-   The extension for now works best if `editor.scrollBeyondLastLine` is disabled.
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`. This is normal.
--   File/tab/window management (`:w`/`q`/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindngs/commands. **DO NOT** use vim `:w`, etc... in scripts/keybindings, they won't work.
+-   File/tab/window management (`:w`/`q`/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindings/commands. **DO NOT** use vim `:w`, etc... in scripts/keybindings, they won't work.
 -   It's better to use spaces instead of tabs for file indent. `<C-v>` is broken for tab indents
 -   On a Mac, the `h`, `j`, `k` and `l` movement keys may not repeat in visual mode when held, to fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`
@@ -50,7 +50,7 @@ Neovim 0.5.0-nightly or greater
 
 -   =, == are mapped to `editor.action.formatSelection`
 -   It's possible to call vscode commands from neovim. See `VSCodeCall/VSCodeNotify` vim functions in `vscode-neovim.vim` file. `VSCodeCall` is blocking request, while `VSCodeNotify` is not (see below)
--   Scrolling is done by VSCode side. `<C-d>/<C-u>/etc...` are slighly different
+-   Scrolling is done by VSCode side. `<C-d>/<C-u>/etc...` are slightly different
 -   File management commands such as `e` / `w` / `q` etc are mapped to corresponding vscode commands and behavior may be different (see below)
 -   `gd`/`<C-]` are mapped to `editor.action.revealDefinition` (Shortcut `F12`), also `<C-]>` works in vim help files
 -   `gf` is mapped to `editor.action.revealDeclaration`
@@ -182,7 +182,7 @@ Multiple cursors work in:
 
 To spawn multiple cursors from visual line/block modes type `ma`/`mA` or `mi`/`mI` (by default). The effect differs:
 
--   For visual line mode `mi` will start insert mode on each selected line on the first non whitespace characeter and `ma` will on the end of line
+-   For visual line mode `mi` will start insert mode on each selected line on the first non whitespace character and `ma` will on the end of line
 -   For visual block mode `mi` will start insert on each selected line before the cursor block and `ma` after
 -   `mA`/`mI` versions account empty lines too (only for visual line mode, for visual block mode they're same as ma/mi)
 
@@ -452,7 +452,7 @@ Other control keys are not being sent (Usually useless with vscode)
 
 ## Vim-easymotion
 
-Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-easymotion) works fine and as expected... except one thing: it really replaces your text with markers then restores back. It may work for VIM but for VS Code it leads to broken text and many errors reported while you're jumping. For this reason i created the special [vim-easymotion fork](https://github.com/asvetliakov/vim-easymotion) which doesn't touch your text and instead use vscode text decorations. Just add my fork to your `vim-plug` block or by using your favorite vim plugin installer and delete original vim-easymotion. Also overwin motions won't work (obviously) so don't use them. Happy jumping!
+Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-easymotion) works fine and as expected... except one thing: it really replaces your text with markers then restores back. It may work for VIM but for VS Code it leads to broken text and many errors reported while you're jumping. For this reason I created the special [vim-easymotion fork](https://github.com/asvetliakov/vim-easymotion) which doesn't touch your text and instead use vscode text decorations. Just add my fork to your `vim-plug` block or by using your favorite vim plugin installer and delete original vim-easymotion. Also overwin motions won't work (obviously) so don't use them. Happy jumping!
 
 ![easymotion](/images/easy-motion-vscode.png)
 
