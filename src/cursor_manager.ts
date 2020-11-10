@@ -91,6 +91,8 @@ export class CursorManager
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
+        const activeEditorVisibleRanges = window.activeTextEditor?.visibleRanges;
+
         const winCursorsUpdates: Map<number, { line: number; col: number }> = new Map();
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
@@ -179,6 +181,17 @@ export class CursorManager
             }
         }
         winCursorsUpdates.clear();
+
+        if (!activeEditorVisibleRanges?.[0]) {
+            return;
+        }
+
+        this.logger.debug(
+            `${LOG_PREFIX}: found preserved visibleRange ${JSON.stringify(
+                activeEditorVisibleRanges,
+            )}, trying to restore`,
+        );
+        window.activeTextEditor?.revealRange(activeEditorVisibleRanges[0], TextEditorRevealType.AtTop);
     }
 
     /**
