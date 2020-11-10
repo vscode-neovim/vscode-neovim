@@ -34,7 +34,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     try {
         const plugin = new MainController({
             customInitFile: customInit,
-            extensionPath: context.extensionPath,
+            extensionPath: context.extensionPath.replace(/\\/g, "\\\\"),
             highlightsConfiguration: {
                 highlights: highlightConfHighlights,
                 ignoreHighlights: highlightConfIgnore,
