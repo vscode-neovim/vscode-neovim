@@ -72,14 +72,16 @@ export class TypingManager implements Disposable {
                 );
                 this.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
                     this.isEnteringInsertMode = false;
-                    if (this.typeHandlerDisposable) {
+                    if (this.typeHandlerDisposable && this.modeManager.isInsertMode) {
                         this.logger.debug(`${LOG_PREFIX}: Waiting done, disposing type handler`);
                         this.typeHandlerDisposable.dispose();
                         this.typeHandlerDisposable = undefined;
-                        if (this.pendingKeysAfterEnter) {
-                            commands.executeCommand("default:type", { text: this.pendingKeysAfterEnter });
-                            this.pendingKeysAfterEnter = "";
-                        }
+                    }
+                    if (this.pendingKeysAfterEnter) {
+                        commands.executeCommand(this.modeManager.isInsertMode ? "default:type" : "type", {
+                            text: this.pendingKeysAfterEnter,
+                        });
+                        this.pendingKeysAfterEnter = "";
                     }
                 });
             } else {

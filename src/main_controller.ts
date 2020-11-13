@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from "child_process";
+import { spawn, ChildProcess, execSync } from "child_process";
 import path from "path";
 
 import vscode from "vscode";
@@ -97,29 +97,30 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.logger);
 
-        // https://github.com/asvetliakov/vscode-neovim/issues/147
-        // let extensionPath = settings.extensionPath;
-        // if (settings.useWsl) {
-        //     extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath ${extensionPath}`).toString();
-        // }
+        let extensionPath = settings.extensionPath;
+        if (settings.useWsl) {
+            // execSync returns a newline character at the end
+            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath ${extensionPath}`).toString().trim();
+        }
 
-        // const neovimSupportScriptPath = path.join(extensionPath, "vim", "vscode-neovim.vim");
-        // const neovimOptionScriptPath = path.join(extensionPath, "vim", "vscode-options.vim");
+        // These paths get called inside WSL, they must be POSIX paths (forward slashes)
+        const neovimSupportScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
+        const neovimOptionScriptPath = path.posix.join(extensionPath, "vim", "vscode-options.vim");
 
-        const neovimSupportScriptPath = path.join(settings.extensionPath, "vim", "vscode-neovim.vim");
-        const neovimOptionScriptPath = path.join(settings.extensionPath, "vim", "vscode-options.vim");
+        const workspaceFolder = vscode.workspace.workspaceFolders;
+        const cwd = workspaceFolder ? workspaceFolder[0].uri.fsPath : "~";
 
         const args = [
             "-N",
             "--embed",
             // load options after user config
             "-c",
-            settings.useWsl ? `source $(wslpath '${neovimOptionScriptPath}')` : `source ${neovimOptionScriptPath}`,
-            // `source ${neovimOptionScriptPath}`,
+            `source ${neovimOptionScriptPath}`,
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
-            settings.useWsl ? `source $(wslpath '${neovimSupportScriptPath}')` : `source ${neovimSupportScriptPath}`,
-            // `source ${neovimSupportScriptPath}`,
+            `source ${neovimSupportScriptPath}`,
+            "-c",
+            `cd ${cwd}`,
         ];
         if (settings.useWsl) {
             args.unshift(settings.neovimPath);
