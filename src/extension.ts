@@ -21,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const mouseVisualSelection = settings.get("mouseSelectionStartVisualMode", false);
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
-    const useWsl = settings.get("useWSL", false) && isWindows;
+    const useWsl = isWindows && settings.get("useWSL", false);
     const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
     const customInit = getNeovimInitPath() ?? "";
