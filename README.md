@@ -20,7 +20,7 @@ If you get `Unable to init vscode-neovim: command 'type' already exists` message
 
 ### WSL
 
-If you want to use WSL version of neovim, set `useWSL` configuration toggle and specify linux path to nvim binary. `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through `$PATH` linux env setting.
+If you want to use WSL version of neovim, set `useWSL` configuration toggle and specify linux path to nvim binary. `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through `$PATH` linux env setting. Use `wsl --list` to check for the correct default linux distribution.
 
 ## Features
 
