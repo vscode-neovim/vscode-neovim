@@ -18,13 +18,29 @@ function! s:closeOtherEditors()
     call VSCodeNotify('workbench.action.closeOtherEditors')
 endfunction
 
-function! s:manageEditorSize(...)
+function! s:manageEditorHeight(...)
     let count = a:1
     let to = a:2
     for i in range(1, count ? count : 1)
-        call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+        call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewHeight' : 'workbench.action.decreaseViewHeight')
     endfor
 endfunction
+
+function! s:manageEditorWidth(...)
+    let count = a:1
+    let to = a:2
+    for i in range(1, count ? count : 1)
+        call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewWidth' : 'workbench.action.decreaseViewWidth')
+    endfor
+endfunction
+
+" function! s:manageEditorSize(...)
+"     let count = a:1
+"     let to = a:2
+"     for i in range(1, count ? count : 1)
+"         call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+"     endfor
+" endfunction
 
 command! -complete=file -nargs=? Split call <SID>split('h', <q-args>)
 command! -complete=file -nargs=? Vsplit call <SID>split('v', <q-args>)
@@ -87,14 +103,23 @@ xnoremap <C-w>b <Cmd>call VSCodeNotify('workbench.action.focusLastEditorGroup')<
 nnoremap <C-w>= <Cmd>call VSCodeNotify('workbench.action.evenEditorWidths')<CR>
 xnoremap <C-w>= <Cmd>call VSCodeNotify('workbench.action.evenEditorWidths')<CR>
 
-nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+nnoremap <C-w>+ <Cmd>call <SID>manageEditorHeight(v:count, 'increase')<CR>
+xnoremap <C-w>+ <Cmd>call <SID>manageEditorHeight(v:count, 'increase')<CR>
+nnoremap <C-w>- <Cmd>call <SID>manageEditorHeight(v:count, 'decrease')<CR>
+xnoremap <C-w>- <Cmd>call <SID>manageEditorHeight(v:count, 'decrease')<CR>
+nnoremap <C-w>> <Cmd>call <SID>manageEditorWidth(v:count,  'increase')<CR>
+xnoremap <C-w>> <Cmd>call <SID>manageEditorWidth(v:count,  'increase')<CR>
+nnoremap <C-w>< <Cmd>call <SID>manageEditorWidth(v:count,  'decrease')<CR>
+xnoremap <C-w>< <Cmd>call <SID>manageEditorWidth(v:count,  'decrease')<CR>
+
+" nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+" xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+" nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+" xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+" nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+" xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+" nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+" xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
 
 nnoremap <C-w>_ <Cmd>call VSCodeNotify('workbench.action.toggleEditorWidths')<CR>
 
