@@ -34,14 +34,6 @@ function! s:manageEditorWidth(...)
     endfor
 endfunction
 
-" function! s:manageEditorSize(...)
-"     let count = a:1
-"     let to = a:2
-"     for i in range(1, count ? count : 1)
-"         call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
-"     endfor
-" endfunction
-
 command! -complete=file -nargs=? Split call <SID>split('h', <q-args>)
 command! -complete=file -nargs=? Vsplit call <SID>split('v', <q-args>)
 command! -complete=file -nargs=? New call <SID>split('h', '__vscode_new__')
@@ -112,6 +104,21 @@ xnoremap <C-w>> <Cmd>call <SID>manageEditorWidth(v:count,  'increase')<CR>
 nnoremap <C-w>< <Cmd>call <SID>manageEditorWidth(v:count,  'decrease')<CR>
 xnoremap <C-w>< <Cmd>call <SID>manageEditorWidth(v:count,  'decrease')<CR>
 
+" ----------------------------------------------------------------------------
+" Backup for VSCode command 'Increase/decrease current view size'
+" - workbench.action.increaseViewSize
+" - workbench.action.decreaseViewSize
+" To restore previous functionality, copy these commented out chunks into init.vim
+" ----------------------------------------------------------------------------
+
+" function! s:manageEditorSize(...)
+"     let count = a:1
+"     let to = a:2
+"     for i in range(1, count ? count : 1)
+"         call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+"     endfor
+" endfunction
+
 " nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
 " xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
 " nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
@@ -120,6 +127,9 @@ xnoremap <C-w>< <Cmd>call <SID>manageEditorWidth(v:count,  'decrease')<CR>
 " xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
 " nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
 " xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+
+" ----------------------------------------------------------------------------
+
 
 nnoremap <C-w>_ <Cmd>call VSCodeNotify('workbench.action.toggleEditorWidths')<CR>
 
