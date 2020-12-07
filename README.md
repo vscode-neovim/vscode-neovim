@@ -359,13 +359,47 @@ _Note_: split size distribution is controlled by `workbench.editor.splitSizing` 
 
 -   Align all editors to have the same width
 
-`[count]<C-w> >` or `[count]<C-w> +`
+`[count]<C-w> +`
 
--   Increase editor size by count. Both width & height are increased since in vscode it's not possible to control individual width/height
+-   Increase editor height by (optional) count
 
-`[count]<C-w> <` or `[count]<C-w> -`
+`[count]<C-w> -`
 
--   Decrease editor size by count. Both width & height are increased since in vscode it's not possible to control individual width/height
+-   Decrease editor height by (optional) count
+
+`[count]<C-w> >`
+
+-   Increase editor width by (optional) count
+
+`[count]<C-w> <`
+
+-   Decrease editor width by (optional) count
+
+To use VSCode command 'Increase/decrease current view size'
+- `workbench.action.increaseViewSize`
+- `workbench.action.decreaseViewSize`
+<details>
+<summary>Copy this into init.vim</summary>
+
+    function! s:manageEditorSize(...)
+        let count = a:1
+        let to = a:2
+        for i in range(1, count ? count : 1)
+            call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+        endfor
+    endfunction
+
+    " Sample keybindings. Note these override default keybindings mentioned above.
+    nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+</details>
+<br>
 
 `<C-w> _`
 
