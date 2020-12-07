@@ -359,13 +359,21 @@ _Note_: split size distribution is controlled by `workbench.editor.splitSizing` 
 
 -   Align all editors to have the same width
 
-`[count]<C-w> >` or `[count]<C-w> +`
+`[count]<C-w> +`
 
--   Increase editor size by count. Both width & height are increased since in vscode it's not possible to control individual width/height
+-   Increase editor height by (optional) count
 
-`[count]<C-w> <` or `[count]<C-w> -`
+`[count]<C-w> -`
 
--   Decrease editor size by count. Both width & height are increased since in vscode it's not possible to control individual width/height
+-   Decrease editor height by (optional) count
+
+`[count]<C-w> >`
+
+-   Increase editor width by (optional) count
+
+`[count]<C-w> <`
+
+-   Decrease editor width by (optional) count
 
 `<C-w> _`
 
