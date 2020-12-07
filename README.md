@@ -381,7 +381,6 @@ To use VSCode command 'Increase/decrease current view size'
 <details>
 <summary>Copy this into init.vim</summary>
 
-    ```
     function! s:manageEditorSize(...)
         let count = a:1
         let to = a:2
@@ -399,7 +398,6 @@ To use VSCode command 'Increase/decrease current view size'
     xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
     nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
     xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    ```
 </details>
 <br>
 
