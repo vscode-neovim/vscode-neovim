@@ -51,6 +51,12 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
             }
             case "move-cursor": {
                 const [to] = args as ["top" | "middle" | "bottom"];
+
+                // Fix bug: `goToLine` First moving to first character of the line before `goToLine` is triggered.
+                // Temporary solution: Move cursor to first character of the line and delay by 5 milliseconds before triggering `goToLine`. 1 millisecond delay failed manual tests.
+                vscode.commands.executeCommand("cursorHome");
+                await new Promise((resolve) => setTimeout(resolve, 5));
+
                 this.goToLine(to);
                 break;
             }
