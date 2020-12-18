@@ -54,6 +54,14 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
                 this.goToLine(to);
                 break;
             }
+            case "cursor-move": {
+                const [to, by] = args as [
+                    "wrappedLineFirstNonWhitespaceCharacter" | "wrappedLineLastNonWhitespaceCharacter",
+                    "line" | "wrappedLine" | "character" | "halfLine",
+                ];
+                this.cursorMove(to, by);
+                break;
+            }
             case "scroll": {
                 const [by, to] = args as ["page" | "halfPage", "up" | "down"];
                 this.scrollPage(by, to);
@@ -136,6 +144,13 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
                 line.firstNonWhitespaceCharacterIndex,
             ),
         ];
+    };
+
+    private cursorMove = (
+        to: "wrappedLineFirstNonWhitespaceCharacter" | "wrappedLineLastNonWhitespaceCharacter",
+        by: "line" | "wrappedLine" | "character" | "halfLine",
+    ): void => {
+        vscode.commands.executeCommand("cursorMove", { to: to, by: by, value: 1, select: false });
     };
 
     // zz, zt, zb and others

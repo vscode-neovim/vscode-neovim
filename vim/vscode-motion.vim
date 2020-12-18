@@ -1,10 +1,12 @@
-function! s:toLastCharOfScreenLine()
-    call VSCodeNotify('cursorEnd')
-    " Optmized delay is required after calling VSCode command
-    sleep 85m
-    " Offset cursor moving to the right by 1 column caused by calling `VSCodeNotify('cursorEnd')` in Vim mode
-    normal! h
+function! s:toFirstCharOfScreenLine()
+    call VSCodeExtensionNotify('cursor-move', 'wrappedLineFirstNonWhitespaceCharacter')
 endfunction
 
-nnoremap g0 <Cmd>call VSCodeNotify('cursorHome')<CR>
+function! s:toLastCharOfScreenLine()
+    call VSCodeExtensionNotify('cursor-move', 'wrappedLineLastNonWhitespaceCharacter')
+    " Offfset cursor moving to the right caused by calling VSCode command in Vim mode
+    call VSCodeNotify('cursorLeft')
+endfunction
+
+nnoremap g0 <Cmd>call <SID>toFirstCharOfScreenLine()<CR>
 nnoremap g$ <Cmd>call <SID>toLastCharOfScreenLine()<CR>
