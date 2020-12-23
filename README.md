@@ -12,7 +12,7 @@ Please report any issues/suggestions to [vscode-neovim repository](https://githu
 
 -   Install [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension
 -   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) Required version **0.5.0 nightly** or greater
--   **Important!: If you already have big & custom `init.vim` i'd recommend to wrap existing settings & plugins with `if !exists('g:vscode')` check to prevent potential breakings and problems**. If you have any problems - try with empty `init.vim` first
+-   **Important!: If you already have big & custom `init.vim` i'd recommend to wrap existing settings & plugins with [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) check to prevent potential breakings and problems**. If you have any problems - try with empty `init.vim` first
 
 **Neovim 0.5+** is required. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
 
