@@ -56,6 +56,8 @@ export class CursorManager
      */
     private ignoreSelectionEvents = false;
 
+    private debouncedCursorUpdates: WeakMap<TextEditor, CursorManager["updateCursorPosInEditor"]> = new WeakMap();
+
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
@@ -174,7 +176,9 @@ export class CursorManager
                             true,
                         );
                         this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
-                        this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
+                        // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
+                        // !To not mess the cursor, try to debounce the update
+                        this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
                     } catch (e) {
                         this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
                     }
@@ -418,6 +422,16 @@ export class CursorManager
                 editor.revealRange(newPos, TextEditorRevealType.InCenterIfOutsideViewport);
             }
         }
+    };
+
+    private getDebouncedUpdateCursorPos = (editor: TextEditor): CursorManager["updateCursorPosInEditor"] => {
+        const existing = this.debouncedCursorUpdates.get(editor);
+        if (existing) {
+            return existing;
+        }
+        const func = debounce(this.updateCursorPosInEditor, 10, { leading: false, trailing: true, maxWait: 100 });
+        this.debouncedCursorUpdates.set(editor, func);
+        return func;
     };
 
     private updateCursorStyle(modeName: string): void {
