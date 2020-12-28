@@ -91,7 +91,6 @@ export class CursorManager
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
         const winCursorsUpdates: Map<number, { line: number; col: number }> = new Map();
-        console.log(batch);
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
