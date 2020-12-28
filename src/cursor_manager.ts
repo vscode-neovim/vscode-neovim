@@ -354,11 +354,15 @@ export class CursorManager
             return;
         }
         this.logger.debug(
-            `${LOG_PREFIX}: Updating cursor in editor, viewColumn: ${editor.viewColumn}, pos: [${newLine}, ${newCol}]`,
+            `${LOG_PREFIX}: Updating cursor in editor: ${editor.document.uri.toString()}, viewColumn: ${
+                editor.viewColumn
+            }, pos: [${newLine}, ${newCol}]`,
         );
         if (editor !== window.activeTextEditor) {
             this.logger.debug(
-                `${LOG_PREFIX}: Editor, viewColumn: ${editor.viewColumn} is not active text editor, skipping cursor setting`,
+                `${LOG_PREFIX}: Editor: ${editor.document.uri.toString()}, viewColumn: ${
+                    editor.viewColumn
+                } is not active text editor, skipping cursor setting`,
             );
             return;
         }

@@ -26,7 +26,6 @@ endfunction
 
 function! s:vscodeGoToDefinition(str)
     if exists('b:vscode_controlled') && b:vscode_controlled
-        exe "normal! m'"
         call VSCodeNotify('editor.action.reveal' . a:str)
     else
         " Allow to funcionar in help files
