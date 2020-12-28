@@ -68,6 +68,7 @@ export class CursorManager
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
+        this.modeManager.onModeChange(this.onModeChange);
     }
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -93,7 +94,6 @@ export class CursorManager
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
         const winCursorsUpdates: Map<number, { line: number; col: number; grid: number }> = new Map();
-        console.log(batch);
         const gridGoToUpdates = new Set<number>();
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
@@ -485,6 +485,15 @@ export class CursorManager
         }
         window.activeTextEditor.selections = newSelections;
     }
+
+    private onModeChange = (newMode: string): void => {
+        if (newMode === "normal" && window.activeTextEditor && window.activeTextEditor.selections.length > 1) {
+            window.activeTextEditor.selections = [
+                new Selection(window.activeTextEditor.selection.active, window.activeTextEditor.selection.active),
+            ];
+        }
+    };
+
     // Following lines are enabling vim-style cursor follow on scroll
     // although it's working, unfortunately it breaks vscode jumplist when scrolling to definition from outline/etc
     // I think it's better ot have more-less usable jumplist than such minor feature at this feature request will be implemented (https://github.com/microsoft/vscode/issues/84351)
