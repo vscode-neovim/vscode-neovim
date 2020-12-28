@@ -373,12 +373,12 @@ export class CursorManager
             this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} using cursorMove command`);
             if (Math.abs(deltaLine) > 0) {
                 this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by line: ${deltaLine}, char: 0`);
+                commands.executeCommand("cursorLineStart");
                 commands.executeCommand("cursorMove", {
                     to: deltaLine > 0 ? "down" : "up",
                     by: "line",
                     value: Math.abs(deltaLine),
                 });
-                commands.executeCommand("cursorLineStart");
                 deltaChar = newCol;
             }
             if (Math.abs(deltaChar) > 0) {
