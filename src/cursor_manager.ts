@@ -6,6 +6,7 @@ import {
     Selection,
     TextEditor,
     TextEditorCursorStyle,
+    TextEditorRevealType,
     TextEditorSelectionChangeEvent,
     TextEditorSelectionChangeKind,
     window,
@@ -90,6 +91,7 @@ export class CursorManager
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
         const winCursorsUpdates: Map<number, { line: number; col: number }> = new Map();
+        console.log(batch);
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
@@ -353,48 +355,48 @@ export class CursorManager
         if (this.ignoreSelectionEvents) {
             return;
         }
-        this.logger.debug(
-            `${LOG_PREFIX}: Updating cursor in editor: ${editor.document.uri.toString()}, viewColumn: ${
-                editor.viewColumn
-            }, pos: [${newLine}, ${newCol}]`,
-        );
+        const editorName = `${editor.document.uri.toString()}, viewColumn: ${editor.viewColumn}`;
+        this.logger.debug(`${LOG_PREFIX}: Updating cursor in editor: ${editorName}, pos: [${newLine}, ${newCol}]`);
         if (editor !== window.activeTextEditor) {
             this.logger.debug(
-                `${LOG_PREFIX}: Editor: ${editor.document.uri.toString()}, viewColumn: ${
-                    editor.viewColumn
-                } is not active text editor, skipping cursor setting`,
+                `${LOG_PREFIX}: Editor: ${editorName} is not active text editor, setting cursor directly`,
             );
+            const newPos = new Selection(newLine, newCol, newLine, newCol);
+            if (!editor.selection.isEqual(newPos)) {
+                editor.selections = [newPos];
+            }
             return;
         }
         const currCursor = editor.selection.active;
         const deltaLine = newLine - currCursor.line;
         let deltaChar = newCol - currCursor.character;
-
-        if (Math.abs(deltaLine) > 0) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Editor: ${editor.document.uri.toString()}, viewColumn: ${
-                    editor.viewColumn
-                } Moving cursor by line:0 ${Math.abs(deltaLine)}`,
-            );
-            commands.executeCommand("cursorMove", {
-                to: deltaLine > 0 ? "down" : "up",
-                by: "line",
-                value: Math.abs(deltaLine),
-            });
-            commands.executeCommand("cursorLineStart");
-            deltaChar = newCol;
-        }
-        if (Math.abs(deltaChar) > 0) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Editor: ${editor.document.uri.toString()}, viewColumn: ${
-                    editor.viewColumn
-                } Moving cursor by char: ${Math.abs(deltaChar)}`,
-            );
-            commands.executeCommand("cursorMove", {
-                to: deltaChar > 0 ? "right" : "left",
-                by: "character",
-                value: Math.abs(deltaChar),
-            });
+        if (Math.abs(deltaLine) <= 1) {
+            this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} using cursorMove command`);
+            if (Math.abs(deltaLine) > 0) {
+                this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by line: ${deltaLine}, char: 0`);
+                commands.executeCommand("cursorMove", {
+                    to: deltaLine > 0 ? "down" : "up",
+                    by: "line",
+                    value: Math.abs(deltaLine),
+                });
+                commands.executeCommand("cursorLineStart");
+                deltaChar = newCol;
+            }
+            if (Math.abs(deltaChar) > 0) {
+                this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by char: ${deltaChar}`);
+                commands.executeCommand("cursorMove", {
+                    to: deltaChar > 0 ? "right" : "left",
+                    by: "character",
+                    value: Math.abs(deltaChar),
+                });
+            }
+        } else {
+            this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
+            const newPos = new Selection(newLine, newCol, newLine, newCol);
+            if (!editor.selection.isEqual(newPos)) {
+                editor.selections = [newPos];
+                editor.revealRange(newPos, TextEditorRevealType.InCenterIfOutsideViewport);
+            }
         }
     };
 
