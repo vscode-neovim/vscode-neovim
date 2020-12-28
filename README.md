@@ -59,7 +59,6 @@ Neovim 0.5.0-nightly or greater
 -   `<C-w>gd`/`<C-w>gf` are mapped to `editor.action.revealDefinitionAside` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slightly different thing here)
 -   `gh` is mapped to `editor.action.showHover`
 -   Dot-repeat (`.`) . Works starting from `0.0.52` version. Moving cursor within a change range won't break the repeat sequence. I.e. in neovim, if you type `abc<cursor>` in insert mode then move cursor to `a<cursor>bc` and type `1` here the repeat sequence would be `1`. However in vscode it would be `a1bc`. Another difference that `.` repeat command when you delete some text only works from right-to-left. I.e. it will treat `<Del>` key as `<BS>` keys for dot repeat.
--   Outline navigation doesn't create jumpoints
 
 ## Performance/Latency problems
 
@@ -164,7 +163,7 @@ nnoremap <silent> <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinition
 
 ## Jumplist
 
-Jumplist lifetime is mapped to vscode's view column lifetime and not persisted between restarts. Also jumplist is not inherited for `split`/etc... commands. Outline navigation doesn't create jumpoints
+VSCode's jumplist is being used. Make sure to bind to `workbench.action.navigateBack` / `workbench.action.navigateForward` if you're using custom mappings. Marks (both upper & lowercased) should be fine
 
 ## Wildmenu completion
 
@@ -376,30 +375,32 @@ _Note_: split size distribution is controlled by `workbench.editor.splitSizing` 
 -   Decrease editor width by (optional) count
 
 To use VSCode command 'Increase/decrease current view size'
-- `workbench.action.increaseViewSize`
-- `workbench.action.decreaseViewSize`
-<details>
-<summary>Copy this into init.vim</summary>
 
-    function! s:manageEditorSize(...)
-        let count = a:1
-        let to = a:2
-        for i in range(1, count ? count : 1)
-            call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
-        endfor
-    endfunction
+-   `workbench.action.increaseViewSize`
+-   `workbench.action.decreaseViewSize`
+    <details>
+    <summary>Copy this into init.vim</summary>
 
-    " Sample keybindings. Note these override default keybindings mentioned above.
-    nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-</details>
-<br>
+        function! s:manageEditorSize(...)
+            let count = a:1
+            let to = a:2
+            for i in range(1, count ? count : 1)
+                call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+            endfor
+        endfunction
+
+        " Sample keybindings. Note these override default keybindings mentioned above.
+        nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+        xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+        nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+        xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+        nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+        xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+        nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+        xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+
+    </details>
+    <br>
 
 `<C-w> _`
 
