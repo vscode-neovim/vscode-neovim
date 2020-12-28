@@ -364,10 +364,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     await this.client.request("nvim_win_set_cursor", [winId, cursor]);
                     this.textEditorToWinId.set(visibleEditor, winId);
                     this.winIdToEditor.set(winId, visibleEditor);
-                    // nvimRequests.push(
-                    //     ["nvim_win_set_buf", [winId, editorBufferId]],
-                    //     ["nvim_win_set_cursor", [winId, cursor]],
-                    // );
                 }
             } catch (e) {
                 this.logger.error(`${LOG_PREFIX}: ${e.message}`);
@@ -398,19 +394,11 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     // nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
                 }
             }
-            // if (!prevVisibleEditor.viewColumn || !keepViewColumns.has(prevVisibleEditor.viewColumn)) {
-            // const winId = prevVisibleEditor.viewColumn
-            //     ? this.editorColumnsToWinId.get(prevVisibleEditor.viewColumn)
-            //     : this.noColumnEditorsToWinId.get(prevVisibleEditor);
             const winId = this.textEditorToWinId.get(prevVisibleEditor);
 
             if (!winId) {
                 continue;
             }
-            // if (prevVisibleEditor.viewColumn) {
-            //     this.editorColumnsToWinId.delete(prevVisibleEditor.viewColumn);
-            // } else {
-            // }
 
             this.logger.debug(
                 `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
@@ -418,7 +406,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.textEditorToWinId.delete(prevVisibleEditor);
             this.winIdToEditor.delete(winId);
             nvimRequests.push(["nvim_win_close", [winId, true]]);
-            // }
         }
         await callAtomic(this.client, nvimRequests, this.logger, LOG_PREFIX);
 
@@ -442,9 +429,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!activeEditor) {
             return;
         }
-        // const winId = activeEditor.viewColumn
-        //     ? this.editorColumnsToWinId.get(activeEditor.viewColumn)
-        //     : this.noColumnEditorsToWinId.get(activeEditor);
         const winId = this.textEditorToWinId.get(activeEditor);
         if (!winId) {
             this.logger.error(
@@ -454,7 +438,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             );
             return;
         }
-        // const cursor = getNeovimCursorPosFromEditor(activeEditor);
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
