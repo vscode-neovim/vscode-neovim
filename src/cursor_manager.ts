@@ -90,7 +90,9 @@ export class CursorManager
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        const winCursorsUpdates: Map<number, { line: number; col: number }> = new Map();
+        const winCursorsUpdates: Map<number, { line: number; col: number; grid: number }> = new Map();
+        const gridGoToUpdates = new Set<number>();
+        console.log(batch);
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
@@ -104,7 +106,13 @@ export class CursorManager
                         number,
                         number,
                     ][]) {
-                        winCursorsUpdates.set(win.id, { line: curline, col: curcol });
+                        winCursorsUpdates.set(win.id, { line: curline, col: curcol, grid });
+                    }
+                    break;
+                }
+                case "grid_cursor_goto": {
+                    for (const [grid] of args as [number, number, number][]) {
+                        gridGoToUpdates.add(grid);
                     }
                     break;
                 }
@@ -129,6 +137,12 @@ export class CursorManager
             }
         }
         for (const [winId, cursorPos] of winCursorsUpdates) {
+            if (!gridGoToUpdates.has(cursorPos.grid)) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Skipping viewport cursor update from neovim, winId: ${winId}, pos: [${cursorPos.line}, ${cursorPos.col}] since the batch doesn't have grid_cursor_goto`,
+                );
+                continue;
+            }
             this.logger.debug(
                 `${LOG_PREFIX}: Received cursor update from neovim, winId: ${winId}, pos: [${cursorPos.line}, ${cursorPos.col}]`,
             );
