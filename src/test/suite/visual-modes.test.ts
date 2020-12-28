@@ -538,15 +538,24 @@ describe("Visual modes test", () => {
         });
         await vscode.window.showTextDocument(doc);
         await wait();
+        await client.input(":xmap <LT>buffer> > >gv<CR>");
+        // await sendVSCodeKeysAtomic(":xmap <LT>buffer> > >gv");
 
         await sendVSCodeKeys("V");
         await sendVSCodeKeys("j$");
 
-        await sendVSCodeKeysAtomic(">gv", 500);
+        await sendVSCodeKeysAtomic(">", 500);
         await assertContent(
             {
                 content: ["    test", "    test"],
                 cursor: [1, 4],
+            },
+            client,
+        );
+        await sendVSCodeKeys("d");
+        await assertContent(
+            {
+                content: [""],
             },
             client,
         );
