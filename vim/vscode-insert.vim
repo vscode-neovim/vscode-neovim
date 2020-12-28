@@ -8,7 +8,7 @@ function! s:vscodePrepareMultipleCursors(append, skipEmpty)
         let b:multipleCursorsSkipEmpty = a:skipEmpty
         " We need to start insert, then spawn cursors otherwise they'll be destroyed
         " using feedkeys() here because :startinsert is being delayed
-        call feedkeys("o\<Esc>i", 'n')
+        call feedkeys("\<Esc>i", 'n')
     endif
 endfunction
 

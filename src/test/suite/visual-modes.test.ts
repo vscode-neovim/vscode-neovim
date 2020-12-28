@@ -444,7 +444,7 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "i",
-                vsCodeSelections: [new vscode.Selection(0, 6, 0, 6), new vscode.Selection(1, 6, 1, 6)],
+                vsCodeSelections: [new vscode.Selection(0, 7, 0, 7), new vscode.Selection(1, 7, 1, 7)],
             },
             client,
         );
@@ -454,7 +454,7 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "n",
-                content: ["blah1 testabc", "blah2 testabc", "blah3 abc"],
+                content: ["blah1 atestbc", "blah2 atestbc", "blah3 abc"],
             },
             client,
         );
@@ -462,7 +462,7 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("l");
         await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
-        await sendVSCodeKeys("lj");
+        await sendVSCodeKeys("j");
         await sendVSCodeKeys("ma");
         await assertContent(
             {
@@ -476,7 +476,7 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "n",
-                content: ["blah1 testabtestc", "blah2 testabtestc", "blah3 abc"],
+                content: ["blah1 atestbtestc", "blah2 atestbtestc", "blah3 abc"],
             },
             client,
         );
@@ -538,15 +538,24 @@ describe("Visual modes test", () => {
         });
         await vscode.window.showTextDocument(doc);
         await wait();
+        await client.input(":xmap <LT>buffer> > >gv<CR>");
+        // await sendVSCodeKeysAtomic(":xmap <LT>buffer> > >gv");
 
         await sendVSCodeKeys("V");
         await sendVSCodeKeys("j$");
 
-        await sendVSCodeKeysAtomic(">gv", 500);
+        await sendVSCodeKeysAtomic(">", 500);
         await assertContent(
             {
                 content: ["    test", "    test"],
                 cursor: [1, 4],
+            },
+            client,
+        );
+        await sendVSCodeKeys("d");
+        await assertContent(
+            {
+                content: [""],
             },
             client,
         );

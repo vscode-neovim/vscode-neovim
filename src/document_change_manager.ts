@@ -6,6 +6,7 @@ import {
     Position,
     ProgressLocation,
     Range,
+    Selection,
     TextDocument,
     TextDocumentChangeEvent,
     window,
@@ -432,30 +433,56 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     this.documentSkipVersionOnChange.set(doc, doc.version + 1);
 
                     // const cursor = editor.selection.active;
-                    const success = await editor.edit((builder) => {
-                        for (const range of ranges) {
-                            const text = newLines.slice(range.newStart, range.newEnd + 1);
-                            if (range.type === "removed") {
-                                if (range.end >= editor.document.lineCount - 1 && range.start > 0) {
-                                    const startChar = editor.document.lineAt(range.start - 1).range.end.character;
-                                    builder.delete(new Range(range.start - 1, startChar, range.end, 999999));
-                                } else {
-                                    builder.delete(new Range(range.start, 0, range.end + 1, 0));
+                    const success = await editor.edit(
+                        (builder) => {
+                            for (const range of ranges) {
+                                const text = newLines.slice(range.newStart, range.newEnd + 1);
+                                if (range.type === "removed") {
+                                    if (range.end >= editor.document.lineCount - 1 && range.start > 0) {
+                                        const startChar = editor.document.lineAt(range.start - 1).range.end.character;
+                                        builder.delete(new Range(range.start - 1, startChar, range.end, 999999));
+                                    } else {
+                                        builder.delete(new Range(range.start, 0, range.end + 1, 0));
+                                    }
+                                } else if (range.type === "changed") {
+                                    // builder.delete(new Range(range.start, 0, range.end, 999999));
+                                    // builder.insert(new Position(range.start, 0), text.join("\n"));
+                                    // !builder.replace() can select text. This usually happens when you add something at end of a line
+                                    // !We're trying to mitigate it here by checking if we're just adding characters and using insert() instead
+                                    // !As fallback we look after applying edits if we have selection
+                                    const oldText = editor.document
+                                        .getText(new Range(range.start, 0, range.end, 99999))
+                                        .replace("\r\n", "\n");
+                                    const newText = text.join("\n");
+                                    if (newText.length > oldText.length && newText.startsWith(oldText)) {
+                                        builder.insert(
+                                            new Position(range.start, oldText.length),
+                                            newText.slice(oldText.length),
+                                        );
+                                    } else {
+                                        builder.replace(new Range(range.start, 0, range.end, 999999), text.join("\n"));
+                                    }
+                                } else if (range.type === "added") {
+                                    if (range.start >= editor.document.lineCount) {
+                                        text.unshift(
+                                            ...new Array(range.start - (editor.document.lineCount - 1)).fill(""),
+                                        );
+                                    } else {
+                                        text.push("");
+                                    }
+                                    builder.insert(new Position(range.start, 0), text.join("\n"));
+                                    // !builder.replace() selects text
+                                    // builder.replace(new Position(range.start, 0), text.join("\n"));
                                 }
-                            } else if (range.type === "changed") {
-                                builder.replace(new Range(range.start, 0, range.end, 999999), text.join("\n"));
-                            } else if (range.type === "added") {
-                                if (range.start >= editor.document.lineCount) {
-                                    text.unshift(...new Array(range.start - (editor.document.lineCount - 1)).fill(""));
-                                } else {
-                                    text.push("");
-                                }
-                                builder.replace(new Position(range.start, 0), text.join("\n"));
                             }
-                        }
-                    });
+                        },
+                        { undoStopAfter: false, undoStopBefore: false },
+                    );
                     const docPromises = this.textDocumentChangePromise.get(doc)?.splice(0, lastPromiseIdx) || [];
                     if (success) {
+                        if (!editor.selection.anchor.isEqual(editor.selection.active)) {
+                            editor.selections = [new Selection(editor.selection.active, editor.selection.active)];
+                        }
                         docPromises.forEach((p) => p.resolve && p.resolve());
                         this.logger.debug(`${LOG_PREFIX}: Changes succesfully applied for ${doc.uri.toString()}`);
                         this.documentContentInNeovim.set(doc, doc.getText());
