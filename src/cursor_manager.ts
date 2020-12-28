@@ -3,11 +3,9 @@ import { NeovimClient, Window } from "neovim";
 import {
     commands,
     Disposable,
-    Range,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
-    TextEditorRevealType,
     TextEditorSelectionChangeEvent,
     TextEditorSelectionChangeKind,
     window,
@@ -364,34 +362,25 @@ export class CursorManager
             );
             return;
         }
-        const visibleRange = editor.visibleRanges[0];
-        const revealCursor = new Selection(newLine, newCol, newLine, newCol);
-        // if (!this.neovimCursorUpdates.has(editor)) {
-        //     this.neovimCursorUpdates.set(editor, {});
-        // }
-        // this.neovimCursorUpdates.get(editor)![`${newLine}.${newCol}`] = true;
-        editor.selections = [revealCursor];
-        const visibleLines = visibleRange.end.line - visibleRange.start.line;
-        // this.commitScrolling.cancel();
-        if (visibleRange.contains(revealCursor)) {
-            // always try to reveal even if in visible range to reveal horizontal scroll
-            editor.revealRange(new Range(revealCursor.active, revealCursor.active), TextEditorRevealType.Default);
-        } else if (revealCursor.active.line < visibleRange.start.line) {
-            const revealType =
-                visibleRange.start.line - revealCursor.active.line >= visibleLines / 2
-                    ? TextEditorRevealType.Default
-                    : TextEditorRevealType.AtTop;
-            // this.textEditorsRevealing.set(editor, revealCursor.active.line);
-            editor.revealRange(new Range(revealCursor.active, revealCursor.active), revealType);
-            // vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
-        } else if (revealCursor.active.line > visibleRange.end.line) {
-            const revealType =
-                revealCursor.active.line - visibleRange.end.line >= visibleLines / 2
-                    ? TextEditorRevealType.InCenter
-                    : TextEditorRevealType.Default;
-            // this.textEditorsRevealing.set(editor, revealCursor.active.line);
-            editor.revealRange(new Range(revealCursor.active, revealCursor.active), revealType);
-            // vscode.commands.executeCommand("revealLine", { lineNumber: revealCursor.active.line, at: revealType });
+        const currCursor = editor.selection.active;
+        const deltaLine = newLine - currCursor.line;
+        let deltaChar = newCol - currCursor.character;
+
+        if (Math.abs(deltaLine) > 0) {
+            commands.executeCommand("cursorMove", {
+                to: deltaLine > 0 ? "down" : "up",
+                by: "line",
+                value: Math.abs(deltaLine),
+            });
+            commands.executeCommand("cursorLineStart");
+            deltaChar = newCol;
+        }
+        if (Math.abs(deltaChar) > 0) {
+            commands.executeCommand("cursorMove", {
+                to: deltaChar > 0 ? "right" : "left",
+                by: "character",
+                value: Math.abs(deltaChar),
+            });
         }
     };
 

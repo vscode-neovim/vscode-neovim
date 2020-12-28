@@ -22,9 +22,7 @@ import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromE
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
 // ! When opening an editor with a document first time, a buffer is created in neovim
-// ! When switching off editor, the buffer is being hidden in neovim
-// ! When closing editor (and it was last editor for a document) we do bunload! bufId.
-// !    Unloading and not deleting / wiping here because later ones are breaking jumplist
+// ! When switching off editor, the buffer is being hidden & unloaded in neovim if it's last visitlbe buffer (see :help bufhidden)
 
 export interface BufferManagerSettings {
     neovimViewportWidth: number;
@@ -32,6 +30,8 @@ export interface BufferManagerSettings {
 }
 
 const LOG_PREFIX = "BufferManager";
+
+const BUFFER_NAME_PREFIX = "__vscode_neovim__-";
 
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
@@ -217,7 +217,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 break;
             }
             case "external-buffer": {
-                const [name, idStr, expandTab, tabStop, isJumping] = args as [string, string, number, number, number];
+                const [name, idStr, expandTab, tabStop] = args as [string, string, number, number, number];
+                if (name.startsWith(`${BUFFER_NAME_PREFIX}output:`)) {
+                    break;
+                }
                 const id = parseInt(idStr, 10);
                 if (!(name && this.isVscodeUriName(name))) {
                     this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: ${name}, id: ${id}`);
@@ -226,15 +229,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                         return;
                     }
                     await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
-                } else if (isJumping && name) {
-                    this.logger.debug(`${LOG_PREFIX}: Opening a ${name} because of jump`);
-                    // !Important: we only allow to open uri from neovim side when jumping. Otherwise it may break vscode editor management
-                    // !and produce ugly switching effects
+                } else if (name) {
+                    const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substr(18) : name;
+                    this.logger.debug(`${LOG_PREFIX}: Opening a ${normalizedName}`);
                     try {
-                        let doc = this.findDocFromUri(name);
+                        let doc = this.findDocFromUri(normalizedName);
                         if (!doc) {
-                            this.logger.debug(`${LOG_PREFIX}: Opening a doc: ${name}`);
-                            doc = await workspace.openTextDocument(Uri.parse(name, true));
+                            this.logger.debug(`${LOG_PREFIX}: Opening a doc: ${normalizedName}`);
+                            doc = await workspace.openTextDocument(Uri.parse(normalizedName, true));
                         }
                         let forceTabOptions = false;
                         if (!this.textDocumentToBufferId.has(doc)) {
@@ -249,22 +251,24 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                             }
                             this.textDocumentToBufferId.set(doc, id);
                         }
-                        // this.skipJumpsForUris.set(name, true);
-                        const editor = await window.showTextDocument(doc, {
-                            // viewColumn: vscode.ViewColumn.Active,
-                            // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
-                            viewColumn: window.activeTextEditor
-                                ? window.activeTextEditor.viewColumn
-                                : ViewColumn.Active,
-                            preserveFocus: false,
-                            preview: false,
-                        });
-                        this.editorTabConfiguration.set(editor, {
-                            insertSpaces: editor.options.insertSpaces as boolean,
-                            tabSize: editor.options.tabSize as number,
-                        });
-                        if (forceTabOptions) {
-                            await this.resyncBufferTabOptions(editor, id);
+                        if (window.activeTextEditor?.document !== doc) {
+                            // this.skipJumpsForUris.set(normalizedNamee, true);
+                            const editor = await window.showTextDocument(doc, {
+                                // viewColumn: vscode.ViewColumn.Active,
+                                // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
+                                viewColumn: window.activeTextEditor
+                                    ? window.activeTextEditor.viewColumn
+                                    : ViewColumn.Active,
+                                preserveFocus: false,
+                                preview: false,
+                            });
+                            this.editorTabConfiguration.set(editor, {
+                                insertSpaces: editor.options.insertSpaces as boolean,
+                                tabSize: editor.options.tabSize as number,
+                            });
+                            if (forceTabOptions) {
+                                await this.resyncBufferTabOptions(editor, id);
+                            }
                         }
                     } catch {
                         // todo: show error
@@ -417,7 +421,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 continue;
             }
             const document = prevVisibleEditor.document;
-            if (!currentVisibleEditors.find((e) => e.document === document) && document.isClosed) {
+            if (!currentVisibleEditors.find((e) => e.document === document)) {
                 this.logger.debug(
                     `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
                         document,
@@ -426,7 +430,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const bufId = this.textDocumentToBufferId.get(document);
                 this.textDocumentToBufferId.delete(document);
                 if (bufId) {
-                    // buffer unloading breaks jumplist https://github.com/asvetliakov/vscode-neovim/issues/350
                     // nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
                 }
             }
@@ -562,7 +565,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             // !Setting to false breaks filetype detection
             // ["nvim_buf_set_option", [bufId, "syntax", false]],
             // buffer name = document URI
-            ["nvim_buf_set_name", [bufId, document.uri.toString()]],
+            ["nvim_buf_set_name", [bufId, BUFFER_NAME_PREFIX + document.uri.toString()]],
             // Turn off modifications for external documents
             ["nvim_buf_set_option", [bufId, "modifiable", !this.isExternalTextDocument(document)]],
             // force nofile, just in case if the buffer was created externally
@@ -639,10 +642,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (/:\/\//.test(name)) {
             return true;
         }
-        if (name.startsWith("output:")) {
+        if (name.startsWith("output:") || name.startsWith(`${BUFFER_NAME_PREFIX}output:`)) {
             return true;
         }
-        if (name.startsWith("/search-editor:")) {
+        if (name.startsWith("/search-editor:") || name.startsWith(`${BUFFER_NAME_PREFIX}/search-editor:`)) {
             return true;
         }
         return false;
