@@ -348,7 +348,7 @@ export class CursorManager
                     }
                     const cursorPos = editorPositionToNeovimPosition(e.textEditor, lastSelection.active);
                     this.logger.debug(
-                        `${LOG_PREFIX}: Updating cursor pos, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
+                        `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
                     );
                     requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
                     await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
@@ -356,7 +356,7 @@ export class CursorManager
             } else {
                 const cursorPos = getNeovimCursorPosFromEditor(textEditor);
                 this.logger.debug(
-                    `${LOG_PREFIX}: Updating cursor pos, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
+                    `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
                 );
                 const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
                 await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
@@ -397,6 +397,7 @@ export class CursorManager
                     to: deltaLine > 0 ? "down" : "up",
                     by: "line",
                     value: Math.abs(deltaLine),
+                    select: false,
                 });
                 deltaChar = newCol;
             }
@@ -406,6 +407,7 @@ export class CursorManager
                     to: deltaChar > 0 ? "right" : "left",
                     by: "character",
                     value: Math.abs(deltaChar),
+                    select: false,
                 });
             }
         } else {
