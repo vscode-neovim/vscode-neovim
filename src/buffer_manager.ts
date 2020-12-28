@@ -223,7 +223,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
                 } else if (name) {
                     const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substr(18) : name;
-                    this.logger.debug(`${LOG_PREFIX}: Opening a ${normalizedName}`);
+                    this.logger.debug(`${LOG_PREFIX}: Buffer request for ${normalizedName}, bufId: ${idStr}`);
                     try {
                         let doc = this.findDocFromUri(normalizedName);
                         if (!doc) {
@@ -357,13 +357,13 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     winId = await this.createNeovimWindow(editorBufferId);
                     this.logger.debug(`${LOG_PREFIX}: Created new window: ${winId}`);
                     this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
-                    this.textEditorToWinId.set(visibleEditor, winId);
-                    this.winIdToEditor.set(winId, visibleEditor);
                     const cursor = getNeovimCursorPosFromEditor(visibleEditor);
                     this.logger.debug(
                         `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
                     );
                     await this.client.request("nvim_win_set_cursor", [winId, cursor]);
+                    this.textEditorToWinId.set(visibleEditor, winId);
+                    this.winIdToEditor.set(winId, visibleEditor);
                     // nvimRequests.push(
                     //     ["nvim_win_set_buf", [winId, editorBufferId]],
                     //     ["nvim_win_set_cursor", [winId, cursor]],
@@ -432,7 +432,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     // ! we're interested only in the editor final layout and vscode may call this function few times, e.g. when moving an editor to other group
     // ! so lets debounce it slightly
-    private syncLayoutDebounced = debounce(this.syncLayout, 100, { leading: false, trailing: true });
+    private syncLayoutDebounced = debounce(this.syncLayout, 200, { leading: false, trailing: true });
 
     private syncActiveEditor = async (): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: syncing active editor`);
@@ -461,7 +461,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         await this.client.request("nvim_set_current_win", [winId]);
     };
 
-    private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 50, { leading: false, trailing: true });
+    private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 100, { leading: false, trailing: true });
 
     private onDidChangeEditorOptions = (e: TextEditorOptionsChangeEvent): void => {
         this.logger.debug(`${LOG_PREFIX}: Received onDidChangeEditorOptions`);

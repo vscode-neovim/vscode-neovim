@@ -371,6 +371,11 @@ export class CursorManager
         let deltaChar = newCol - currCursor.character;
 
         if (Math.abs(deltaLine) > 0) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Editor: ${editor.document.uri.toString()}, viewColumn: ${
+                    editor.viewColumn
+                } Moving cursor by line:0 ${Math.abs(deltaLine)}`,
+            );
             commands.executeCommand("cursorMove", {
                 to: deltaLine > 0 ? "down" : "up",
                 by: "line",
@@ -380,6 +385,11 @@ export class CursorManager
             deltaChar = newCol;
         }
         if (Math.abs(deltaChar) > 0) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Editor: ${editor.document.uri.toString()}, viewColumn: ${
+                    editor.viewColumn
+                } Moving cursor by char: ${Math.abs(deltaChar)}`,
+            );
             commands.executeCommand("cursorMove", {
                 to: deltaChar > 0 ? "right" : "left",
                 by: "character",
