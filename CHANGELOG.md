@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.0.70]
+
+-   Use vscode jumplist actions instead of neovim
+-   Fix uppercase marks ( #228 )
+-   Various cursor & buffer management fixes ( #404 , #392 , #386 )
+-   Implement manageEditorHeight and manageEditorWidth ( #444 )
+-   Fix `<C-a>` in insert mode ( #283 )
+-   Set vim cwd as vscode workspace ( #429 )
+-   Fix shell-agnostic WSL integration ( #147 )
+-   Map :x to Wq ( #396 )
+-   Various docs contributions
+-   Improve build ( #378 )
+
 ## [0.0.63]
 
 -   Allow to put text decorations (usually EasyMotion ones) at top setting (`vscode-neovim.textDecorationsAtTop`) ( #358 ), contributed by @jhgarner
