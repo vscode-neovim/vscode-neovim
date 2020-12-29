@@ -382,7 +382,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 continue;
             }
             const document = prevVisibleEditor.document;
-            if (!currentVisibleEditors.find((e) => e.document === document)) {
+            if (!currentVisibleEditors.find((e) => e.document === document) && document.isClosed) {
                 this.logger.debug(
                     `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
                         document,
