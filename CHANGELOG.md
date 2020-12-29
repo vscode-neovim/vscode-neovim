@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.71]
+
+-   Fix `Unable to determine neovim windows id` error spam ( #418 )
+
 ## [0.0.70]
 
 -   Use vscode jumplist actions instead of neovim
