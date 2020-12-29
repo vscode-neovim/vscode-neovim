@@ -141,7 +141,7 @@ describe("Undo", () => {
         );
     });
 
-    it.only("Undo after switching tabs", async () => {
+    it("Undo after switching tabs", async () => {
         const doc1 = await vscode.workspace.openTextDocument({
             content: ["1"].join("\n"),
         });
