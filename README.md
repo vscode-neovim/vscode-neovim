@@ -504,6 +504,17 @@ nmap gcc <Plug>VSCodeCommentaryLine
 
 Similar to vim-commentary, gcc is comment line (accept count), use gc with motion/in visual mode. `VSCodeCommentary` is just a simple function which calls `editor.action.commentLine`
 
+## VIM quick-scope
+
+[quick-scope](https://github.com/unblevable/quick-scope) plugin uses default vim HL groups by default but they are normally ignored. To fix add
+
+```vim
+highlight QuickScopePrimary guifg='#afff5f' gui=underline ctermfg=155 cterm=underline
+highlight QuickScopeSecondary guifg='#5fffff' gui=underline ctermfg=81 cterm=underline
+```
+
+to your init.vim
+
 ## Known Issues
 
 See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues)
