@@ -391,7 +391,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const bufId = this.textDocumentToBufferId.get(document);
                 this.textDocumentToBufferId.delete(document);
                 if (bufId) {
-                    // nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
+                    nvimRequests.push(["nvim_command", [`bdelete! ${bufId}`]]);
                 }
             }
             const winId = this.textEditorToWinId.get(prevVisibleEditor);
