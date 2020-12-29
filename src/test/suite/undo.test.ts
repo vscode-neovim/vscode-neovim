@@ -159,6 +159,7 @@ describe("Undo", () => {
         await assertContent({ content: ["2test"] }, client);
         await sendVSCodeKeys("gT");
         await sendVSCodeKeys("gt");
+        await wait(1000);
         await sendVSCodeKeys("u");
         await assertContent({ content: ["2"] }, client);
     });
