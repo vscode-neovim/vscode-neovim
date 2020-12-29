@@ -1,9 +1,9 @@
 function! s:toFirstCharOfScreenLine()
-    call VSCodeExtensionNotify('cursor-move', 'wrappedLineFirstNonWhitespaceCharacter')
+    call VSCodeNotify('cursorMove', { 'to': 'wrappedLineFirstNonWhitespaceCharacter' })
 endfunction
 
 function! s:toLastCharOfScreenLine()
-    call VSCodeExtensionNotify('cursor-move', 'wrappedLineLastNonWhitespaceCharacter')
+    call VSCodeNotify('cursorMove', { 'to': 'wrappedLineLastNonWhitespaceCharacter' })
     " Offfset cursor moving to the right caused by calling VSCode command in Vim mode
     call VSCodeNotify('cursorLeft')
 endfunction
