@@ -138,6 +138,7 @@ execute 'source ' . s:currDir . '/vscode-code-actions.vim'
 execute 'source ' . s:currDir . '/vscode-file-commands.vim'
 execute 'source ' . s:currDir . '/vscode-tab-commands.vim'
 execute 'source ' . s:currDir . '/vscode-window-commands.vim'
+execute 'source ' . s:currDir . '/vscode-motion.vim'
 
 augroup VscodeGeneral
     autocmd!
