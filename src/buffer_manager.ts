@@ -382,7 +382,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 continue;
             }
             const document = prevVisibleEditor.document;
-            if (!currentVisibleEditors.find((e) => e.document === document)) {
+            if (!currentVisibleEditors.find((e) => e.document === document) && document.isClosed) {
                 this.logger.debug(
                     `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
                         document,
@@ -391,7 +391,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const bufId = this.textDocumentToBufferId.get(document);
                 this.textDocumentToBufferId.delete(document);
                 if (bufId) {
-                    // nvimRequests.push(["nvim_command", [`bunload! ${bufId}`]]);
+                    nvimRequests.push(["nvim_command", [`bdelete! ${bufId}`]]);
                 }
             }
             const winId = this.textEditorToWinId.get(prevVisibleEditor);

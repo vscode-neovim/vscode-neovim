@@ -140,4 +140,27 @@ describe("Undo", () => {
             client,
         );
     });
+
+    it("Undo after switching tabs", async () => {
+        const doc1 = await vscode.workspace.openTextDocument({
+            content: ["1"].join("\n"),
+        });
+        const doc2 = await vscode.workspace.openTextDocument({
+            content: ["2"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        await wait(1000);
+        await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
+        await wait(1000);
+        await assertContent({ content: ["2"] }, client);
+        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("test");
+        await sendEscapeKey();
+        await assertContent({ content: ["2test"] }, client);
+        await sendVSCodeKeys("gT");
+        await sendVSCodeKeys("gt");
+        await wait(1000);
+        await sendVSCodeKeys("u");
+        await assertContent({ content: ["2"] }, client);
+    });
 });
