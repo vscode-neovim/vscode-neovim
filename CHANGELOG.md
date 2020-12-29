@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.72]
+
+-   Fix undo regression introduced in `0.0.70`
+
 ## [0.0.71]
 
 -   Fix `Unable to determine neovim windows id` error spam ( #418 )
