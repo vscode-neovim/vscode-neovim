@@ -431,7 +431,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
         const winId = this.textEditorToWinId.get(activeEditor);
         if (!winId) {
-            this.logger.error(
+            this.logger.warn(
                 `${LOG_PREFIX}: Unable to determine neovim windows id for editor viewColumn: ${
                     activeEditor.viewColumn
                 }, docUri: ${activeEditor.document.uri.toString()}`,
