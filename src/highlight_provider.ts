@@ -42,11 +42,11 @@ function vimHighlightToVSCodeOptions(
     vimSpecialColor: string,
 ): ThemableDecorationRenderOptions {
     const options: ThemableDecorationRenderOptions = {};
-    // for absent color keys default color should be used
-    options.backgroundColor = uiAttrs.background
-        ? "#" + uiAttrs.background.toString(16)
-        : new ThemeColor("editor.background");
-    if(uiAttrs.foreground) {    
+    // for absent color keys color should not be changed
+    if (uiAttrs.background) {
+        options.backgroundColor = "#" + uiAttrs.background.toString(16);
+    }
+    if (uiAttrs.foreground) {
         options.color = "#" + uiAttrs.foreground.toString(16);
     }
     const specialColor = uiAttrs.special ? "#" + uiAttrs.special.toString(16) : vimSpecialColor;
