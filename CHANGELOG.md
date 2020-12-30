@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.0.73]
+
+-   Improve cursor reveailing logic ( #479 )
+-   Hook g0 / g\$ ( #455 )
+
 ## [0.0.72]
 
 -   Fix undo regression introduced in `0.0.70`
