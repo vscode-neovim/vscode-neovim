@@ -9,7 +9,6 @@ import {
     assertContent,
     closeNvimClient,
     sendEscapeKey,
-    sendVSCodeKeysAtomic,
     sendNeovimKeys,
 } from "../utils";
 
@@ -539,12 +538,11 @@ describe("Visual modes test", () => {
         await vscode.window.showTextDocument(doc);
         await wait();
         await client.input(":xmap <LT>buffer> > >gv<CR>");
-        // await sendVSCodeKeysAtomic(":xmap <LT>buffer> > >gv");
 
         await sendVSCodeKeys("V");
         await sendVSCodeKeys("j$");
 
-        await sendVSCodeKeysAtomic(">", 500);
+        await sendVSCodeKeys(">");
         await assertContent(
             {
                 content: ["    test", "    test"],
