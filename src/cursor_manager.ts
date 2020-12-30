@@ -419,7 +419,7 @@ export class CursorManager
             const newPos = new Selection(newLine, newCol, newLine, newCol);
             if (!editor.selection.isEqual(newPos)) {
                 editor.selections = [newPos];
-                editor.revealRange(newPos, TextEditorRevealType.InCenterIfOutsideViewport);
+                editor.revealRange(newPos, TextEditorRevealType.Default);
             }
         }
     };
