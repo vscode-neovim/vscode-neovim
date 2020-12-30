@@ -46,7 +46,9 @@ function vimHighlightToVSCodeOptions(
     options.backgroundColor = uiAttrs.background
         ? "#" + uiAttrs.background.toString(16)
         : new ThemeColor("editor.background");
-    options.color = uiAttrs.foreground ? "#" + uiAttrs.foreground.toString(16) : new ThemeColor("editor.foreground");
+    if(uiAttrs.foreground) {    
+        options.color = "#" + uiAttrs.foreground.toString(16);
+    }
     const specialColor = uiAttrs.special ? "#" + uiAttrs.special.toString(16) : vimSpecialColor;
 
     if (uiAttrs.reverse) {
