@@ -37,17 +37,16 @@ export interface HighlightConfiguration {
  * @param uiAttrs VIM UI attribute
  * @param vimSpecialColor Vim special color
  */
-function vimHighlightToVSCodeOptions(
-    uiAttrs: VimHighlightUIAttributes,
-    vimSpecialColor: string,
-): ThemableDecorationRenderOptions {
+function vimHighlightToVSCodeOptions(uiAttrs: VimHighlightUIAttributes): ThemableDecorationRenderOptions {
     const options: ThemableDecorationRenderOptions = {};
-    // for absent color keys default color should be used
-    options.backgroundColor = uiAttrs.background
-        ? "#" + uiAttrs.background.toString(16)
-        : new ThemeColor("editor.background");
-    options.color = uiAttrs.foreground ? "#" + uiAttrs.foreground.toString(16) : new ThemeColor("editor.foreground");
-    const specialColor = uiAttrs.special ? "#" + uiAttrs.special.toString(16) : vimSpecialColor;
+    // for absent color keys color should not be changed
+    if (uiAttrs.background) {
+        options.backgroundColor = "#" + uiAttrs.background.toString(16);
+    }
+    if (uiAttrs.foreground) {
+        options.color = "#" + uiAttrs.foreground.toString(16);
+    }
+    const specialColor = uiAttrs.special ? "#" + uiAttrs.special.toString(16) : "";
 
     if (uiAttrs.reverse) {
         options.backgroundColor = new ThemeColor("editor.foreground");
@@ -143,7 +142,6 @@ export class HighlightProvider {
 
     private configuration: HighlightConfiguration;
 
-    private specialColor = "orange";
     /**
      * Set of ignored HL group ids. They can still be used with force flag (mainly for statusbar color decorations)
      */
@@ -206,7 +204,7 @@ export class HighlightProvider {
             return;
         } else {
             const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
-            const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs, this.specialColor) : options;
+            const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
             this.createDecoratorForHighlightGroup(name, conf);
         }
     }
