@@ -432,6 +432,7 @@ export class CursorManager
                             : TextEditorRevealType.Default
                         : TextEditorRevealType.Default;
                 editor.revealRange(newPos, type);
+                commands.executeCommand("editor.action.wordHighlight.trigger");
             }
         }
     };
