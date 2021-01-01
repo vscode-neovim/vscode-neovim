@@ -97,7 +97,10 @@ export class CursorManager
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        const gridCursorUpdates: Map<number, { line: number; col: number; grid: number }> = new Map();
+        const gridCursorUpdates: Map<
+            number,
+            { line: number; col: number; grid: number; isScreenCol: boolean }
+        > = new Map();
         const gridCursorViewportHint: Map<number, { line: number; col: number }> = new Map();
         // need to process win_viewport events first
         for (const [name, ...args] of batch) {
@@ -127,10 +130,15 @@ export class CursorManager
                         const viewportHint = gridCursorViewportHint.get(grid);
                         // leverage viewport hint if available. It may be NOT available and go in different batch
                         if (viewportHint) {
-                            gridCursorUpdates.set(grid, { grid, line: viewportHint.line, col: viewportHint.col });
+                            gridCursorUpdates.set(grid, {
+                                grid,
+                                line: viewportHint.line,
+                                col: viewportHint.col,
+                                isScreenCol: true,
+                            });
                         } else {
                             const topline = this.gridVisibleViewport.get(grid)?.top || 0;
-                            gridCursorUpdates.set(grid, { grid, line: topline + row, col });
+                            gridCursorUpdates.set(grid, { grid, line: topline + row, col, isScreenCol: false });
                         }
                     }
                     break;
@@ -151,7 +159,12 @@ export class CursorManager
                         // When changing pos via grid scroll there must be always win_viewport event, leverage it
                         const viewportHint = gridCursorViewportHint.get(grid);
                         if (viewportHint) {
-                            gridCursorUpdates.set(grid, { grid, line: viewportHint.line, col: viewportHint.col });
+                            gridCursorUpdates.set(grid, {
+                                grid,
+                                line: viewportHint.line,
+                                col: viewportHint.col,
+                                isScreenCol: true,
+                            });
                         }
                     }
                     break;
@@ -201,13 +214,15 @@ export class CursorManager
                 docPromises.then(() => {
                     try {
                         this.logger.debug(`${LOG_PREFIX}: Waiting document change completion done, gridId: ${gridId}`);
-                        const finalCol = calculateEditorColFromVimScreenCol(
-                            editor.document.lineAt(cursorPos.line).text,
-                            cursorPos.col,
-                            // !For cursor updates tab is always counted as 1 col
-                            1,
-                            true,
-                        );
+                        const finalCol = cursorPos.isScreenCol
+                            ? calculateEditorColFromVimScreenCol(
+                                  editor.document.lineAt(cursorPos.line).text,
+                                  cursorPos.col,
+                                  // !For cursor updates tab is always counted as 1 col
+                                  1,
+                                  true,
+                              )
+                            : cursorPos.col;
                         this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
                         // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
                         // !To not mess the cursor, try to debounce the update
@@ -220,12 +235,14 @@ export class CursorManager
                 // !Sync call helps with most common operations latency
                 this.logger.debug(`${LOG_PREFIX}: No pending document changes, gridId: ${gridId}`);
                 try {
-                    const finalCol = calculateEditorColFromVimScreenCol(
-                        editor.document.lineAt(cursorPos.line).text,
-                        cursorPos.col,
-                        1,
-                        true,
-                    );
+                    const finalCol = cursorPos.isScreenCol
+                        ? calculateEditorColFromVimScreenCol(
+                              editor.document.lineAt(cursorPos.line).text,
+                              cursorPos.col,
+                              1,
+                              true,
+                          )
+                        : cursorPos.col;
                     this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
                     this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
                 } catch (e) {
