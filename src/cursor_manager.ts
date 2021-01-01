@@ -99,9 +99,8 @@ export class CursorManager
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
         const gridCursorUpdates: Map<number, { line: number; col: number; grid: number }> = new Map();
         const gridCursorViewportHint: Map<number, { line: number; col: number }> = new Map();
-        // const gridGoToUpdates = new Set<number>();
+        // need to process win_viewport events first
         for (const [name, ...args] of batch) {
-            const firstArg = args[0] || [];
             switch (name) {
                 case "win_viewport": {
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -118,10 +117,21 @@ export class CursorManager
                     }
                     break;
                 }
+            }
+        }
+        for (const [name, ...args] of batch) {
+            const firstArg = args[0] || [];
+            switch (name) {
                 case "grid_cursor_goto": {
                     for (const [grid, row, col] of args as [number, number, number][]) {
-                        const topline = this.gridVisibleViewport.get(grid)?.top || 0;
-                        gridCursorUpdates.set(grid, { grid, line: topline + row, col });
+                        const viewportHint = gridCursorViewportHint.get(grid);
+                        // leverage viewport hint if available. It may be NOT available and go in different batch
+                        if (viewportHint) {
+                            gridCursorUpdates.set(grid, { grid, line: viewportHint.line, col: viewportHint.col });
+                        } else {
+                            const topline = this.gridVisibleViewport.get(grid)?.top || 0;
+                            gridCursorUpdates.set(grid, { grid, line: topline + row, col });
+                        }
                     }
                     break;
                 }
