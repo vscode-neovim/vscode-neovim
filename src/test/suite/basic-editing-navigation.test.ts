@@ -214,6 +214,37 @@ describe("Basic editing and navigation", () => {
         );
     });
 
+    it("Shift-A/Shift-I", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["message ChatEntryNoteData {", "    // Note", "    string note = 1;", "},"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await assertContent(
+            {
+                content: ["message ChatEntryNoteData {", "    // Note", "    string note = 1;", "},"],
+                cursor: [0, 0],
+                cursorStyle: "block",
+                mode: "n",
+            },
+            client,
+        );
+        await sendVSCodeKeys("j7l");
+        await assertContent({ cursor: [1, 7] }, client);
+        await sendVSCodeKeys("A");
+        await assertContent({ cursor: [1, 11], mode: "i" }, client);
+        await sendEscapeKey();
+        await sendVSCodeKeys("gg0j7l");
+        await sendVSCodeKeys("I");
+        await assertContent({ cursor: [1, 4], mode: "i" }, client);
+
+        await sendEscapeKey();
+        await sendVSCodeKeys("gg0j4l");
+        await sendVSCodeKeys("A");
+        await assertContent({ cursor: [1, 11], mode: "i" }, client);
+    });
+
     it("Ci-ca-etc...", async () => {
         const doc = await vscode.workspace.openTextDocument({
             // adding "end" to the end of doc because of newline bug. Pretty minor
