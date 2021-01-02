@@ -223,7 +223,12 @@ export class CursorManager
                                   true,
                               )
                             : cursorPos.col;
-                        this.neovimCursorPosition.set(editor, { line: cursorPos.line, character: finalCol });
+                        // !vscode manages cursor by own, and often after operation the cursor pos is different
+                        // !update it explicitly so following cursor update will work normally in relative cursor movement
+                        this.neovimCursorPosition.set(editor, {
+                            line: editor.selection.active.line,
+                            character: editor.selection.active.character,
+                        });
                         // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
                         // !To not mess the cursor, try to debounce the update
                         this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
@@ -243,7 +248,6 @@ export class CursorManager
                               true,
                           )
                         : cursorPos.col;
-                    this.neovimCursorPosition.set(editor, { line: cursorPos.line, character: finalCol });
                     this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
                 } catch (e) {
                     this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
@@ -409,6 +413,7 @@ export class CursorManager
                         `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
                     );
                     requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
+                    this.neovimCursorPosition.set(textEditor, { line: cursorPos[0] - 1, character: cursorPos[1] });
                     await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
                 }
             } else {
@@ -417,6 +422,7 @@ export class CursorManager
                     `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
                 );
                 const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
+                this.neovimCursorPosition.set(textEditor, { line: cursorPos[0] - 1, character: cursorPos[1] });
                 await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
             }
         },
@@ -428,6 +434,10 @@ export class CursorManager
      * Update cursor in active editor. Coords are zero based
      */
     private updateCursorPosInEditor = (editor: TextEditor, newLine: number, newCol: number): void => {
+        // !Calculate diff from previous neovim position, rathen than vscode cursor position since it can be stale
+        const currCursor = this.neovimCursorPosition.get(editor) || editor.selection.active;
+        // store cursor
+        this.neovimCursorPosition.set(editor, { line: newLine, character: newCol });
         if (this.ignoreSelectionEvents) {
             return;
         }
@@ -443,8 +453,6 @@ export class CursorManager
             }
             return;
         }
-        // !Calculate diff from previous neovim position, rathen than vscode cursor position since it can be stale
-        const currCursor = this.neovimCursorPosition.get(editor) || editor.selection.active;
         const deltaLine = newLine - currCursor.line;
         let deltaChar = newCol - currCursor.character;
         if (Math.abs(deltaLine) <= 1) {
