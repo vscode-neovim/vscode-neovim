@@ -196,6 +196,8 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
+        // make sure the changes will be synced with neovim
+        await sendVSCodeKeys("test");
 
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
         await wait();
@@ -223,7 +225,7 @@ describe("VSCode integration specific stuff", () => {
         await wait();
         await assertContent(
             {
-                content: ["blah2"],
+                content: ["testblah2"],
                 cursorStyle: "block",
                 mode: "n",
             },
@@ -252,6 +254,8 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
+        // make sure the changes will be synced with neovim
+        await sendVSCodeKeys("test");
 
         await vscode.commands.executeCommand("workbench.action.previousEditorInGroup");
         await wait();
@@ -279,7 +283,7 @@ describe("VSCode integration specific stuff", () => {
         await wait();
         await assertContent(
             {
-                content: ["blah2"],
+                content: ["testblah2"],
                 cursorStyle: "block",
                 mode: "n",
             },

@@ -82,7 +82,7 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
 
     private onDidChangeActiveTextEditor = (): void => {
         if (!this.isNormalMode) {
-            this.client.input("<Esc>");
+            commands.executeCommand("vscode-neovim.escape");
         }
     };
 }
