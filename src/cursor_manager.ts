@@ -50,7 +50,7 @@ export class CursorManager
      * ! Note: we should track this because setting cursor as consequence of neovim event will trigger onDidChangeTextEditorSelection with Command kind
      * ! And we should skip it and don't try to send cursor update into neovim again, otherwise few things may break, especially jumplist
      */
-    private neovimCursorPosition: WeakMap<TextEditor, { line: number; col: number }> = new WeakMap();
+    private neovimCursorPosition: WeakMap<TextEditor, { line: number; character: number }> = new WeakMap();
     /**
      * Special workaround flag to ignore editor selection events
      */
@@ -223,7 +223,7 @@ export class CursorManager
                                   true,
                               )
                             : cursorPos.col;
-                        this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
+                        this.neovimCursorPosition.set(editor, { line: cursorPos.line, character: finalCol });
                         // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
                         // !To not mess the cursor, try to debounce the update
                         this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
@@ -243,7 +243,7 @@ export class CursorManager
                               true,
                           )
                         : cursorPos.col;
-                    this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
+                    this.neovimCursorPosition.set(editor, { line: cursorPos.line, character: finalCol });
                     this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
                 } catch (e) {
                     this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
@@ -365,7 +365,11 @@ export class CursorManager
                 return;
             }
             const neovimCursorPos = this.neovimCursorPosition.get(textEditor);
-            if (neovimCursorPos && neovimCursorPos.col === cursor.character && neovimCursorPos.line === cursor.line) {
+            if (
+                neovimCursorPos &&
+                neovimCursorPos.character === cursor.character &&
+                neovimCursorPos.line === cursor.line
+            ) {
                 this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
                 return;
             }
@@ -439,7 +443,8 @@ export class CursorManager
             }
             return;
         }
-        const currCursor = editor.selection.active;
+        // !Calculate diff from previous neovim position, rathen than vscode cursor position since it can be stale
+        const currCursor = this.neovimCursorPosition.get(editor) || editor.selection.active;
         const deltaLine = newLine - currCursor.line;
         let deltaChar = newCol - currCursor.character;
         if (Math.abs(deltaLine) <= 1) {
