@@ -543,6 +543,7 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("j$");
 
         await sendVSCodeKeys(">");
+        await wait(1000);
         await assertContent(
             {
                 content: ["    test", "    test"],

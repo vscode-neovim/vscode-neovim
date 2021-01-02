@@ -179,7 +179,7 @@ export class MainController implements vscode.Disposable {
         this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
         this.disposables.push(this.commandsController);
 
-        this.modeManager = new ModeManager(this.logger);
+        this.modeManager = new ModeManager(this.logger, this.client);
         this.disposables.push(this.modeManager);
 
         this.bufferManager = new BufferManager(this.logger, this.client, {
