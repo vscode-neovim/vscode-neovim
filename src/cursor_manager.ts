@@ -93,6 +93,38 @@ export class CursorManager
                 );
                 break;
             }
+            case "cursorCharMove": {
+                const [direction, count] = args as ["left" | "right", number];
+                const currentEditor = window.activeTextEditor;
+                if (!currentEditor) {
+                    return;
+                }
+                const currentCursor = currentEditor.selection.active;
+                const currLine = currentEditor.document.lineAt(currentCursor.line);
+                if (direction === "right") {
+                    // !vscode range is including trailing character, so reduce it by 1
+                    const endOfLineCharacter = currLine.range.end.character - 1;
+                    const charactersTillEol = endOfLineCharacter - currentCursor.character;
+                    const finalCount = count <= charactersTillEol ? count : charactersTillEol;
+                    if (finalCount > 0) {
+                        await commands.executeCommand("cursorMove", {
+                            to: direction,
+                            by: "character",
+                            value: finalCount,
+                        });
+                    }
+                } else {
+                    const finalCount = count <= currentCursor.character ? count : currentCursor.character;
+                    if (finalCount > 0) {
+                        await commands.executeCommand("cursorMove", {
+                            to: direction,
+                            by: "character",
+                            value: finalCount,
+                        });
+                    }
+                }
+                break;
+            }
         }
     }
 
@@ -416,7 +448,7 @@ export class CursorManager
                 await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
             }
         },
-        50,
+        20,
         { leading: false, trailing: true },
     );
 
