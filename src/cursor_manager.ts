@@ -458,15 +458,18 @@ export class CursorManager
         if (Math.abs(deltaLine) <= 1) {
             this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} using cursorMove command`);
             if (Math.abs(deltaLine) > 0) {
-                this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by line: ${deltaLine}, char: 0`);
-                commands.executeCommand("cursorLineStart");
+                if (newCol !== currCursor.character) {
+                    deltaChar = newCol;
+                    commands.executeCommand("cursorLineStart");
+                } else {
+                    deltaChar = 0;
+                }
                 commands.executeCommand("cursorMove", {
                     to: deltaLine > 0 ? "down" : "up",
                     by: "line",
                     value: Math.abs(deltaLine),
                     select: false,
                 });
-                deltaChar = newCol;
             }
             if (Math.abs(deltaChar) > 0) {
                 if (Math.abs(deltaLine) > 0) {
