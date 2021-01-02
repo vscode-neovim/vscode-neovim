@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.0.74]
+
+-   Fix cursor logic ( #467 , #488 )
+-   Trigger matching word highlight after movement ( #159 )
+-   VIM highlight adjustments ( #482 )
+
 ## [0.0.73]
 
 -   Improve cursor reveailing logic ( #479 )
