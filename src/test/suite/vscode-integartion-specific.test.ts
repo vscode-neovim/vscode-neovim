@@ -172,8 +172,7 @@ describe("VSCode integration specific stuff", () => {
         );
     });
 
-    // !Passes only when the runner is in foreground
-    it("Preserving cursor style when switching between editors", async () => {
+    it("Current mode is canceled when switching between editor panes", async () => {
         const doc1 = await vscode.workspace.openTextDocument({
             content: "blah1",
         });
@@ -193,6 +192,7 @@ describe("VSCode integration specific stuff", () => {
             {
                 content: ["blah2"],
                 cursorStyle: "line",
+                mode: "i",
             },
             client,
         );
@@ -203,14 +203,18 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 content: ["blah1"],
-                cursorStyle: "line",
+                cursorStyle: "block",
+                mode: "n",
             },
             client,
         );
-        await sendEscapeKey();
+
+        await sendVSCodeKeys("V");
         await assertContent(
             {
+                content: ["blah1"],
                 cursorStyle: "block",
+                mode: "V",
             },
             client,
         );
@@ -221,6 +225,63 @@ describe("VSCode integration specific stuff", () => {
             {
                 content: ["blah2"],
                 cursorStyle: "block",
+                mode: "n",
+            },
+            client,
+        );
+    });
+
+    it("Current mode is canceled when switching between editor tabs", async () => {
+        const doc1 = await vscode.workspace.openTextDocument({
+            content: "blah1",
+        });
+        await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        await wait();
+        const doc2 = await vscode.workspace.openTextDocument({
+            content: "blah2",
+        });
+        await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("i");
+        await assertContent(
+            {
+                content: ["blah2"],
+                cursorStyle: "line",
+                mode: "i",
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("workbench.action.previousEditorInGroup");
+        await wait();
+
+        await assertContent(
+            {
+                content: ["blah1"],
+                cursorStyle: "block",
+                mode: "n",
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("V");
+        await assertContent(
+            {
+                content: ["blah1"],
+                cursorStyle: "block",
+                mode: "V",
+            },
+            client,
+        );
+
+        await vscode.commands.executeCommand("workbench.action.nextEditorInGroup");
+        await wait();
+        await assertContent(
+            {
+                content: ["blah2"],
+                cursorStyle: "block",
+                mode: "n",
             },
             client,
         );
