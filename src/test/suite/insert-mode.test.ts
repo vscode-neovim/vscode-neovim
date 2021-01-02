@@ -453,8 +453,7 @@ describe("Insert mode and buffer syncronization", () => {
 
         await assertContent(
             {
-                // TODO: should be [0, 13]
-                cursor: [0, 12],
+                cursor: [0, 13],
                 content: ["blah1aaa blah2"],
             },
             client,
