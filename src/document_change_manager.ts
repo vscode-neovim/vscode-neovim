@@ -62,6 +62,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         Array<{ promise?: Promise<void>; resolve?: () => void; reject?: () => void }>
     > = new Map();
     /**
+     * Stores cursor pos after document change in neovim
+     */
+    private cursorAfterTextDocumentChange: WeakMap<TextDocument, { line: number; character: number }> = new WeakMap();
+    /**
      * Holds document content last known to neovim.
      * ! The original content is needed to calculate the difference when exiting the insert mode
      * ! It's possible to just fetch content from neovim and check instead of trackingg here, but this will add unnecessary lag
@@ -97,6 +101,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
+    }
+
+    public eatDocumentCursorAfterChange(doc: TextDocument): { line: number; character: number } | undefined {
+        const cursor = this.cursorAfterTextDocumentChange.get(doc);
+        this.cursorAfterTextDocumentChange.delete(doc);
+        return cursor;
     }
 
     public getDocumentChangeCompletionLock(doc: TextDocument): Promise<void[]> | undefined {
@@ -376,6 +386,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     for (let line = 1; line < lastLine - firstLine; line++) {
                         lines.splice(firstLine, 1);
                     }
+                    lines[firstLine] = "";
                 } else if (firstLine !== lastLine && !data.length) {
                     // 4
                     for (let line = 0; line < lastLine - firstLine; line++) {
@@ -483,6 +494,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                         if (!editor.selection.anchor.isEqual(editor.selection.active)) {
                             editor.selections = [new Selection(editor.selection.active, editor.selection.active)];
                         }
+                        this.cursorAfterTextDocumentChange.set(editor.document, {
+                            line: editor.selection.active.line,
+                            character: editor.selection.active.character,
+                        });
                         docPromises.forEach((p) => p.resolve && p.resolve());
                         this.logger.debug(`${LOG_PREFIX}: Changes succesfully applied for ${doc.uri.toString()}`);
                         this.documentContentInNeovim.set(doc, doc.getText());
