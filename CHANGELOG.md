@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.0.75]
+
+-   Improvements to cursor logic ( #501 )
+-   Cancel current mode when switching editor ( #156 )
+
 ## [0.0.74]
 
 -   Fix cursor logic ( #467 , #488 )
