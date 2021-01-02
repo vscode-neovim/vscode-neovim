@@ -26,6 +26,7 @@ import {
     callAtomic,
     editorPositionToNeovimPosition,
     getNeovimCursorPosFromEditor,
+    isLineWithinFold,
 } from "./utils";
 
 const LOG_PREFIX = "CursorManager";
@@ -453,9 +454,20 @@ export class CursorManager
             return;
         }
         const currCursor = editor.selection.active;
+        const visibleRanges = editor.visibleRanges;
         const deltaLine = newLine - currCursor.line;
         let deltaChar = newCol - currCursor.character;
         if (Math.abs(deltaLine) <= 1) {
+            if (isLineWithinFold(visibleRanges, newLine)) {
+                this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName}, skipping fold line ${newLine}`);
+                commands.executeCommand("cursorMove", {
+                    to: deltaLine > 0 ? "down" : "up",
+                    by: "wrappedLine",
+                    value: Math.abs(deltaLine),
+                    select: false,
+                });
+                return;
+            }
             this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} using cursorMove command`);
             if (Math.abs(deltaLine) > 0) {
                 if (newCol !== currCursor.character) {

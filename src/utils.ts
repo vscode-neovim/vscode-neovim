@@ -1,4 +1,12 @@
-import { workspace, TextEditor, TextDocumentContentChangeEvent, Position, TextDocument, EndOfLine } from "vscode";
+import {
+    workspace,
+    TextEditor,
+    TextDocumentContentChangeEvent,
+    Position,
+    TextDocument,
+    EndOfLine,
+    Range,
+} from "vscode";
 import { Diff } from "fast-diff";
 import wcwidth from "ts-wcwidth";
 import { NeovimClient } from "neovim";
@@ -521,4 +529,15 @@ export async function callAtomic(
     if (errors.length) {
         logger.error(`${prefix}:\n${errors.join("\n")}`);
     }
+}
+
+export function isLineWithinFold(visibleRanges: Range[], line: number): boolean {
+    if (visibleRanges.find((r) => r.contains(new Position(line, 0)))) {
+        return false;
+    }
+    // if between 2 visible ranges then it's folded line
+    // Is this always true? Seems so
+    return !!visibleRanges.find(
+        (r, idx) => line > r.end.line && visibleRanges[idx + 1] && line < visibleRanges[idx + 1].start.line,
+    );
 }
