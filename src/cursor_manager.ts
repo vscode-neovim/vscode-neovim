@@ -93,38 +93,6 @@ export class CursorManager
                 );
                 break;
             }
-            case "cursorCharMove": {
-                const [direction, count] = args as ["left" | "right", number];
-                const currentEditor = window.activeTextEditor;
-                if (!currentEditor) {
-                    return;
-                }
-                const currentCursor = currentEditor.selection.active;
-                const currLine = currentEditor.document.lineAt(currentCursor.line);
-                if (direction === "right") {
-                    // !vscode range is including trailing character, so reduce it by 1
-                    const endOfLineCharacter = currLine.range.end.character - 1;
-                    const charactersTillEol = endOfLineCharacter - currentCursor.character;
-                    const finalCount = count <= charactersTillEol ? count : charactersTillEol;
-                    if (finalCount > 0) {
-                        await commands.executeCommand("cursorMove", {
-                            to: direction,
-                            by: "character",
-                            value: finalCount,
-                        });
-                    }
-                } else {
-                    const finalCount = count <= currentCursor.character ? count : currentCursor.character;
-                    if (finalCount > 0) {
-                        await commands.executeCommand("cursorMove", {
-                            to: direction,
-                            by: "character",
-                            value: finalCount,
-                        });
-                    }
-                }
-                break;
-            }
         }
     }
 
@@ -488,13 +456,25 @@ export class CursorManager
                 deltaChar = newCol;
             }
             if (Math.abs(deltaChar) > 0) {
-                this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by char: ${deltaChar}`);
-                commands.executeCommand("cursorMove", {
-                    to: deltaChar > 0 ? "right" : "left",
-                    by: "character",
-                    value: Math.abs(deltaChar),
-                    select: false,
-                });
+                if (Math.abs(deltaLine) > 0) {
+                    this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by char: ${deltaChar}`);
+                    commands.executeCommand("cursorMove", {
+                        to: deltaChar > 0 ? "right" : "left",
+                        by: "character",
+                        value: Math.abs(deltaChar),
+                        select: false,
+                    });
+                } else {
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Editor: ${editorName} setting cursor directly since zero line delta`,
+                    );
+                    const newPos = new Selection(newLine, newCol, newLine, newCol);
+                    if (!editor.selection.isEqual(newPos)) {
+                        editor.selections = [newPos];
+                        editor.revealRange(newPos, TextEditorRevealType.Default);
+                        commands.executeCommand("editor.action.wordHighlight.trigger");
+                    }
+                }
             }
         } else {
             this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
