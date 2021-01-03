@@ -271,4 +271,21 @@ describe("Multi-width characters", () => {
             client,
         );
     });
+
+    it("Issue #503", async () => {
+        const doc = await vscode.workspace.openTextDocument({ content: "ŷaŷbŷcŷd = functionŷ(par1)" });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("f(l");
+        await assertContent(
+            {
+                vsCodeCursor: [0, 26],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("ci(");
+        await assertContent({ vsCodeCursor: [0, 26], content: ["ŷaŷbŷcŷd = functionŷ()"] }, client);
+    });
 });
