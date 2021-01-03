@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.76]
+
+-   Fix mutli-column character handling ( #503 )
+
 ## [0.0.75]
 
 -   Improvements to cursor logic ( #501 )
