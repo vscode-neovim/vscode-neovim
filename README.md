@@ -4,17 +4,19 @@ Neovim integration for Visual Studio Code
 
 For those who don't know [Neovim](https://neovim.io/) is the fork of VIM to allow greater VIM extensibility and embeddability. The extension is using full embedded neovim instance as backend (with the exception of the insert mode and window/buffer/file management), no more half-complete VIM emulation
 
-VSCodeVim has neovim integration but it doesn't use it for anything but ex-commands (e.g. commands like `:normal`) and relying for own emulated implementation for anything else.
-
 Please report any issues/suggestions to [vscode-neovim repository](https://github.com/asvetliakov/vscode-neovim)
 
 ## Installation
 
 -   Install [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension
+    -   Tip: You can install neovim-0.5.0-nightly separately for just vscode, outside of your system's package manager installation
 -   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) Required version **0.5.0 nightly** or greater
+-   Set neovim path in the extension settings and you're good to go.
+    -   **Important** you must specify full path to neovim, like `C:\Neovim\bin\nvim.exe` or `/usr/local/bin/nvim`.
+    -   **IMPORTANT 2:** the setting id is `vscode-neovim.neovimExecutablePaths.win32/linux/darwin`
 -   **Important!: If you already have big & custom `init.vim` i'd recommend to wrap existing settings & plugins with [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) check to prevent potential breakings and problems**. If you have any problems - try with empty `init.vim` first
 
-**Neovim 0.5+** is required. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
+**Neovim 0.5+** is **required**. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
 
 If you get `Unable to init vscode-neovim: command 'type' already exists` message, try to uninstall other VSCode extensions, which register `type` command (i.e. [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 
@@ -33,17 +35,13 @@ If you want to use WSL version of neovim, set `useWSL` configuration toggle and 
 
 Neovim 0.5.0-nightly or greater
 
--   Set neovim path in the extension settings and you're good to go. **Important** you must specify full path to neovim, like `C:\Neovim\bin\nvim.exe` or `/usr/local/bin/nvim`. **IMPORTANT 2:** the setting id is `vscode-neovim.neovimExecutablePaths.win32/linux/darwin`
--   Tip: You can install neovim-0.5.0-nightly separately for just vscode, outside of your system's package manager installation
-
 ## Important
 
 -   Visual modes are not producing real vscode selections (few versions had this feature previously, but it was implemented through ugly & hacky workarounds). Any vscode commands expecting selection won't work. To round the corners, invoking VSCode command picker through the default hotkeys (`f1`/`ctrl/cmd+shift+p`) from visual mode converts vim selection to real vscode selection. Also commenting/indenting/formatting works out of the box too. If you're using some custom mapping for calling vscode commands and depends on real vscode selection, you can use `VSCodeNotifyRange`/`VSCodeNotifyRangePos` (the first one linewise, the latter characterwise) functions which will convert visual mode selection to vscode selection before calling the command. See [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54) and [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98)
 -   The extension for now works best if `editor.scrollBeyondLastLine` is disabled.
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`. This is normal.
 -   File/tab/window management (`:w`/`q`/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindings/commands. **DO NOT** use vim `:w`, etc... in scripts/keybindings, they won't work.
--   It's better to use spaces instead of tabs for file indent. `<C-v>` is broken for tab indents
--   On a Mac, the `h`, `j`, `k` and `l` movement keys may not repeat in visual mode when held, to fix this open Terminal and execute the following command:
+-   On a Mac, the `h`, `j`, `k` and `l` movement keys may not repeat when held, to fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`
 
 ## VSCode specific features and differences
