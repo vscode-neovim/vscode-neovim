@@ -99,7 +99,7 @@ export class CursorManager
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
         const gridCursorUpdates: Map<
             number,
-            { line: number; col: number; grid: number; isScreenCol: boolean }
+            { line: number; col: number; grid: number; isByteCol: boolean }
         > = new Map();
         const gridCursorViewportHint: Map<number, { line: number; col: number }> = new Map();
         // need to process win_viewport events first
@@ -134,11 +134,11 @@ export class CursorManager
                                 grid,
                                 line: viewportHint.line,
                                 col: viewportHint.col,
-                                isScreenCol: true,
+                                isByteCol: true,
                             });
                         } else {
                             const topline = this.gridVisibleViewport.get(grid)?.top || 0;
-                            gridCursorUpdates.set(grid, { grid, line: topline + row, col, isScreenCol: false });
+                            gridCursorUpdates.set(grid, { grid, line: topline + row, col, isByteCol: false });
                         }
                     }
                     break;
@@ -163,7 +163,7 @@ export class CursorManager
                                 grid,
                                 line: viewportHint.line,
                                 col: viewportHint.col,
-                                isScreenCol: true,
+                                isByteCol: true,
                             });
                         }
                     }
@@ -214,15 +214,13 @@ export class CursorManager
                 docPromises.then(() => {
                     try {
                         this.logger.debug(`${LOG_PREFIX}: Waiting document change completion done, gridId: ${gridId}`);
-                        const finalCol = cursorPos.isScreenCol
-                            ? calculateEditorColFromVimScreenCol(
-                                  editor.document.lineAt(cursorPos.line).text,
-                                  cursorPos.col,
-                                  // !For cursor updates tab is always counted as 1 col
-                                  1,
-                                  true,
-                              )
-                            : cursorPos.col;
+                        const finalCol = calculateEditorColFromVimScreenCol(
+                            editor.document.lineAt(cursorPos.line).text,
+                            cursorPos.col,
+                            // !For cursor updates tab is always counted as 1 col
+                            1,
+                            cursorPos.isByteCol,
+                        );
                         this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
                         // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
                         // !To not mess the cursor, try to debounce the update
@@ -235,14 +233,12 @@ export class CursorManager
                 // !Sync call helps with most common operations latency
                 this.logger.debug(`${LOG_PREFIX}: No pending document changes, gridId: ${gridId}`);
                 try {
-                    const finalCol = cursorPos.isScreenCol
-                        ? calculateEditorColFromVimScreenCol(
-                              editor.document.lineAt(cursorPos.line).text,
-                              cursorPos.col,
-                              1,
-                              true,
-                          )
-                        : cursorPos.col;
+                    const finalCol = calculateEditorColFromVimScreenCol(
+                        editor.document.lineAt(cursorPos.line).text,
+                        cursorPos.col,
+                        1,
+                        cursorPos.isByteCol,
+                    );
                     this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
                     this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
                 } catch (e) {
