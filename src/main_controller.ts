@@ -100,7 +100,7 @@ export class MainController implements vscode.Disposable {
         let extensionPath = settings.extensionPath;
         if (settings.useWsl) {
             // execSync returns a newline character at the end
-            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath ${extensionPath}`).toString().trim();
+            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
