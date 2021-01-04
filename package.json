@@ -394,6 +394,65 @@
                 "when": "listFocus && !inputFocus"
             },
             {
+                "key": "j",
+                "command": "list.focusDown",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "k",
+                "command": "list.focusUp",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "h",
+                "command": "list.collapse",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "l",
+                "command": "list.select",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "enter",
+                "command": "list.select",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "g g",
+                "command": "list.focusFirst",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "shift+g",
+                "command": "list.focusLast",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "o",
+                "command": "list.toggleExpand",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "ctrl+u",
+                "command": "list.focusPageUp",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "ctrl+d",
+                "command": "list.focusPageDown",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "/",
+                "command": "list.toggleKeyboardNavigation",
+                "when": "listFocus && !inputFocus && listSupportsKeyboardNavigation"
+            },
+            {
+                "key": "escape",
+                "command": "list.toggleKeyboardNavigation",
+                "when": "listFocus && inputFocus && listSupportsKeyboardNavigation"
+            },
                 "command": "showNextParameterHint",
                 "key": "ctrl+n",
                 "when": "editorTextFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
