@@ -58,6 +58,9 @@ set smartindent
 " split/nosplit doesn't work currently, see https://github.com/asvetliakov/vscode-neovim/issues/329
 set inccommand=
 
+" lazyredraw breaks the movement
+set nolazyredraw
+
 function s:forceLocalOptions()
     setlocal nowrap
     setlocal conceallevel=0
@@ -74,6 +77,7 @@ function s:forceLocalOptions()
     endif
     setlocal nofoldenable
     setlocal foldmethod=manual
+    setlocal nolazyredraw
 endfunction
 
 augroup VscodeForceOptions
