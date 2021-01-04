@@ -526,7 +526,12 @@
             {
                 "command": "vscode-neovim.escape",
                 "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+            },
+            {
+                "command": "vscode-neovim.escape",
+                "key": "ctrl+c",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert"
             },
             {
                 "command": "vscode-neovim.escape",
