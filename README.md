@@ -9,8 +9,8 @@ Please report any issues/suggestions to [vscode-neovim repository](https://githu
 ## Installation
 
 -   Install [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension
-    -   Tip: You can install neovim-0.5.0-nightly separately for just vscode, outside of your system's package manager installation
 -   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) Required version **0.5.0 nightly** or greater
+    -   Tip: You can install neovim-0.5.0-nightly separately for just vscode, outside of your system's package manager installation
 -   Set neovim path in the extension settings and you're good to go.
     -   **Important** you must specify full path to neovim, like `C:\Neovim\bin\nvim.exe` or `/usr/local/bin/nvim`.
     -   **IMPORTANT 2:** the setting id is `vscode-neovim.neovimExecutablePaths.win32/linux/darwin`
