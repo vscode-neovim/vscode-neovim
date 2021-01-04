@@ -536,7 +536,7 @@
             {
                 "command": "vscode-neovim.escape",
                 "key": "Escape",
-                "when": "editorTextFocus && neovim.init && !markersNavigationVisible && !parameterHintsVisible"
+                "when": "editorTextFocus && neovim.init && !markersNavigationVisible && !parameterHintsVisible && !referenceSearchVisible"
             },
             {
                 "command": "vscode-neovim.escape",
@@ -554,6 +554,26 @@
                 "key": "cmd+shift+o",
                 "when": "editorTextFocus && neovim.mode != insert",
                 "args": "gO"
+            },
+            {
+                "key": "tab",
+                "command": "togglePeekWidgetFocus",
+                "when": "inReferenceSearchEditor || referenceSearchVisible && neovim.mode == normal"
+            },
+            {
+                "key": "escape",
+                "command": "closeReferenceSearch",
+                "when": "inReferenceSearchEditor && !config.editor.stablePeek && neovim.mode == normal"
+            },
+            {
+                "key": "ctrl+p",
+                "command": "list.focusUp",
+                "when": "inReferenceSearchEditor && neovim.mode == normal"
+            },
+            {
+                "key": "ctrl+n",
+                "command": "list.focusDown",
+                "when": "inReferenceSearchEditor && neovim.mode == normal"
             },
             {
                 "command": "vscode-neovim.send",
