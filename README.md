@@ -208,183 +208,60 @@ See gif in action:
 
 ### File/Tab management commands
 
-`:e[dit]` or `ex`
-
--   `:e` without argument and without bang (`!`) - opens quickopen window
--   `:e!` without argument and with bang - opens open file dialog
--   `:e [filename]` , e.g. `:e $MYVIMRC` - opens a file in new tab. The file must exist
--   `:e! [filename]`, e.g. `:e! $MYVIMRC` - closes current file (discard any changes) and opens a file. The file must exist
-
-`ene[w]`
-
--   `enew` Creates new untitled document in vscode
--   `enew!` closes current file (discard any changes) and creates new untitled document
-
-`fin[d]`
-
--   Opens vscode's quick open window. Arguments and count are not supported
-
-`w[rite]`
-
--   Without bang (`!`) saves current file
--   With bang opens 'save as' dialog
-
-`sav[eas]`
-
--   Opens 'save as' dialog
-
-`wa[ll]`
-
--   Saves all files. Bang is not doing anything
-
-`q[uit]` or keys `<C-w> q` / `<C-w> c`
-
--   Closes the active editor
-
-`wq`
-
--   Saves and closes the active editor
-
-`qa[ll]`
-
--   Closes all editors, but doesn't quit vscode. Acts like `qall!`, so beware for a nonsaved changes
-
-`wqa[ll]`/`xa[ll]`
-
--   Saves all editors & close
-
-`tabe[dit]`
-
--   Similar to `e[dit]`. Without argument opens quickopen, with argument opens the file in new tab
-
-`tabnew`
-
--   Opens new untitled file
-
-`tabf[ind]`
-
--   Opens quickopen window
-
-`tab`/`tabs`
-
--   Not supported. Doesn't make sense with vscode
-
-`tabc[lose]`
-
--   Closes active editor (tab)
-
-`tabo[nly]`
-
--   Closes other tabs in vscode **group** (pane). This differs from vim where a `tab` is a like a new window, but doesn't make sense in vscode.
-
-`tabn[ext]` or key `gt`
-
--   Switches to next (or `count` tabs if argument is given) in the active vscode **group** (pane)
-
-`tabp[revious]` or key `gT`
-
--   Switches to previous (or `count` tabs if argument is given) in the active vscode **group** (pane)
-
-`tabfir[st]`
-
--   Switches to the first tab in the active editor group
-
-`tabl[ast]`
-
--   Switches to the last tab in the active edtior group
-
-`tabm[ove]`
-
--   Not supported yet
+| Command                                | Description                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `:e[dit]` or `ex`                      | Without argument and without bang (`!`): opens quickopen window. <br/> Without argument and with bang: opens open file dialog. <br/> With filename, e.g. `:e $MYVIMRC`: opens a file in new tab. The file must exist. <br/> With filename and with bang e.g. `:e! $MYVIMRC`: closes current file (discard any changes) and opens a file. The file must exist. |
+| `ene[w]`                               | Without bang: creates new untitled document in vscode. <br/> With bang: closes current file (discard any changes) and creates new untitled document.                                                                                                                                                                                                          |
+| `fin[d]`                               | Opens vscode's quick open window. Arguments and count are not supported.                                                                                                                                                                                                                                                                                      |
+| `w[rite]`                              | Without bang (`!`) saves current file With bang opens 'save as' dialog                                                                                                                                                                                                                                                                                        |
+| `sav[eas]`                             | Opens 'save as' dialog.                                                                                                                                                                                                                                                                                                                                       |
+| `wa[ll]`                               | Saves all files. Bang is not doing anything.                                                                                                                                                                                                                                                                                                                  |
+| `q[uit]` or keys `<C-w> q` / `<C-w> c` | Closes the active editor.                                                                                                                                                                                                                                                                                                                                     |
+| `wq`                                   | Saves and closes the active editor.                                                                                                                                                                                                                                                                                                                           |
+| `qa[ll]`                               | Closes all editors, but doesn't quit vscode. Acts like `qall!`, so beware for a nonsaved changes.                                                                                                                                                                                                                                                             |
+| `wqa[ll]`/`xa[ll]`                     | Saves all editors & close.                                                                                                                                                                                                                                                                                                                                    |
+| `tabe[dit]`                            | Similar to `e[dit]`. Without argument opens quickopen, with argument opens the file in new tab.                                                                                                                                                                                                                                                               |
+| `tabnew`                               | Opens new untitled file.                                                                                                                                                                                                                                                                                                                                      |
+| `tabf[ind]`                            | Opens quickopen window.                                                                                                                                                                                                                                                                                                                                       |
+| `tab`/`tabs`                           | Not supported. Doesn't make sense with vscode.                                                                                                                                                                                                                                                                                                                |
+| `tabc[lose]`                           | Closes active editor (tab).                                                                                                                                                                                                                                                                                                                                   |
+| `tabo[nly]`                            | Closes other tabs in vscode **group** (pane). This differs from vim where a `tab` is a like a new window, but doesn't make sense in vscode.                                                                                                                                                                                                                   |
+| `tabn[ext]` or key `gt`                | Switches to next (or `count` tabs if argument is given) in the active vscode **group** (pane).                                                                                                                                                                                                                                                                |
+| `tabp[revious]` or key `gT`            | Switches to previous (or `count` tabs if argument is given) in the active vscode **group** (pane).                                                                                                                                                                                                                                                            |
+| `tabfir[st]`                           | Switches to the first tab in the active editor group.                                                                                                                                                                                                                                                                                                         |
+| `tabl[ast]`                            | Switches to the last tab in the active edtior group.                                                                                                                                                                                                                                                                                                          |
+| `tabm[ove]`                            | Not supported yet.                                                                                                                                                                                                                                                                                                                                            |
 
 Keys `ZZ` and `ZQ` are bound to `:wq` and `q!` respectively
 
 ### Buffer/window management commands
 
-_Note_: split size distribution is controlled by `workbench.editor.splitSizing` setting. By default it's `distribute`, which is mapped to vim's `equalalways` and `eadirection = 'both'` (default)
+_Note_: split size distribution is controlled by `workbench.editor.splitSizing` setting. By default, it's `distribute`, which is mapped to vim's `equalalways` and `eadirection = 'both'` (default).
 
-`sp[lit]` or key `<C-w> s`
+| Command                        | Key                        | Description                                                                                                                                                                                                                                                                              |
+| ------------------------------ | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sp[lit]`                      | `<C-w> s`                  | Split editor horizontally. <br/> When argument given opens the specified file in the argument, e.g `:sp $MYVIMRC`. File must exist.                                                                                                                                                      |
+| `vs[plit]`                     | `<C-w> v`                  | Split editor vertically. <br/> When argument given opens the specified file in the argument. File must exist.                                                                                                                                                                            |
+| `new`                          | `<C-w> n`                  | Like `sp[lit]` but creates new untitled file if no argument given.                                                                                                                                                                                                                       |
+| `vne[w]`                       |                            | Like `vs[plit]` but creates new untitled file if no argument given.                                                                                                                                                                                                                      |
+|                                | `<C-w> ^`                  | Not supported yet.                                                                                                                                                                                                                                                                       |
+| `vert[ical]`/`lefta[bove]`/etc |                            | Not supported yet.                                                                                                                                                                                                                                                                       |
+| `on[ly]`                       | `<C-w> o`                  | Without bang (`!`): merges all editor groups into the one. **Doesn't** close editors. <br/> With bang: closes all editors from all groups except current one.                                                                                                                            |
+|                                | `<C-w> j/k/h/l`            | Focus group below/above/left/right.                                                                                                                                                                                                                                                      |
+|                                | `<C-w> <C-j/i/h/l>`        | Move editor to group below/above/left/right. Vim doesn't have analogue mappings. **Note**: `<C-w> <C-i>` moves editor up. Logically it should be `<C-w> <C-k>` but vscode has many commands mapped to `<C-k> [key]` and doesn't allow to use `<C-w> <C-k>` without unbinding them first. |
+|                                | `<C-w> r/R/x`              | Not supported, use `<C-w> <C-j>` and similar to move editors.                                                                                                                                                                                                                            |
+|                                | `<C-w> w` or `<C-w> <C-w>` | Focus next group. The behavior may differ than in vim.                                                                                                                                                                                                                                   |
+|                                | `<C-w> W` or `<C-w> p`     | Focus previous group. The behavior may differ than in vim. `<C-w> p` is completely different than in vim.                                                                                                                                                                                |
+|                                | `<C-w> b`                  | Focus last editor group (most bottom-right).                                                                                                                                                                                                                                             |
+|                                | `<C-w> H/K/J/L`            | Not supported yet.                                                                                                                                                                                                                                                                       |
+|                                | `<C-w> =`                  | Align all editors to have the same width.                                                                                                                                                                                                                                                |
+|                                | `[count]<C-w> +`           | Increase editor height by (optional) count.                                                                                                                                                                                                                                              |
+|                                | `[count]<C-w> -`           | Decrease editor height by (optional) count.                                                                                                                                                                                                                                              |
+|                                | `[count]<C-w> >`           | Increase editor width by (optional) count.                                                                                                                                                                                                                                               |
+|                                | `[count]<C-w> <`           | Decrease editor width by (optional) count.                                                                                                                                                                                                                                               |
+|                                | `<C-w> _`                  | Toggle maximized editor size. Pressing again will restore the size.                                                                                                                                                                                                                      |
 
--   Split editor horizontally. When argument given opens the specified file in the argument, e.g `:sp $MYVIMRC`. File must exist
-
-`vs[plit]` or key `<C-w> v`
-
--   Split editor vertically. When argument given opens the specified file in the argument. File must exist
-
-`new` or key `<C-w> n`
-
--   Like `sp[lit]` but creates new untitled file if no argument given
-
-`vne[w]`
-
--   Like `vs[plit]` but creates new untitled file if no argument given
-
-`<C-w> ^`
-
--   Not supported yet
-
-`vert[ical]`/`lefta[bove]`/etc...
-
--   Not supported yet
-
-`on[ly]` or key `<C-w> o`
-
--   Without bang (`!`) Merges all editor groups into the one. **Doesn't** close editors
--   With bang closes all editors from all groups except current one
-
-`<C-w> j/k/h/l`
-
--   Focus group below/above/left/right
-
-`<C-w> <C-j>/<C-i>/<C-h>/<C-l>`
-
--   Move editor to group below/above/left/right. Vim doesn't have analogue mappings. **Note**: `<C-w> <C-i>` moves editor up. Logically it should be `<C-w> <C-k>` but vscode has many commands mapped to `<C-k> [key]` and doesn't allow to use `<C-w> <C-k>` without unbinding them first
-
-`<C-w> r/R/x`
-
--   Not supported use `<C-w> <C-j>` and similar to move editors
-
-`<C-w> w` or `<C-w> <C-w>`
-
--   Focus next group. The behavior may differ than in vim
-
-`<C-w> W` or `<C-w> p`
-
--   Focus previous group. The behavior may differ than in vim. `<C-w> p` is completely different than in vim
-
-`<C-w> t`
-
--   Focus first editor group (most top-left)
-
-`<C-w> b`
-
--   Focus last editor group (most bottom-right)
-
-`<C-w> H/K/J/L`
-
--   Not supported yet
-
-`<C-w> =`
-
--   Align all editors to have the same width
-
-`[count]<C-w> +`
-
--   Increase editor height by (optional) count
-
-`[count]<C-w> -`
-
--   Decrease editor height by (optional) count
-
-`[count]<C-w> >`
-
--   Increase editor width by (optional) count
-
-`[count]<C-w> <`
-
--   Decrease editor width by (optional) count
-
-To use VSCode command 'Increase/decrease current view size'
+To use VSCode command 'Increase/decrease current view size' instead of separate bindings for width and height:
 
 -   `workbench.action.increaseViewSize`
 -   `workbench.action.decreaseViewSize`
@@ -410,11 +287,6 @@ To use VSCode command 'Increase/decrease current view size'
         xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
 
     </details>
-    <br>
-
-`<C-w> _`
-
--   Toggle maximized editor size. Pressing again will restore the size
 
 ### Insert mode special keys
 
@@ -440,39 +312,39 @@ Enabled by `useCtrlKeysForNormalMode = true` (default true).
 
 Refer to vim manual for their use.
 
--   CTRL-a
--   CTRL-b
--   CTRL-c
--   CTRL-d
--   CTRL-e
--   CTRL-f
--   CTRL-i
--   CTRL-o (see https://github.com/asvetliakov/vscode-neovim/issues/181#issuecomment-585264621)
--   CTRL-r
--   CTRL-u
--   CTRL-v
--   CTRL-w
--   CTRL-x
--   CTRL-y
--   CTRL-]
--   CTRL-j
--   CTRL-k
--   CTRL-l
--   CTRL-h
--   CTRL-/
+-   `CTRL-a`
+-   `CTRL-b`
+-   `CTRL-c`
+-   `CTRL-d`
+-   `CTRL-e`
+-   `CTRL-f`
+-   `CTRL-i`
+-   `CTRL-o` (see https://github.com/asvetliakov/vscode-neovim/issues/181#issuecomment-585264621)
+-   `CTRL-r`
+-   `CTRL-u`
+-   `CTRL-v`
+-   `CTRL-w`
+-   `CTRL-x`
+-   `CTRL-y`
+-   `CTRL-]`
+-   `CTRL-j`
+-   `CTRL-k`
+-   `CTRL-l`
+-   `CTRL-h`
+-   `CTRL-/`
 
 ### Cmdline control keys (always enabled)
 
-| Key                 | Desription                                                |
-| ------------------- | --------------------------------------------------------- |
-| `CTRL-h`            | Delete one character left.                                |
-| `CTRL-w`            | Delete word left.                                         |
-| `CTRL-u`            | Clear line.                                               |
-| `CTRL-g` / `CTRL-t` | In incsearch mode moves to next/previous result.          |
-| `CTRL-l`            | Add next character under the cursor to incsearch.         |
-| `CTRL-n` / `CTRL-p` | Go down/up history.                                       |
-| `<Up>`/`<Down>`     | Select next/prev suggestion (cannot be used for history). |
-| `Tab`               | Select suggestion.                                        |
+| Key                 | Desc                                                     |
+|---------------------|----------------------------------------------------------|
+| `CTRL-h`            | Delete one character left                                |
+| `CTRL-w`            | Delete word left                                         |
+| `CTRL-u`            | Clear line                                               |
+| `CTRL-g` / `CTRL-t` | In incsearch mode moves to next/previous result          |
+| `CTRL-l`            | Add next character under the cursor to incsearch         |
+| `CTRL-n` / `CTRL-p` | Go down/up history                                       |
+| `<Up>`/`<Down>`     | Select next/prev suggestion (cannot be used for history) |
+| `Tab`               | Select suggestion                                        |
 
 ### Custom keybindings
 
