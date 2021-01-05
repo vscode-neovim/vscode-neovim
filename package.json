@@ -731,6 +731,18 @@
             },
             {
                 "command": "vscode-neovim.send",
+                "key": "home",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<Home>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "end",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<End>"
+            },
+            {
+                "command": "vscode-neovim.send",
                 "key": "ctrl+a",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
                 "args": "<C-a>"
