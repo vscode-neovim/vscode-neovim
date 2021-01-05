@@ -1,66 +1,72 @@
-# Neo Vim (VS Code Neovim)
+<h2 align="center"><img src="./images/icon.png" height="128"><br>VSCode Neovim</h2>
+<p align="center"><strong>VSCode Neovim Integration</strong></p>
 
-Neovim integration for Visual Studio Code
+<p align=center>
+<a href="https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim"><img src="https://vsmarketplacebadge.apphb.com/version/asvetliakov.vscode-neovim.svg"></a>
+<a href="https://github.com/asvetliakov/vscode-neovim/actions/workflows/build_test.yml"><img src="https://github.com/asvetliakov/vscode-neovim/workflows/Code%20Check%20&%20Test/badge.svg"></a>
+<a href="https://gitter.im/vscode-neovim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge"><img src="https://badges.gitter.im/vscode-neovim/community.svg"></a>
+</p>
 
-For those who don't know [Neovim](https://neovim.io/) is the fork of VIM to allow greater VIM extensibility and embeddability. The extension is using full embedded neovim instance as backend (with the exception of the insert mode and window/buffer/file management), no more half-complete VIM emulation
+Neovim integration for Visual Studio Code.
 
-Please report any issues/suggestions to [vscode-neovim repository](https://github.com/asvetliakov/vscode-neovim)
-
-[![Gitter](https://badges.gitter.im/vscode-neovim/community.svg)](https://gitter.im/vscode-neovim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-
-## Installation
-
--   Install [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension
--   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) Required version **0.5.0 nightly** or greater
-    -   Tip: You can install neovim-0.5.0-nightly separately for just vscode, outside of your system's package manager installation
--   Set neovim path in the extension settings and you're good to go.
-    -   **Important** you must specify full path to neovim, like `C:\Neovim\bin\nvim.exe` or `/usr/local/bin/nvim`.
-    -   **IMPORTANT 2:** the setting id is `vscode-neovim.neovimExecutablePaths.win32/linux/darwin`
--   **Important!: If you already have big & custom `init.vim` i'd recommend to wrap existing settings & plugins with [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) check to prevent potential breakings and problems**. If you have any problems - try with empty `init.vim` first
-
-**Neovim 0.5+** is **required**. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
-
-If you get `Unable to init vscode-neovim: command 'type' already exists` message, try to uninstall other VSCode extensions, which register `type` command (i.e. [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
-
-### WSL
-
-If you want to use WSL version of neovim, set `useWSL` configuration toggle and specify linux path to nvim binary. `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through `$PATH` linux env setting. Use `wsl --list` to check for the correct default linux distribution.
+[Neovim](https://neovim.io/) is a fork of VIM to allow greater extensibility and integration. This extension uses a full embedded Neovim instance, no more half-complete VIM emulation! Control is given to VSCode for insert mode and window/buffer/file management, using the best of both editors.
 
 ## Features
 
--   Almost fully feature-complete VIM integration by utilizing neovim
--   First-class VSCode insert mode. The plugin unbinds self from the `type` event in the insert mode, so no typing lag and freezing anymore when long completion popup appears.
--   Fully working VSCode features - autocompletion/go to definition/snippets/multiple cursors/etc...
--   vimrc/vim plugins/etc are supported (few plugins don't make sense with vscode, such as nerdtree)
+-   Almost fully feature-complete VIM integration by utilizing neovim as a backend.
+-   Supports custom `init.vim` and many vim/neovim plugins.
+-   First-class VSCode insert mode. The plugin unbinds self from the `type` event in insert mode, so no more typing lag.
+-   Full integration with VSCode features - autocompletion/go to definition/snippets/multiple cursors/etc...
 
 ## Requirements
 
 Neovim 0.5.0-nightly or greater
 
-## Important
+## Installation
 
--   Visual modes are not producing real vscode selections (few versions had this feature previously, but it was implemented through ugly & hacky workarounds). Any vscode commands expecting selection won't work. To round the corners, invoking VSCode command picker through the default hotkeys (`f1`/`ctrl/cmd+shift+p`) from visual mode converts vim selection to real vscode selection. Also commenting/indenting/formatting works out of the box too. If you're using some custom mapping for calling vscode commands and depends on real vscode selection, you can use `VSCodeNotifyRange`/`VSCodeNotifyRangePos` (the first one linewise, the latter characterwise) functions which will convert visual mode selection to vscode selection before calling the command. See [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54) and [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98)
+-   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension.
+-   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.5.0 nightly** or greater. You can install neovim-0.5.0-nightly separately for just vscode, outside your system's package manager installation.
+-   Set the neovim path in the extension settings. You must specify full path to neovim, like `"C:\Neovim\bin\nvim.exe"` or `"/usr/local/bin/nvim"`. The setting id is `"vscode-neovim.neovimExecutablePaths.win32/linux/darwin"`, depending on your system.
+-   **Important:** If you already have big `init.vim` it is recommended to wrap existing settings & plugins with [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) to prevent potential problems. If you have any problems, try with empty `init.vim` first.
+
+> :warning: **Neovim 0.5+** is **required**. Any version lower than that won't work. Many linux distributions have an **old** version of neovim in their package repo - always check what version are you installing.
+
+> :info: If you get `"Unable to init vscode-neovim: command 'type' already exists"` message, uninstall other VSCode extensions that register `type` command (i.e. [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
+
+#### WSL
+
+If you want to use neovim from WSL, set `useWSL` configuration toggle and specify linux path to nvim binary. `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through `$PATH` linux env setting. Use `wsl --list` to check for the correct default linux distribution.
+
+## Tips and Features
+
+### Important
+
+-   Visual modes don't produce real vscode selections. Any vscode commands expecting selection won't work. To round the corners, invoking the VSCode command picker from visual mode through the default hotkeys (`f1`/`ctrl/cmd+shift+p`) converts vim selection to real vscode selection. This conversion is done automatically for some commands like commenting and formatting.
+-   If you're using some custom mapping for calling vscode commands that depends on real vscode selection, you can use `VSCodeNotifyRange`/`VSCodeNotifyRangePos` (the first one linewise, the latter characterwise) functions which will convert visual mode selection to vscode selection before calling the command. See [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54) and [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98).
 -   The extension for now works best if `editor.scrollBeyondLastLine` is disabled.
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`. This is normal.
 -   File/tab/window management (`:w`/`q`/etc...) commands are substituted and mapped to vscode actions. If you're using some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you want to use custom keybindings/commands. **DO NOT** use vim `:w`, etc... in scripts/keybindings, they won't work.
 -   On a Mac, the `h`, `j`, `k` and `l` movement keys may not repeat when held, to fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`
 
-## VSCode specific features and differences
+### VSCode specific features and differences
 
 -   =, == are mapped to `editor.action.formatSelection`
--   It's possible to call vscode commands from neovim. See `VSCodeCall/VSCodeNotify` vim functions in `vscode-neovim.vim` file. `VSCodeCall` is blocking request, while `VSCodeNotify` is not (see below)
--   Scrolling is done by VSCode side. `<C-d>/<C-u>/etc...` are slightly different
--   File management commands such as `e` / `w` / `q` etc are mapped to corresponding vscode commands and behavior may be different (see below)
--   `gd`/`<C-]` are mapped to `editor.action.revealDefinition` (Shortcut `F12`), also `<C-]>` works in vim help files
+-   It's possible to call vscode commands from neovim. See `VSCodeCall/VSCodeNotify` vim functions in `vscode-neovim.vim` file. `VSCodeCall` is blocking request, while `VSCodeNotify` is not (see below).
+-   Scrolling is done by VSCode side. `<C-d>/<C-u>/etc...` are slightly different.
+-   File management commands such as `e` / `w` / `q` etc are mapped to corresponding vscode commands
+    and behavior may be different (see below).
+-   `gd`/`<C-]` are mapped to `editor.action.revealDefinition` (Shortcut `F12`), also `<C-]>` works
+    in vim help files.
 -   `gf` is mapped to `editor.action.revealDeclaration`
 -   `gH` is mapped to `editor.action.referenceSearch.trigger`
--   `gD`/`gF` are mapped to `editor.action.peekDefinition` and `editor.action.peekDeclaration` respectively (opens in peek)
--   `<C-w>gd`/`<C-w>gf` are mapped to `editor.action.revealDefinitionAside` (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slightly different thing here)
+-   `gD`/`gF` are mapped to `editor.action.peekDefinition` and `editor.action.peekDeclaration` respectively (opens in peek).
+-   `<C-w>gd`/`<C-w>gf` are mapped to `editor.action.revealDefinitionAside` (original vim command -
+    open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are completely different, so it's useful to do slightly different thing here).
 -   `gh` is mapped to `editor.action.showHover`
--   Dot-repeat (`.`) . Works starting from `0.0.52` version. Moving cursor within a change range won't break the repeat sequence. I.e. in neovim, if you type `abc<cursor>` in insert mode then move cursor to `a<cursor>bc` and type `1` here the repeat sequence would be `1`. However in vscode it would be `a1bc`. Another difference that `.` repeat command when you delete some text only works from right-to-left. I.e. it will treat `<Del>` key as `<BS>` keys for dot repeat.
+-   Dot-repeat (`.`). Moving cursor within a change range won't break the repeat sequence. I.e. in neovim, if you type `abc<cursor>` in insert mode then move cursor to `a<cursor>bc` and type `1` here the repeat sequence would be `1`. However in vscode it would be `a1bc`. Another difference that `.` repeat command when you delete some text only works from right-to-left. I.e. it will treat `<Del>` key as `<BS>` keys for dot repeat.
 
-## Performance/Latency problems
+### Performance/Latency problems
 
 If you have any performance problems (cursor jitter usually) make sure you're not using these kinds of extensions:
 
@@ -68,16 +74,17 @@ If you have any performance problems (cursor jitter usually) make sure you're no
 -   Indent guide extensions (VSCode has built-in indent guides)
 -   Brackets highlighter extensions (VSCode has built-in feature)
 -   Anything that renders decorators/put something into vscode gutter very often, e.g. on each cursor/line move
+-   VSCode extensions that delay the extension host like "Bracket Pair Colorizer"
 
 Such extension may be fine and work well, but combined with any extension which should control the cursor position (such as any vim extension) it may work very bad, due to shared vscode extension host between all extensions (E.g. one extension is taking the control over the host and blocking the other extension, this produces jitter).
 
 If you're not sure, disable all other extensions except mine, **reload vscode/window** and see if the problem persist before reporting.
 
-Also there are a reports that some vim settings/vim plugins increase latency and causing performance problems. Make sure you've disabled unneeded plugins. Many of them don't make sense with vscode and may cause any sort of problems. You don't need any code, highlighting, completion, lsp plugins as well any plugins that spawn windows/buffers (nerdtree and similar), fuzzy-finders plugins, etc. You might want to keep navigation/text-objects/text-editing/etc plugins - they should be fine.
+Also there are reports that some vim settings/vim plugins increase latency and cause performance problems. Make sure you've disabled unneeded plugins. Many of them don't make sense with vscode and may cause problems. You don't need any code, highlighting, completion, lsp plugins as well any plugins that spawn windows/buffers (nerdtree and similar), fuzzy-finders plugins, etc. You might want to keep navigation/text-objects/text-editing/etc plugins - they should be fine.
 
-## Enabling jj or jk as escape keys from the insert mode
+### Enabling jj or jk as escape keys from the insert mode
 
-Put into your keybindings.json:
+Since VSCode is responsible for insert mode, custom insert-mode vim mappings don't work. To map composite escape keys, put into your keybindings.json:
 
 for `jj`
 
@@ -101,7 +108,7 @@ to enable `jk` add also:
 }
 ```
 
-## Determining if running in vscode in your init.vim
+### Determining if running in vscode in your init.vim
 
 This should do the trick:
 
@@ -113,21 +120,22 @@ else
 endif
 ```
 
-## Invoking vscode actions from neovim
+### Invoking vscode actions from neovim
 
 There are [few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/ecd361ff1968e597e2500e8ce1108830e918cfb8/vim/vscode-neovim.vim#L17-L39) that could be used to invoke any vscode commands:
 
--   `VSCodeNotify(command, ...)`/`VSCodeCall(command, ...)` - invokes vscode command with optional arguments
--   `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)`/`VSCodeCallRange(command, line1, line2, leaveSelection, ...)` - produces real vscode selection from line1 to line2 and invokes vscode command. Linewise. Put 1 for `leaveSelection` argument to leave vscode selection after invoking the command
--   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`/`VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` - produces real vscode selection from line1.pos1 to line2.pos2 and invokes vscode command. Characterwise
+-   `VSCodeNotify(command, ...)`/`VSCodeCall(command, ...)` - invokes vscode command with optional
+    arguments.
+-   `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)`/`VSCodeCallRange(command, line1, line2, leaveSelection, ...)` - produces real vscode selection from line1 to line2 and invokes vscode command. Linewise. Put 1 for `leaveSelection` argument to leave vscode selection after invoking the command.
+-   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`/`VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` - produces real vscode selection from line1.pos1 to line2.pos2 and invokes vscode command. Characterwise.
 
-Functions with `Notify` in name are non-blocking, the ones with `Call` are blocking. Generally **use Notify** unless you really need a blocking call
+Functions with `Notify` in name are non-blocking, the ones with `Call` are blocking. Generally **use Notify** unless you really need a blocking call.
 
 _Examples_:
 
 Produce linewise selection and show vscode commands (default binding)
 
-```
+```vim
 function! s:showCommands()
     let startLine = line("v")
     let endLine = line(".")
@@ -139,7 +147,7 @@ xnoremap <silent> <C-P> <Cmd>call <SID>showCommands()<CR>
 
 Produce characterwise selection and show vscode commands (default binding):
 
-```
+```vim
 function! s:showCommands()
     let startPos = getpos("v")
     let endPos = getpos(".")
@@ -151,27 +159,27 @@ xnoremap <silent> <C-P> <Cmd>call <SID>showCommands()<CR>
 
 Run Find in files for word under cursor in vscode:
 
-```
+```vim
 nnoremap <silent> ? <Cmd>call VSCodeNotify('workbench.action.findInFiles', { 'query': expand('<cword>')})<CR>
 ```
 
 Open definition aside (default binding):
 
-```
+```vim
 nnoremap <silent> <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 ```
 
-## Jumplist
+### Jumplist
 
-VSCode's jumplist is being used. Make sure to bind to `workbench.action.navigateBack` / `workbench.action.navigateForward` if you're using custom mappings. Marks (both upper & lowercased) should be fine
+VSCode's jumplist is used instead of Neovim's. This is to make navigation caused by VSCode (mouse click, outline navigation, jump to definition, ect) be navigable. Make sure to bind to `workbench.action.navigateBack` / `workbench.action.navigateForward` if you're using custom mappings. Marks (both upper & lowercased) should be fine.
 
-## Wildmenu completion
+### Wildmenu completion
 
 Command menu has the wildmenu completion on type. The completion options appear after 1.5s (to not bother you when you write `:w` or `:noh`). `<Up>/<Down>` selects the option and `<Tab>` accepts it. See the gif:
 
 ![wildmenu](/images/wildmenu.gif)
 
-## Multiple cursors
+### Multiple cursors
 
 Multiple cursors work in:
 
@@ -189,14 +197,16 @@ See gif in action:
 
 ![multicursors](/images/multicursor.gif)
 
-## Custom keymaps for scrolling/window/tab/etc... management
+## Bindings
+
+**Custom keymaps for scrolling/window/tab/etc... management**
 
 -   See [vscode-scrolling.vim](/vim/vscode-scrolling.vim) for scrolling commands reference
 -   See [vscode-file-commands.vim](/vim/vscode-file-commands.vim) for file commands reference
 -   See [vscode-tab-commands.vim](/vim/vscode-tab-commands.vim) for tab commands reference
 -   See [vscode-window-commands.vim](/vim/vscode-window-commands.vim) for window commands reference
 
-## File/Tab management commands
+### File/Tab management commands
 
 `:e[dit]` or `ex`
 
@@ -289,7 +299,7 @@ See gif in action:
 
 Keys `ZZ` and `ZQ` are bound to `:wq` and `q!` respectively
 
-## Buffer/window management commands
+### Buffer/window management commands
 
 _Note_: split size distribution is controlled by `workbench.editor.splitSizing` setting. By default it's `distribute`, which is mapped to vim's `equalalways` and `eadirection = 'both'` (default)
 
@@ -406,11 +416,11 @@ To use VSCode command 'Increase/decrease current view size'
 
 -   Toggle maximized editor size. Pressing again will restore the size
 
-## Insert mode special keys
+### Insert mode special keys
 
-Enabled by `useCtrlKeysForInsertMode = true` (default true)
+Enabled by `useCtrlKeysForInsertMode = true` (default true).
 
-| Key                        | Desc                                                             | Status                            |
+| Key                        | Description                                                      | Status                            |
 | -------------------------- | ---------------------------------------------------------------- | --------------------------------- |
 | `CTRL-r [0-9a-z"%#*+:.-=]` | Paste from register                                              | Works                             |
 | `CTRL-a`                   | Paste previous inserted content                                  | Works                             |
@@ -420,14 +430,15 @@ Enabled by `useCtrlKeysForInsertMode = true` (default true)
 | `CTRL-t`                   | Indent lines right                                               | Bound to VSCode indent line       |
 | `CTRL-d`                   | Indent lines left                                                | Bound to VSCode outindent line    |
 | `CTRL-j`                   | Insert line                                                      | Bound to VSCode insert line after |
+| `CTRL-c`                   | Escape                                                           | Works                             |
 
-Other keys are not supported in insert mode
+Other keys are not supported in insert mode.
 
-## Normal mode control keys
+### Normal mode control keys
 
-Enabled by `useCtrlKeysForNormalMode = true` (default true)
+Enabled by `useCtrlKeysForNormalMode = true` (default true).
 
-Refer to vim manual to get help what they're doing
+Refer to vim manual for their use.
 
 -   CTRL-a
 -   CTRL-b
@@ -450,33 +461,38 @@ Refer to vim manual to get help what they're doing
 -   CTRL-h
 -   CTRL-/
 
-Other control keys are not being sent (Usually useless with vscode)
+### Cmdline control keys (always enabled)
 
-## Cmdline control keys (always enabled)
+| Key                 | Desription                                                |
+| ------------------- | --------------------------------------------------------- |
+| `CTRL-h`            | Delete one character left.                                |
+| `CTRL-w`            | Delete word left.                                         |
+| `CTRL-u`            | Clear line.                                               |
+| `CTRL-g` / `CTRL-t` | In incsearch mode moves to next/previous result.          |
+| `CTRL-l`            | Add next character under the cursor to incsearch.         |
+| `CTRL-n` / `CTRL-p` | Go down/up history.                                       |
+| `<Up>`/`<Down>`     | Select next/prev suggestion (cannot be used for history). |
+| `Tab`               | Select suggestion.                                        |
 
--   CTRL-h (delete one character left)
--   CTRL-w (delete word left)
--   CTRL-u (clear line)
--   CTRL-g / CTRL-t (in incsearch mode moves to next/previous result)
--   CTRL-l (add next character under the cursor to incsearch)
--   CTRL-n / CTRL-p (go down/up history)
--   `<Up>`/`<Down>` (Select next/prev suggestion) (no way to make up/down to navigate through history, vscode disallows remapping)
--   Tab - Select suggestion
+### Custom keybindings
 
-## Pass additional keys to neovim or disable existing ctrl keys mappings
+Control keys which are not in the above tables are not sent to neovim (as they are usually useless with vscode).
 
-### To pass additional ctrl key sequence, for example <C-Tab> add to your keybindings.json:
+To pass additional ctrl keys to neovim, for example `<C-Tab>`, add to your keybindings.json:
 
-```json
+```jsonc
 {
     "command": "vscode-neovim.send",
+    // the key sequence to activate the binding
     "key": "ctrl+tab",
+    // don't activate during insert mode
     "when": "editorTextFocus && neovim.mode != insert",
+    // the input to send to neovim
     "args": "<C-Tab>"
 }
 ```
 
-### To disable existing ctrl key sequence, for example Ctrl+A add to your keybindings.json
+To disable existing ctrl key sequence, for example `Ctrl+A` add to your keybindings.json:
 
 ```json
 {
@@ -485,39 +501,49 @@ Other control keys are not being sent (Usually useless with vscode)
 }
 ```
 
-## Vim-easymotion
+## Vim Plugins
 
-Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-easymotion) works fine and as expected... except one thing: it really replaces your text with markers then restores back. It may work for VIM but for VS Code it leads to broken text and many errors reported while you're jumping. For this reason I created the special [vim-easymotion fork](https://github.com/asvetliakov/vim-easymotion) which doesn't touch your text and instead use vscode text decorations. Just add my fork to your `vim-plug` block or by using your favorite vim plugin installer and delete original vim-easymotion. Also overwin motions won't work (obviously) so don't use them. Happy jumping!
+Most vim plugins will work out of the box, but certain plugins may require some fixes to work properly.
+
+### Vim-easymotion
+
+While the original [vim-easymotion](https://github.com/easymotion/vim-easymotion) functions as expected, it works by replacing your text with markers then restoring back, which leads to broken text and many errors reported in VSCode.
+
+For this reason I created the special [vim-easymotion fork](https://github.com/asvetliakov/vim-easymotion) which doesn't touch your text and instead use vscode text decorations. Just add my fork to your `vim-plug` block or by using your favorite vim plugin installer and delete original vim-easymotion. Also overwin motions won't work (obviously) so don't use them.
+
+By default, text decorations will appear behind of the associated text as shown in the screenshot. To show the decorations on top of the text, set `vscode-neovim.textDecorationsAtTop` to true.
+
+Happy jumping!
 
 ![easymotion](/images/easy-motion-vscode.png)
 
-## Vim-commentary
+### Vim-commentary
 
-You can use [vim-commentary](https://github.com/tpope/vim-commentary) if you like it. But vscode already has such functionality so why don't use it? Add to your init.vim/init.nvim
+You can use [vim-commentary](https://github.com/tpope/vim-commentary) if you like it. But vscode already has such functionality so why don't use it? Add to your init.vim/init.nvim:
 
-```
+```vim
 xmap gc  <Plug>VSCodeCommentary
 nmap gc  <Plug>VSCodeCommentary
 omap gc  <Plug>VSCodeCommentary
 nmap gcc <Plug>VSCodeCommentaryLine
 ```
 
-Similar to vim-commentary, gcc is comment line (accept count), use gc with motion/in visual mode. `VSCodeCommentary` is just a simple function which calls `editor.action.commentLine`
+Similar to vim-commentary, gcc is comment line (accept count), use gc with motion/in visual mode. `VSCodeCommentary` is just a simple function which calls `editor.action.commentLine`.
 
-## VIM quick-scope
+### VIM quick-scope
 
-[quick-scope](https://github.com/unblevable/quick-scope) plugin uses default vim HL groups by default but they are normally ignored. To fix add
+[quick-scope](https://github.com/unblevable/quick-scope) plugin uses default vim HL groups by default but they are normally ignored. To fix, add
 
 ```vim
 highlight QuickScopePrimary guifg='#afff5f' gui=underline ctermfg=155 cterm=underline
 highlight QuickScopeSecondary guifg='#5fffff' gui=underline ctermfg=81 cterm=underline
 ```
 
-to your init.vim
+to your init.vim. The underline color can be changed by the `guisp` tag.
 
 ## Known Issues
 
-See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues)
+See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues).
 
 ## How it works
 
