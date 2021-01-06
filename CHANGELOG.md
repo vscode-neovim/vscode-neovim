@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.0.77]
+
+-   Fix cursor with tab indentation ( #516 , #515 )
+-   Handle correctly WSL path with spaces ( #509 )
+
 ## [0.0.76]
 
 -   Fix mutli-column character handling ( #503 )
