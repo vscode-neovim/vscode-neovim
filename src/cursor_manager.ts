@@ -218,7 +218,7 @@ export class CursorManager
                             editor.document.lineAt(cursorPos.line).text,
                             cursorPos.col,
                             // !For cursor updates tab is always counted as 1 col
-                            1,
+                            cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                             cursorPos.isByteCol,
                         );
                         this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
@@ -236,7 +236,7 @@ export class CursorManager
                     const finalCol = calculateEditorColFromVimScreenCol(
                         editor.document.lineAt(cursorPos.line).text,
                         cursorPos.col,
-                        1,
+                        cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                         cursorPos.isByteCol,
                     );
                     this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
