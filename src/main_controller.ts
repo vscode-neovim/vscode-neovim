@@ -108,7 +108,7 @@ export class MainController implements vscode.Disposable {
         const neovimOptionScriptPath = path.posix.join(extensionPath, "vim", "vscode-options.vim");
 
         const workspaceFolder = vscode.workspace.workspaceFolders;
-        const cwd = workspaceFolder ? workspaceFolder[0].uri.fsPath : "~";
+        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : "~";
 
         const args = [
             "-N",
