@@ -434,7 +434,7 @@ Refer to vim manual to get help what they're doing
 -   CTRL-e
 -   CTRL-f
 -   CTRL-i
--   CTRL-o
+-   CTRL-o (see https://github.com/asvetliakov/vscode-neovim/issues/181#issuecomment-585264621)
 -   CTRL-r
 -   CTRL-u
 -   CTRL-v
