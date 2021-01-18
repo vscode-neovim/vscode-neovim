@@ -107,7 +107,15 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
 
     /// SCROLL COMMANDS ///
     private scrollPage = (by: "page" | "halfPage", to: "up" | "down"): void => {
-        vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: true });
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
+        const visibleRanges = editor.visibleRanges;
+        const scrollLines = Math.ceil(
+            (visibleRanges[0].end.line - visibleRanges[0].start.line) / (by === "halfPage" ? 2 : 1),
+        );
+        vscode.commands.executeCommand("cursorMove", { to, by: "line", value: scrollLines, revealCursor: true });
     };
 
     private scrollLine = (to: "up" | "down"): void => {
