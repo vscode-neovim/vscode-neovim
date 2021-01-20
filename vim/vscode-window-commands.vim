@@ -48,9 +48,13 @@ AlterCommand on[ly] Only
 
 nnoremap <C-w>s <Cmd>call <SID>split('h')<CR>
 xnoremap <C-w>s <Cmd>call <SID>split('h')<CR>
+nnoremap <C-w><C-s> <Cmd>call <SID>split('h')<CR>
+xnoremap <C-w><C-s> <Cmd>call <SID>split('h')<CR>
 
 nnoremap <C-w>v <Cmd>call <SID>split('v')<CR>
 xnoremap <C-w>v <Cmd>call <SID>split('v')<CR>
+nnoremap <C-w><C-v> <Cmd>call <SID>split('v')<CR>
+xnoremap <C-w><C-v> <Cmd>call <SID>split('v')<CR>
 
 nnoremap <C-w>n <Cmd>call <SID>splitNew('h', '__vscode_new__')<CR>
 xnoremap <C-w>n <Cmd>call <SID>splitNew('h', '__vscode_new__')<CR>
@@ -62,6 +66,8 @@ xnoremap <C-w>c <Cmd>call VSCodeNotify('workbench.action.closeActiveEditor')<CR>
 
 nnoremap <C-w>o <Cmd>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
 xnoremap <C-w>o <Cmd>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
+nnoremap <C-w><C-o> <Cmd>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
+xnoremap <C-w><C-o> <Cmd>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
 
 nnoremap <C-w>j <Cmd>call VSCodeNotify('workbench.action.focusBelowGroup')<CR>
 xnoremap <C-w>j <Cmd>call VSCodeNotify('workbench.action.focusBelowGroup')<CR>
