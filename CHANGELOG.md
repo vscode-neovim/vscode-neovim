@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.0.78]
+
+-   Fix init error with no workspace folders open ( #526 )
+-   Update README.md ( #527 )
+
 ## [0.0.77]
 
 -   Fix cursor with tab indentation ( #516 , #515 )
