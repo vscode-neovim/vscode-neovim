@@ -513,6 +513,19 @@ highlight QuickScopeSecondary guifg='#5fffff' gui=underline ctermfg=81 cterm=und
 
 to your init.vim
 
+## VIM sandwich
+
+[vim-sandwich](https://github.com/machakann/vim-sandwich) in much the same way as quick-scope uses highlight groups that are ignored. To fix add
+
+```vim
+    highlight OperatorSandwichBuns guifg='#aa91a0' gui=underline ctermfg=172 cterm=underline 
+    highlight OperatorSandwichChange guifg='#edc41f' gui=underline ctermfg='yellow' cterm=underline
+    highlight OperatorSandwichAdd guibg='#b1fa87' gui=none ctermbg='green' cterm=none
+    highlight OperatorSandwichDelete guibg='#cf5963' gui=none ctermbg='red' cterm=none
+```
+
+to your init.vim
+
 ## Known Issues
 
 See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues)
