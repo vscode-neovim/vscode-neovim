@@ -5,7 +5,7 @@ function! s:editOrNew(...)
 
     if empty(file)
         if bang ==# '!'
-            call VSCodeNotify('workbench.action.files.openFile')
+            call VSCodeNotify('workbench.action.files.revert')
         else
             call VSCodeNotify('workbench.action.quickOpen')
         endif
