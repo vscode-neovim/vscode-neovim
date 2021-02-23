@@ -376,7 +376,11 @@ function getSystemSpecificSetting(
     const isUseWindowsSubsystemForLinux = settings.get("useWSL");
 
     //https://github.com/microsoft/vscode/blob/master/src/vs/base/common/platform.ts#L63
-    const platform = process.platform as "win32" | "darwin" | "linux";
+    let platform = process.platform as Platform;
+
+    if (platform === "darwin" && settingPrefix === "neovimExecutablePaths") {
+        platform += "-" + process.arch;
+    }
 
     const legacyEnvironmentVariable =
         legacySetting.environmentVariableName && process.env[legacySetting.environmentVariableName];
