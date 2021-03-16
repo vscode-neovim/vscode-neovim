@@ -44,7 +44,7 @@ module.exports = {
             extends: [
                 "plugin:@typescript-eslint/eslint-recommended",
                 "plugin:@typescript-eslint/recommended", // Uses the recommended rules from @typescript-eslint/eslint-plugin
-                "prettier/@typescript-eslint",
+                "prettier",
                 "plugin:import/typescript",
             ],
             rules: {
