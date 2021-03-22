@@ -412,6 +412,7 @@ Enabled by `useCtrlKeysForInsertMode = true` (default true)
 | -------------------------- | ---------------------------------------------------------------- | --------------------------------- |
 | `CTRL-r [0-9a-z"%#*+:.-=]` | Paste from register                                              | Works                             |
 | `CTRL-a`                   | Paste previous inserted content                                  | Works                             |
+| `CTRL-o`                   | Switch to normal mode for a single command, then back            | Works                             |
 | `CTRL-u`                   | Delete all text till begining of line, if empty - delete newline | Bound to VSCode key               |
 | `CTRL-w`                   | Delete word left                                                 | Bound to VSCode key               |
 | `CTRL-h`                   | Delete character left                                            | Bound to VSCode key               |
@@ -434,7 +435,7 @@ Refer to vim manual to get help what they're doing
 -   CTRL-e
 -   CTRL-f
 -   CTRL-i
--   CTRL-o (see https://github.com/asvetliakov/vscode-neovim/issues/181#issuecomment-585264621)
+-   CTRL-o
 -   CTRL-r
 -   CTRL-u
 -   CTRL-v

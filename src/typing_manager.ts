@@ -42,6 +42,7 @@ export class TypingManager implements Disposable {
         private changeManager: DocumentChangeManager,
     ) {
         this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
+        this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
@@ -137,6 +138,26 @@ export class TypingManager implements Disposable {
         // console.log(lines.length);
         // console.log(lines.join("\n"));
         // console.log("====END====");
+    };
+
+    private onInsertCtrlOCommand = async (): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX}: Ctrl-O key`);
+        if (this.modeManager.isInsertMode) {
+            this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (Ctrl-O)`);
+            this.isExitingInsertMode = true;
+            // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
+            // see https://github.com/asvetliakov/vscode-neovim/issues/324
+            if (!this.typeHandlerDisposable) {
+                this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
+            }
+            // this.leaveMultipleCursorsForVisualMode = false;
+            await this.changeManager.syncDocumentsWithNeovim();
+            await this.changeManager.syncDotRepatWithNeovim();
+        }
+        const keys = normalizeInputString(this.pendingKeysAfterExit);
+        this.logger.debug(`${LOG_PREFIX}: Pending keys sent with <c-o>: ${keys}`);
+        this.pendingKeysAfterExit = "";
+        await this.client.input(`<c-o>${keys}`);
     };
 
     private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {
