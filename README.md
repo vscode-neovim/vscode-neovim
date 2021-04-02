@@ -120,6 +120,19 @@ else
 endif
 ```
 
+To conditionally enable plugins, `vim-plug` has a [few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation).
+
+For example, using the `Cond` helper, you can do the following to conditionally activate plugins while having them all still installed
+([source](https://github.com/asvetliakov/vscode-neovim/issues/415#issuecomment-715533865)):
+
+```vim
+" inside plug#begin:
+" use normal easymotion when in vim mode
+Plug 'easymotion/vim-easymotion', Cond(!exists('g:vscode'))
+" use vscode easymotion when in vscode mode
+Plug 'asvetliakov/vim-easymotion', Cond(exists('g:vscode'), { 'as': 'vsc-easymotion' })
+```
+
 ### Invoking vscode actions from neovim
 
 There are [few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/ecd361ff1968e597e2500e8ce1108830e918cfb8/vim/vscode-neovim.vim#L17-L39) that could be used to invoke any vscode commands:
