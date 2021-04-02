@@ -379,6 +379,34 @@ Refer to vim manual for their use.
 | <kbd>Up</kbd>/<kbd>Down</kbd>   | Select next/prev suggestion (cannot be used for history). |
 | <kbd>Tab</kbd>                  | Select suggestion.                                        |
 
+### VSCode navigation bindings
+
+#### Explorer/list navigation:
+
+| Key                            | VSCode Command                  |
+| ------------------------------ | ------------------------------- |
+| <kbd>j</kbd>/<kbd>k</kbd>      | `list.focusDown/Up`             |
+| <kbd>h</kbd>/<kbd>l</kbd>      | `list.collapse/select`          |
+| <kbd>Enter</kbd>               | `list.select`                   |
+| <kbd>gg</kbd>                  | `list.focusFirst`               |
+| <kbd>G</kbd>                   | `list.focusLast`                |
+| <kbd>o</kbd>                   | `list.toggleExpand`             |
+| <kbd>C-U</kbd>/<kbd>D</kbd>    | `list.focusPageUp/Down`         |
+| <kbd>/</kbd>/<kbd>Escape</kbd> | `list.toggleKeyboardNavigation` |
+
+#### Explorer file manipulation:
+
+| Key          | VSCode Command        |
+| ------------ | --------------------- |
+| <kbd>r</kbd> | `renameFile`          |
+| <kbd>d</kbd> | `deleteFile`          |
+| <kbd>y</kbd> | `filesExplorer.copy`  |
+| <kbd>x</kbd> | `filesExplorer.cut`   |
+| <kbd>p</kbd> | `filesExplorer.paste` |
+| <kbd>v</kbd> | `explorer.openToSide` |
+| <kbd>a</kbd> | `explorer.newFile`    |
+| <kbd>A</kbd> | `explorer.newFolder`  |
+
 ### Custom keybindings
 
 Control keys which are not in the above tables are not sent to neovim (as they are usually useless with vscode).
