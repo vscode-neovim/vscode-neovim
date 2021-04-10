@@ -917,7 +917,7 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r ka",
+                "key": "ctrl+r a",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "a"
             },
