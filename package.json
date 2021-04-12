@@ -431,7 +431,7 @@
             {
                 "command": "vscode-neovim.escape",
                 "key": "Escape",
-                "when": "editorTextFocus && neovim.init"
+                "when": "editorTextFocus && neovim.init && !markersNavigationVisible && !parameterHintsVisible"
             },
             {
                 "command": "vscode-neovim.escape",
