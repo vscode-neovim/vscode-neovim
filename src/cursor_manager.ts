@@ -125,6 +125,7 @@ export class CursorManager
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
+                case "win_viewport":
                 case "grid_cursor_goto": {
                     for (const [grid, row, col] of args as [number, number, number][]) {
                         const viewportHint = gridCursorViewportHint.get(grid);
