@@ -125,12 +125,12 @@ export class CursorManager
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
-                case "win_viewport":
                 case "grid_cursor_goto": {
                     for (const [grid, row, col] of args as [number, number, number][]) {
                         const viewportHint = gridCursorViewportHint.get(grid);
                         // leverage viewport hint if available. It may be NOT available and go in different batch
                         if (viewportHint) {
+                            gridCursorViewportHint.delete(grid)
                             gridCursorUpdates.set(grid, {
                                 grid,
                                 line: viewportHint.line,
@@ -160,6 +160,7 @@ export class CursorManager
                         // When changing pos via grid scroll there must be always win_viewport event, leverage it
                         const viewportHint = gridCursorViewportHint.get(grid);
                         if (viewportHint) {
+                            gridCursorViewportHint.delete(grid)
                             gridCursorUpdates.set(grid, {
                                 grid,
                                 line: viewportHint.line,
@@ -173,6 +174,7 @@ export class CursorManager
                 case "grid_destroy": {
                     for (const [grid] of args as [number][]) {
                         this.gridVisibleViewport.delete(grid);
+                        gridCursorViewportHint.delete(grid)
                     }
                     break;
                 }
@@ -195,6 +197,14 @@ export class CursorManager
                     break;
                 }
             }
+        }
+        for (const [grid, pos] of gridCursorViewportHint) {
+            gridCursorUpdates.set(grid, {
+                grid,
+                line: pos.line,
+                col: pos.col,
+                isByteCol: true,
+            });
         }
         for (const [gridId, cursorPos] of gridCursorUpdates) {
             this.logger.debug(
