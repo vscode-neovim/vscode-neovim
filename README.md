@@ -163,6 +163,13 @@ nnoremap <silent> <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinition
 
 VSCode's jumplist is being used. Make sure to bind to `workbench.action.navigateBack` / `workbench.action.navigateForward` if you're using custom mappings. Marks (both upper & lowercased) should be fine
 
+| Key                                    | Desc                                                                       |
+| -------------------------------------- | -------------------------------------------------------------------------- |
+| `[count]<C-o>`                         | Go to `[count]` Older cursor position in jump list (not a motion command). |
+| `[count]<C-i>`<br />`[count]<Tab>`     | Go to `[count]` newer cursor position in jump list (not a motion command). |
+
+<br />
+
 ## Wildmenu completion
 
 Command menu has the wildmenu completion on type. The completion options appear after 1.5s (to not bother you when you write `:w` or `:noh`). `<Up>/<Down>` selects the option and `<Tab>` accepts it. See the gif:
