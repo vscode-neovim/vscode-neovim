@@ -107,7 +107,33 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
 
     /// SCROLL COMMANDS ///
     private scrollPage = (by: "page" | "halfPage", to: "up" | "down"): void => {
-        vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: true });
+        // vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: true }).then(
+        //     function(value) {
+        //         console.debug(value)
+        //         const e = vscode.window.activeTextEditor;
+        //         if (!e) {
+        //             return;
+        //         }
+        //         const pos = e.selection.active
+        //         console.debug(pos)
+        //         vscode.commands.executeCommand("vscode-neovim.send", "" + (pos.line + 1) + "gg" + (pos.character+1) + "|");
+        //     }
+        // );
+        const e = vscode.window.activeTextEditor;
+        if (!e) {
+            return;
+        }
+        const activePos = e.selection.active
+        const linesInPage = e.visibleRanges[0].end.line - e.visibleRanges[0].start.line;
+        const linesToMove = (by === "page" ? linesInPage : Math.ceil(linesInPage / 2));
+        const lineNum =
+            to === "down"
+                ? Math.min(activePos.line + linesToMove, e.document.lineCount - 1)
+                : Math.max(activePos.line - linesToMove, 0);
+        const line = e.document.lineAt(lineNum);
+        const pos = new vscode.Position(lineNum, Math.min(activePos.character, line.range.end.character));
+        e.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+        vscode.commands.executeCommand("vscode-neovim.send", "" + (pos.line + 1) + "gg" + (pos.character + 1) + "|");
     };
 
     private scrollLine = (to: "up" | "down"): void => {

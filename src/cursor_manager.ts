@@ -102,6 +102,7 @@ export class CursorManager
             { line: number; col: number; grid: number; isByteCol: boolean }
         > = new Map();
         const gridCursorViewportHint: Map<number, { line: number; col: number }> = new Map();
+        var doNotUseViewportHintForCursoUpdate = false;
         // need to process win_viewport events first
         for (const [name, ...args] of batch) {
             switch (name) {
@@ -128,9 +129,9 @@ export class CursorManager
                 case "grid_cursor_goto": {
                     for (const [grid, row, col] of args as [number, number, number][]) {
                         const viewportHint = gridCursorViewportHint.get(grid);
+                        gridCursorViewportHint.delete(grid)
                         // leverage viewport hint if available. It may be NOT available and go in different batch
                         if (viewportHint) {
-                            gridCursorViewportHint.delete(grid);
                             gridCursorUpdates.set(grid, {
                                 grid,
                                 line: viewportHint.line,
@@ -159,8 +160,8 @@ export class CursorManager
                     ][]) {
                         // When changing pos via grid scroll there must be always win_viewport event, leverage it
                         const viewportHint = gridCursorViewportHint.get(grid);
+                        gridCursorViewportHint.delete(grid)
                         if (viewportHint) {
-                            gridCursorViewportHint.delete(grid);
                             gridCursorUpdates.set(grid, {
                                 grid,
                                 line: viewportHint.line,
@@ -174,7 +175,7 @@ export class CursorManager
                 case "grid_destroy": {
                     for (const [grid] of args as [number][]) {
                         this.gridVisibleViewport.delete(grid);
-                        gridCursorViewportHint.delete(grid);
+                        gridCursorViewportHint.delete(grid)
                     }
                     break;
                 }
@@ -196,16 +197,27 @@ export class CursorManager
                     this.updateCursorStyle(newModeName);
                     break;
                 }
+                case "win_close": {
+                    doNotUseViewportHintForCursoUpdate = true
+                }
             }
         }
-        for (const [grid, pos] of gridCursorViewportHint) {
-            gridCursorUpdates.set(grid, {
-                grid,
-                line: pos.line,
-                col: pos.col,
-                isByteCol: true,
-            });
+
+        if (doNotUseViewportHintForCursoUpdate == false) // when there is no win_external_pos
+        {
+            for (const [grid, pos] of gridCursorViewportHint) {
+                const cursorUpdate = gridCursorUpdates.get(grid);
+                if (!cursorUpdate) {
+                    gridCursorUpdates.set(grid, {
+                        grid,
+                        line: pos.line,
+                        col: pos.col,
+                        isByteCol: true,
+                    });
+                }
+            }
         }
+
         for (const [gridId, cursorPos] of gridCursorUpdates) {
             this.logger.debug(
                 `${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}, pos: [${cursorPos.line}, ${cursorPos.col}]`,
@@ -462,63 +474,26 @@ export class CursorManager
         const currCursor = editor.selection.active;
         const deltaLine = newLine - currCursor.line;
         let deltaChar = newCol - currCursor.character;
-        if (Math.abs(deltaLine) <= 1) {
-            this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} using cursorMove command`);
-            if (Math.abs(deltaLine) > 0) {
-                if (newCol !== currCursor.character) {
-                    deltaChar = newCol;
-                    commands.executeCommand("cursorLineStart");
-                } else {
-                    deltaChar = 0;
-                }
-                commands.executeCommand("cursorMove", {
-                    to: deltaLine > 0 ? "down" : "up",
-                    by: "line",
-                    value: Math.abs(deltaLine),
-                    select: false,
-                });
-            }
-            if (Math.abs(deltaChar) > 0) {
-                if (Math.abs(deltaLine) > 0) {
-                    this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by char: ${deltaChar}`);
-                    commands.executeCommand("cursorMove", {
-                        to: deltaChar > 0 ? "right" : "left",
-                        by: "character",
-                        value: Math.abs(deltaChar),
-                        select: false,
-                    });
-                } else {
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Editor: ${editorName} setting cursor directly since zero line delta`,
-                    );
-                    const newPos = new Selection(newLine, newCol, newLine, newCol);
-                    if (!editor.selection.isEqual(newPos)) {
-                        editor.selections = [newPos];
-                        editor.revealRange(newPos, TextEditorRevealType.Default);
-                        commands.executeCommand("editor.action.wordHighlight.trigger");
-                    }
-                }
-            }
-        } else {
+        {
             this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
             const newPos = new Selection(newLine, newCol, newLine, newCol);
             if (!editor.selection.isEqual(newPos)) {
                 editor.selections = [newPos];
-                const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
-                const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
-                const type =
-                    deltaLine > 0
-                        ? newLine > bottomVisibleLine + 10
-                            ? TextEditorRevealType.InCenterIfOutsideViewport
-                            : TextEditorRevealType.Default
-                        : deltaLine < 0
-                        ? newLine < topVisibleLine - 10
-                            ? TextEditorRevealType.InCenterIfOutsideViewport
-                            : TextEditorRevealType.Default
-                        : TextEditorRevealType.Default;
-                editor.revealRange(newPos, type);
-                commands.executeCommand("editor.action.wordHighlight.trigger");
             }
+            const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
+            const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
+            const type =
+                deltaLine > 0
+                    ? newLine > bottomVisibleLine + 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : deltaLine < 0
+                    ? newLine < topVisibleLine - 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : TextEditorRevealType.Default;
+            editor.revealRange(newPos, type);
+            commands.executeCommand("editor.action.wordHighlight.trigger");
         }
     };
 
@@ -545,7 +520,7 @@ export class CursorManager
             } else {
                 editor.options.cursorStyle = TextEditorCursorStyle.Line;
             }
-        }
+        } 
     }
 
     private multipleCursorFromVisualMode(
