@@ -6,6 +6,8 @@ For those who don't know [Neovim](https://neovim.io/) is the fork of VIM to allo
 
 Please report any issues/suggestions to [vscode-neovim repository](https://github.com/asvetliakov/vscode-neovim)
 
+[![Gitter](https://badges.gitter.im/vscode-neovim/community.svg)](https://gitter.im/vscode-neovim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 ## Installation
 
 -   Install [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension
