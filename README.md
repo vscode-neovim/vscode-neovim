@@ -127,7 +127,7 @@ _Examples_:
 
 Produce linewise selection and show vscode commands (default binding)
 
-```
+```vim
 function! s:showCommands()
     let startLine = line("v")
     let endLine = line(".")
@@ -139,7 +139,7 @@ xnoremap <silent> <C-P> <Cmd>call <SID>showCommands()<CR>
 
 Produce characterwise selection and show vscode commands (default binding):
 
-```
+```vim
 function! s:showCommands()
     let startPos = getpos("v")
     let endPos = getpos(".")
@@ -151,13 +151,13 @@ xnoremap <silent> <C-P> <Cmd>call <SID>showCommands()<CR>
 
 Run Find in files for word under cursor in vscode:
 
-```
+```vim
 nnoremap <silent> ? <Cmd>call VSCodeNotify('workbench.action.findInFiles', { 'query': expand('<cword>')})<CR>
 ```
 
 Open definition aside (default binding):
 
-```
+```vim
 nnoremap <silent> <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
 ```
 
@@ -381,24 +381,25 @@ To use VSCode command 'Increase/decrease current view size'
     <details>
     <summary>Copy this into init.vim</summary>
 
-        function! s:manageEditorSize(...)
-            let count = a:1
-            let to = a:2
-            for i in range(1, count ? count : 1)
-                call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
-            endfor
-        endfunction
+    ```vim
+    function! s:manageEditorSize(...)
+        let count = a:1
+        let to = a:2
+        for i in range(1, count ? count : 1)
+            call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+        endfor
+    endfunction
 
-        " Sample keybindings. Note these override default keybindings mentioned above.
-        nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-        xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-        nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-        xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-        nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-        xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-        nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-        xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-
+    " Sample keybindings. Note these override default keybindings mentioned above.
+    nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    ```
     </details>
     <br>
 
@@ -495,7 +496,7 @@ Speaking honestly, original [vim-easymotion](https://github.com/easymotion/vim-e
 
 You can use [vim-commentary](https://github.com/tpope/vim-commentary) if you like it. But vscode already has such functionality so why don't use it? Add to your init.vim/init.nvim
 
-```
+```vim
 xmap gc  <Plug>VSCodeCommentary
 nmap gc  <Plug>VSCodeCommentary
 omap gc  <Plug>VSCodeCommentary
