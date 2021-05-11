@@ -42,7 +42,7 @@
                     "default": "",
                     "title": "Neovim path",
                     "markdownDescription": "*Windows, OSX, Linux in Neovim path settings won`t work if this setting is set* Full path to Neovim executable. If you have enabled `useWSL` setting, specify the Linux path to nvim executable instead.",
-                    "deprecationMessage": "This setting is deprecated. Remove this setting and use neovimExecutablePaths.win32/linux/darwin instead. If you continue to use this setting, keep in mind this setting takes precedence over neovimExecutablePaths.windows/linux/darwin and those settings won't work. If you want them to work, just remove this setting from your settings.json or make its input box in User Settings empty"
+                    "deprecationMessage": "This setting is deprecated. Remove this setting and use neovimExecutablePaths.win32/linux/darwin-x64/darwin-arm64 instead. If you continue to use this setting, keep in mind this setting takes precedence over neovimExecutablePaths.windows/linux/darwin-x64/darwin-arm64 and those settings won't work. If you want them to work, just remove this setting from your settings.json or make its input box in User Settings empty"
                 },
                 "vscode-neovim.neovimExecutablePaths.win32": {
                     "type": "string",
@@ -50,11 +50,17 @@
                     "title": "Neovim executable path on Windows",
                     "markdownDescription": "Full path to Neovim executable that should be used by the extension if running VS Code on Windows.  \nExample:  \nC:\\tools\\neovim\\Neovim\\bin\\nvim.exe (if you installed using Chocolatey)  \nIf you want to use Windows Subsystem for Linux, enable the `useWSL` setting and set `neovimExecutablePaths.linux` instead"
                 },
-                "vscode-neovim.neovimExecutablePaths.darwin": {
+                "vscode-neovim.neovimExecutablePaths.darwin-x64": {
                     "type": "string",
                     "default": "",
-                    "title": "Neovim executable path on OSX",
-                    "description": "Full path to Neovim executable that should be used by the extension if running VS Code on OSX."
+                    "title": "Neovim executable path on OSX (Intel)",
+                    "description": "Full path to Neovim executable that should be used by the extension if running VS Code on OSX with an Intel processor."
+                },
+                "vscode-neovim.neovimExecutablePaths.darwin-arm64": {
+                    "type": "string",
+                    "default": "",
+                    "title": "Neovim executable path on OSX (Apple Silicon)",
+                    "description": "Full path to Neovim executable that should be used by the extension if running VS Code on OSX with an Apple Silicon processor."
                 },
                 "vscode-neovim.neovimExecutablePaths.linux": {
                     "type": "string",
