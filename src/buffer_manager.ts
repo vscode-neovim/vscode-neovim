@@ -552,12 +552,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Create new neovim window
      */
     private async createNeovimWindow(bufId: number): Promise<number> {
+        await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const win = await this.client.openWindow(bufId as any, false, {
             external: true,
             width: this.settings.neovimViewportWidth,
             height: this.settings.neovimViewportHeight,
         });
+        await this.client.setOption("eventignore", "");
         if (typeof win === "number") {
             throw new Error(`Unable to create a new neovim window, code: ${win}`);
         }
