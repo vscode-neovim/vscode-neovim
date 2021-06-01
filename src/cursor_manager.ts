@@ -101,8 +101,9 @@ export class CursorManager
             number,
             { line: number; col: number; grid: number; isByteCol: boolean }
         > = new Map();
+        const gridCursorViewportHint: Map<number, { line: number; col: number }> = new Map();
+        // need to process win_viewport events first
         for (const [name, ...args] of batch) {
-            const firstArg = args[0] || [];
             switch (name) {
                 case "win_viewport": {
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -115,7 +116,56 @@ export class CursorManager
                         number,
                     ][]) {
                         this.gridVisibleViewport.set(grid, { top: topline, bottom: botline });
-                        gridCursorUpdates.set(grid, { grid, line: curline, col: curcol, isByteCol: true });
+                        gridCursorViewportHint.set(grid, { line: curline, col: curcol });
+                    }
+                    break;
+                }
+            }
+        }
+        for (const [name, ...args] of batch) {
+            const firstArg = args[0] || [];
+            switch (name) {
+                case "grid_cursor_goto": {
+                    for (const [grid, row, col] of args as [number, number, number][]) {
+                        const viewportHint = gridCursorViewportHint.get(grid);
+                        // leverage viewport hint if available. It may be NOT available and go in different batch
+                        if (viewportHint) {
+                            gridCursorUpdates.set(grid, {
+                                grid,
+                                line: viewportHint.line,
+                                col: viewportHint.col,
+                                isByteCol: true,
+                            });
+                        } else {
+                            const topline = this.gridVisibleViewport.get(grid)?.top || 0;
+                            gridCursorUpdates.set(grid, { grid, line: topline + row, col, isByteCol: false });
+                        }
+                    }
+                    break;
+                }
+                // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
+                // If we received it we must shift current cursor position by given rows
+                case "grid_scroll": {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    for (const [grid, top, bot, left, right, rows, cols] of args as [
+                        number,
+                        number,
+                        number,
+                        null,
+                        number,
+                        number,
+                        number,
+                    ][]) {
+                        // When changing pos via grid scroll there must be always win_viewport event, leverage it
+                        const viewportHint = gridCursorViewportHint.get(grid);
+                        if (viewportHint) {
+                            gridCursorUpdates.set(grid, {
+                                grid,
+                                line: viewportHint.line,
+                                col: viewportHint.col,
+                                isByteCol: true,
+                            });
+                        }
                     }
                     break;
                 }
