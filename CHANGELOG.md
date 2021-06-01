@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.81]
+
+-   Revert ( #649 )
+
 ## [0.0.80]
 
 -   Improve cursor position behaviour ( #649 )
