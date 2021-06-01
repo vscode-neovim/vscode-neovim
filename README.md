@@ -16,6 +16,40 @@ editor commands, making the best use of both editors.
 -   🥇 First-class and lag-free insert mode, letting VSCode do what it does best.
 -   🤝 Complete integration with VSCode features (lsp/autocompletion/snippets/multi-cursor/etc).
 
+<details>
+ <summary><strong>Table of Contents</strong> (click to expand)</summary>
+
+-   [🧰 Installation](#-installation)
+-   [💡 Tips and Features](#-tips-and-features)
+    -   [Important](#important)
+    -   [VSCode specific differences](#vscode-specific-differences)
+    -   [Performance problems](#performance-problems)
+    -   [Custom escape keys](#custom-escape-keys)
+    -   [Conditional init.vim](#conditional-initvim)
+    -   [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
+    -   [Jumplist](#jumplist)
+    -   [Wildmenu completion](#wildmenu-completion)
+    -   [Multiple cursors](#multiple-cursors)
+    -   [Keyboard Quickfix](#keyboard-quickfix)
+-   [⌨️ Bindings](#️-bindings)
+    -   [File/Tab management](#filetab-management)
+    -   [Buffer/window management](#bufferwindow-management)
+    -   [Insert mode special keys](#insert-mode-special-keys)
+    -   [Normal mode control keys](#normal-mode-control-keys)
+    -   [Cmdline control keys (always enabled)](#cmdline-control-keys-always-enabled)
+    -   [VSCode navigation bindings](#vscode-navigation-bindings)
+        -   [Explorer/list navigation](#explorerlist-navigation)
+        -   [Explorer file manipulation](#explorer-file-manipulation)
+    -   [Custom keybindings](#custom-keybindings)
+-   [🤝 Vim Plugins](#-vim-plugins)
+    -   [vim-easymotion](#vim-easymotion)
+    -   [vim-commentary](#vim-commentary)
+    -   [quick-scope](#quick-scope)
+-   [📑 How it works](#-how-it-works)
+-   [❤️ Credits & External Resources](#️-credits--external-resources)
+
+</details>
+
 ## 🧰 Installation
 
 -   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim)
@@ -36,14 +70,15 @@ editor commands, making the best use of both editors.
 > that register `type` command (i.e. [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
 > [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 
-> 💡 If you already have a big `init.vim` it is recommended to wrap existing settings & plugins with
-> [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) to prevent potential conflicts. If you
-> have any problems, try with empty `init.vim` first.
+> 🐛 See the [issues section](https://github.com/asvetliakov/vscode-neovim/issues) for known issues.
 
-## Tips and Features
+## 💡 Tips and Features
 
 ### Important
 
+-   If you already have a big `init.vim` it is recommended to wrap existing settings & plugins with
+    [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) to prevent potential conflicts. If you
+    have any problems, try with empty `init.vim` first.
 -   Visual modes don't produce vscode selections, so any vscode commands expecting selection won't work. To round the
     corners, invoking the VSCode command picker from visual mode through the default hotkeys
     (<kbd>f1</kbd>/<kbd>ctrl/cmd+shift+p</kbd>) converts vim selection to real vscode selection. This conversion is done
@@ -59,7 +94,7 @@ editor commands, making the best use of both editors.
     This is normal.
 -   File/tab/window management (`:w`/`:q`/etc) commands are substituted and mapped to vscode actions. If you're using
     some custom commands/custom mappings to them, you might need to rebind them to call vscode actions instead. See
-    reference links below for examples if you want to use custom keybindings/commands. **DO NOT** use vim `:w`, etc in
+    reference links below for examples if you want to use custom keybindings/commands. **do not** use vim `:w`, etc in
     scripts/keybindings, they won't work.
 -   On a Mac, the <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd> and <kbd>l</kbd> movement keys may not repeat when held, to
     fix this open Terminal and execute the following command:
@@ -273,7 +308,7 @@ and add to your init.vim:
 nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
 ```
 
-## Bindings
+## ⌨️ Bindings
 
 **Custom keymaps for scrolling/window/tab/etc management**
 
@@ -342,28 +377,29 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 
 -   `workbench.action.increaseViewSize`
 -   `workbench.action.decreaseViewSize`
-    <details>
-    <summary>Copy this into init.vim</summary>
 
-        function! s:manageEditorSize(...)
-            let count = a:1
-            let to = a:2
-            for i in range(1, count ? count : 1)
-                call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
-            endfor
-        endfunction
+<details>
+<summary>Copy this into init.vim</summary>
 
-        " Sample keybindings. Note these override default keybindings mentioned above.
-        nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-        xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-        nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-        xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-        nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-        xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-        nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-        xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    function! s:manageEditorSize(...)
+        let count = a:1
+        let to = a:2
+        for i in range(1, count ? count : 1)
+            call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+        endfor
+    endfunction
 
-    </details>
+    " Sample keybindings. Note these override default keybindings mentioned above.
+    nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+    nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+    xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+
+</details>
 
 ### Insert mode special keys
 
@@ -396,7 +432,8 @@ Refer to vim manual for their use.
 -   <kbd>C-e</kbd>
 -   <kbd>C-f</kbd>
 -   <kbd>C-i</kbd>
--   <kbd>C-o</kbd> (see https://github.com/asvetliakov/vscode-neovim/issues/181#issuecomment-585264621)
+-   <kbd>C-o</kbd> (to enable, see
+    [this issue](https://github.com/asvetliakov/vscode-neovim/issues/181#issuecomment-585264621))
 -   <kbd>C-r</kbd>
 -   <kbd>C-u</kbd>
 -   <kbd>C-v</kbd>
@@ -425,7 +462,7 @@ Refer to vim manual for their use.
 
 ### VSCode navigation bindings
 
-#### Explorer/list navigation:
+#### Explorer/list navigation
 
 | Key                            | VSCode Command                  |
 | ------------------------------ | ------------------------------- |
@@ -438,7 +475,7 @@ Refer to vim manual for their use.
 | <kbd>C-u</kbd>/<kbd>C-d</kbd>  | `list.focusPageUp/Down`         |
 | <kbd>/</kbd>/<kbd>Escape</kbd> | `list.toggleKeyboardNavigation` |
 
-#### Explorer file manipulation:
+#### Explorer file manipulation
 
 | Key          | VSCode Command        |
 | ------------ | --------------------- |
@@ -477,11 +514,11 @@ To disable existing an ctrl key sequence, for example <kbd>C-A</kbd> add to your
 }
 ```
 
-## Vim Plugins
+## 🤝 Vim Plugins
 
 Most vim plugins will work out of the box, but certain plugins may require some fixes to work properly.
 
-### Vim-easymotion
+### vim-easymotion
 
 While the original [vim-easymotion](https://github.com/easymotion/vim-easymotion) functions as expected, it works by
 replacing your text with markers then restoring back, which leads to broken text and many errors reported in VSCode.
@@ -498,7 +535,7 @@ Happy jumping!
 
 ![easymotion](/images/easy-motion-vscode.png)
 
-### Vim-commentary
+### vim-commentary
 
 You can use [vim-commentary](https://github.com/tpope/vim-commentary) if you like it. But vscode already has such
 functionality so why don't use it? Add to your init.vim/init.nvim:
@@ -513,7 +550,7 @@ nmap gcc <Plug>VSCodeCommentaryLine
 Similar to vim-commentary, gcc is comment line (accept count), use gc with motion/in visual mode. `VSCodeCommentary` is
 just a simple function which calls `editor.action.commentLine`.
 
-### VIM quick-scope
+### quick-scope
 
 [quick-scope](https://github.com/unblevable/quick-scope) plugin uses default vim HL groups by default but they are
 normally ignored. To fix, add
@@ -525,11 +562,7 @@ highlight QuickScopeSecondary guifg='#5fffff' gui=underline ctermfg=81 cterm=und
 
 to your init.vim. The underline color can be changed by the `guisp` tag.
 
-## Known Issues
-
-See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues).
-
-## How it works
+## 📑 How it works
 
 -   VScode connects to neovim instance
 -   When opening a some file, a scratch buffer is created in nvim and being init with text content from vscode
@@ -539,7 +572,7 @@ See [Issues section](https://github.com/asvetliakov/vscode-neovim/issues).
     (no neovim communication is being performed here)
 -   After pressing escape key from the insert mode, extension sends changes obtained from the insert mode to neovim
 
-## Credits & External Resources
+## ❤️ Credits & External Resources
 
 -   [vim-altercmd](https://github.com/kana/vim-altercmd) - Used for rebinding default commands to call vscode command
 -   [neovim nodejs client](https://github.com/neovim/node-client) - NodeJS library for communicating with Neovim
