@@ -171,10 +171,13 @@ export class CursorManager
                             cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                             cursorPos.isByteCol,
                         );
-                        this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
-                        // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
-                        // !To not mess the cursor, try to debounce the update
-                        this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
+                        const prevPosition = this.neovimCursorPosition.get(editor);
+                        if (!prevPosition || prevPosition.line !== cursorPos.line || prevPosition.col !== finalCol) {
+                            this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
+                            // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
+                            // !To not mess the cursor, try to debounce the update
+                            this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
+                        }
                     } catch (e) {
                         this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
                     }
@@ -189,8 +192,11 @@ export class CursorManager
                         cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                         cursorPos.isByteCol,
                     );
-                    this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
-                    this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
+                    const prevPosition = this.neovimCursorPosition.get(editor);
+                    if (!prevPosition || prevPosition.line !== cursorPos.line || prevPosition.col !== finalCol) {
+                        this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
+                        this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
+                    }
                 } catch (e) {
                     this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
                 }
