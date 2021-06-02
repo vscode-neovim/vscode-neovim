@@ -544,18 +544,6 @@
                 "when": "editorTextFocus && neovim.init"
             },
             {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+shift+o",
-                "when": "editorTextFocus && neovim.mode != insert",
-                "args": "gO"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "cmd+shift+o",
-                "when": "editorTextFocus && neovim.mode != insert",
-                "args": "gO"
-            },
-            {
                 "key": "tab",
                 "command": "togglePeekWidgetFocus",
                 "when": "inReferenceSearchEditor || referenceSearchVisible && neovim.mode == normal"

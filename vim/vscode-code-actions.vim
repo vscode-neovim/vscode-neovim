@@ -33,11 +33,6 @@ function! s:vscodeGoToDefinition(str)
     endif
 endfunction
 
-function! s:vscodeNotifyWithMark(command)
-  normal! m'
-  call VSCodeNotify(a:command)
-endfunction
-
 function! s:openVSCodeCommandsInVisualMode()
     let mode = mode()
     if mode ==# 'V'
@@ -68,7 +63,7 @@ nnoremap gh <Cmd>call VSCodeNotify('editor.action.showHover')<CR>
 nnoremap gf <Cmd>call <SID>vscodeGoToDefinition("Declaration")<CR>
 nnoremap gd <Cmd>call <SID>vscodeGoToDefinition("Definition")<CR>
 nnoremap <C-]> <Cmd>call <SID>vscodeGoToDefinition("Definition")<CR>
-nnoremap gO <Cmd>call <SID>vscodeNotifyWithMark('workbench.action.gotoSymbol')<CR>
+nnoremap gO <Cmd>call VSCodeNotify('workbench.action.gotoSymbol')<CR>
 nnoremap gF <Cmd>call VSCodeNotify('editor.action.peekDeclaration')<CR>
 nnoremap gD <Cmd>call VSCodeNotify('editor.action.peekDefinition')<CR>
 nnoremap gH <Cmd>call VSCodeNotify('editor.action.referenceSearch.trigger')<CR>
@@ -78,7 +73,7 @@ xnoremap gh <Cmd>call VSCodeNotify('editor.action.showHover')<CR>
 xnoremap gf <Cmd>call <SID>vscodeGoToDefinition("Declaration")<CR>
 xnoremap gd <Cmd>call <SID>vscodeGoToDefinition("Definition")<CR>
 xnoremap <C-]> <Cmd>call <SID>vscodeGoToDefinition("Definition")<CR>
-xnoremap gO <Cmd>call <SID>vscodeNotifyWithMark('workbench.action.gotoSymbol')<CR>
+xnoremap gO <Cmd>call VSCodeNotify('workbench.action.gotoSymbol')<CR>
 xnoremap gF <Cmd>call VSCodeNotify('editor.action.peekDeclaration')<CR>
 xnoremap gD <Cmd>call VSCodeNotify('editor.action.peekDefinition')<CR>
 xnoremap gH <Cmd>call VSCodeNotify('editor.action.referenceSearch.trigger')<CR>
