@@ -7,55 +7,44 @@
 <a href="https://gitter.im/vscode-neovim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge"><img src="https://badges.gitter.im/vscode-neovim/community.svg"></a>
 </p>
 
-Real Neovim integration for Visual Studio Code.
-
 [Neovim](https://neovim.io/) is a fork of VIM to allow greater extensibility and integration. This extension uses a full
-embedded Neovim instance, no more half-complete VIM emulation! Control is given to VSCode for insert mode and
-window/buffer/file management, making the best use of both editors.
+embedded Neovim instance, no more half-complete VIM emulation! VSCode's native functionality is used for insert mode and
+editor commands, making the best use of both editors.
 
-## Features
+-   🎉 Almost fully feature-complete VIM integration by utilizing neovim as a backend.
+-   🔧 Supports custom `init.vim` and many vim plugins.
+-   🥇 First-class and lag-free insert mode, letting VSCode do what it does best.
+-   🤝 Complete integration with VSCode features (lsp/autocompletion/snippets/multi-cursor/etc).
 
--   Almost fully feature-complete VIM integration by utilizing neovim as a backend.
--   Supports custom `init.vim` and many vim/neovim plugins.
--   First-class VSCode insert mode. The plugin unbinds self from the `type` event in insert mode, so no more typing lag.
--   Full integration with VSCode features - autocompletion/go to definition/snippets/multiple cursors/etc.
-
-## Requirements
-
-Neovim 0.5.0-nightly or greater
-
-## Installation
+## 🧰 Installation
 
 -   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim)
     extension.
--   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.5.0 nightly** or greater. You can
-    install neovim-0.5.0-nightly separately for just vscode, outside your system's package manager installation.
--   Set the neovim path in the extension settings. You must specify full path to neovim, like `"C:\Neovim\bin\nvim.exe"`
-    or `"/usr/local/bin/nvim"`. The setting id is `"vscode-neovim.neovimExecutablePaths.win32/linux/darwin"`, depending
-    on your system.
--   **Important:** If you already have big `init.vim` it is recommended to wrap existing settings & plugins with
-    [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) to prevent potential problems. If you
-    have any problems, try with empty `init.vim` first.
+-   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.5.0 nightly** or greater.
+    -   You can install neovim separately for vscode, outside your system's package manager installation.
+    -   Set the neovim path in the extension settings. You must specify full path to neovim, like
+        "`C:\Neovim\bin\nvim.exe"` or "`/usr/local/bin/nvim`".
+    -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
+-   If you want to use neovim from WSL, set the `useWSL` configuration toggle and specify linux path to nvim binary.
+    `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through
+    `$PATH` linux env setting. Use `wsl --list` to check for the correct default linux distribution.
 
-> :warning: **Neovim 0.5+** is **required**. Any version lower than that won't work. Many linux distributions have an
-> **old** version of neovim in their package repo - always check what version are you installing.
+> ❗ **Neovim 0.5 nightly** or greater is **required**. Any version lower than that won't work. Many linux distributions
+> have an **old** version of neovim in their package repo - always check what version are you installing.
 
-> :info: If you get `"Unable to init vscode-neovim: command 'type' already exists"` message, uninstall other VSCode
-> extensions that register `type` command (i.e.
-> [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
+> ⚠️ If you get "Unable to init vscode-neovim: command 'type' already exists" message, uninstall other VSCode extensions
+> that register `type` command (i.e. [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
 > [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 
-#### WSL
-
-If you want to use neovim from WSL, set `useWSL` configuration toggle and specify linux path to nvim binary. `wsl.exe`
-windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through `$PATH` linux env
-setting. Use `wsl --list` to check for the correct default linux distribution.
+> 💡 If you already have a big `init.vim` it is recommended to wrap existing settings & plugins with
+> [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) to prevent potential conflicts. If you
+> have any problems, try with empty `init.vim` first.
 
 ## Tips and Features
 
 ### Important
 
--   Visual modes don't produce vscode selections. Any vscode commands expecting selection won't work. To round the
+-   Visual modes don't produce vscode selections, so any vscode commands expecting selection won't work. To round the
     corners, invoking the VSCode command picker from visual mode through the default hotkeys
     (<kbd>f1</kbd>/<kbd>ctrl/cmd+shift+p</kbd>) converts vim selection to real vscode selection. This conversion is done
     automatically for some commands like commenting and formatting.
@@ -89,39 +78,31 @@ setting. Use `wsl --list` to check for the correct default linux distribution.
 -   <kbd>gf</kbd> is mapped to `editor.action.revealDeclaration`
 -   <kbd>gH</kbd> is mapped to `editor.action.referenceSearch.trigger`
 -   <kbd>gD</kbd>/<kbd>gF</kbd> are mapped to `editor.action.peekDefinition` and `editor.action.peekDeclaration`
-    respectively (opens in peek).
--   <kbd>C-w</kbd> <kbd>gd</kbd>/<kbd>C-w</kbd> <kbd>gf</kbd> are mapped to `editor.action.revealDefinitionAside`
-    (original vim command - open new tab and go to the file under cursor, but vscode/vim window/tabs metaphors are
-    completely different, so it's useful to do slightly different thing here).
+    respectively.
+-   <kbd>C-w</kbd> <kbd>gd</kbd>/<kbd>C-w</kbd> <kbd>gf</kbd> are mapped to `editor.action.revealDefinitionAside`.
 -   <kbd>gh</kbd> is mapped to `editor.action.showHover`
--   Dot-repeat (<kbd>.</kbd>). Moving cursor within a change range won't break the repeat sequence. In neovim, if you
-    type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here the repeat sequence would be
-    `1`. However in vscode it would be `a1bc`. Another difference is that when you delete some text in insert mode, dot
-    repeat only works from right-to-left, meaning it will treat <kbd>Del</kbd> key as <kbd>BS</kbd> keys when running
-    dot repeat.
+-   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat
+    sequence. In neovim, if you type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here
+    the repeat sequence would be `1`. However in vscode it would be `a1bc`. Another difference is that when you delete
+    some text in insert mode, dot repeat only works from right-to-left, meaning it will treat <kbd>Del</kbd> key as
+    <kbd>BS</kbd> keys when running dot repeat.
 
 ### Performance problems
 
 If you have any performance problems (cursor jitter usually) make sure you're not using these kinds of extensions:
 
--   Line number extensions (VSCode has built-in support for normal/relative line numbers)
--   Indent guide extensions (VSCode has built-in indent guides)
--   Brackets highlighter extensions (VSCode has built-in feature)
--   Anything that renders decorators/put something into vscode gutter very often, e.g. on each cursor/line move
+-   Anything that renders decorators very often:
+    -   Line number extensions (VSCode has built-in support for normal/relative line numbers)
+    -   Indent guide extensions (VSCode has built-in indent guides)
+    -   Brackets highlighter extensions (VSCode has built-in feature)
 -   VSCode extensions that delay the extension host like "Bracket Pair Colorizer"
+-   VIM plugins that increase latency and cause performance problems. - Make sure to disable unneeded plugins, as many
+    of them don't make sense with vscode and may cause problems. - You don't need any code, highlighting, completion,
+    lsp plugins as well any plugins that spawn windows/buffers (nerdtree and similar), fuzzy-finders plugins, etc. - You
+    might want to keep navigation/text-objects/text-editing/etc plugins - they should be fine.
 
-Such extension may be fine and work well, but combined with any extension which should control the cursor position (such
-as any vim extension) it may work very bad, due to shared vscode extension host between all extensions (E.g. one
-extension is taking the control over the host and blocking the other extension, this produces jitter).
-
-If you're not sure, disable all other extensions except mine, **reload vscode/window** and see if the problem persist
-before reporting.
-
-Also there are reports that some vim settings/vim plugins increase latency and cause performance problems. Make sure
-you've disabled unneeded plugins. Many of them don't make sense with vscode and may cause problems. You don't need any
-code, highlighting, completion, lsp plugins as well any plugins that spawn windows/buffers (nerdtree and similar),
-fuzzy-finders plugins, etc. You might want to keep navigation/text-objects/text-editing/etc plugins - they should be
-fine.
+If you're not sure, disable all other extensions, **reload vscode/window** and see if the problem persists before
+reporting.
 
 ### Custom escape keys
 
@@ -163,10 +144,9 @@ endif
 ```
 
 To conditionally enable plugins, `vim-plug` has a
-[few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation).
-
-For example, using the `Cond` helper, you can do the following to conditionally activate plugins while having them all
-still installed ([source](https://github.com/asvetliakov/vscode-neovim/issues/415#issuecomment-715533865)):
+[few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation). For example, using the `Cond`
+helper, you can conditionally activate installed plugins
+([source](https://github.com/asvetliakov/vscode-neovim/issues/415#issuecomment-715533865)):
 
 ```vim
 " inside plug#begin:
@@ -176,21 +156,21 @@ Plug 'easymotion/vim-easymotion', Cond(!exists('g:vscode'))
 Plug 'asvetliakov/vim-easymotion', Cond(exists('g:vscode'), { 'as': 'vsc-easymotion' })
 ```
 
-### Invoking vscode actions from neovim
+### Invoking VSCode actions from neovim
 
 There are
 [few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/ecd361ff1968e597e2500e8ce1108830e918cfb8/vim/vscode-neovim.vim#L17-L39)
 that could be used to invoke any vscode commands:
 
--   `VSCodeNotify(command, ...)`/`VSCodeCall(command, ...)` - invokes vscode command with optional arguments.
+-   `VSCodeNotify(command, ...)`/`VSCodeCall(command, ...)` - invoke vscode command with optional arguments.
 -   `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)`/`VSCodeCallRange(command, line1, line2, leaveSelection, ...)` -
-    produces real vscode selection from line1 to line2 and invokes vscode command. Linewise. Put 1 for `leaveSelection`
+    produce real linewise vscode selection from line1 to line2 and invoke vscode command. Put 1 for `leaveSelection`
     argument to leave vscode selection after invoking the command.
 -   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`/`VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` -
-    produces real vscode selection from line1.pos1 to line2.pos2 and invokes vscode command. Characterwise.
+    produce real characterwise vscode selection from line1.pos1 to line2.pos2 and invoke vscode command.
 
-Functions with `Notify` in name are non-blocking, the ones with `Call` are blocking. Generally **use Notify** unless you
-really need a blocking call.
+Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
+unless you really need a blocking call.
 
 _Examples_:
 
@@ -232,9 +212,11 @@ nnoremap <silent> <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinition
 
 ### Jumplist
 
-VSCode's jumplist is used instead of Neovim's. This is to make navigation caused by VSCode (mouse click, outline
-navigation, jump to definition, ect) be navigable. Make sure to bind to `workbench.action.navigateBack` /
-`workbench.action.navigateForward` if you're using custom mappings. Marks (both upper & lowercased) should be fine.
+VSCode's jumplist is used instead of Neovim's. This is to make VSCode native navigation (mouse click, jump to
+definition, ect) navigable through the jumplist.
+
+Make sure to bind to `workbench.action.navigateBack` / `workbench.action.navigateForward` if you're using custom
+mappings. Marks (both upper & lowercased) should be fine.
 
 ### Wildmenu completion
 
@@ -255,11 +237,11 @@ To spawn multiple cursors from visual line/block modes type <kbd>ma</kbd>/<kbd>m
 (by default). The effect differs:
 
 -   For visual line mode <kbd>mi</kbd> will start insert mode on each selected line on the first non whitespace
-    character and <kbd>ma</kbd> will on the end of line
+    character and <kbd>ma</kbd> will on the end of line.
 -   For visual block mode <kbd>mi</kbd> will start insert on each selected line before the cursor block and
-    <kbd>ma</kbd> after
+    <kbd>ma</kbd> after.
 -   <kbd>mA</kbd>/<kbd>mI</kbd> versions account empty lines too (only for visual line mode, for visual block mode
-    they're same as <kbd>ma</kbd>/<kbd>mi</kbd>)
+    they're same as <kbd>ma</kbd>/<kbd>mi</kbd>).
 
 See gif in action:
 
@@ -302,29 +284,29 @@ nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
 
 ### File/Tab management
 
-| Command                                | Description                                                                                                                                                                                                                                                                                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `:e[dit]` or `ex`                      | Without argument and without bang (`!`): opens quickopen window. <br/> Without argument and with bang: opens open file dialog. <br/> With filename, e.g. `:e $MYVIMRC`: opens a file in new tab. The file must exist. <br/> With filename and with bang e.g. `:e! $MYVIMRC`: closes current file (discard any changes) and opens a file. The file must exist. |
-| `ene[w]`                               | Without bang: creates new untitled document in vscode. <br/> With bang: closes current file (discard any changes) and creates new untitled document.                                                                                                                                                                                                          |
-| `fin[d]`                               | Opens vscode's quick open window. Arguments and count are not supported.                                                                                                                                                                                                                                                                                      |
-| `w[rite]`                              | Without bang (`!`) saves current file With bang opens 'save as' dialog                                                                                                                                                                                                                                                                                        |
-| `sav[eas]`                             | Opens 'save as' dialog.                                                                                                                                                                                                                                                                                                                                       |
-| `wa[ll]`                               | Saves all files. Bang is not doing anything.                                                                                                                                                                                                                                                                                                                  |
-| `q[uit]` or keys `<C-w> q` / `<C-w> c` | Closes the active editor.                                                                                                                                                                                                                                                                                                                                     |
-| `wq`                                   | Saves and closes the active editor.                                                                                                                                                                                                                                                                                                                           |
-| `qa[ll]`                               | Closes all editors, but doesn't quit vscode. Acts like `qall!`, so beware for a nonsaved changes.                                                                                                                                                                                                                                                             |
-| `wqa[ll]`/`xa[ll]`                     | Saves all editors & close.                                                                                                                                                                                                                                                                                                                                    |
-| `tabe[dit]`                            | Similar to `e[dit]`. Without argument opens quickopen, with argument opens the file in new tab.                                                                                                                                                                                                                                                               |
-| `tabnew`                               | Opens new untitled file.                                                                                                                                                                                                                                                                                                                                      |
-| `tabf[ind]`                            | Opens quickopen window.                                                                                                                                                                                                                                                                                                                                       |
-| `tab`/`tabs`                           | Not supported. Doesn't make sense with vscode.                                                                                                                                                                                                                                                                                                                |
-| `tabc[lose]`                           | Closes active editor (tab).                                                                                                                                                                                                                                                                                                                                   |
-| `tabo[nly]`                            | Closes other tabs in vscode **group** (pane). This differs from vim where a `tab` is a like a new window, but doesn't make sense in vscode.                                                                                                                                                                                                                   |
-| `tabn[ext]` or key `gt`                | Switches to next (or `count` tabs if argument is given) in the active vscode **group** (pane).                                                                                                                                                                                                                                                                |
-| `tabp[revious]` or key `gT`            | Switches to previous (or `count` tabs if argument is given) in the active vscode **group** (pane).                                                                                                                                                                                                                                                            |
-| `tabfir[st]`                           | Switches to the first tab in the active editor group.                                                                                                                                                                                                                                                                                                         |
-| `tabl[ast]`                            | Switches to the last tab in the active edtior group.                                                                                                                                                                                                                                                                                                          |
-| `tabm[ove]`                            | Not supported yet.                                                                                                                                                                                                                                                                                                                                            |
+| Command                                                               | Description                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `:e[dit]` or `ex`                                                     | Without argument and without bang (`!`): opens quickopen window. <br/> Without argument and with bang: opens open file dialog. <br/> With filename, e.g. `:e $MYVIMRC`: opens a file in new tab. The file must exist. <br/> With filename and with bang e.g. `:e! $MYVIMRC`: closes current file (discard any changes) and opens a file. The file must exist. |
+| `ene[w]`                                                              | Without bang: creates new untitled document in vscode. <br/> With bang: closes current file (discard any changes) and creates new untitled document.                                                                                                                                                                                                          |
+| `fin[d]`                                                              | Opens vscode's quick open window. Arguments and count are not supported.                                                                                                                                                                                                                                                                                      |
+| `w[rite]`                                                             | Without bang (`!`) saves current file. With bang opens 'save as' dialog.                                                                                                                                                                                                                                                                                      |
+| `sav[eas]`                                                            | Opens 'save as' dialog.                                                                                                                                                                                                                                                                                                                                       |
+| `wa[ll]`                                                              | Saves all files.                                                                                                                                                                                                                                                                                                                                              |
+| `q[uit]` or <kbd>C-w</kbd> <kbd>q</kbd> / <kbd>C-w</kbd> <kbd>c</kbd> | Closes the active editor.                                                                                                                                                                                                                                                                                                                                     |
+| `wq`                                                                  | Saves and closes the active editor.                                                                                                                                                                                                                                                                                                                           |
+| `qa[ll]`                                                              | Closes all editors, but doesn't quit vscode. Acts like `qall!`, so beware for nonsaved changes.                                                                                                                                                                                                                                                               |
+| `wqa[ll]`/`xa[ll]`                                                    | Saves all editors & close.                                                                                                                                                                                                                                                                                                                                    |
+| `tabe[dit]`                                                           | Similar to `e[dit]`. Without argument opens quickopen, with argument opens the file in new tab.                                                                                                                                                                                                                                                               |
+| `tabnew`                                                              | Opens new untitled file.                                                                                                                                                                                                                                                                                                                                      |
+| `tabf[ind]`                                                           | Opens quickopen window.                                                                                                                                                                                                                                                                                                                                       |
+| `tab`/`tabs`                                                          | Not supported. Doesn't make sense with vscode.                                                                                                                                                                                                                                                                                                                |
+| `tabc[lose]`                                                          | Closes active editor (tab).                                                                                                                                                                                                                                                                                                                                   |
+| `tabo[nly]`                                                           | Closes other tabs in vscode **group** (pane). This differs from vim where a `tab` is a like a new window, but doesn't make sense in vscode.                                                                                                                                                                                                                   |
+| `tabn[ext]` or <kbd>gt</kbd>                                          | Switches to next (or `count` tabs if argument is given) in the active vscode **group** (pane).                                                                                                                                                                                                                                                                |
+| `tabp[revious]` or <kbd>gT</kbd>                                      | Switches to previous (or `count` tabs if argument is given) in the active vscode **group** (pane).                                                                                                                                                                                                                                                            |
+| `tabfir[st]`                                                          | Switches to the first tab in the active editor group.                                                                                                                                                                                                                                                                                                         |
+| `tabl[ast]`                                                           | Switches to the last tab in the active edtior group.                                                                                                                                                                                                                                                                                                          |
+| `tabm[ove]`                                                           | Not supported yet.                                                                                                                                                                                                                                                                                                                                            |
 
 Keys <kbd>ZZ</kbd> and <kbd>ZQ</kbd> are bound to `:wq` and `q!` respectively
 
@@ -453,7 +435,7 @@ Refer to vim manual for their use.
 | <kbd>gg</kbd>                  | `list.focusFirst`               |
 | <kbd>G</kbd>                   | `list.focusLast`                |
 | <kbd>o</kbd>                   | `list.toggleExpand`             |
-| <kbd>C-U</kbd>/<kbd>D</kbd>    | `list.focusPageUp/Down`         |
+| <kbd>C-u</kbd>/<kbd>C-d</kbd>  | `list.focusPageUp/Down`         |
 | <kbd>/</kbd>/<kbd>Escape</kbd> | `list.toggleKeyboardNavigation` |
 
 #### Explorer file manipulation:
@@ -471,9 +453,8 @@ Refer to vim manual for their use.
 
 ### Custom keybindings
 
-Control keys which are not in the above tables are not sent to neovim (as they are usually useless with vscode).
-
-To pass additional ctrl keys to neovim, for example <kbd>C-Tab</kbd>, add to your keybindings.json:
+Control keys which are not in the above tables are not sent to neovim by default. To pass additional ctrl keys to
+neovim, for example <kbd>C-Tab</kbd>, add to your keybindings.json:
 
 ```jsonc
 {
@@ -487,7 +468,7 @@ To pass additional ctrl keys to neovim, for example <kbd>C-Tab</kbd>, add to you
 }
 ```
 
-To disable existing ctrl key sequence, for example <kbd>C-A</kbd> add to your keybindings.json:
+To disable existing an ctrl key sequence, for example <kbd>C-A</kbd> add to your keybindings.json:
 
 ```json
 {
