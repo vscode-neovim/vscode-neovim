@@ -24,13 +24,14 @@ editor commands, making the best use of both editors.
     -   [Important](#important)
     -   [VSCode specific differences](#vscode-specific-differences)
     -   [Performance problems](#performance-problems)
-    -   [Custom escape keys](#custom-escape-keys)
     -   [Conditional init.vim](#conditional-initvim)
-    -   [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
+    -   [Custom escape keys](#custom-escape-keys)
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
     -   [Keyboard Quickfix](#keyboard-quickfix)
+    -   [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
+        -   [Examples](#examples)
 -   [⌨️ Bindings](#️-bindings)
     -   [File management](#file-management)
     -   [Tab management](#tab-management)
@@ -39,9 +40,9 @@ editor commands, making the best use of both editors.
     -   [Normal mode control keys](#normal-mode-control-keys)
     -   [Cmdline special keys](#cmdline-special-keys)
     -   [VSCode specific bindings](#vscode-specific-bindings)
+        -   [Editor command](#editor-command)
         -   [Explorer/list navigation](#explorerlist-navigation)
         -   [Explorer file manipulation](#explorer-file-manipulation)
-        -   [Editor commands](#editor-commands)
     -   [Custom keybindings](#custom-keybindings)
 -   [🤝 Vim Plugins](#-vim-plugins)
     -   [vim-easymotion](#vim-easymotion)
@@ -57,7 +58,6 @@ editor commands, making the best use of both editors.
 -   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim)
     extension.
 -   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.5.0 nightly** or greater.
-    -   You can install neovim separately for vscode, outside your system's package manager installation.
     -   Set the neovim path in the extension settings. You must specify full path to neovim, like
         "`C:\Neovim\bin\nvim.exe"` or "`/usr/local/bin/nvim`".
     -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
@@ -65,8 +65,10 @@ editor commands, making the best use of both editors.
     `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through
     `$PATH` linux env setting. Use `wsl --list` to check for the correct default linux distribution.
 
-> ❗ **Neovim 0.5 nightly** or greater is **required**. Any version lower than that won't work. Many linux distributions
-> have an **old** version of neovim in their package repo - always check what version are you installing.
+> ❗ **Neovim 0.5.0 nightly** or greater is **required**. Any version lower than that won't work. Many linux
+> distributions have an **old** version of neovim in their package repo - always check what version are you installing.
+> You can install neovim separately, outside your system's package manager installation, for example using the appimage
+> from the neovim releases page.
 
 > 🐛 See the [issues section](https://github.com/asvetliakov/vscode-neovim/issues) for known issues.
 
@@ -79,8 +81,8 @@ editor commands, making the best use of both editors.
     [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
     [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 -   If you already have a big `init.vim` it is recommended to wrap existing settings & plugins with
-    [`if !exists('g:vscode')`](#determining-if-running-in-vscode-in-your-initvim) to prevent potential conflicts. If you
-    have any problems, try with empty `init.vim` first.
+    [`if !exists('g:vscode')`](#conditional-initvim) to prevent potential conflicts. If you have any problems, try with
+    empty `init.vim` first.
 -   On a Mac, the <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd> and <kbd>l</kbd> movement keys may not repeat when held, to
     fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
@@ -89,25 +91,21 @@ editor commands, making the best use of both editors.
 ### VSCode specific differences
 
 -   File and editor management commands such as `:e`/`:w`/`:q`/`:vsplit`/`:tabnext`/etc are mapped to corresponding
-    vscode commands and behavior may be different (see below). If you're using some custom commands/custom mappings to
-    them, you might need to rebind them to call vscode actions instead. See reference links below for examples if you
-    want to use custom keybindings/commands. **do not** use vim `:w`, etc in scripts/keybindings, they won't work.
--   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
--   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
--   It's possible to call vscode commands from neovim. See `VSCodeCall/VSCodeNotify` vim functions in
-    `vscode-neovim.vim` file. `VSCodeCall` is blocking request, while `VSCodeNotify` is not (see below).
+    vscode commands and behavior may be different ([see below](#️-bindings)). **Do not** use vim commands like `:w` in
+    scripts/keybindings, they won't work. If you're using them in some custom commands/mappings, you might need to
+    rebind them to call vscode commands from neovim with `VSCodeCall/VSCodeNotify`
+    ([see below](#invoking-vscode-actions-from-neovim)).
 -   Visual modes don't produce vscode selections, so any vscode commands expecting selection won't work. To round the
     corners, invoking the VSCode command picker from visual mode through the default hotkeys
-    (<kbd>f1</kbd>/<kbd>ctrl/cmd+shift+p</kbd>) converts vim selection to real vscode selection. This conversion is done
-    automatically for some commands like commenting and formatting.
--   If you're using some custom mapping for calling vscode commands that depends on real vscode selection, you can use
-    `VSCodeNotifyRange`/`VSCodeNotifyRangePos` (the first one linewise, the latter characterwise) which will convert vim
-    visual mode selection to vscode selection before calling the command. See
-    [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54)
-    and
-    [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98).
+    (<kbd>f1</kbd>/<kbd>ctrl/cmd+shift+p</kbd>) converts vim selection to real vscode selection. This conversion is also
+    done automatically for some commands like commenting and formatting. If you're using some custom mapping for calling
+    vscode commands that depends on real vscode selection, you can use `VSCodeNotifyRange`/`VSCodeNotifyRangePos` (the
+    first one linewise, the latter characterwise) which will convert vim visual mode selection to vscode selection
+    before calling the command ([see below](#invoking-vscode-actions-from-neovim)).
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`.
     This is normal.
+-   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
+-   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
 -   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat
     sequence. In neovim, if you type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here
     the repeat sequence would be `1`. However in vscode it would be `a1bc`. Another difference is that when you delete
@@ -126,11 +124,36 @@ If you have any performance problems (cursor jitter usually) make sure you're no
 -   VIM plugins that increase latency and cause performance problems.
     -   Make sure to disable unneeded plugins, as many of them don't make sense with vscode and may cause problems.
     -   You don't need any code, highlighting, completion, lsp plugins as well any plugins that spawn windows/buffers
-        (nerdtree and similar), fuzzy-finders plugins, etc.
+        (nerdtree and similar), fuzzy-finders, etc.
     -   Many navigation/textobject/editing plugins should be fine.
 
-If you're not sure, disable all other extensions, **reload vscode/window** and see if the problem persists before
+If you're not sure, disable all other extensions, **reload vscode window**, and see if the problem persists before
 reporting.
+
+### Conditional init.vim
+
+To determine if neovim is running in vscode, add to your init.vim:
+
+```vim
+if exists('g:vscode')
+    " VSCode extension
+else
+    " ordinary neovim
+endif
+```
+
+To conditionally activate plugins, `vim-plug` has a
+[few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation). For example, using the `Cond`
+helper, you can conditionally activate installed plugins
+([source](https://github.com/asvetliakov/vscode-neovim/issues/415#issuecomment-715533865)):
+
+```vim
+" inside plug#begin:
+" use normal easymotion when in vim mode
+Plug 'easymotion/vim-easymotion', Cond(!exists('g:vscode'))
+" use vscode easymotion when in vscode mode
+Plug 'asvetliakov/vim-easymotion', Cond(exists('g:vscode'), { 'as': 'vsc-easymotion' })
+```
 
 ### Custom escape keys
 
@@ -159,84 +182,7 @@ to enable <kbd>jk</kbd> add also:
 }
 ```
 
-### Conditional init.vim
-
-To determine if neovim is running in vscode, add to your init.vim:
-
-```vim
-if exists('g:vscode')
-    " VSCode extension
-else
-    " ordinary neovim
-endif
-```
-
-To conditionally enable plugins, `vim-plug` has a
-[few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation). For example, using the `Cond`
-helper, you can conditionally activate installed plugins
-([source](https://github.com/asvetliakov/vscode-neovim/issues/415#issuecomment-715533865)):
-
-```vim
-" inside plug#begin:
-" use normal easymotion when in vim mode
-Plug 'easymotion/vim-easymotion', Cond(!exists('g:vscode'))
-" use vscode easymotion when in vscode mode
-Plug 'asvetliakov/vim-easymotion', Cond(exists('g:vscode'), { 'as': 'vsc-easymotion' })
-```
-
-### Invoking VSCode actions from neovim
-
-There are
-[few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/ecd361ff1968e597e2500e8ce1108830e918cfb8/vim/vscode-neovim.vim#L17-L39)
-that could be used to invoke any vscode commands:
-
--   `VSCodeNotify(command, ...)`/`VSCodeCall(command, ...)` - invoke vscode command with optional arguments.
--   `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)`/`VSCodeCallRange(command, line1, line2, leaveSelection, ...)` -
-    produce real linewise vscode selection from line1 to line2 and invoke vscode command. Put 1 for `leaveSelection`
-    argument to leave vscode selection after invoking the command.
--   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`/`VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` -
-    produce real characterwise vscode selection from line1.pos1 to line2.pos2 and invoke vscode command.
-
-Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
-unless you really need a blocking call.
-
-_Examples_:
-
-Produce linewise selection and show vscode commands (default binding)
-
-```vim
-function! s:showCommands()
-    let startLine = line("v")
-    let endLine = line(".")
-    call VSCodeNotifyRange("workbench.action.showCommands", startLine, endLine, 1)
-endfunction
-
-xnoremap <silent> <C-P> <Cmd>call <SID>showCommands()<CR>
-```
-
-Produce characterwise selection and show vscode commands (default binding):
-
-```vim
-function! s:showCommands()
-    let startPos = getpos("v")
-    let endPos = getpos(".")
-    call VSCodeNotifyRangePos("workbench.action.showCommands", startPos[1], endPos[1], startPos[2], endPos[2], 1)
-endfunction
-
-xnoremap <silent> <C-P> <Cmd>call <SID>showCommands()<CR>
-```
-
-Run Find in files for word under cursor in vscode:
-
-```vim
-nnoremap <silent> ? <Cmd>call VSCodeNotify('workbench.action.findInFiles', { 'query': expand('<cword>')})<CR>
-```
-
-Open definition aside (default binding):
-
-```vim
-nnoremap <silent> <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
-```
+Currently, there is no way to map both `jk` and `kj`, or to map `jk` without also mapping `jj`.
 
 ### Jumplist
 
@@ -244,7 +190,7 @@ VSCode's jumplist is used instead of Neovim's. This is to make VSCode native nav
 definition, ect) navigable through the jumplist.
 
 Make sure to bind to `workbench.action.navigateBack` / `workbench.action.navigateForward` if you're using custom
-mappings. Marks (both upper & lowercased) should be fine.
+mappings. Marks (both upper & lowercased) should work fine.
 
 ### Wildmenu completion
 
@@ -258,17 +204,17 @@ write `:w` or `:noh`). <kbd>Up</kbd>/<kbd>Down</kbd> selects the option and <kbd
 Multiple cursors work in:
 
 1. Insert mode
-2. (Optional) Visual line mode
-3. (Optional) Visual block mode
+2. Visual line mode
+3. Visual block mode
 
 To spawn multiple cursors from visual line/block modes type <kbd>ma</kbd>/<kbd>mA</kbd> or <kbd>mi</kbd>/<kbd>mI</kbd>
 (by default). The effect differs:
 
--   For visual line mode <kbd>mi</kbd> will start insert mode on each selected line on the first non whitespace
+-   For visual line mode, <kbd>mi</kbd> will start insert mode on each selected line on the first non whitespace
     character and <kbd>ma</kbd> will on the end of line.
--   For visual block mode <kbd>mi</kbd> will start insert on each selected line before the cursor block and
+-   For visual block mode, <kbd>mi</kbd> will start insert on each selected line before the cursor block and
     <kbd>ma</kbd> after.
--   <kbd>mA</kbd>/<kbd>mI</kbd> versions account empty lines too (only for visual line mode, for visual block mode
+-   <kbd>mA</kbd>/<kbd>mI</kbd> versions accounts for empty lines (only for visual line mode, for visual block mode
     they're same as <kbd>ma</kbd>/<kbd>mi</kbd>).
 
 See gif in action:
@@ -301,6 +247,54 @@ and add to your init.vim:
 nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
 ```
 
+### Invoking VSCode actions from neovim
+
+There are a
+[few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/master/vim/vscode-neovim.vim#L17-L39) that
+could be used to invoke any vscode commands:
+
+| Command                                                                                                                                                           | Description                                                                                                                                                                             |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VSCodeNotify(command, ...)` <br/> `VSCodeCall(command, ...)`                                                                                                     | Invoke vscode command with optional arguments.                                                                                                                                          |
+| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce real linewise vscode selection from `line1` to `line2` and invoke vscode command. Put 1 for the `leaveSelection` argument to leave vscode selection after invoking the command. |
+| `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` <br/> `VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` | Produce real characterwise vscode selection from `line1.pos1` to `line2.pos2` and invoke vscode command.                                                                                |
+
+> 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
+> unless you really need a blocking call.
+
+#### Examples
+
+Produce linewise/characterwise selection and show vscode commands (default binding):
+
+```vim
+function! s:openVSCodeCommandsInVisualMode()
+    let mode = mode()
+    if mode ==# 'V'
+        let startLine = line('v')
+        let endLine = line('.')
+        call VSCodeNotifyRange('workbench.action.showCommands', startLine, endLine, 1)
+    else
+        let startPos = getpos('v')
+        let endPos = getpos('.')
+        call VSCodeNotifyRangePos('workbench.action.showCommands', startPos[1], endPos[1], startPos[2], endPos[2] + 1, 1)
+    endif
+endfunction
+
+xnoremap <C-P> <Cmd>call <SID>openVSCodeCommandsInVisualMode()<CR>
+```
+
+Open definition aside (default binding):
+
+```vim
+nnoremap <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
+```
+
+Run Find in files for word under cursor in vscode:
+
+```vim
+nnoremap ? <Cmd>call VSCodeNotify('workbench.action.findInFiles', { 'query': expand('<cword>')})<CR>
+```
+
 ## ⌨️ Bindings
 
 **Custom keymaps for scrolling/window/tab/etc management**
@@ -310,7 +304,7 @@ nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
 -   See [vscode-tab-commands.vim](/vim/vscode-tab-commands.vim) for tab commands reference
 -   See [vscode-window-commands.vim](/vim/vscode-window-commands.vim) for window commands reference
 
-"With bang" refers to adding a `!` at the end of a command.
+> 💡 "With bang" refers to adding a "!" to the end of a command.
 
 ### File management
 
@@ -345,29 +339,29 @@ nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
 
 ### Buffer/window management
 
-_Note_: split size distribution is controlled by `workbench.editor.splitSizing` setting. By default, it's `distribute`,
-which is mapped to vim's `equalalways` and `eadirection = 'both'` (default).
+> 💡 Split size distribution is controlled by `workbench.editor.splitSizing` setting. By default, it's `distribute`,
+> which is equal to vim's `equalalways` and `eadirection = 'both'` (default).
 
-| Command    | Key                                                                                     | Description                                                                                                                                                                                                                                                                                                                                                |
-| ---------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sp[lit]`  | <kbd>C-w</kbd> <kbd>s</kbd> <span style="display: inline-block; width:11em">text</span> | Split editor horizontally. <br/> With argument: open the specified file, e.g `:sp $MYVIMRC`. File must exist.                                                                                                                                                                                                                                              |
-| `vs[plit]` | <kbd>C-w</kbd> <kbd>v</kbd>                                                             | Split editor vertically. <br/> With argument: open the specified file. File must exist.                                                                                                                                                                                                                                                                    |
-| `new`      | <kbd>C-w</kbd> <kbd>n</kbd>                                                             | Like `sp[lit]` but create new untitled file if no argument given.                                                                                                                                                                                                                                                                                          |
-| `vne[w]`   |                                                                                         | Like `vs[plit]` but create new untitled file if no argument given.                                                                                                                                                                                                                                                                                         |
-| `on[ly]`   | <kbd>C-w</kbd> <kbd>o</kbd>                                                             | Without bang: merge all editor groups into the one. Don't close editors. <br/> With bang: close all editors from all groups except current one.                                                                                                                                                                                                            |
-|            | <kbd>C-w</kbd> <kbd>j/k/h/l</kbd>                                                       | Focus group below/above/left/right.                                                                                                                                                                                                                                                                                                                        |
-|            | <kbd>C-w</kbd> <kbd>C-j/i/h/l</kbd>                                                     | Move editor to group below/above/left/right. Vim doesn't have analogue mappings. **Note**: <kbd>C-w</kbd> <kbd>C-i</kbd> moves editor up. Logically it should be <kbd>C-w</kbd> <kbd>C-k</kbd> but vscode has many commands mapped to <kbd>C-k</kbd> <kbd>[key]</kbd> and doesn't allow to use <kbd>C-w</kbd> <kbd>C-k</kbd> without unbinding them first. |
-|            | <kbd>C-w</kbd> <kbd>r/R/x</kbd>                                                         | Not supported, use <kbd>C-w</kbd> <kbd>C-j</kbd> and similar to move editors.                                                                                                                                                                                                                                                                              |
-|            | <kbd>C-w</kbd> <kbd>w</kbd> or <kbd>C-w</kbd> <kbd>C-w</kbd>                            | Focus next group. The behavior may differ than in vim.                                                                                                                                                                                                                                                                                                     |
-|            | <kbd>C-w</kbd> <kbd>W</kbd> or <kbd>C-w</kbd> <kbd>p</kbd>                              | Focus previous group. The behavior may differ than in vim. <kbd>C-w</kbd> <kbd>p</kbd> is completely different than in vim.                                                                                                                                                                                                                                |
-|            | <kbd>C-w</kbd> <kbd>b</kbd>                                                             | Focus last editor group (most bottom-right).                                                                                                                                                                                                                                                                                                               |
-|            | <kbd>C-w</kbd> <kbd>H/K/J/L</kbd>                                                       | Not supported yet.                                                                                                                                                                                                                                                                                                                                         |
-|            | <kbd>C-w</kbd> <kbd>=</kbd>                                                             | Align all editors to have the same width.                                                                                                                                                                                                                                                                                                                  |
-|            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>+</kbd>                                          | Increase editor height by (optional) count.                                                                                                                                                                                                                                                                                                                |
-|            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>-</kbd>                                          | Decrease editor height by (optional) count.                                                                                                                                                                                                                                                                                                                |
-|            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>></kbd>                                          | Increase editor width by (optional) count.                                                                                                                                                                                                                                                                                                                 |
-|            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>\<</kbd>                                         | Decrease editor width by (optional) count.                                                                                                                                                                                                                                                                                                                 |
-|            | <kbd>C-w</kbd> <kbd>\_</kbd>                                                            | Toggle maximized editor size. Pressing again will restore the size.                                                                                                                                                                                                                                                                                        |
+| Command    | Key                                                          | Description                                                                                                                                                                                                                                                                                                                                                |
+| ---------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sp[lit]`  | <kbd>C-w</kbd> <kbd>s</kbd>                                  | Split editor horizontally. <br/> With argument: open the specified file, e.g `:sp $MYVIMRC`. File must exist.                                                                                                                                                                                                                                              |
+| `vs[plit]` | <kbd>C-w</kbd> <kbd>v</kbd>                                  | Split editor vertically. <br/> With argument: open the specified file. File must exist.                                                                                                                                                                                                                                                                    |
+| `new`      | <kbd>C-w</kbd> <kbd>n</kbd>                                  | Like `sp[lit]` but create new untitled file if no argument given.                                                                                                                                                                                                                                                                                          |
+| `vne[w]`   |                                                              | Like `vs[plit]` but create new untitled file if no argument given.                                                                                                                                                                                                                                                                                         |
+| `on[ly]`   | <kbd>C-w</kbd> <kbd>o</kbd>                                  | Without bang: merge all editor groups into the one. Don't close editors. <br/> With bang: close all editors from all groups except current one.                                                                                                                                                                                                            |
+|            | <kbd>C-w</kbd> <kbd>j/k/h/l</kbd>                            | Focus group below/above/left/right.                                                                                                                                                                                                                                                                                                                        |
+|            | <kbd>C-w</kbd> <kbd>C-j/i/h/l</kbd>                          | Move editor to group below/above/left/right. Vim doesn't have analogue mappings. **Note**: <kbd>C-w</kbd> <kbd>C-i</kbd> moves editor up. Logically it should be <kbd>C-w</kbd> <kbd>C-k</kbd> but vscode has many commands mapped to <kbd>C-k</kbd> <kbd>[key]</kbd> and doesn't allow to use <kbd>C-w</kbd> <kbd>C-k</kbd> without unbinding them first. |
+|            | <kbd>C-w</kbd> <kbd>r/R/x</kbd>                              | Not supported, use <kbd>C-w</kbd> <kbd>C-j</kbd> and similar to move editors.                                                                                                                                                                                                                                                                              |
+|            | <kbd>C-w</kbd> <kbd>w</kbd> or <kbd>C-w</kbd> <kbd>C-w</kbd> | Focus next group. The behavior may differ than in vim.                                                                                                                                                                                                                                                                                                     |
+|            | <kbd>C-w</kbd> <kbd>W</kbd> or <kbd>C-w</kbd> <kbd>p</kbd>   | Focus previous group. The behavior may differ than in vim. <kbd>C-w</kbd> <kbd>p</kbd> is completely different than in vim.                                                                                                                                                                                                                                |
+|            | <kbd>C-w</kbd> <kbd>b</kbd>                                  | Focus last editor group (most bottom-right).                                                                                                                                                                                                                                                                                                               |
+|            | <kbd>C-w</kbd> <kbd>H/K/J/L</kbd>                            | Not supported yet.                                                                                                                                                                                                                                                                                                                                         |
+|            | <kbd>C-w</kbd> <kbd>=</kbd>                                  | Align all editors to have the same width.                                                                                                                                                                                                                                                                                                                  |
+|            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>+</kbd>               | Increase editor height by (optional) count.                                                                                                                                                                                                                                                                                                                |
+|            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>-</kbd>               | Decrease editor height by (optional) count.                                                                                                                                                                                                                                                                                                                |
+|            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>></kbd>               | Increase editor width by (optional) count.                                                                                                                                                                                                                                                                                                                 |
+|            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>\<</kbd>              | Decrease editor width by (optional) count.                                                                                                                                                                                                                                                                                                                 |
+|            | <kbd>C-w</kbd> <kbd>\_</kbd>                                 | Toggle maximized editor size. Pressing again will restore the size.                                                                                                                                                                                                                                                                                        |
 
 To use VSCode command 'Increase/decrease current view size' instead of separate bindings for width and height:
 
@@ -403,15 +397,15 @@ Enabled by `useCtrlKeysForInsertMode` (default true).
 
 | Key                                         | Description                                                       | Status                            |
 | ------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
-| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=]</kbd> | Paste from register                                               | Works                             |
-| <kbd>C-a</kbd>                              | Paste previous inserted content                                   | Works                             |
-| <kbd>C-u</kbd>                              | Delete all text till beginning of line, if empty - delete newline | Bound to VSCode key               |
-| <kbd>C-w</kbd>                              | Delete word left                                                  | Bound to VSCode key               |
-| <kbd>C-h</kbd>                              | Delete character left                                             | Bound to VSCode key               |
-| <kbd>C-t</kbd>                              | Indent lines right                                                | Bound to VSCode indent line       |
-| <kbd>C-d</kbd>                              | Indent lines left                                                 | Bound to VSCode outindent line    |
-| <kbd>C-j</kbd>                              | Insert line                                                       | Bound to VSCode insert line after |
-| <kbd>C-c</kbd>                              | Escape                                                            | Works                             |
+| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=]</kbd> | Paste from register.                                              | Works                             |
+| <kbd>C-a</kbd>                              | Paste previous inserted content.                                  | Works                             |
+| <kbd>C-u</kbd>                              | Delete all text till beginning of line. If empty, delete newline. | Bound to VSCode key               |
+| <kbd>C-w</kbd>                              | Delete word left.                                                 | Bound to VSCode key               |
+| <kbd>C-h</kbd>                              | Delete character left.                                            | Bound to VSCode key               |
+| <kbd>C-t</kbd>                              | Indent lines right.                                               | Bound to VSCode indent line       |
+| <kbd>C-d</kbd>                              | Indent lines left.                                                | Bound to VSCode outindent line    |
+| <kbd>C-j</kbd>                              | Insert line.                                                      | Bound to VSCode insert line after |
+| <kbd>C-c</kbd>                              | Escape.                                                           | Works                             |
 
 Other keys are not supported in insert mode.
 
@@ -447,18 +441,36 @@ Refer to vim manual for their use.
 
 Always enabled.
 
-| Key                             | Desription                                                                                                                                                                               |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <kbd>C-h</kbd>                  | Delete one character left.                                                                                                                                                               |
-| <kbd>C-w</kbd>                  | Delete word left.                                                                                                                                                                        |
-| <kbd>C-u</kbd>                  | Clear line.                                                                                                                                                                              |
-| <kbd>C-g</kbd> / <kbd>C-t</kbd> | In incsearch mode moves to next/previous result.                                                                                                                                         |
-| <kbd>C-l</kbd>                  | Add next character under the cursor to incsearch.                                                                                                                                        |
-| <kbd>C-n</kbd> / <kbd>C-p</kbd> | Go down/up history. <br/> `list.focusDown` <br/> `showNextParameterHint` <br/> `selectNextSuggestion` <br/> `workbench.action.quickOpenSelectNext` <br/> (including the other direction) |
-| <kbd>Up</kbd> / <kbd>Down</kbd> | Select next/prev suggestion (cannot be used for history).                                                                                                                                |
-| <kbd>Tab</kbd>                  | Select suggestion.                                                                                                                                                                       |
+| Key                             | Desription                                                |
+| ------------------------------- | --------------------------------------------------------- |
+| <kbd>C-h</kbd>                  | Delete one character left.                                |
+| <kbd>C-w</kbd>                  | Delete word left.                                         |
+| <kbd>C-u</kbd>                  | Clear line.                                               |
+| <kbd>C-g</kbd> / <kbd>C-t</kbd> | In incsearch mode moves to next/previous result.          |
+| <kbd>C-l</kbd>                  | Add next character under the cursor to incsearch.         |
+| <kbd>C-n</kbd> / <kbd>C-p</kbd> | Go down/up history.                                       |
+| <kbd>Up</kbd> / <kbd>Down</kbd> | Select next/prev suggestion (cannot be used for history). |
+| <kbd>Tab</kbd>                  | Select suggestion.                                        |
 
 ### VSCode specific bindings
+
+#### Editor command
+
+| Key                                                         | VSCode Command                                                                                 |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| <kbd>=</kbd> / <kbd>==</kbd>                                | `editor.action.formatSelection`                                                                |
+| <kbd>gh</kbd> / <kbd>K</kbd>                                | `editor.action.showHover`                                                                      |
+| <kbd>gd</kbd> / <kbd>C-]</kbd>                              | `editor.action.revealDefinition` <br/> Also works in vim help.                                 |
+| <kbd>gf</kbd>                                               | `editor.action.revealDeclaration`                                                              |
+| <kbd>gH</kbd>                                               | `editor.action.referenceSearch.trigger`                                                        |
+| <kbd>gO</kbd>                                               | `workbench.action.gotoSymbol`                                                                  |
+| <kbd>C-w</kbd> <kbd>gd</kbd> / <kbd>C-w</kbd> <kbd>gf</kbd> | `editor.action.revealDefinitionAside`                                                          |
+| <kbd>gD</kbd>                                               | `editor.action.peekDefinition`                                                                 |
+| <kbd>gF</kbd>                                               | `editor.action.peekDeclaration`                                                                |
+| <kbd>Tab</kbd>                                              | `togglePeekWidgetFocus` <br/> Switch between peek editor and reference list.                   |
+| <kbd>C-n</kbd> / <kbd>C-p</kbd>                             | Navigate lists, parameter hints, suggestions, quick-open, cmdline history, peek reference list |
+
+> 💡 To specify the default peek mode, modify `editor.peekWidgetDefaultFocus` in your settings.
 
 #### Explorer/list navigation
 
@@ -473,6 +485,9 @@ Always enabled.
 | <kbd>C-u</kbd> / <kbd>C-d</kbd>    | `list.focusPageUp/Down`         |
 | <kbd> / </kbd> / <kbd>Escape</kbd> | `list.toggleKeyboardNavigation` |
 
+> 💡 To enable explorer list navigation, add `"workbench.list.automaticKeyboardNavigation": false` to your
+> `settings.json`.
+
 #### Explorer file manipulation
 
 | Key          | VSCode Command        |
@@ -485,22 +500,6 @@ Always enabled.
 | <kbd>v</kbd> | `explorer.openToSide` |
 | <kbd>a</kbd> | `explorer.newFile`    |
 | <kbd>A</kbd> | `explorer.newFolder`  |
-
-#### Editor commands
-
-| Key                                                         | VSCode Command                                                              |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------- |
-| <kbd>=</kbd> / <kbd>==</kbd>                                | `editor.action.formatSelection`                                             |
-| <kbd>gh</kbd> / <kbd>K</kbd>                                | `editor.action.showHover`                                                   |
-| <kbd>gd</kbd> / <kbd>C-]</kbd>                              | `editor.action.revealDefinition` <br/> Also works in vim help               |
-| <kbd>gf</kbd>                                               | `editor.action.revealDeclaration`                                           |
-| <kbd>gH</kbd>                                               | `editor.action.referenceSearch.trigger`                                     |
-| <kbd>gO</kbd>                                               | `workbench.action.gotoSymbol`                                               |
-| <kbd>C-w</kbd> <kbd>gd</kbd> / <kbd>C-w</kbd> <kbd>gf</kbd> | `editor.action.revealDefinitionAside`                                       |
-| <kbd>gD</kbd>                                               | `editor.action.peekDefinition`                                              |
-| <kbd>gF</kbd>                                               | `editor.action.peekDeclaration`                                             |
-| <kbd>Tab</kbd>                                              | `togglePeekWidgetFocus` <br/> Switch between peek editor and reference list |
-| <kbd>C-n</kbd> / <kbd>C-p</kbd>                             | `list.focusUp/Down` <br/> Navigate peek reference list                      |
 
 ### Custom keybindings
 
@@ -590,3 +589,4 @@ to your init.vim. The underline color can be changed by the `guisp` tag.
 
 -   [vim-altercmd](https://github.com/kana/vim-altercmd) - Used for rebinding default commands to call vscode command
 -   [neovim nodejs client](https://github.com/neovim/node-client) - NodeJS library for communicating with Neovim
+-   [VSCodeVim](https://github.com/VSCodeVim/Vim) - Used for various inspiration
