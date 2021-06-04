@@ -1042,6 +1042,12 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r /",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "/"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r a",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "a"
