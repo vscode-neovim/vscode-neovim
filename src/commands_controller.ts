@@ -72,6 +72,11 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
                 );
                 break;
             }
+            case "set-numbers": {
+                const [mode] = args as ["on" | "relative" | "off"];
+                this.setNumbers(mode);
+                break;
+            }
         }
     }
 
@@ -157,6 +162,20 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
                     line.firstNonWhitespaceCharacterIndex,
                 ),
             ];
+        }
+    };
+
+    private setNumbers = (mode: "on" | "relative" | "off"): void => {
+        const e = vscode.window.activeTextEditor;
+        if (!e) {
+            return;
+        }
+        if (mode === "on") {
+            e.options.lineNumbers = vscode.TextEditorLineNumbersStyle.On;
+        } else if (mode === "relative") {
+            e.options.lineNumbers = vscode.TextEditorLineNumbersStyle.Relative;
+        } else {
+            e.options.lineNumbers = vscode.TextEditorLineNumbersStyle.Off;
         }
     };
 }
