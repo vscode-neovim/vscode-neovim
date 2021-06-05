@@ -30,6 +30,7 @@ editor commands, making the best use of both editors.
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
     -   [Keyboard Quickfix](#keyboard-quickfix)
+    -   [Smart Line Numbers](#smart-line-numbers)
     -   [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
         -   [Examples](#examples)
 -   [⌨️ Bindings](#️-bindings)
@@ -245,6 +246,23 @@ and add to your init.vim:
 
 ```vim
 nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
+```
+
+### Smart Line Numbers
+
+Some popular plugins like [vim-numbertoggle](https://github.com/jeffkreeftmeijer/vim-numbertoggle) or
+[numbers.vim](https://github.com/myusuf3/numbers.vim/) add a feature where relative line numbers are used in normal
+mode, but absolute numbers are used in insert mode.
+
+To replicate this functionality, first make relative numbers default by adding `"editor.lineNumbers": "relative"` to
+your vscode `settings.json`. Then, add the following to your `init.vim` to automatically switch between the two modes:
+
+```vim
+augroup smartnnumbers
+  autocmd!
+  autocmd BufEnter,InsertLeave * RelativeNumber
+  autocmd BufLeave,InsertEnter * Number
+augroup END
 ```
 
 ### Invoking VSCode actions from neovim
