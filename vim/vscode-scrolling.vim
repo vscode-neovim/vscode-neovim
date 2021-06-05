@@ -44,3 +44,7 @@ xnoremap L <Cmd>call <SID>moveCursor('bottom')<CR>
 " xnoremap <silent> <expr> <C-e> VSCodeExtensionNotify('scroll-line', 'down')
 " nnoremap <silent> <expr> <C-y> VSCodeExtensionNotify('scroll-line', 'up')
 " xnoremap <silent> <expr> <C-y> VSCodeExtensionNotify('scroll-line', 'up')
+
+command! -nargs=? Number if empty(<q-args>) | call VSCodeExtensionNotify('set-numbers', 'on') | else | call VSCodeExtensionNotify('set-numbers', expand(<q-args>)) | endif
+command! RelativeNumber Number relative
+command! NoNumber Number off
