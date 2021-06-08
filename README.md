@@ -412,7 +412,7 @@ Enabled by `useCtrlKeysForInsertMode = true` (default true)
 | -------------------------- | ---------------------------------------------------------------- | --------------------------------- |
 | `CTRL-r [0-9a-z"%#*+:.-=]` | Paste from register                                              | Works                             |
 | `CTRL-a`                   | Paste previous inserted content                                  | Works                             |
-| `CTRL-o`                   | Switch to normal mode for a single command, then back            | Works                             |
+| <kbd>C-o</kbd>                              | Switch to normal mode for a single command, then back.            | Works                             |
 | `CTRL-u`                   | Delete all text till begining of line, if empty - delete newline | Bound to VSCode key               |
 | `CTRL-w`                   | Delete word left                                                 | Bound to VSCode key               |
 | `CTRL-h`                   | Delete character left                                            | Bound to VSCode key               |
