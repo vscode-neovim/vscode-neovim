@@ -248,11 +248,13 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             return;
         }
         // create temporary win
+        await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
         const win = await this.client.openWindow(buf, true, {
             external: true,
             width: 100,
             height: 100,
         });
+        await this.client.setOption("eventignore", "");
         if (typeof win === "number") {
             return;
         }
@@ -346,7 +348,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         // const edits = this.pendingEvents.splice(0);
         let resolveProgress: undefined | (() => void);
         const progressTimer = setTimeout(() => {
-            window.withProgress(
+            window.withProgress<void>(
                 { location: ProgressLocation.Notification, title: "Applying neovim edits" },
                 () => new Promise((res) => (resolveProgress = res)),
             );

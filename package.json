@@ -1,13 +1,13 @@
 {
     "name": "vscode-neovim",
-    "displayName": "Neo Vim",
-    "description": "Real VIM in your Visual Studio Code",
+    "displayName": "VSCode Neovim",
+    "description": "VSCode Neovim Integration",
     "icon": "images/icon.png",
     "publisher": "asvetliakov",
     "extensionKind": [
         "ui"
     ],
-    "version": "0.0.78",
+    "version": "0.0.81",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -17,7 +17,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.48.0"
+        "vscode": "^1.54.0"
     },
     "keywords": [
         "keybindings",
@@ -394,6 +394,106 @@
                 "when": "listFocus && !inputFocus"
             },
             {
+                "key": "j",
+                "command": "list.focusDown",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "k",
+                "command": "list.focusUp",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "h",
+                "command": "list.collapse",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "l",
+                "command": "list.select",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "enter",
+                "command": "list.select",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "g g",
+                "command": "list.focusFirst",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "shift+g",
+                "command": "list.focusLast",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "o",
+                "command": "list.toggleExpand",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "ctrl+u",
+                "command": "list.focusPageUp",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "ctrl+d",
+                "command": "list.focusPageDown",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "/",
+                "command": "list.toggleKeyboardNavigation",
+                "when": "listFocus && !inputFocus && listSupportsKeyboardNavigation"
+            },
+            {
+                "key": "escape",
+                "command": "list.toggleKeyboardNavigation",
+                "when": "listFocus && inputFocus && listSupportsKeyboardNavigation"
+            },
+            {
+                "key": "r",
+                "command": "renameFile",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+            },
+            {
+                "key": "d",
+                "command": "deleteFile",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus"
+            },
+            {
+                "key": "y",
+                "command": "filesExplorer.copy",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
+            },
+            {
+                "key": "x",
+                "command": "filesExplorer.cut",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
+            },
+            {
+                "key": "p",
+                "command": "filesExplorer.paste",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus"
+            },
+            {
+                "key": "v",
+                "command": "explorer.openToSide",
+                "when": "explorerViewletFocus && explorerViewletVisible && !inputFocus"
+            },
+            {
+                "key": "a",
+                "command": "explorer.newFile",
+                "when": "filesExplorerFocus && !inputFocus"
+            },
+            {
+                "key": "shift+a",
+                "command": "explorer.newFolder",
+                "when": "filesExplorerFocus && !inputFocus"
+            },
+            {
                 "command": "showNextParameterHint",
                 "key": "ctrl+n",
                 "when": "editorTextFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
@@ -426,12 +526,17 @@
             {
                 "command": "vscode-neovim.escape",
                 "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+            },
+            {
+                "command": "vscode-neovim.escape",
+                "key": "ctrl+c",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert"
             },
             {
                 "command": "vscode-neovim.escape",
                 "key": "Escape",
-                "when": "editorTextFocus && neovim.init"
+                "when": "editorTextFocus && neovim.init && !markersNavigationVisible && !parameterHintsVisible && !referenceSearchVisible"
             },
             {
                 "command": "vscode-neovim.escape",
@@ -439,16 +544,24 @@
                 "when": "editorTextFocus && neovim.init"
             },
             {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+shift+o",
-                "when": "editorTextFocus && neovim.mode != insert",
-                "args": "gO"
+                "key": "tab",
+                "command": "togglePeekWidgetFocus",
+                "when": "inReferenceSearchEditor || referenceSearchVisible && neovim.mode == normal"
             },
             {
-                "command": "vscode-neovim.send",
-                "key": "cmd+shift+o",
-                "when": "editorTextFocus && neovim.mode != insert",
-                "args": "gO"
+                "key": "escape",
+                "command": "closeReferenceSearch",
+                "when": "inReferenceSearchEditor && !config.editor.stablePeek && neovim.mode == normal"
+            },
+            {
+                "key": "ctrl+p",
+                "command": "list.focusUp",
+                "when": "inReferenceSearchEditor && neovim.mode == normal"
+            },
+            {
+                "key": "ctrl+n",
+                "command": "list.focusDown",
+                "when": "inReferenceSearchEditor && neovim.mode == normal"
             },
             {
                 "command": "vscode-neovim.send",
@@ -603,6 +716,18 @@
                 "key": "ctrl+left",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
                 "args": "<C-Left>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "home",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<Home>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "end",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<End>"
             },
             {
                 "command": "vscode-neovim.send",
@@ -917,7 +1042,13 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r ka",
+                "key": "ctrl+r /",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "/"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r a",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "a"
             },
@@ -1079,36 +1210,36 @@
         "pretest": "yarn run test-compile",
         "vscode:prepublish": "webpack --mode production",
         "webpack": "webpack --mode development",
-        "webpack-dev": "webpack --mode development --watch --info-verbosity verbose",
+        "webpack-dev": "webpack --mode development --watch",
         "test-compile": "tsc -p ./"
     },
     "devDependencies": {
-        "@types/glob": "^7.1.1",
-        "@types/lodash-es": "^4.17.3",
-        "@types/mocha": "^7.0.2",
+        "@types/glob": "^7.1.3",
+        "@types/lodash-es": "^4.17.4",
+        "@types/mocha": "^8.2.1",
         "@types/msgpack-lite": "^0.1.7",
-        "@types/node": "^14.0.13",
-        "@types/vscode": "^1.48.0",
-        "@typescript-eslint/eslint-plugin": "^3.3.0",
-        "@typescript-eslint/parser": "^3.3.0",
-        "eslint": "^7.2.0",
-        "eslint-config-prettier": "^6.9.0",
-        "eslint-plugin-import": "^2.19.1",
-        "eslint-plugin-prettier": "^3.1.2",
+        "@types/node": "^14.14.35",
+        "@types/vscode": "^1.54.0",
+        "@typescript-eslint/eslint-plugin": "^4.18.0",
+        "@typescript-eslint/parser": "^4.18.0",
+        "eslint": "^7.22.0",
+        "eslint-config-prettier": "^8.1.0",
+        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-prettier": "^3.3.1",
         "glob": "^7.1.6",
-        "mocha": "^8.1.1",
-        "prettier": "^2.0.5",
-        "source-map-support": "^0.5.16",
-        "ts-loader": "^8.0.4",
-        "typescript": "^4.0.2",
-        "vscode-test": "^1.3.0",
-        "webpack": "^4.44.2",
-        "webpack-cli": "^3.3.12"
+        "mocha": "^8.3.2",
+        "prettier": "^2.2.1",
+        "source-map-support": "^0.5.19",
+        "ts-loader": "^8.0.18",
+        "typescript": "^4.2.3",
+        "vscode-test": "^1.5.1",
+        "webpack": "^5.26.1",
+        "webpack-cli": "^4.5.0"
     },
     "dependencies": {
         "fast-diff": "^1.2.0",
-        "lodash-es": "^4.17.15",
-        "neovim": "^4.7.0",
-        "ts-wcwidth": "^2.0.0"
+        "lodash-es": "^4.17.21",
+        "neovim": "^4.9.0",
+        "ts-wcwidth": "^2.0.3"
     }
 }
