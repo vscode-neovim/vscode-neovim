@@ -849,6 +849,11 @@
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert"
             },
             {
+                "command": "vscode-neovim.ctrl-o-insert",
+                "key": "ctrl+o",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert"
+            },
+            {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+u",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.recording && neovim.ctrlKeysInsert",
