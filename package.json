@@ -1,13 +1,13 @@
 {
     "name": "vscode-neovim",
-    "displayName": "Neo Vim",
-    "description": "Real VIM in your Visual Studio Code",
+    "displayName": "VSCode Neovim",
+    "description": "VSCode Neovim Integration",
     "icon": "images/icon.png",
     "publisher": "asvetliakov",
     "extensionKind": [
         "ui"
     ],
-    "version": "0.0.78",
+    "version": "0.0.81",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -394,6 +394,106 @@
                 "when": "listFocus && !inputFocus"
             },
             {
+                "key": "j",
+                "command": "list.focusDown",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "k",
+                "command": "list.focusUp",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "h",
+                "command": "list.collapse",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "l",
+                "command": "list.select",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "enter",
+                "command": "list.select",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "g g",
+                "command": "list.focusFirst",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "shift+g",
+                "command": "list.focusLast",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "o",
+                "command": "list.toggleExpand",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "ctrl+u",
+                "command": "list.focusPageUp",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "ctrl+d",
+                "command": "list.focusPageDown",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "key": "/",
+                "command": "list.toggleKeyboardNavigation",
+                "when": "listFocus && !inputFocus && listSupportsKeyboardNavigation"
+            },
+            {
+                "key": "escape",
+                "command": "list.toggleKeyboardNavigation",
+                "when": "listFocus && inputFocus && listSupportsKeyboardNavigation"
+            },
+            {
+                "key": "r",
+                "command": "renameFile",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+            },
+            {
+                "key": "d",
+                "command": "deleteFile",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus"
+            },
+            {
+                "key": "y",
+                "command": "filesExplorer.copy",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
+            },
+            {
+                "key": "x",
+                "command": "filesExplorer.cut",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
+            },
+            {
+                "key": "p",
+                "command": "filesExplorer.paste",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus"
+            },
+            {
+                "key": "v",
+                "command": "explorer.openToSide",
+                "when": "explorerViewletFocus && explorerViewletVisible && !inputFocus"
+            },
+            {
+                "key": "a",
+                "command": "explorer.newFile",
+                "when": "filesExplorerFocus && !inputFocus"
+            },
+            {
+                "key": "shift+a",
+                "command": "explorer.newFolder",
+                "when": "filesExplorerFocus && !inputFocus"
+            },
+            {
                 "command": "showNextParameterHint",
                 "key": "ctrl+n",
                 "when": "editorTextFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
@@ -426,12 +526,17 @@
             {
                 "command": "vscode-neovim.escape",
                 "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+            },
+            {
+                "command": "vscode-neovim.escape",
+                "key": "ctrl+c",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert"
             },
             {
                 "command": "vscode-neovim.escape",
                 "key": "Escape",
-                "when": "editorTextFocus && neovim.init"
+                "when": "editorTextFocus && neovim.init && !markersNavigationVisible && !parameterHintsVisible && !referenceSearchVisible"
             },
             {
                 "command": "vscode-neovim.escape",
@@ -439,16 +544,24 @@
                 "when": "editorTextFocus && neovim.init"
             },
             {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+shift+o",
-                "when": "editorTextFocus && neovim.mode != insert",
-                "args": "gO"
+                "key": "tab",
+                "command": "togglePeekWidgetFocus",
+                "when": "inReferenceSearchEditor || referenceSearchVisible && neovim.mode == normal"
             },
             {
-                "command": "vscode-neovim.send",
-                "key": "cmd+shift+o",
-                "when": "editorTextFocus && neovim.mode != insert",
-                "args": "gO"
+                "key": "escape",
+                "command": "closeReferenceSearch",
+                "when": "inReferenceSearchEditor && !config.editor.stablePeek && neovim.mode == normal"
+            },
+            {
+                "key": "ctrl+p",
+                "command": "list.focusUp",
+                "when": "inReferenceSearchEditor && neovim.mode == normal"
+            },
+            {
+                "key": "ctrl+n",
+                "command": "list.focusDown",
+                "when": "inReferenceSearchEditor && neovim.mode == normal"
             },
             {
                 "command": "vscode-neovim.send",
@@ -603,6 +716,18 @@
                 "key": "ctrl+left",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
                 "args": "<C-Left>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "home",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<Home>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "end",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<End>"
             },
             {
                 "command": "vscode-neovim.send",
@@ -922,7 +1047,13 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r ka",
+                "key": "ctrl+r /",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "/"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r a",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "a"
             },

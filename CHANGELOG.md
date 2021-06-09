@@ -1,5 +1,17 @@
 # Change Log
 
+## [0.0.81]
+
+-   Revert ( #649 )
+
+## [0.0.80]
+
+-   Improve cursor position behaviour ( #649 )
+
+## [0.0.79]
+
+-   Fix infinity file opened loop on recent neovim versions ( #632 )
+
 ## [0.0.78]
 
 -   Fix init error with no workspace folders open ( #526 )
