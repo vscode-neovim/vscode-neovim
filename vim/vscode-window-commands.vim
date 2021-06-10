@@ -46,7 +46,6 @@ AlterCommand new New
 AlterCommand vne[w] Vnew
 AlterCommand on[ly] Only
 
-
 " buffer management
 nnoremap <C-w>n <Cmd>call <SID>splitNew('h', '__vscode_new__')<CR>
 xnoremap <C-w>n <Cmd>call <SID>splitNew('h', '__vscode_new__')<CR>
