@@ -707,6 +707,18 @@
             },
             {
                 "command": "vscode-neovim.send",
+                "key": "ctrl+down",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<C-Down>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "ctrl+up",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<C-Up>"
+            },
+            {
+                "command": "vscode-neovim.send",
                 "key": "ctrl+right",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
                 "args": "<C-Right>"
@@ -716,6 +728,30 @@
                 "key": "ctrl+left",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
                 "args": "<C-Left>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "shift+down",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<S-Down>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "shift+up",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<S-Up>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "shift+left",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<S-Left>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "shift+right",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
+                "args": "<S-Right>"
             },
             {
                 "command": "vscode-neovim.send",
