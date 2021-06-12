@@ -1,20 +1,4 @@
-" call vscode command while transfering visual selection
-function! s:vscodeVisualCommand(str)
-    let mode = mode()
-    if mode ==# 'V'
-        let startLine = line('v')
-        let endLine = line('.')
-        call VSCodeNotifyRange(a:str, startLine, endLine, 1)
-    else
-        let startPos = getpos('v')
-        let endPos = getpos('.')
-        call VSCodeNotifyRangePos(a:str, startPos[1], endPos[1], startPos[2], endPos[2] + 1, 1)
-    endif
-endfunction
 
-" workaround for calling command picker in visual mode
-xnoremap <C-S-P> <Cmd>call <SID>vscodeVisualCommand('workbench.action.showCommands')<CR>
-xnoremap <C-S-F> <Cmd>call <SID>vscodeVisualCommand('workbench.action.findInFiles')<CR>
 
 function! s:vscodeFormat(...) abort
     if !a:0
@@ -97,3 +81,7 @@ xnoremap <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<C
 " open quickfix menu for spelling corrections and refactoring
 " only keyboard arrows can be used to navigate, for a solution, see https://github.com/asvetliakov/vscode-neovim#keyboard-quickfix
 nnoremap z= <Cmd>call VSCodeNotify('editor.action.quickFix')<CR>
+
+" workaround for calling command picker in visual mode
+xnoremap <C-S-P> <Cmd>call VSCodeNotifyVisual('workbench.action.showCommands')<CR>
+xnoremap <C-S-F> <Cmd>call VSCodeNotifyVisual('workbench.action.findInFiles')<CR>

@@ -46,6 +46,36 @@ function! VSCodeExtensionNotify(cmd, ...) abort
     call rpcnotify(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
+function! VSCodeCallVisual(cmd, ...) abort
+    let mode = mode()
+    if mode ==# 'V'
+        let startLine = line('v')
+        let endLine = line('.')
+        call VSCodeCallRange(a:cmd, startLine, endLine, 1, a:000)
+    elseif mode ==# 'v' || mode ==# "\<C-v>"
+        let startPos = getpos('v')
+        let endPos = getpos('.')
+        call VSCodeCallRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, 1, a:000)
+    else
+        call VSCodeCall(a:cmd, a:000)
+    endif
+endfunction
+
+function! VSCodeNotifyVisual(cmd, ...) abort
+    let mode = mode()
+    if mode ==# 'V'
+        let startLine = line('v')
+        let endLine = line('.')
+        call VSCodeNotifyRange(a:cmd, startLine, endLine, 1, a:000)
+    elseif mode ==# 'v' || mode ==# "\<C-v>"
+        let startPos = getpos('v')
+        let endPos = getpos('.')
+        call VSCodeNotifyRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, 1, a:000)
+    else
+        call VSCodeNotify(a:cmd, a:000)
+    endif
+endfunction
+
 " Called from extension when opening/creating new file in vscode to reset undo tree
 function! VSCodeClearUndo(bufId)
     let oldlevels = &undolevels
