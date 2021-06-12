@@ -99,14 +99,14 @@ editor commands, making the best use of both editors.
     corners, invoking the VSCode command picker from visual mode through the default hotkeys
     (<kbd>f1</kbd>/<kbd>ctrl/cmd+shift+p</kbd>) converts vim selection to real vscode selection. This conversion is also
     done automatically for some commands like commenting and formatting. If you're using some custom mapping for calling
-    vscode commands that depends on real vscode selection, you can use `VSCodeNotifyRange`/`VSCodeNotifyRangePos` (the
-    first one linewise, the latter characterwise) which will convert vim visual mode selection to vscode selection
-    before calling the command ([see below](#invoking-vscode-actions-from-neovim)).
+    vscode commands that depends on real vscode selection, you can use
+    `VSCodeNotifyRange`/`VSCodeNotifyRangePos`/`VSCodeNotifyVisual` (linewise, characterwise, and automatic) which will
+    convert vim visual mode selection to vscode selection before calling the command
+    ([see below](#invoking-vscode-actions-from-neovim)).
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`.
-    This is normal.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
--   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat
+-   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat.
     sequence. In neovim, if you type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here
     the repeat sequence would be `1`. However in vscode it would be `a1bc`. Another difference is that when you delete
     some text in insert mode, dot repeat only works from right-to-left, meaning it will treat <kbd>Del</kbd> key as
@@ -253,11 +253,12 @@ There are a
 [few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/master/vim/vscode-neovim.vim#L17-L39) that
 could be used to invoke any vscode commands:
 
-| Command                                                                                                                                                           | Description                                                                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VSCodeNotify(command, ...)` <br/> `VSCodeCall(command, ...)`                                                                                                     | Invoke vscode command with optional arguments.                                                                                                                                          |
-| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce real linewise vscode selection from `line1` to `line2` and invoke vscode command. Put 1 for the `leaveSelection` argument to leave vscode selection after invoking the command. |
-| `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` <br/> `VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` | Produce real characterwise vscode selection from `line1.pos1` to `line2.pos2` and invoke vscode command.                                                                                |
+| Command                                                                                                                                                           | Description                                                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VSCodeNotify(command, ...)` <br/> `VSCodeCall(command, ...)`                                                                                                     | Invoke vscode command with optional arguments.                                                                                                                                                             |
+| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce linewise vscode selection from `line1` to `line2` and invoke vscode command. Setting `leaveSelection` to 1 removes vscode selection after invoking the command.                                    |
+| `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` <br/> `VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` | Produce characterwise vscode selection from `line1.pos1` to `line2.pos2` and invoke vscode command.                                                                                                        |
+| `VSCodeNotifyVisual(command, ...)` <br/> `VSCodeCallVisual(command, ...)`                                                                                         | Produce linewise (visual line) or characterwise (visual and visual block) selection from visual mode selection and invoke vscode command. Behaves like `VSCodeNotify/Call` when visual mode is not active. |
 
 > 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
 > unless you really need a blocking call.
@@ -267,20 +268,22 @@ could be used to invoke any vscode commands:
 Produce linewise/characterwise selection and show vscode commands (default binding):
 
 ```vim
-function! s:openVSCodeCommandsInVisualMode()
+function! VSCodeNotifyVisual(cmd, leaveSelection, ...)
     let mode = mode()
     if mode ==# 'V'
         let startLine = line('v')
         let endLine = line('.')
-        call VSCodeNotifyRange('workbench.action.showCommands', startLine, endLine, 1)
-    else
+        call VSCodeNotifyRange(a:cmd, startLine, endLine, a:leaveSelection, a:000)
+    elseif mode ==# 'v' || mode ==# "\<C-v>"
         let startPos = getpos('v')
         let endPos = getpos('.')
-        call VSCodeNotifyRangePos('workbench.action.showCommands', startPos[1], endPos[1], startPos[2], endPos[2] + 1, 1)
+        call VSCodeNotifyRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, a:leaveSelection, a:000)
+    else
+        call VSCodeNotify(a:cmd, a:000)
     endif
 endfunction
 
-xnoremap <C-P> <Cmd>call <SID>openVSCodeCommandsInVisualMode()<CR>
+xnoremap <C-S-P> <Cmd>call VSCodeNotifyVisual('workbench.action.showCommands', 1)<CR>
 ```
 
 Open definition aside (default binding):

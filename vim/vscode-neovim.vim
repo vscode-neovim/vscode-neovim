@@ -18,20 +18,20 @@ function! VSCodeCall(cmd, ...) abort
     call rpcrequest(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
 endfunction
 
-function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
-    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, 0, 0, a:leaveSelection, a:000)
-endfunction
-
-function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
-    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
-endfunction
-
 function! VSCodeNotify(cmd, ...)
     call rpcnotify(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
 endfunction
 
+function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
+    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, 0, 0, a:leaveSelection, a:000)
+endfunction
+
 function! VSCodeNotifyRange(cmd, line1, line2, leaveSelection, ...)
     call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, 0, 0, a:leaveSelection, a:000)
+endfunction
+
+function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
+    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
 endfunction
 
 function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
@@ -42,11 +42,11 @@ function! VSCodeExtensionCall(cmd, ...) abort
     call rpcrequest(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
-function! VSCodeExtensionNotify(cmd, ...) abort
+function! VSCodeExtensionNotify(cmd, ...)
     call rpcnotify(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
-function! VSCodeCallVisual(cmd, ...) abort
+function! VSCodeCallVisual(cmd, leaveSelection, ...) abort
     let mode = mode()
     if mode ==# 'V'
         let startLine = line('v')
@@ -61,16 +61,16 @@ function! VSCodeCallVisual(cmd, ...) abort
     endif
 endfunction
 
-function! VSCodeNotifyVisual(cmd, ...) abort
+function! VSCodeNotifyVisual(cmd, leaveSelection, ...)
     let mode = mode()
     if mode ==# 'V'
         let startLine = line('v')
         let endLine = line('.')
-        call VSCodeNotifyRange(a:cmd, startLine, endLine, 1, a:000)
+        call VSCodeNotifyRange(a:cmd, startLine, endLine, a:leaveSelection, a:000)
     elseif mode ==# 'v' || mode ==# "\<C-v>"
         let startPos = getpos('v')
         let endPos = getpos('.')
-        call VSCodeNotifyRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, 1, a:000)
+        call VSCodeNotifyRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, a:leaveSelection, a:000)
     else
         call VSCodeNotify(a:cmd, a:000)
     endif
