@@ -51,11 +51,11 @@ function! VSCodeCallVisual(cmd, leaveSelection, ...) abort
     if mode ==# 'V'
         let startLine = line('v')
         let endLine = line('.')
-        call VSCodeCallRange(a:cmd, startLine, endLine, 1, a:000)
+        call VSCodeCallRange(a:cmd, startLine, endLine, a:leaveSelection, a:000)
     elseif mode ==# 'v' || mode ==# "\<C-v>"
         let startPos = getpos('v')
         let endPos = getpos('.')
-        call VSCodeCallRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, 1, a:000)
+        call VSCodeCallRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, a:leaveSelection, a:000)
     else
         call VSCodeCall(a:cmd, a:000)
     endif
