@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.82]
+
+- Big updates to keybindings ! ( #513 , #654 , #557 , #585 , #655 )
+
 ## [0.0.81]
 
 -   Revert ( #649 )
