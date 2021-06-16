@@ -423,8 +423,7 @@ Refer to vim manual for their use.
 -   <kbd>C-e</kbd>
 -   <kbd>C-f</kbd>
 -   <kbd>C-i</kbd>
--   <kbd>C-o</kbd> (to enable, see
-    [this issue](https://github.com/asvetliakov/vscode-neovim/issues/181#issuecomment-585264621))
+-   <kbd>C-o</kbd>
 -   <kbd>C-r</kbd>
 -   <kbd>C-u</kbd>
 -   <kbd>C-v</kbd>
