@@ -84,4 +84,4 @@ nnoremap z= <Cmd>call VSCodeNotify('editor.action.quickFix')<CR>
 
 " workaround for calling command picker in visual mode
 xnoremap <C-S-P> <Cmd>call VSCodeNotifyVisual('workbench.action.showCommands', 1)<CR>
-xnoremap <C-S-F> <Cmd>call VSCodeNotifyVisual('workbench.action.findInFiles', 1)<CR>
+xnoremap <C-S-F> <Cmd>call VSCodeNotifyVisual('workbench.action.findInFiles', 0)<CR>
