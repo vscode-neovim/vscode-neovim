@@ -429,7 +429,7 @@
             {
                 "key": "enter",
                 "command": "list.select",
-                "when": "listFocus && !inputFocus"
+                "when": "listFocus && !inputFocus && !notebookCellListFocused"
             },
             {
                 "key": "g g",
@@ -464,7 +464,7 @@
             {
                 "key": "escape",
                 "command": "list.toggleKeyboardNavigation",
-                "when": "listFocus && inputFocus && listSupportsKeyboardNavigation"
+                "when": "listFocus && inputFocus && listSupportsKeyboardNavigation && !notebookCellListFocused"
             },
             {
                 "key": "r",
@@ -548,13 +548,18 @@
             },
             {
                 "command": "vscode-neovim.escape",
-                "key": "Escape",
-                "when": "editorTextFocus && neovim.init && !markersNavigationVisible && !parameterHintsVisible && !referenceSearchVisible"
+                "key": "ctrl+[",
+                "when": "editorTextFocus && neovim.init"
             },
             {
                 "command": "vscode-neovim.escape",
-                "key": "ctrl+[",
-                "when": "editorTextFocus && neovim.init"
+                "key": "escape",
+                "when": "editorTextFocus && neovim.init && !markersNavigationVisible && !parameterHintsVisible && !referenceSearchVisible"
+            },
+            {
+                "key": "escape",
+                "command": "notebook.cell.quitEdit",
+                "when": "editorTextFocus && neovim.init && !markersNavigationVisible && !parameterHintsVisible && !referenceSearchVisible && notebookEditorFocused && neovim.mode == normal"
             },
             {
                 "key": "tab",
