@@ -893,13 +893,19 @@
                 "args": "<C-/>"
             },
             {
-                "command": "deleteAllLeft",
-                "key": "ctrl-u",
+                "command": "vscode-neovim.ctrl-o-insert",
+                "key": "ctrl+o",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert"
             },
             {
-                "command": "vscode-neovim.ctrl-o-insert",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+o",
+                "when": "editorTextFocus && neovim.mode == insert && neovim.recording && neovim.ctrlKeysInsert",
+                "args": "<C-o>"
+            },
+            {
+                "command": "deleteAllLeft",
+                "key": "ctrl-u",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert"
             },
             {
