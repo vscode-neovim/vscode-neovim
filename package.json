@@ -685,13 +685,13 @@
             {
                 "command": "vscode-neovim.send",
                 "key": "tab",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.mode != cmdline_normal",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
                 "args": "<Tab>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+tab",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.mode != cmdline_normal",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
                 "args": "<S-Tab>"
             },
             {
