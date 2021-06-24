@@ -429,7 +429,7 @@
             {
                 "key": "enter",
                 "command": "list.select",
-                "when": "listFocus && !inputFocus"
+                "when": "listFocus && !inputFocus && !notebookCellListFocused"
             },
             {
                 "key": "g g",
@@ -464,7 +464,7 @@
             {
                 "key": "escape",
                 "command": "list.toggleKeyboardNavigation",
-                "when": "listFocus && inputFocus && listSupportsKeyboardNavigation"
+                "when": "listFocus && inputFocus && listSupportsKeyboardNavigation && !notebookCellListFocused"
             },
             {
                 "key": "r",
