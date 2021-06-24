@@ -367,6 +367,31 @@
         ],
         "keybindings": [
             {
+                "command": "vscode-neovim.escape",
+                "key": "ctrl+[",
+                "when": "editorTextFocus && neovim.init"
+            },
+            {
+                "command": "vscode-neovim.escape",
+                "key": "ctrl+c",
+                "when": "editorTextFocus && neovim.init && neovim.mode == normal && neovim.ctrlKeysNormal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused"
+            },
+            {
+                "command": "vscode-neovim.escape",
+                "key": "ctrl+c",
+                "when": "editorTextFocus && neovim.init && neovim.mode != normal && neovim.ctrlKeysInsert"
+            },
+            {
+                "command": "vscode-neovim.escape",
+                "key": "Escape",
+                "when": "editorTextFocus && neovim.init && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused"
+            },
+            {
+                "command": "vscode-neovim.escape",
+                "key": "Escape",
+                "when": "editorTextFocus && neovim.init && neovim.mode != normal"
+            },
+            {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+shift+p",
                 "when": "editorTextFocus && neovim.mode == visual",
@@ -535,31 +560,6 @@
                 "command": "workbench.action.quickOpenSelectPrevious",
                 "key": "ctrl+p",
                 "when": "inQuickOpen"
-            },
-            {
-                "command": "vscode-neovim.escape",
-                "key": "ctrl+[",
-                "when": "editorTextFocus && neovim.init"
-            },
-            {
-                "command": "vscode-neovim.escape",
-                "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init && neovim.mode == normal && neovim.ctrlKeysNormal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused"
-            },
-            {
-                "command": "vscode-neovim.escape",
-                "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init && neovim.mode != normal && neovim.ctrlKeysInsert"
-            },
-            {
-                "command": "vscode-neovim.escape",
-                "key": "Escape",
-                "when": "editorTextFocus && neovim.init && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused"
-            },
-            {
-                "command": "vscode-neovim.escape",
-                "key": "Escape",
-                "when": "editorTextFocus && neovim.init && neovim.mode != normal"
             },
             {
                 "key": "tab",
