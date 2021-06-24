@@ -564,7 +564,7 @@
             {
                 "key": "tab",
                 "command": "togglePeekWidgetFocus",
-                "when": "inReferenceSearchEditor || referenceSearchVisible && neovim.mode == normal"
+                "when": "inReferenceSearchEditor && neovim.mode == normal || referenceSearchVisible"
             },
             {
                 "key": "ctrl+p",
