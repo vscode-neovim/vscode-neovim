@@ -554,16 +554,6 @@
                 "args": "<End>"
             },
             {
-                "command": "list.focusDown",
-                "key": "ctrl+n",
-                "when": "listFocus && !inputFocus"
-            },
-            {
-                "command": "list.focusUp",
-                "key": "ctrl+p",
-                "when": "listFocus && !inputFocus"
-            },
-            {
                 "key": "j",
                 "command": "list.focusDown",
                 "when": "listFocus && !inputFocus"
@@ -664,6 +654,31 @@
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
+                "key": "tab",
+                "command": "togglePeekWidgetFocus",
+                "when": "inReferenceSearchEditor && neovim.mode == normal || referenceSearchVisible"
+            },
+            {
+                "key": "ctrl+n",
+                "command": "list.focusDown",
+                "when": "inReferenceSearchEditor && neovim.mode == normal"
+            },
+            {
+                "key": "ctrl+p",
+                "command": "list.focusUp",
+                "when": "inReferenceSearchEditor && neovim.mode == normal"
+            },
+            {
+                "command": "list.focusDown",
+                "key": "ctrl+n",
+                "when": "listFocus && !inputFocus"
+            },
+            {
+                "command": "list.focusUp",
+                "key": "ctrl+p",
+                "when": "listFocus && !inputFocus"
+            },
+            {
                 "command": "showNextParameterHint",
                 "key": "ctrl+n",
                 "when": "editorTextFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
@@ -692,21 +707,6 @@
                 "command": "workbench.action.quickOpenSelectPrevious",
                 "key": "ctrl+p",
                 "when": "inQuickOpen"
-            },
-            {
-                "key": "tab",
-                "command": "togglePeekWidgetFocus",
-                "when": "inReferenceSearchEditor && neovim.mode == normal || referenceSearchVisible"
-            },
-            {
-                "key": "ctrl+p",
-                "command": "list.focusUp",
-                "when": "inReferenceSearchEditor && neovim.mode == normal"
-            },
-            {
-                "key": "ctrl+n",
-                "command": "list.focusDown",
-                "when": "inReferenceSearchEditor && neovim.mode == normal"
             },
             {
                 "command": "vscode-neovim.send",
