@@ -57,7 +57,7 @@ editor commands, making the best use of both editors.
 
 -   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim)
     extension.
--   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.5.0 nightly** or greater.
+-   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.5.0** or greater.
     -   Set the neovim path in the extension settings. You must specify full path to neovim, like
         "`C:\Neovim\bin\nvim.exe"` or "`/usr/local/bin/nvim`".
     -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
@@ -65,10 +65,10 @@ editor commands, making the best use of both editors.
     `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through
     `$PATH` linux env setting. Use `wsl --list` to check for the correct default linux distribution.
 
-> ❗ **Neovim 0.5.0 nightly** or greater is **required**. Any version lower than that won't work. Many linux
-> distributions have an **old** version of neovim in their package repo - always check what version are you installing.
-> You can install neovim separately, outside your system's package manager installation, for example using the appimage
-> from the neovim releases page.
+> ❗ **Neovim 0.5.0** or greater is **required**. Any version lower than that won't work. Many linux distributions have
+> an **old** version of neovim in their package repo - always check what version are you installing. You can install
+> neovim separately, outside your system's package manager installation, for example using the appimage from the neovim
+> releases page.
 
 > 🐛 See the [issues section](https://github.com/asvetliakov/vscode-neovim/issues) for known issues.
 
