@@ -65,10 +65,10 @@ editor commands, making the best use of both editors.
     `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through
     `$PATH` linux env setting. Use `wsl --list` to check for the correct default linux distribution.
 
-> ❗ **Neovim 0.5.0** or greater is **required**. Any version lower than that won't work. Many linux
-> distributions have an **old** version of neovim in their package repo - always check what version are you installing.
-> You can install neovim separately, outside your system's package manager installation, for example using the appimage
-> from the neovim releases page.
+> ❗ **Neovim 0.5.0** or greater is **required**. Any version lower than that won't work. Many linux distributions have
+> an **old** version of neovim in their package repo - always check what version are you installing. You can install
+> neovim separately, outside your system's package manager installation, for example using the appimage from the neovim
+> releases page.
 
 > 🐛 See the [issues section](https://github.com/asvetliakov/vscode-neovim/issues) for known issues.
 
