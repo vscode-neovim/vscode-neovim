@@ -393,6 +393,18 @@
             },
             {
                 "command": "vscode-neovim.send",
+                "key": "ctrl+p",
+                "when": "editorTextFocus && neovim.mode == visual",
+                "args": "<C-P>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "cmd+p",
+                "when": "editorTextFocus && neovim.mode == visual",
+                "args": "<C-P>"
+            },
+            {
+                "command": "vscode-neovim.send",
                 "key": "ctrl+shift+p",
                 "when": "editorTextFocus && neovim.mode == visual",
                 "args": "<C-S-P>"
