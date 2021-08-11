@@ -41,7 +41,7 @@
                         "regexp": "Compiling.*?|Compilation .*?starting"
                     },
                     "endsPattern": {
-                        "regexp": "Compiled .*?successfully|Compilation .*?finished"
+                        "regexp": "webpack \\d+\\.\\d+\\.\\d+ compiled|Compilation .*?finished"
                     }
                 }
             }
