@@ -223,7 +223,7 @@ export class CommandLineController implements Disposable {
     };
 
     private onHistoryUp = async (): Promise<void> => {
-        await this.neovimClient.input("<Up>");
+        await this.neovimClient.input("<S-Up>");
         const res = await this.neovimClient.callFunction("getcmdline", []);
         if (res) {
             this.input.value = res;
@@ -232,7 +232,7 @@ export class CommandLineController implements Disposable {
     };
 
     private onHistoryDown = async (): Promise<void> => {
-        await this.neovimClient.input("<Down>");
+        await this.neovimClient.input("<S-Down>");
         const res = await this.neovimClient.callFunction("getcmdline", []);
         if (res) {
             this.input.value = res;
