@@ -594,10 +594,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     private async getInternalUri(name: string): Promise<Uri | undefined> {
-        const files = await workspace.findFiles('**/' + name)
-        const file = files.find(f => f.fsPath.indexOf(name) !== -1)
-        if (file) {
-            return file
+        const fileUris = await workspace.findFiles('**/' + name)
+        const fileUri = fileUris[0]
+        if (fileUri) {
+            return fileUri
         }
         return undefined;
     }
