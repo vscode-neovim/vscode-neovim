@@ -7,7 +7,7 @@ function! s:switchEditor(...) abort
 endfunction
 
 command! -complete=file -nargs=? Tabedit if empty(<q-args>) | call VSCodeNotify('workbench.action.quickOpen') | else | call VSCodeExtensionNotify('open-file', expand(<q-args>), 0) | endif
-command! Tabnew call VSCodeExtensionNotify('open-file', '__vscode_new__', 0)
+command! -complete=file -nargs=? Tabnew call VSCodeExtensionNotify('open-file', '__vscode_new__', 0)
 command! Tabfind call VSCodeNotify('workbench.action.quickOpen')
 command! Tab echoerr 'Not supported'
 command! Tabs echoerr 'Not supported'
