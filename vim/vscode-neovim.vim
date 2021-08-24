@@ -119,8 +119,8 @@ function! VSCodeGetLastInsertText()
         return []
     endif
     let lines = getline(lineStart, lineEnd)
+    let lines[-1] = lines[-1][:colEnd - 2]
     let lines[0] = lines[0][colStart - 1:]
-    let lines[-1] = lines[-1][:colEnd - 1]
     return lines
 endfunction
 
