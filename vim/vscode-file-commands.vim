@@ -31,7 +31,7 @@ command! -bang -nargs=? Ex call <SID>editOrNew(<q-args>, <q-bang>)
 command! -bang Enew call <SID>editOrNew('__vscode_new__', <q-bang>)
 command! -bang Find call VSCodeNotify('workbench.action.quickOpen')
 
-command! -complete=file -bang Write if <q-bang> ==# '!' | call VSCodeNotify('workbench.action.files.saveAs') | else | call VSCodeNotify('workbench.action.files.save') | endif
+command! -complete=file -bang -nargs=? Write if <q-bang> ==# '!' | call VSCodeNotify('workbench.action.files.saveAs') | else | call VSCodeNotify('workbench.action.files.save') | endif
 command! -bang Saveas call VSCodeNotify('workbench.action.files.saveAs')
 
 command! -bang Wall call VSCodeNotify('workbench.action.files.saveAll')
