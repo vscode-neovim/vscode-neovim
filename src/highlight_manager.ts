@@ -207,7 +207,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
      * @param hlGroupName VIM HL Group name
      * @param decorations Text decorations, the format is [[lineNum, [colNum, text][]]]
      */
-    private applyTextDecorations(hlGroupName: string, decorations: [string, [number, string][]][]): void {
+    private applyTextDecorations(hlGroupName: string, decorations: [string, [number, string, string?][]][]): void {
         const editor = window.activeTextEditor;
         if (!editor) {
             return;
@@ -224,7 +224,10 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                 const line = editor.document.lineAt(lineNum).text;
                 const drawnAt = new Map();
 
-                for (const [colNum, text] of cols) {
+                for (const colData of cols) {
+                    const colNum = colData[0];
+                    const text = colData[1];
+                    const backgroundColor = colData.length > 2 ? colData[2] : undefined;
                     if (this.textDecorationsAtTop) {
                         const width = text.length;
                         // vim sends column in bytes, need to convert to characters
@@ -269,6 +272,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                                         ...conf.before,
                                         width: `${width}ch; position:absoulute; z-index:99;`,
                                         contentText: text,
+                                        backgroundColor,
                                     },
                                 },
                             };
