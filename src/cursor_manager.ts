@@ -451,63 +451,24 @@ export class CursorManager
         const currCursor = editor.selection.active;
         const deltaLine = newLine - currCursor.line;
         let deltaChar = newCol - currCursor.character;
-        if (Math.abs(deltaLine) <= 1) {
-            this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} using cursorMove command`);
-            if (Math.abs(deltaLine) > 0) {
-                if (newCol !== currCursor.character) {
-                    deltaChar = newCol;
-                    commands.executeCommand("cursorLineStart");
-                } else {
-                    deltaChar = 0;
-                }
-                commands.executeCommand("cursorMove", {
-                    to: deltaLine > 0 ? "down" : "up",
-                    by: "line",
-                    value: Math.abs(deltaLine),
-                    select: false,
-                });
-            }
-            if (Math.abs(deltaChar) > 0) {
-                if (Math.abs(deltaLine) > 0) {
-                    this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by char: ${deltaChar}`);
-                    commands.executeCommand("cursorMove", {
-                        to: deltaChar > 0 ? "right" : "left",
-                        by: "character",
-                        value: Math.abs(deltaChar),
-                        select: false,
-                    });
-                } else {
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Editor: ${editorName} setting cursor directly since zero line delta`,
-                    );
-                    const newPos = new Selection(newLine, newCol, newLine, newCol);
-                    if (!editor.selection.isEqual(newPos)) {
-                        editor.selections = [newPos];
-                        editor.revealRange(newPos, TextEditorRevealType.Default);
-                        commands.executeCommand("editor.action.wordHighlight.trigger");
-                    }
-                }
-            }
-        } else {
-            this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
-            const newPos = new Selection(newLine, newCol, newLine, newCol);
-            if (!editor.selection.isEqual(newPos)) {
-                editor.selections = [newPos];
-                const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
-                const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
-                const type =
-                    deltaLine > 0
-                        ? newLine > bottomVisibleLine + 10
-                            ? TextEditorRevealType.InCenterIfOutsideViewport
-                            : TextEditorRevealType.Default
-                        : deltaLine < 0
-                        ? newLine < topVisibleLine - 10
-                            ? TextEditorRevealType.InCenterIfOutsideViewport
-                            : TextEditorRevealType.Default
-                        : TextEditorRevealType.Default;
-                editor.revealRange(newPos, type);
-                commands.executeCommand("editor.action.wordHighlight.trigger");
-            }
+        this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
+        const newPos = new Selection(newLine, newCol, newLine, newCol);
+        if (!editor.selection.isEqual(newPos)) {
+            editor.selections = [newPos];
+            const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
+            const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
+            const type =
+                deltaLine > 0
+                    ? newLine > bottomVisibleLine + 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : deltaLine < 0
+                    ? newLine < topVisibleLine - 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : TextEditorRevealType.Default;
+            editor.revealRange(newPos, type);
+            commands.executeCommand("editor.action.wordHighlight.trigger");
         }
     };
 
