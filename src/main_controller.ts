@@ -205,7 +205,7 @@ export class MainController implements vscode.Disposable {
             this.bufferManager,
             this.changeManager,
             {
-                mouseSelectionEnabled: this.settings.mouseSelection,
+                mouseSelectionEnabled: false,
             },
         );
         this.disposables.push(this.cursorManager);
