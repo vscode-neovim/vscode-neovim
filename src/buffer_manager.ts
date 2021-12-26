@@ -17,6 +17,7 @@ import {
 } from "vscode";
 
 import { Logger } from "./logger";
+import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromEditor } from "./utils";
 
@@ -36,6 +37,8 @@ const BUFFER_NAME_PREFIX = "__vscode_neovim__-";
 
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
+ *
+ * Buffered contents must not be used while insert mode because they're not kept in sync with the contents of the editor.
  */
 export class BufferManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
@@ -75,6 +78,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     private editorTabConfiguration: WeakMap<TextEditor, { tabSize: number; insertSpaces: boolean }> = new WeakMap();
 
     /**
+     * Keep track if the layout or window need syncing before exiting insert mode
+     */
+    private activeWindowChangedInInsertMode = false;
+    private layoutChangedWhileInInsertMode = false;
+
+    /**
      * Buffer event delegate
      */
     public onBufferEvent?: (
@@ -88,7 +97,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public onBufferInit?: (bufferId: number, textDocument: TextDocument) => void;
 
-    public constructor(private logger: Logger, private client: NeovimClient, private settings: BufferManagerSettings) {
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private settings: BufferManagerSettings,
+        private modeManager: ModeManager,
+    ) {
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
         this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
@@ -103,6 +117,21 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
         await this.syncLayout();
         await this.syncActiveEditor();
+    }
+
+    /**
+     * Must be called before switching from insert mode to normal mode to sync the buffer class, otherwise the buffers will not be in sync for usage in nvim
+     */
+    public async syncInsertModeLayoutChanges(): Promise<void> {
+        this.logger.debug(`${LOG_PREFIX}: syncInsertModeLayoutChanges`);
+        if (this.layoutChangedWhileInInsertMode) {
+            this.layoutChangedWhileInInsertMode = false;
+            await this.syncLayout();
+        }
+        if (this.activeWindowChangedInInsertMode) {
+            this.activeWindowChangedInInsertMode = false;
+            await this.syncActiveEditor();
+        }
     }
 
     public async waitForLayoutSync(): Promise<void> {
@@ -296,6 +325,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     };
 
     private onDidChangeVisibleTextEditors = (): void => {
+        if (this.modeManager.isInsertMode && !this.modeManager.isExitingInsertMode) {
+            this.layoutChangedWhileInInsertMode = true;
+            return;
+        }
         // !since onDidChangeVisibleTextEditors/onDidChangeActiveTextEditor are synchronyous
         // !and we debounce this event, and possible init new buffers in neovim in async way
         // !we need to wait to complete last call before processing onDidChangeActiveTextEditor
@@ -308,6 +341,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     };
 
     private onDidChangeActiveTextEditor = (): void => {
+        if (this.modeManager.isInsertMode && !this.modeManager.isExitingInsertMode) {
+            this.activeWindowChangedInInsertMode = true;
+            return;
+        }
         this.logger.debug(`${LOG_PREFIX}: onDidChangeActiveTextEditor`);
         this.syncActiveEditorDebounced();
     };

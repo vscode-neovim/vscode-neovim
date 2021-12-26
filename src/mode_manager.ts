@@ -19,10 +19,23 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
      * True when macro recording in insert mode
      */
     private isRecording = false;
+    /**
+     * Flag indicating that we're going to exit insert mode and sync buffers into neovim
+     */
+    public isExitingInsertMode = false;
+    /**
+     * Flag indicating that we're going to enter insert mode and there are pending document changes
+     */
+    public isEnteringInsertMode = false;
 
     private eventEmitter = new EventEmitter();
 
-    public constructor(private logger: Logger, private client: NeovimClient) {
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private resetModeOnActiveEditorChange: boolean,
+        private defaultMode: "insert" | "normal",
+    ) {
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
     }
 
@@ -50,6 +63,10 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
         return this.isRecording;
     }
 
+    /**
+     * Register callback to be called whenever we nvim tells us that the mode has changed
+     * @param callback
+     */
     public onModeChange(callback: (newMode: string) => void): void {
         this.eventEmitter.on("neovimModeChanged", callback);
     }
@@ -81,8 +98,21 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
     }
 
     private onDidChangeActiveTextEditor = (): void => {
-        if (!this.isNormalMode) {
-            commands.executeCommand("vscode-neovim.escape");
+        if (this.resetModeOnActiveEditorChange) {
+            this.resetMode();
         }
     };
+
+    public resetMode(): void {
+        switch (this.defaultMode) {
+            case "normal":
+                commands.executeCommand("vscode-neovim.escape");
+                break;
+            case "insert":
+                this.client.command("startinsert");
+                break;
+            default:
+                this.logger.error(`${LOG_PREFIX}: unknown default mode ${this.defaultMode}`);
+        }
+    }
 }

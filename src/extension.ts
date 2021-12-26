@@ -29,6 +29,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const logLevel = settings.get("logLevel", "none");
     const outputToConsole = settings.get("logOutputToConsole", false);
     const textDecorationsAtTop = settings.get("textDecorationsAtTop", false);
+    const resetModeOnActiveEditorChange = settings.get("resetModeOnActiveEditorChange", true);
+    const defaultMode = settings.get("defaultMode", "normal");
 
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
@@ -50,6 +52,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             neovimViewportWidth: neovimWidth,
             textDecorationsAtTop: textDecorationsAtTop,
             revealCursorScrollLine: revealCursorScrollLine,
+            resetModeOnActiveEditorChange: resetModeOnActiveEditorChange,
+            defaultMode: defaultMode,
             logConf: {
                 logPath,
                 outputToConsole,

@@ -47,6 +47,8 @@ export interface ControllerSettings {
         logPath: string;
         outputToConsole: boolean;
     };
+    defaultMode: "insert" | "normal";
+    resetModeOnActiveEditorChange: boolean;
 }
 
 const LOG_PREFIX = "MainController";
@@ -179,13 +181,23 @@ export class MainController implements vscode.Disposable {
         this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
         this.disposables.push(this.commandsController);
 
-        this.modeManager = new ModeManager(this.logger, this.client);
+        this.modeManager = new ModeManager(
+            this.logger,
+            this.client,
+            this.settings.resetModeOnActiveEditorChange,
+            this.settings.defaultMode,
+        );
         this.disposables.push(this.modeManager);
 
-        this.bufferManager = new BufferManager(this.logger, this.client, {
-            neovimViewportHeight: 201,
-            neovimViewportWidth: 1000,
-        });
+        this.bufferManager = new BufferManager(
+            this.logger,
+            this.client,
+            {
+                neovimViewportHeight: 201,
+                neovimViewportWidth: 1000,
+            },
+            this.modeManager,
+        );
         this.disposables.push(this.bufferManager);
 
         this.highlightManager = new HighlightManager(this.logger, this.bufferManager, {
@@ -210,7 +222,13 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.cursorManager);
 
-        this.typingManager = new TypingManager(this.logger, this.client, this.modeManager, this.changeManager);
+        this.typingManager = new TypingManager(
+            this.logger,
+            this.client,
+            this.modeManager,
+            this.changeManager,
+            this.bufferManager,
+        );
         this.disposables.push(this.typingManager);
 
         this.commandLineManager = new CommandLineManager(this.logger, this.client);
@@ -244,6 +262,10 @@ export class MainController implements vscode.Disposable {
         await this.bufferManager.forceResync();
 
         await vscode.commands.executeCommand("setContext", "neovim.init", true);
+        if (this.settings.defaultMode != "normal") {
+            this.modeManager.resetMode();
+        }
+
         this.logger.debug(`${LOG_PREFIX}: Init completed`);
     }
 

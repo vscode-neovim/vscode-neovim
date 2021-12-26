@@ -1,6 +1,7 @@
 import { NeovimClient } from "neovim";
 import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode";
 
+import { BufferManager } from "./buffer_manager";
 import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
 import { ModeManager } from "./mode_manager";
@@ -14,14 +15,6 @@ export class TypingManager implements Disposable {
      * Separate "type" command disposable since we init/dispose it often
      */
     private typeHandlerDisposable?: Disposable;
-    /**
-     * Flag indicating that we're going to exit insert mode and sync buffers into neovim
-     */
-    private isExitingInsertMode = false;
-    /**
-     * Flag indicating that we're going to enter insert mode and there are pending document changes
-     */
-    private isEnteringInsertMode = false;
     /**
      * Additional keys which were pressed after exiting insert mode. We'll replay them after buffer sync
      */
@@ -40,6 +33,7 @@ export class TypingManager implements Disposable {
         private client: NeovimClient,
         private modeManager: ModeManager,
         private changeManager: DocumentChangeManager,
+        private bufferManager: BufferManager,
     ) {
         this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
         this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
@@ -67,12 +61,12 @@ export class TypingManager implements Disposable {
             this.pendingKeysAfterEnter = "";
             const editor = window.activeTextEditor;
             if (editor && this.changeManager.hasDocumentChangeCompletionLock(editor.document)) {
-                this.isEnteringInsertMode = true;
+                this.modeManager.isEnteringInsertMode = true;
                 this.logger.debug(
                     `${LOG_PREFIX}: Waiting for document completion operation before disposing type handler`,
                 );
                 this.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
-                    this.isEnteringInsertMode = false;
+                    this.modeManager.isEnteringInsertMode = false;
                     if (this.typeHandlerDisposable && this.modeManager.isInsertMode) {
                         this.logger.debug(`${LOG_PREFIX}: Waiting done, disposing type handler`);
                         this.typeHandlerDisposable.dispose();
@@ -91,8 +85,8 @@ export class TypingManager implements Disposable {
                 this.typeHandlerDisposable = undefined;
             }
         } else if (!this.modeManager.isInsertMode) {
-            this.isEnteringInsertMode = false;
-            this.isExitingInsertMode = false;
+            this.modeManager.isEnteringInsertMode = false;
+            this.modeManager.isExitingInsertMode = false;
             if (!this.typeHandlerDisposable) {
                 this.logger.debug(`${LOG_PREFIX}: Enabling type handler`);
                 this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
@@ -101,13 +95,17 @@ export class TypingManager implements Disposable {
     };
 
     private onVSCodeType = (_editor: TextEditor, edit: TextEditorEdit, type: { text: string }): void => {
-        if (!this.modeManager.isInsertMode || this.modeManager.isRecordingInInsertMode || this.isEnteringInsertMode) {
-            if (this.isEnteringInsertMode) {
+        if (
+            !this.modeManager.isInsertMode ||
+            this.modeManager.isRecordingInInsertMode ||
+            this.modeManager.isEnteringInsertMode
+        ) {
+            if (this.modeManager.isEnteringInsertMode) {
                 this.pendingKeysAfterEnter += type.text;
             } else {
                 this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
             }
-        } else if (this.isExitingInsertMode) {
+        } else if (this.modeManager.isExitingInsertMode) {
             this.pendingKeysAfterExit += type.text;
         } else {
             commands.executeCommand("default:type", { text: type.text });
@@ -115,23 +113,28 @@ export class TypingManager implements Disposable {
     };
 
     private onEscapeKeyCommand = async (): Promise<void> => {
-        this.logger.debug(`${LOG_PREFIX}: Escape key`);
+        await this.onNormalModeKeyCommand("<Esc>");
+    };
+
+    private onNormalModeKeyCommand = async (key: string): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX}: Normal mode switch ${key} key`);
         if (this.modeManager.isInsertMode) {
-            this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim`);
-            this.isExitingInsertMode = true;
+            this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
+            this.modeManager.isExitingInsertMode = true;
             // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
             // see https://github.com/asvetliakov/vscode-neovim/issues/324
             if (!this.typeHandlerDisposable) {
                 this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
             }
             // this.leaveMultipleCursorsForVisualMode = false;
+            await this.bufferManager.syncInsertModeLayoutChanges();
             await this.changeManager.syncDocumentsWithNeovim();
             await this.changeManager.syncDotRepatWithNeovim();
         }
         const keys = normalizeInputString(this.pendingKeysAfterExit);
-        this.logger.debug(`${LOG_PREFIX}: Pending keys sent with <Esc>: ${keys}`);
+        this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);
         this.pendingKeysAfterExit = "";
-        await this.client.input(`<Esc>${keys}`);
+        await this.client.input(`${key}${keys}`);
         // const buf = await this.client.buffer;
         // const lines = await buf.lines;
         // console.log("====LINES====");
@@ -141,23 +144,7 @@ export class TypingManager implements Disposable {
     };
 
     private onInsertCtrlOCommand = async (): Promise<void> => {
-        this.logger.debug(`${LOG_PREFIX}: Ctrl-O key`);
-        if (this.modeManager.isInsertMode) {
-            this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (Ctrl-O)`);
-            this.isExitingInsertMode = true;
-            // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
-            // see https://github.com/asvetliakov/vscode-neovim/issues/324
-            if (!this.typeHandlerDisposable) {
-                this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
-            }
-            // this.leaveMultipleCursorsForVisualMode = false;
-            await this.changeManager.syncDocumentsWithNeovim();
-            await this.changeManager.syncDotRepatWithNeovim();
-        }
-        const keys = normalizeInputString(this.pendingKeysAfterExit);
-        this.logger.debug(`${LOG_PREFIX}: Pending keys sent with <c-o>: ${keys}`);
-        this.pendingKeysAfterExit = "";
-        await this.client.input(`<c-o>${keys}`);
+        await this.onNormalModeKeyCommand("<c-o>");
     };
 
     private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {

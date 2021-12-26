@@ -135,6 +135,20 @@
                     ],
                     "description": "Log Level"
                 },
+                "vscode-neovim.defaultMode": {
+                    "type": "string",
+                    "default": "normal",
+                    "enum": [
+                        "insert",
+                        "normal"
+                    ],
+                    "description": "What mode to start the editor in."
+                },
+                "vscode-neovim.resetModeOnActiveEditorChange": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "If 'true' will reset the mode of the activated editor to vscode-neovim.defaultMode."
+                },
                 "vscode-neovim.logOutputToConsole": {
                     "type": "boolean",
                     "default": false,
