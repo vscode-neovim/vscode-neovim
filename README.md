@@ -444,16 +444,17 @@ Refer to vim manual for their use.
 
 Always enabled.
 
-| Key                             | Desription                                                |
-| ------------------------------- | --------------------------------------------------------- |
-| <kbd>C-h</kbd>                  | Delete one character left.                                |
-| <kbd>C-w</kbd>                  | Delete word left.                                         |
-| <kbd>C-u</kbd>                  | Clear line.                                               |
-| <kbd>C-g</kbd> / <kbd>C-t</kbd> | In incsearch mode moves to next/previous result.          |
-| <kbd>C-l</kbd>                  | Add next character under the cursor to incsearch.         |
-| <kbd>C-n</kbd> / <kbd>C-p</kbd> | Go down/up history.                                       |
-| <kbd>Up</kbd> / <kbd>Down</kbd> | Select next/prev suggestion (cannot be used for history). |
-| <kbd>Tab</kbd>                  | Select suggestion.                                        |
+| Key                                          | Desription                                                |
+| -------------------------------------------- | --------------------------------------------------------- |
+| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=/]</kbd> | Paste from register.                                      |
+| <kbd>C-h</kbd>                               | Delete one character left.                                |
+| <kbd>C-w</kbd>                               | Delete word left.                                         |
+| <kbd>C-u</kbd>                               | Clear line.                                               |
+| <kbd>C-g</kbd> / <kbd>C-t</kbd>              | In incsearch mode moves to next/previous result.          |
+| <kbd>C-l</kbd>                               | Add next character under the cursor to incsearch.         |
+| <kbd>C-n</kbd> / <kbd>C-p</kbd>              | Go down/up history.                                       |
+| <kbd>Up</kbd> / <kbd>Down</kbd>              | Select next/prev suggestion (cannot be used for history). |
+| <kbd>Tab</kbd>                               | Select suggestion.                                        |
 
 ### VSCode specific bindings
 
