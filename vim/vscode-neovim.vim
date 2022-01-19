@@ -181,3 +181,46 @@ augroup VscodeGeneral
     " Looks like external windows are coming with "set wrap" set automatically, disable them
     " autocmd WinNew,WinEnter * :set nowrap
 augroup END
+
+"
+" Monkey patch for lightspeed.nvim
+"
+function VSCodeBufSetExtmark(buffer, ns_id, line, col, opts)
+  if !exists("b:vscode_extmarks_hl_group_list")
+    let b:vscode_extmarks_hl_group_list = []
+  endif
+
+  if !exists("b:vscode_extmarks_rows_cols")
+    let b:vscode_extmarks_rows_cols = {}
+  endif
+
+  " Note: a:opts might be undefined
+  for [text, hl_group] in a:opts.virt_text
+    " Note: hl_group is a string or a list.
+    if !has_key(b:vscode_extmarks_rows_cols, hl_group)
+      let b:vscode_extmarks_rows_cols[hl_group] = {}
+    endif
+    if !has_key(b:vscode_extmarks_rows_cols[hl_group], a:line)
+      let b:vscode_extmarks_rows_cols[hl_group][a:line] = []
+    endif
+    call extend(b:vscode_extmarks_hl_group_list, [hl_group])
+    call extend(b:vscode_extmarks_rows_cols[hl_group][a:line], [[a:col, text]])
+    call VSCodeSetTextDecorations(hl_group, b:vscode_extmarks_rows_cols[hl_group])
+  endfor
+  redraw
+endfunction
+
+function VSCodeBufClearNamespace(buffer, ns_id, line_start, line_end)
+  if !exists("b:vscode_extmarks_hl_group_list")
+    let b:vscode_extmarks_hl_group_list = []
+  endif
+  for hl_group in b:vscode_extmarks_hl_group_list
+    call VSCodeSetTextDecorations(hl_group, {})
+  endfor
+  let b:vscode_extmarks_hl_group_list = []
+  let b:vscode_extmarks_rows_cols = {}
+  redraw
+endfunction
+
+lua vim.api.nvim_buf_set_extmark = vim.fn.VSCodeBufSetExtmark
+lua vim.api.nvim_buf_clear_namespace = vim.fn.VSCodeBufClearNamespace
