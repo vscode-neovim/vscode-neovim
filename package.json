@@ -321,6 +321,10 @@
                 "title": "Neovim: History down cmdline"
             },
             {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "title": "Neovim: Paste from register (cmdline)"
+            },
+            {
                 "command": "vscode-neovim.ctrl-b",
                 "title": "Neovim: ctrl-b"
             },
@@ -1254,6 +1258,282 @@
                 "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r z",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "z"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 0",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "0"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 1",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "1"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 2",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "2"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 3",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "3"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 4",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "4"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 5",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "5"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 6",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "6"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 7",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "7"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 8",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "8"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r 9",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "9"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r shift-'",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "\""
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r shift-5",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "%"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r shift-3",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "#"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r shift-8",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "*"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r shift-=",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "+"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r shift-;",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": ":"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r .",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "."
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r -",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "-"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r =",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "="
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r /",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "/"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r a",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "a"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r b",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "b"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r c",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "c"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r d",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "d"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r e",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "e"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r f",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "f"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r g",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "g"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r h",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "h"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r i",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "i"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r j",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "j"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r k",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "k"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r l",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "l"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r m",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "m"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r n",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "n"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r o",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "o"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r p",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "p"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r q",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "q"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r r",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "r"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r s",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "s"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r t",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "t"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r u",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "u"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r v",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "v"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r w",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "w"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r x",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "x"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r y",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
+                "args": "y"
+            },
+            {
+                "command": "vscode-neovim.paste-register-cmdline",
+                "key": "ctrl+r z",
+                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "z"
             }
         ]
