@@ -398,18 +398,18 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 
 Enabled by `useCtrlKeysForInsertMode` (default true).
 
-| Key                                         | Description                                                       | Status                            |
-| ------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
-| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=]</kbd> | Paste from register.                                              | Works                             |
-| <kbd>C-a</kbd>                              | Paste previous inserted content.                                  | Works                             |
-| <kbd>C-o</kbd>                              | Switch to normal mode for a single command, then back.            | Works                             |
-| <kbd>C-u</kbd>                              | Delete all text till beginning of line. If empty, delete newline. | Bound to VSCode key               |
-| <kbd>C-w</kbd>                              | Delete word left.                                                 | Bound to VSCode key               |
-| <kbd>C-h</kbd>                              | Delete character left.                                            | Bound to VSCode key               |
-| <kbd>C-t</kbd>                              | Indent lines right.                                               | Bound to VSCode indent line       |
-| <kbd>C-d</kbd>                              | Indent lines left.                                                | Bound to VSCode outindent line    |
-| <kbd>C-j</kbd>                              | Insert line.                                                      | Bound to VSCode insert line after |
-| <kbd>C-c</kbd>                              | Escape.                                                           | Works                             |
+| Key                                          | Description                                                       | Status                            |
+| -------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
+| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=/]</kbd> | Paste from register.                                              | Works                             |
+| <kbd>C-a</kbd>                               | Paste previous inserted content.                                  | Works                             |
+| <kbd>C-o</kbd>                               | Switch to normal mode for a single command, then back.            | Works                             |
+| <kbd>C-u</kbd>                               | Delete all text till beginning of line. If empty, delete newline. | Bound to VSCode key               |
+| <kbd>C-w</kbd>                               | Delete word left.                                                 | Bound to VSCode key               |
+| <kbd>C-h</kbd>                               | Delete character left.                                            | Bound to VSCode key               |
+| <kbd>C-t</kbd>                               | Indent lines right.                                               | Bound to VSCode indent line       |
+| <kbd>C-d</kbd>                               | Indent lines left.                                                | Bound to VSCode outindent line    |
+| <kbd>C-j</kbd>                               | Insert line.                                                      | Bound to VSCode insert line after |
+| <kbd>C-c</kbd>                               | Escape.                                                           | Works                             |
 
 Other keys are not supported in insert mode.
 
@@ -444,16 +444,17 @@ Refer to vim manual for their use.
 
 Always enabled.
 
-| Key                             | Desription                                                |
-| ------------------------------- | --------------------------------------------------------- |
-| <kbd>C-h</kbd>                  | Delete one character left.                                |
-| <kbd>C-w</kbd>                  | Delete word left.                                         |
-| <kbd>C-u</kbd>                  | Clear line.                                               |
-| <kbd>C-g</kbd> / <kbd>C-t</kbd> | In incsearch mode moves to next/previous result.          |
-| <kbd>C-l</kbd>                  | Add next character under the cursor to incsearch.         |
-| <kbd>C-n</kbd> / <kbd>C-p</kbd> | Go down/up history.                                       |
-| <kbd>Up</kbd> / <kbd>Down</kbd> | Select next/prev suggestion (cannot be used for history). |
-| <kbd>Tab</kbd>                  | Select suggestion.                                        |
+| Key                                          | Desription                                                |
+| -------------------------------------------- | --------------------------------------------------------- |
+| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=/]</kbd> | Paste from register.                                      |
+| <kbd>C-h</kbd>                               | Delete one character left.                                |
+| <kbd>C-w</kbd>                               | Delete word left.                                         |
+| <kbd>C-u</kbd>                               | Clear line.                                               |
+| <kbd>C-g</kbd> / <kbd>C-t</kbd>              | In incsearch mode moves to next/previous result.          |
+| <kbd>C-l</kbd>                               | Add next character under the cursor to incsearch.         |
+| <kbd>C-n</kbd> / <kbd>C-p</kbd>              | Go down/up history.                                       |
+| <kbd>Up</kbd> / <kbd>Down</kbd>              | Select next/prev suggestion (cannot be used for history). |
+| <kbd>Tab</kbd>                               | Select suggestion.                                        |
 
 ### VSCode specific bindings
 
