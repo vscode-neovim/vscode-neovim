@@ -1,6 +1,7 @@
 import { debounce } from "lodash-es";
 import { Buffer, NeovimClient, Window } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
+import path from "path";
 import {
     commands,
     Disposable,
@@ -189,10 +190,16 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const [fileName, close] = args as [string, number | "all"];
                 const currEditor = window.activeTextEditor;
                 let doc: TextDocument | undefined;
-                if (fileName === "__vscode_new__") {
-                    doc = await workspace.openTextDocument();
-                } else {
-                    doc = await workspace.openTextDocument(fileName.trim());
+                try {
+                    if (fileName === "__vscode_new__") {
+                        doc = await workspace.openTextDocument();
+                    } else {
+                        const normalizedName = fileName.trim()
+                        const filePath = this.findPathFromFileName(normalizedName);
+                        doc = await workspace.openTextDocument(filePath);
+                    }
+                } catch (error) {
+                    this.logger.error(`${LOG_PREFIX}: Error opening file ${fileName}, ${error}`);
                 }
                 if (!doc) {
                     return;
@@ -585,6 +592,17 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             return true;
         }
         return false;
+    }
+
+    private findPathFromFileName(name: string): string {
+        const rootFolderPath = workspace.workspaceFolders![0].uri.fsPath;
+        let filePath: string;
+        if (rootFolderPath) {
+            filePath = path.resolve(rootFolderPath, name);
+        } else {
+            filePath = name;
+        }
+        return filePath;
     }
 
     private findDocFromUri(uri: string): TextDocument | undefined {
