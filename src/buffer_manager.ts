@@ -194,7 +194,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     if (fileName === "__vscode_new__") {
                         doc = await workspace.openTextDocument();
                     } else {
-                        const normalizedName = fileName.trim()
+                        const normalizedName = fileName.trim();
                         const filePath = this.findPathFromFileName(normalizedName);
                         doc = await workspace.openTextDocument(filePath);
                     }
@@ -448,6 +448,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
+        const cursor = getNeovimCursorPosFromEditor(activeEditor);
+        await this.client.request("nvim_win_set_cursor", [winId, cursor]);
         await this.client.request("nvim_set_current_win", [winId]);
     };
 
