@@ -194,7 +194,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     if (fileName === "__vscode_new__") {
                         doc = await workspace.openTextDocument();
                     } else {
-                        const normalizedName = fileName.trim()
+                        const normalizedName = fileName.trim();
                         const filePath = this.findPathFromFileName(normalizedName);
                         doc = await workspace.openTextDocument(filePath);
                     }
