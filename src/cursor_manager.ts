@@ -374,20 +374,102 @@ export class CursorManager
             if (!winId) {
                 return;
             }
+
+            // this doesn't check beginning of the drag in the case of mouse selection, but it's good enough
+            // because you can't actually make a selection without changing the cursor position
             const neovimCursorPos = this.neovimCursorPosition.get(textEditor);
             if (neovimCursorPos && neovimCursorPos.col === cursor.character && neovimCursorPos.line === cursor.line) {
                 this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
                 return;
             }
 
+            // if
+
+            // emulate the way neovim handles mouse selection
+            // 1 cell selected - go back to normal mode
+            // multiple cells selected - visual mode
+            if (this.settings.mouseSelectionEnabled) {
+                // we have a mouse selection that's bigger than 1 cell
+                // nvim doesn't support disjointed selections, skip these
+                if (selections.length == 1 &&
+                    (kind === TextEditorSelectionChangeKind.Mouse && !selections[0].active.isEqual(selections[0].anchor))) {
+                    /*
+                    if (!this.modeManager.isVisualMode) {
+
+                    }
+                    const requests: [string, unknown[]][] = [];
+                    if (this.modeManager.isVisualMode) {
+                        requests.push(["nvim_input", ["<Esc>"]]);
+                    }
+                    const cursorPos = getNeovimCursorPosFromEditor(textEditor);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
+                    );
+                    requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
+                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);*/
+                    const grid = this.bufferManager.getGridIdForWinId(winId);
+                    this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
+                    const requests: [string, unknown[]][] = [];
+                    if (!this.modeManager.isVisualMode && grid) {
+                        // need to start visual mode from anchor char
+                        const firstPos = selections[0].anchor;
+                        const mouseClickPos = editorPositionToNeovimPosition(textEditor, firstPos);
+                        this.logger.debug(
+                            `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
+                        );
+                        requests.push(["nvim_win_set_cursor", [winId, mouseClickPos]]);
+                        requests.push(["nvim_input", ["v"]]);
+                    }
+                    const lastSelection = selections.slice(-1)[0];
+                    if (!lastSelection) {
+                        return;
+                    }
+                    const cursorPos = editorPositionToNeovimPosition(textEditor, lastSelection.active);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
+                    );
+                    requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
+                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+                } else {
+                    const requests: [string, unknown[]][] = [];
+                    if (this.modeManager.isVisualMode) {
+                        requests.push(["nvim_input", ["<C-c>"]]);
+                    }
+                    const cursorPos = getNeovimCursorPosFromEditor(textEditor);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
+                    );
+                    requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
+                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+                }
+
+            } else {
+                // mouse selection disabled, simply update cursor position when selection is empty
+                // skip visual mode because in visual mode neovim controls the cursor
+                // todo: maybe we should exit visual mode if there are selections made on vscode side to not confuse users with multiple selection types
+                if (selections.length == 1 &&
+                    (kind !== TextEditorSelectionChangeKind.Mouse || selections[0].active.isEqual(selections[0].anchor)) &&
+                    !this.modeManager.isVisualMode)
+                {
+                    const cursorPos = getNeovimCursorPosFromEditor(textEditor);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
+                    );
+                    const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
+                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+                }
+            }
+
+
+/*
+            // there's a selection or we're in visual mode
             if (
                 selections.length > 1 ||
                 (kind === TextEditorSelectionChangeKind.Mouse && !selections[0].active.isEqual(selections[0].anchor)) ||
                 this.modeManager.isVisualMode
             ) {
-                if (kind !== TextEditorSelectionChangeKind.Mouse || !this.settings.mouseSelectionEnabled) {
-                    return;
-                } else {
+                // update the selection if we clicked the mouse and we have mouse selection enabled for visual mode
+                if (kind === TextEditorSelectionChangeKind.Mouse && this.settings.mouseSelectionEnabled) {
                     const grid = this.bufferManager.getGridIdForWinId(winId);
                     this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
                     const requests: [string, unknown[]][] = [];
@@ -417,13 +499,15 @@ export class CursorManager
                     await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
                 }
             } else {
+                // no selection case, the cursor was just moved
+                // also, skip visual mode because in visual mode neovim controls the cursor
                 const cursorPos = getNeovimCursorPosFromEditor(textEditor);
                 this.logger.debug(
                     `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
                 );
                 const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
                 await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
-            }
+            }*/
         },
         20,
         { leading: false, trailing: true },
@@ -574,6 +658,7 @@ export class CursorManager
     }
 
     private onModeChange = (newMode: string): void => {
+        // removes selection on switching to normal mode
         if (newMode === "normal" && window.activeTextEditor && window.activeTextEditor.selections.length > 1) {
             window.activeTextEditor.selections = [
                 new Selection(window.activeTextEditor.selection.active, window.activeTextEditor.selection.active),
