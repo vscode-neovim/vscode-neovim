@@ -140,6 +140,11 @@
                     "default": false,
                     "description": "When on, print log messages to vscode developer console (not output channel!)"
                 },
+                "vscode-neovim.logOutput": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When on, print log messages to vscode output channel"
+                },
                 "vscode-neovim.highlightGroups.ignoreHighlights": {
                     "type": "array",
                     "title": "Ignore Highlighs Groups",

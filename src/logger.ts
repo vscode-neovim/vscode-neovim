@@ -1,6 +1,7 @@
 import fs from "fs";
 
-import { Disposable, window } from "vscode";
+import { Disposable, window, OutputChannel } from "vscode";
+import { EXT_NAME } from "./utils";
 
 export enum LogLevel {
     none = 0,
@@ -13,8 +14,9 @@ export class Logger implements Disposable {
     private disposables: Disposable[] = [];
 
     private fd = 0;
+    private channel: OutputChannel | null = null;
 
-    public constructor(private logLevel: LogLevel, filePath: string, private outputToConsole = false) {
+    public constructor(private logLevel: LogLevel, filePath: string, private outputToConsole = false, logToOutputChannel = false) {
         if (logLevel !== LogLevel.none) {
             try {
                 this.fd = fs.openSync(filePath, "w");
@@ -22,8 +24,10 @@ export class Logger implements Disposable {
                 // ignore
             }
         }
-        // this.channel = window.createOutputChannel(EXT_NAME);
-        // this.disposables.push(this.channel);
+        if (logToOutputChannel) {
+            this.channel = window.createOutputChannel(EXT_NAME);
+            this.disposables.push(this.channel);
+        }
     }
 
     public dispose(): void {
@@ -42,6 +46,9 @@ export class Logger implements Disposable {
             if (this.outputToConsole) {
                 console.log(msg);
             }
+            if (this.channel) {
+                this.channel.appendLine(msg);
+            }
         }
     }
 
@@ -54,6 +61,9 @@ export class Logger implements Disposable {
             if (this.outputToConsole) {
                 console.log(msg);
             }
+            if (this.channel) {
+                this.channel.appendLine(msg);
+            }
         }
     }
 
@@ -65,6 +75,9 @@ export class Logger implements Disposable {
             }
             if (this.outputToConsole) {
                 console.log(msg);
+            }
+            if (this.channel) {
+                this.channel.appendLine(msg);
             }
         }
         window.showErrorMessage(msg);

@@ -28,6 +28,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const logPath = settings.get("logPath", "");
     const logLevel = settings.get("logLevel", "none");
     const outputToConsole = settings.get("logOutputToConsole", false);
+    const outputToChannel = settings.get("logOutput", false);
     const textDecorationsAtTop = settings.get("textDecorationsAtTop", false);
 
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
@@ -54,6 +55,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 logPath,
                 outputToConsole,
                 level: logLevel,
+                outputToChannel
             },
         });
         context.subscriptions.push(plugin);

@@ -46,6 +46,7 @@ export interface ControllerSettings {
         level: "none" | "error" | "warn" | "debug";
         logPath: string;
         outputToConsole: boolean;
+        outputToChannel: boolean;
     };
 }
 
@@ -94,6 +95,7 @@ export class MainController implements vscode.Disposable {
             LogLevel[settings.logConf.level],
             settings.logConf.logPath,
             settings.logConf.outputToConsole,
+            settings.logConf.outputToChannel
         );
         this.disposables.push(this.logger);
 
