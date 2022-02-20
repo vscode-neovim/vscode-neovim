@@ -391,8 +391,11 @@ export class CursorManager
             if (this.settings.mouseSelectionEnabled) {
                 // we have a mouse selection that's bigger than 1 cell
                 // nvim doesn't support disjointed selections, skip these
-                if (selections.length == 1 &&
-                    (kind === TextEditorSelectionChangeKind.Mouse && !selections[0].active.isEqual(selections[0].anchor))) {
+                if (
+                    selections.length == 1 &&
+                    kind === TextEditorSelectionChangeKind.Mouse &&
+                    !selections[0].active.isEqual(selections[0].anchor)
+                ) {
                     /*
                     if (!this.modeManager.isVisualMode) {
 
@@ -442,15 +445,16 @@ export class CursorManager
                     requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
                     await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
                 }
-
             } else {
                 // mouse selection disabled, simply update cursor position when selection is empty
                 // skip visual mode because in visual mode neovim controls the cursor
                 // todo: maybe we should exit visual mode if there are selections made on vscode side to not confuse users with multiple selection types
-                if (selections.length == 1 &&
-                    (kind !== TextEditorSelectionChangeKind.Mouse || selections[0].active.isEqual(selections[0].anchor)) &&
-                    !this.modeManager.isVisualMode)
-                {
+                if (
+                    selections.length == 1 &&
+                    (kind !== TextEditorSelectionChangeKind.Mouse ||
+                        selections[0].active.isEqual(selections[0].anchor)) &&
+                    !this.modeManager.isVisualMode
+                ) {
                     const cursorPos = getNeovimCursorPosFromEditor(textEditor);
                     this.logger.debug(
                         `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
@@ -460,8 +464,7 @@ export class CursorManager
                 }
             }
 
-
-/*
+            /*
             // there's a selection or we're in visual mode
             if (
                 selections.length > 1 ||
