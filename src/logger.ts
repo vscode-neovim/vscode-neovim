@@ -1,6 +1,7 @@
 import fs from "fs";
 
 import { Disposable, window, OutputChannel } from "vscode";
+
 import { EXT_NAME } from "./utils";
 
 export enum LogLevel {
@@ -16,7 +17,12 @@ export class Logger implements Disposable {
     private fd = 0;
     private channel: OutputChannel | null = null;
 
-    public constructor(private logLevel: LogLevel, filePath: string, private outputToConsole = false, logToOutputChannel = false) {
+    public constructor(
+        private logLevel: LogLevel,
+        filePath: string,
+        private outputToConsole = false,
+        logToOutputChannel = false,
+    ) {
         if (logLevel !== LogLevel.none) {
             try {
                 this.fd = fs.openSync(filePath, "w");

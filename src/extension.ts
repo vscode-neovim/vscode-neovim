@@ -55,7 +55,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 logPath,
                 outputToConsole,
                 level: logLevel,
-                outputToChannel
+                outputToChannel,
             },
         });
         context.subscriptions.push(plugin);
