@@ -19,7 +19,9 @@ import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
     accumulateDotRepeatChange,
+    applyEditorDiffOperations,
     callAtomic,
+    computeEditorOperationsFromDiff,
     diffLineToChars,
     DotRepeatChange,
     getDocumentLineArray,
@@ -472,6 +474,14 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                                             new Position(range.start, oldText.length),
                                             newText.slice(oldText.length),
                                         );
+                                    } else if (range.newStart == range.newEnd) {
+                                        // Efficiently modify only part of line that has changed by generating a diff and
+                                        // computing editor operations from it. This prevents flashes of non syntax-highlighted
+                                        // text (e.g. when `x` or `cw`, only remove a single char/the word). Note this is
+                                        // currently only supported when changes span only one line.
+                                        const line = range.newStart;
+                                        const editorOps = computeEditorOperationsFromDiff(diff(oldText, newText));
+                                        applyEditorDiffOperations(builder, { editorOps, line });
                                     } else {
                                         builder.replace(new Range(range.start, 0, range.end, 999999), text.join("\n"));
                                     }
