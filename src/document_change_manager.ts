@@ -474,16 +474,32 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                                             new Position(range.start, oldText.length),
                                             newText.slice(oldText.length),
                                         );
-                                    } else if (range.newStart == range.newEnd) {
-                                        // Efficiently modify only part of line that has changed by generating a diff and
-                                        // computing editor operations from it. This prevents flashes of non syntax-highlighted
-                                        // text (e.g. when `x` or `cw`, only remove a single char/the word). Note this is
-                                        // currently only supported when changes span only one line.
-                                        const line = range.newStart;
-                                        const editorOps = computeEditorOperationsFromDiff(diff(oldText, newText));
-                                        applyEditorDiffOperations(builder, { editorOps, line });
                                     } else {
-                                        builder.replace(new Range(range.start, 0, range.end, 999999), text.join("\n"));
+                                        const changeSpansOneLineOnly =
+                                            range.start == range.end && range.newStart == range.newEnd;
+
+                                        let editorOps;
+                                        let isSupportedOperation;
+
+                                        if (changeSpansOneLineOnly) {
+                                            editorOps = computeEditorOperationsFromDiff(diff(oldText, newText));
+
+                                            // Insert breaks cursor position after undo. Support only delete operation for now.
+                                            isSupportedOperation = editorOps.length == 1 && editorOps[0].op === -1;
+                                        }
+
+                                        // If supported, efficiently modify only part of line that has changed by
+                                        // generating a diff and computing editor operations from it. This prevents
+                                        // flashes of non syntax-highlighted text (e.g. when `x` or `cw`, only
+                                        // remove a single char/the word).
+                                        if (editorOps && changeSpansOneLineOnly && isSupportedOperation) {
+                                            applyEditorDiffOperations(builder, { editorOps, line: range.newStart });
+                                        } else {
+                                            builder.replace(
+                                                new Range(range.start, 0, range.end, 999999),
+                                                text.join("\n"),
+                                            );
+                                        }
                                     }
                                 } else if (range.type === "added") {
                                     if (range.start >= editor.document.lineCount) {
