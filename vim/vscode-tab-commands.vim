@@ -6,6 +6,11 @@ function! s:switchEditor(...) abort
     endfor
 endfunction
 
+function! s:gotoEditor(...) abort
+    let count = a:1
+    call VSCodeCall(count ? printf('workbench.action.openEditorAtIndex%d',count) : 'workbench.action.nextEditorInGroup')
+endfunction
+
 command! -complete=file -nargs=? Tabedit if empty(<q-args>) | call VSCodeNotify('workbench.action.quickOpen') | else | call VSCodeExtensionNotify('open-file', expand(<q-args>), 0) | endif
 command! -complete=file -nargs=? Tabnew call VSCodeExtensionNotify('open-file', '__vscode_new__', 0)
 command! Tabfind call VSCodeNotify('workbench.action.quickOpen')
@@ -34,7 +39,8 @@ AlterCommand tabfir[st] Tabfirst
 AlterCommand tabl[ast] Tablast
 AlterCommand tabm[ove] Tabmove
 
-nnoremap gt <Cmd>call <SID>switchEditor(v:count, 'next')<CR>
-xnoremap gt <Cmd>call <SID>switchEditor(v:count, 'next')<CR>
+
+nnoremap gt <Cmd>call <SID>gotoEditor(v:count, 'next')<CR>
+xnoremap gt <Cmd>call <SID>gotoEditor(v:count, 'next')<CR>
 nnoremap gT <Cmd>call <SID>switchEditor(v:count, 'prev')<CR>
 xnoremap gT <Cmd>call <SID>switchEditor(v:count, 'prev')<CR>
