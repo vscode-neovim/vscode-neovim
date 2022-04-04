@@ -582,7 +582,7 @@ to your init.vim. The underline color can be changed by the `guisp` tag.
 ## 📑 How it works
 
 -   VScode connects to neovim instance
--   When opening a some file, a scratch buffer is created in nvim and being init with text content from vscode
+-   When opening a file, a scratch buffer is created in nvim and being init with text content from vscode
 -   Normal/visual mode commands are being sent directly to neovim. The extension listens for buffer events and applies
     edits from neovim
 -   When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to vscode
