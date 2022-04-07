@@ -122,7 +122,7 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
         for (const range of visibleRanges) {
             visibleLineCount += range.end.line - range.start.line + 1;
         }
-        visibleLineCount = Math.ceil(visibleLineCount / (by === "halfPage" ? 2 : 1));
+        visibleLineCount = Math.floor(visibleLineCount / (by === "halfPage" ? 2 : 1));
 
         vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: !cursorVisible });
         if (cursorVisible) {
