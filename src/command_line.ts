@@ -7,6 +7,7 @@ export interface CommandLineCallbacks {
     onAccepted(): void;
     onChanged(str: string, complete: boolean): void;
     onCanceled(): void;
+    onMatchCursor(): void;
 }
 
 export class CommandLineController implements Disposable {
@@ -30,6 +31,8 @@ export class CommandLineController implements Disposable {
 
     private callbacks: CommandLineCallbacks;
 
+    private redrawExpected = false;
+
     public constructor(client: NeovimClient, callbacks: CommandLineCallbacks) {
         this.neovimClient = client;
         this.callbacks = callbacks;
@@ -42,6 +45,7 @@ export class CommandLineController implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-word-left-cmdline", this.deleteWord));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-all-cmdline", this.deleteAll));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-char-left-cmdline", this.deleteChar));
+        this.disposables.push(commands.registerCommand("vscode-neovim.match-cursor-search", this.matchCursor));
         this.disposables.push(commands.registerCommand("vscode-neovim.history-up-cmdline", this.onHistoryUp));
         this.disposables.push(commands.registerCommand("vscode-neovim.history-down-cmdline", this.onHistoryDown));
         this.disposables.push(
@@ -73,9 +77,10 @@ export class CommandLineController implements Disposable {
             if (newTitle !== this.input.title) {
                 this.input.title = newTitle;
             }
-            // we want take content for the search modes, because <c-l>/<c-w><c-r> keybindings
-            if (this.mode === "/" || this.mode === "?") {
+            // we want take content for the search modes if <c-l> was used
+            if (this.redrawExpected && (this.mode === "/" || this.mode === "?")) {
                 this.input.value = initialContent;
+                this.redrawExpected = false;
             }
         }
     }
@@ -196,6 +201,11 @@ export class CommandLineController implements Disposable {
         this.input.value = this.input.value.trimRight().split(" ").slice(0, -1).join(" ");
         this.onChange(this.input.value);
     };
+
+    private matchCursor = (): void => {
+        this.redrawExpected = true;
+        this.callbacks.onMatchCursor();
+    }
 
     private clean(): void {
         if (this.completionTimer) {

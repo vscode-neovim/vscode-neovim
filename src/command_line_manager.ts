@@ -52,28 +52,14 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
                     if (this.cmdlineTimer) {
                         clearTimeout(this.cmdlineTimer);
                         this.cmdlineTimer = undefined;
-                        if (!this.commandLine) {
-                            this.commandLine = new CommandLineController(this.client, {
-                                onAccepted: this.onCmdAccept,
-                                onCanceled: this.onCmdCancel,
-                                onChanged: this.onCmdChange,
-                            });
-                        }
-                        this.commandLine.show(allContent, firstc, prompt);
+                        this.showCmd(allContent, firstc, prompt);
                     } else {
                         // if there is initial content and it's not currently displayed then it may come
                         // from some mapping. to prevent bad UI commandline transition we delay cmdline appearing here
                         if (allContent !== "" && allContent !== "'<,'>" && !this.commandLine) {
                             this.cmdlineTimer = setTimeout(() => this.showCmdOnTimer(allContent, firstc, prompt), 200);
                         } else {
-                            if (!this.commandLine) {
-                                this.commandLine = new CommandLineController(this.client, {
-                                    onAccepted: this.onCmdAccept,
-                                    onCanceled: this.onCmdCancel,
-                                    onChanged: this.onCmdChange,
-                                });
-                            }
-                            this.commandLine.show(allContent, firstc, prompt);
+                            this.showCmd(allContent, firstc, prompt);
                         }
                     }
                     break;
@@ -100,15 +86,20 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
         }
     }
 
-    private showCmdOnTimer = (initialContent: string, firstc: string, prompt: string): void => {
+    private showCmd = (initialContent: string, firstc: string, prompt: string): void => {
         if (!this.commandLine) {
             this.commandLine = new CommandLineController(this.client, {
                 onAccepted: this.onCmdAccept,
                 onCanceled: this.onCmdCancel,
                 onChanged: this.onCmdChange,
+                onMatchCursor: this.onCmdMatchCursor,
             });
         }
         this.commandLine.show(initialContent, firstc, prompt);
+    };
+
+    private showCmdOnTimer = (initialContent: string, firstc: string, prompt: string): void => {
+        this.showCmd(initialContent, firstc, prompt);
         this.cmdlineTimer = undefined;
     };
 
@@ -126,5 +117,9 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
 
     private onCmdAccept = (): void => {
         this.client.input("<CR>");
+    };
+
+    private onCmdMatchCursor = (): void => {
+        this.client.input("<C-l>");
     };
 }
