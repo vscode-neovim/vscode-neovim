@@ -1,7 +1,15 @@
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
-import { attachTestNvimClient, sendVSCodeKeys, assertContent, wait, closeAllActiveEditors, setCursor } from "../utils";
+import {
+    attachTestNvimClient,
+    sendVSCodeKeys,
+    assertContent,
+    wait,
+    closeAllActiveEditors,
+    setCursor,
+    closeNvimClient,
+} from "../utils";
 
 describe("Yanking and pasting", () => {
     let client: NeovimClient;
@@ -9,7 +17,7 @@ describe("Yanking and pasting", () => {
         client = await attachTestNvimClient();
     });
     after(async () => {
-        client.quit();
+        await closeNvimClient(client);
     });
 
     afterEach(async () => {
