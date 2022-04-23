@@ -13,12 +13,13 @@ import {
     Uri,
     ViewColumn,
     window,
-    workspace,
+    workspace
 } from "vscode";
-
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromEditor } from "./utils";
+
+
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -194,7 +195,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     if (fileName === "__vscode_new__") {
                         doc = await workspace.openTextDocument();
                     } else {
-                        const normalizedName = fileName.trim()
+                        const normalizedName = fileName.trim();
                         const filePath = this.findPathFromFileName(normalizedName);
                         doc = await workspace.openTextDocument(filePath);
                     }
@@ -273,6 +274,24 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                         // todo: show error
                     }
                 }
+                break;
+            }
+            // set a visble range line to buffer varrible
+            case "visible-range": {
+                const currEditor = window.activeTextEditor;
+                if (!currEditor) {
+                    return;
+                }
+                await this.client.call("nvim_buf_set_var", [
+                    0,
+                    "vscode_range_startline",
+                    currEditor.visibleRanges[0].start.line,
+                ]);
+                await this.client.call("nvim_buf_set_var", [
+                    0,
+                    "vscode_range_endline",
+                    currEditor.visibleRanges[0].end.line,
+                ]);
                 break;
             }
         }
