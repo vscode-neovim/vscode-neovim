@@ -1278,6 +1278,7 @@
     },
     "scripts": {
         "lint": "eslint --ext .ts src",
+        "format": "prettier --ignore-path .gitignore --write .",
         "test": "node ./out/test/runTest.js",
         "pretest": "yarn run test-compile",
         "vscode:prepublish": "webpack --mode production",
