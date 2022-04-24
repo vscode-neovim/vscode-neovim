@@ -513,7 +513,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                         this.logger.warn(`${LOG_PREFIX}: Changes were not applied for ${doc.uri.toString()}`);
                     }
                 } catch (e) {
-                    this.logger.error(`${LOG_PREFIX}: Error applying neovim edits, error: ${e.message}`);
+                    this.logger.error(`${LOG_PREFIX}: Error applying neovim edits, error: ${(e as Error).message}`);
                 }
             }
         }

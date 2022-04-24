@@ -287,7 +287,7 @@ export class MainController implements vscode.Disposable {
                     );
                 } catch (e) {
                     this.logger.error(
-                        `${vscodeCommand} failed, args: ${JSON.stringify(commandArgs)} error: ${e.message}`,
+                        `${vscodeCommand} failed, args: ${JSON.stringify(commandArgs)} error: ${(e as Error).message}`,
                     );
                 }
             });
@@ -310,7 +310,7 @@ export class MainController implements vscode.Disposable {
                     this.logger.error(
                         `${vscodeCommand} failed, range: [${line1}, ${line2}, ${pos1}, ${pos2}] args: ${JSON.stringify(
                             args,
-                        )} error: ${e.message}`,
+                        )} error: ${(e as Error).message}`,
                     );
                 }
             });
@@ -322,7 +322,9 @@ export class MainController implements vscode.Disposable {
                 try {
                     m.handleExtensionRequest(command, args);
                 } catch (e) {
-                    this.logger.error(`${command} failed, args: ${JSON.stringify(args)} error: ${e.message}`);
+                    this.logger.error(
+                        `${command} failed, args: ${JSON.stringify(args)} error: ${(e as Error).message}`,
+                    );
                 }
             });
             return;
@@ -404,7 +406,7 @@ export class MainController implements vscode.Disposable {
             }
             response.send(result || "", false);
         } catch (e) {
-            response.send(e.message, true);
+            response.send((e as Error).message, true);
         }
     };
 

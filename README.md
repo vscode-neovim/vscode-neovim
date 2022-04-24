@@ -72,6 +72,24 @@ editor commands, making the best use of both editors.
 
 > 🐛 See the [issues section](https://github.com/asvetliakov/vscode-neovim/issues) for known issues.
 
+## Build
+
+How to build (and install) from source:
+
+1. Clone the repo locally.
+   ```
+   git clone https://github.com/vscode-neovim/vscode-neovim
+   ```
+2. Install the dependencies.
+   ```
+   npm install
+   ```
+3. Build the VSIX package:
+   ```
+   ./node_modules/.bin/yarn run vsce package -o vscode-neovim.vsix
+   ```
+4. From vscode, use the `Extensions: Install from VSIX...` command to install the package.
+
 ## 💡 Tips and Features
 
 ### Important

@@ -374,7 +374,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.winIdToEditor.set(winId, visibleEditor);
                 }
             } catch (e) {
-                this.logger.error(`${LOG_PREFIX}: ${e.message}`);
+                this.logger.error(`${LOG_PREFIX}: ${(e as Error).message}`);
                 continue;
             }
         }
@@ -578,7 +578,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         try {
             await this.client.command(`bunload! ${bufId}`);
         } catch (e) {
-            this.logger.warn(`${LOG_PREFIX}: Can't unload the buffer: ${bufId}, err: ${e?.message}`);
+            this.logger.warn(`${LOG_PREFIX}: Can't unload the buffer: ${bufId}, err: ${(e as Error)?.message}`);
         }
     }
 
@@ -696,7 +696,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.client.request("nvim_win_close", [closeWinId, true]);
                 } catch (e) {
                     this.logger.warn(
-                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${e.message}`,
+                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${
+                            (e as Error).message
+                        }`,
                     );
                 }
             }, 5000);
