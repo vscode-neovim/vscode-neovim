@@ -263,7 +263,7 @@ export async function assertContent(
             assert.equal(options.mode, await getCurrentNeovimMode(client), `Neovim mode should be: ${options.mode}`);
         }
     } catch (e) {
-        e.stack = stack;
+        (e as Error).stack = stack;
         throw e;
     }
 }

@@ -226,7 +226,7 @@ export class CursorManager
                         // !To not mess the cursor, try to debounce the update
                         this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
                     } catch (e) {
-                        this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
+                        this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
                     }
                 });
             } else {
@@ -242,7 +242,7 @@ export class CursorManager
                     this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
                     this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
                 } catch (e) {
-                    this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
+                    this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
                 }
             }
         }
