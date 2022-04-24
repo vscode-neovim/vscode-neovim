@@ -384,7 +384,7 @@
             {
                 "command": "vscode-neovim.escape",
                 "key": "Escape",
-                "when": "editorTextFocus && neovim.init && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused"
+                "when": "editorTextFocus && neovim.init && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible"
             },
             {
                 "command": "vscode-neovim.escape",
