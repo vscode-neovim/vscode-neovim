@@ -1,7 +1,8 @@
+import path from "path";
+
 import { debounce } from "lodash-es";
 import { Buffer, NeovimClient, Window } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
-import path from "path";
 import {
     commands,
     Disposable,
@@ -194,7 +195,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     if (fileName === "__vscode_new__") {
                         doc = await workspace.openTextDocument();
                     } else {
-                        const normalizedName = fileName.trim()
+                        const normalizedName = fileName.trim();
                         const filePath = this.findPathFromFileName(normalizedName);
                         doc = await workspace.openTextDocument(filePath);
                     }
