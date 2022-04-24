@@ -19,7 +19,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v1
               with:
-                  node-version: "12"
+                  node-version: "14"
             - name: Install Neovim
               uses: rhysd/action-setup-vim@v1
               id: vim
@@ -51,7 +51,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v1
               with:
-                  node-version: "12"
+                  node-version: "14"
             - name: Yarn install
               run: yarn --silent --frozen-lockfile
             - name: Install VSCE
