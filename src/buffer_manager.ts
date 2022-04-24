@@ -696,7 +696,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.client.request("nvim_win_close", [closeWinId, true]);
                 } catch (e) {
                     this.logger.warn(
-                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${(e as Error).message}`,
+                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${
+                            (e as Error).message
+                        }`,
                     );
                 }
             }, 5000);

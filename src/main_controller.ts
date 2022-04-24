@@ -322,7 +322,9 @@ export class MainController implements vscode.Disposable {
                 try {
                     m.handleExtensionRequest(command, args);
                 } catch (e) {
-                    this.logger.error(`${command} failed, args: ${JSON.stringify(args)} error: ${(e as Error).message}`);
+                    this.logger.error(
+                        `${command} failed, args: ${JSON.stringify(args)} error: ${(e as Error).message}`,
+                    );
                 }
             });
             return;
