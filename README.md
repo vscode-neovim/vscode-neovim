@@ -256,7 +256,7 @@ could be used to invoke any vscode commands:
 | Command                                                                                                                                                           | Description                                                                                                                                                                                                |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VSCodeNotify(command, ...)` <br/> `VSCodeCall(command, ...)`                                                                                                     | Invoke vscode command with optional arguments.                                                                                                                                                             |
-| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce linewise vscode selection from `line1` to `line2` and invoke vscode command. Setting `leaveSelection` to 1 removes vscode selection after invoking the command.                                    |
+| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce linewise vscode selection from `line1` to `line2` and invoke vscode command. Setting `leaveSelection` to 1 keeps vscode selection active after invoking the command.                               |
 | `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` <br/> `VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` | Produce characterwise vscode selection from `line1.pos1` to `line2.pos2` and invoke vscode command.                                                                                                        |
 | `VSCodeNotifyVisual(command, leaveSelection, ...)` <br/> `VSCodeCallVisual(command, leaveSelection, ...)`                                                         | Produce linewise (visual line) or characterwise (visual and visual block) selection from visual mode selection and invoke vscode command. Behaves like `VSCodeNotify/Call` when visual mode is not active. |
 
@@ -444,17 +444,16 @@ Refer to vim manual for their use.
 
 Always enabled.
 
-| Key                                          | Desription                                                |
-| -------------------------------------------- | --------------------------------------------------------- |
-| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=/]</kbd> | Paste from register.                                      |
-| <kbd>C-h</kbd>                               | Delete one character left.                                |
-| <kbd>C-w</kbd>                               | Delete word left.                                         |
-| <kbd>C-u</kbd>                               | Clear line.                                               |
-| <kbd>C-g</kbd> / <kbd>C-t</kbd>              | In incsearch mode moves to next/previous result.          |
-| <kbd>C-l</kbd>                               | Add next character under the cursor to incsearch.         |
-| <kbd>C-n</kbd> / <kbd>C-p</kbd>              | Go down/up history.                                       |
-| <kbd>Up</kbd> / <kbd>Down</kbd>              | Select next/prev suggestion (cannot be used for history). |
-| <kbd>Tab</kbd>                               | Select suggestion.                                        |
+| Key                             | Desription                                                |
+| ------------------------------- | --------------------------------------------------------- |
+| <kbd>C-h</kbd>                  | Delete one character left.                                |
+| <kbd>C-w</kbd>                  | Delete word left.                                         |
+| <kbd>C-u</kbd>                  | Clear line.                                               |
+| <kbd>C-g</kbd> / <kbd>C-t</kbd> | In incsearch mode moves to next/previous result.          |
+| <kbd>C-l</kbd>                  | Add next character under the cursor to incsearch.         |
+| <kbd>C-n</kbd> / <kbd>C-p</kbd> | Go down/up history.                                       |
+| <kbd>Up</kbd> / <kbd>Down</kbd> | Select next/prev suggestion (cannot be used for history). |
+| <kbd>Tab</kbd>                  | Select suggestion.                                        |
 
 ### VSCode specific bindings
 
