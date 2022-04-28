@@ -13,18 +13,6 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     public constructor(client: NeovimClient, revealCursorScrollLine: boolean) {
         this.client = client;
         this.revealCursorScrollLine = revealCursorScrollLine;
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
-        );
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.ctrl-b", () => this.scrollPage("page", "up")),
-        );
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.ctrl-d", () => this.scrollPage("halfPage", "down")),
-        );
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.ctrl-u", () => this.scrollPage("halfPage", "up")),
-        );
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-e", () => this.scrollLine("down")));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-y", () => this.scrollLine("up")));
     }
@@ -48,11 +36,6 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
                 this.goToLine(to);
                 break;
             }
-            case "scroll": {
-                const [by, to] = args as ["page" | "halfPage", "up" | "down"];
-                this.scrollPage(by, to);
-                break;
-            }
             case "scroll-line": {
                 const [to] = args as ["up" | "down"];
                 this.scrollLine(to);
@@ -70,10 +53,6 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     }
 
     /// SCROLL COMMANDS ///
-    private scrollPage = (by: "page" | "halfPage", to: "up" | "down"): void => {
-        vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: true });
-    };
-
     private scrollLine = (to: "up" | "down"): void => {
         vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: this.revealCursorScrollLine });
     };
