@@ -38,10 +38,10 @@
                 "background": {
                     "activeOnStart": true,
                     "beginsPattern": {
-                        "regexp": "Compiling.*?|Compilation .*?starting"
+                        "regexp": "Compiling.*?|Compiler .*?starting"
                     },
                     "endsPattern": {
-                        "regexp": "Compiled .*?successfully|Compilation .*?finished"
+                        "regexp": "Compiled .*?successfully|Compiler .*?finished"
                     }
                 }
             }
