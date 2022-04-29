@@ -14,11 +14,7 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
         this.client = client;
         this.revealCursorScrollLine = revealCursorScrollLine;
 
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-a-insert", this.ctrlAInsert));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.send", (key) => this.sendToVim(key)));
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.paste-register", (reg) => this.pasteFromRegister(reg)),
-        );
         this.disposables.push(
             vscode.commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
         );
@@ -78,32 +74,6 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     private sendToVim = (keys: string): void => {
         this.client.input(keys);
     };
-
-    private ctrlAInsert = async (): Promise<void> => {
-        // Insert previously inserted text from the insert mode
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            return;
-        }
-        const lines: string[] = await this.client.callFunction("VSCodeGetLastInsertText");
-        if (!lines.length) {
-            return;
-        }
-        await editor.edit((b) => b.insert(editor.selection.active, lines.join("\n")));
-    };
-
-    private async pasteFromRegister(registerName: string): Promise<void> {
-        // copy content from register in insert mode
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            return;
-        }
-        const content = await this.client.callFunction("VSCodeGetRegister", [registerName]);
-        if (content === "") {
-            return;
-        }
-        await editor.edit((b) => b.insert(editor.selection.active, content));
-    }
 
     /// SCROLL COMMANDS ///
     private scrollPage = (by: "page" | "halfPage", to: "up" | "down"): void => {
