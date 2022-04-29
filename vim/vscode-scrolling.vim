@@ -16,19 +16,6 @@ nnoremap zb <Cmd>call <SID>reveal('bottom', 0)<CR>
 xnoremap zb <Cmd>call <SID>reveal('bottom', 0)<CR>
 
 
-function s:moveCursor(to)
-    " Native VSCode commands don't register jumplist. Fix by registering jumplist in Vim e.g. for subsequent use of <C-o>
-    normal! m'
-    call VSCodeExtensionNotify('move-cursor', a:to)
-endfunction
-
-nnoremap H <Cmd>call <SID>moveCursor('top')<CR>
-xnoremap H <Cmd>call <SID>moveCursor('top')<CR>
-nnoremap M <Cmd>call <SID>moveCursor('middle')<CR>
-xnoremap M <Cmd>call <SID>moveCursor('middle')<CR>
-nnoremap L <Cmd>call <SID>moveCursor('bottom')<CR>
-xnoremap L <Cmd>call <SID>moveCursor('bottom')<CR>
-
 " Disabled due to scroll problems (the ext binds them directly)
 " nnoremap <silent> <expr> <C-e> VSCodeExtensionNotify('scroll-line', 'down')
 " xnoremap <silent> <expr> <C-e> VSCodeExtensionNotify('scroll-line', 'down')

@@ -31,11 +31,6 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
                 this.revealLine(at, !!updateCursor);
                 break;
             }
-            case "move-cursor": {
-                const [to] = args as ["top" | "middle" | "bottom"];
-                this.goToLine(to);
-                break;
-            }
             case "scroll-line": {
                 const [to] = args as ["up" | "down"];
                 this.scrollLine(to);
@@ -55,30 +50,6 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     /// SCROLL COMMANDS ///
     private scrollLine = (to: "up" | "down"): void => {
         vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: this.revealCursorScrollLine });
-    };
-
-    private goToLine = (to: "top" | "middle" | "bottom"): void => {
-        const e = vscode.window.activeTextEditor;
-        if (!e) {
-            return;
-        }
-        const topVisible = e.visibleRanges[0].start.line;
-        const bottomVisible = e.visibleRanges[0].end.line;
-        const lineNum =
-            to === "top"
-                ? topVisible
-                : to === "bottom"
-                ? bottomVisible
-                : Math.floor(topVisible + (bottomVisible - topVisible) / 2);
-        const line = e.document.lineAt(lineNum);
-        e.selections = [
-            new vscode.Selection(
-                lineNum,
-                line.firstNonWhitespaceCharacterIndex,
-                lineNum,
-                line.firstNonWhitespaceCharacterIndex,
-            ),
-        ];
     };
 
     // zz, zt, zb and others
