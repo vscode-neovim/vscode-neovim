@@ -1,12 +1,6 @@
 name: Code Check & Test
 
-on:
-    pull_request:
-        branches:
-            - master
-    push:
-        branches:
-            - master
+on: [pull_request, push]
 
 jobs:
     build:
