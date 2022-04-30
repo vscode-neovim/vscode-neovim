@@ -1,4 +1,4 @@
-import { Disposable, OutputChannel, TextEditor, window } from "vscode";
+import { Disposable, OutputChannel, window } from "vscode";
 
 import { Logger } from "./logger";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
@@ -41,7 +41,7 @@ export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcess
                     // remove empty last line (since we always put \n at the end)
                     const lines = str.split("\n").slice(1);
                     if (lines.length > 1) {
-                        this.channel.show(true)
+                        this.channel.show(true);
                     }
                     this.channel.append(str);
                     break;
@@ -59,7 +59,7 @@ export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcess
                             }
                         }
                     }
-                    this.channel.show(true)
+                    this.channel.show(true);
                     this.channel.append(str);
                     break;
                 }
