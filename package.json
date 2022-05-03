@@ -282,11 +282,7 @@
             },
             {
                 "command": "vscode-neovim.compositeEscape1",
-                "title": "Composite escape key 1"
-            },
-            {
-                "command": "vscode-neovim.compositeEscape2",
-                "title": "Composite escape key 2"
+                "title": "Composite escape"
             },
             {
                 "command": "vscode-neovim.escape",
