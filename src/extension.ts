@@ -59,7 +59,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         context.subscriptions.push(plugin);
         await plugin.init();
     } catch (e) {
-        vscode.window.showErrorMessage(`Unable to init vscode-neovim: ${e.message}`);
+        vscode.window.showErrorMessage(`Unable to init vscode-neovim: ${(e as Error).message}`);
     }
 }
 

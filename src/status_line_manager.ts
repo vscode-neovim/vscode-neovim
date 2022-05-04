@@ -29,6 +29,7 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
         batch.forEach(([name, ...args], idx) => {
             // for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
+            const lastArg = args[args.length - 1] || [];
             switch (name) {
                 case "msg_showcmd": {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,7 +71,7 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
                 }
                 case "msg_showmode": {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [content] = firstArg as [any[]];
+                    const [content] = lastArg as [any[]];
                     let str = "";
                     if (content) {
                         for (const c of content) {

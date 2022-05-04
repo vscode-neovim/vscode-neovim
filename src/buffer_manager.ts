@@ -1,3 +1,5 @@
+import path from "path";
+
 import { debounce } from "lodash-es";
 import { Buffer, NeovimClient, Window } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
@@ -189,10 +191,16 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const [fileName, close] = args as [string, number | "all"];
                 const currEditor = window.activeTextEditor;
                 let doc: TextDocument | undefined;
-                if (fileName === "__vscode_new__") {
-                    doc = await workspace.openTextDocument();
-                } else {
-                    doc = await workspace.openTextDocument(fileName.trim());
+                try {
+                    if (fileName === "__vscode_new__") {
+                        doc = await workspace.openTextDocument();
+                    } else {
+                        const normalizedName = fileName.trim();
+                        const filePath = this.findPathFromFileName(normalizedName);
+                        doc = await workspace.openTextDocument(filePath);
+                    }
+                } catch (error) {
+                    this.logger.error(`${LOG_PREFIX}: Error opening file ${fileName}, ${error}`);
                 }
                 if (!doc) {
                     return;
@@ -366,7 +374,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.winIdToEditor.set(winId, visibleEditor);
                 }
             } catch (e) {
-                this.logger.error(`${LOG_PREFIX}: ${e.message}`);
+                this.logger.error(`${LOG_PREFIX}: ${(e as Error).message}`);
                 continue;
             }
         }
@@ -570,7 +578,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         try {
             await this.client.command(`bunload! ${bufId}`);
         } catch (e) {
-            this.logger.warn(`${LOG_PREFIX}: Can't unload the buffer: ${bufId}, err: ${e?.message}`);
+            this.logger.warn(`${LOG_PREFIX}: Can't unload the buffer: ${bufId}, err: ${(e as Error)?.message}`);
         }
     }
 
@@ -585,6 +593,15 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             return true;
         }
         return false;
+    }
+
+    private findPathFromFileName(name: string): string {
+        const folders = workspace.workspaceFolders;
+        if (folders) {
+            return path.resolve(folders[0].uri.fsPath, name);
+        } else {
+            return name;
+        }
     }
 
     private findDocFromUri(uri: string): TextDocument | undefined {
@@ -677,7 +694,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.client.request("nvim_win_close", [closeWinId, true]);
                 } catch (e) {
                     this.logger.warn(
-                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${e.message}`,
+                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${
+                            (e as Error).message
+                        }`,
                     );
                 }
             }, 5000);

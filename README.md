@@ -72,6 +72,24 @@ editor commands, making the best use of both editors.
 
 > 🐛 See the [issues section](https://github.com/asvetliakov/vscode-neovim/issues) for known issues.
 
+## Build
+
+How to build (and install) from source:
+
+1. Clone the repo locally.
+   ```
+   git clone https://github.com/vscode-neovim/vscode-neovim
+   ```
+2. Install the dependencies.
+   ```
+   npm install
+   ```
+3. Build the VSIX package:
+   ```
+   ./node_modules/.bin/yarn run vsce package -o vscode-neovim.vsix
+   ```
+4. From vscode, use the `Extensions: Install from VSIX...` command to install the package.
+
 ## 💡 Tips and Features
 
 ### Important
@@ -256,7 +274,7 @@ could be used to invoke any vscode commands:
 | Command                                                                                                                                                           | Description                                                                                                                                                                                                |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VSCodeNotify(command, ...)` <br/> `VSCodeCall(command, ...)`                                                                                                     | Invoke vscode command with optional arguments.                                                                                                                                                             |
-| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce linewise vscode selection from `line1` to `line2` and invoke vscode command. Setting `leaveSelection` to 1 removes vscode selection after invoking the command.                                    |
+| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce linewise vscode selection from `line1` to `line2` and invoke vscode command. Setting `leaveSelection` to 1 keeps vscode selection active after invoking the command.                               |
 | `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` <br/> `VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` | Produce characterwise vscode selection from `line1.pos1` to `line2.pos2` and invoke vscode command.                                                                                                        |
 | `VSCodeNotifyVisual(command, leaveSelection, ...)` <br/> `VSCodeCallVisual(command, leaveSelection, ...)`                                                         | Produce linewise (visual line) or characterwise (visual and visual block) selection from visual mode selection and invoke vscode command. Behaves like `VSCodeNotify/Call` when visual mode is not active. |
 
@@ -398,18 +416,18 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 
 Enabled by `useCtrlKeysForInsertMode` (default true).
 
-| Key                                         | Description                                                       | Status                            |
-| ------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
-| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=]</kbd> | Paste from register.                                              | Works                             |
-| <kbd>C-a</kbd>                              | Paste previous inserted content.                                  | Works                             |
-| <kbd>C-o</kbd>                              | Switch to normal mode for a single command, then back.            | Works                             |
-| <kbd>C-u</kbd>                              | Delete all text till beginning of line. If empty, delete newline. | Bound to VSCode key               |
-| <kbd>C-w</kbd>                              | Delete word left.                                                 | Bound to VSCode key               |
-| <kbd>C-h</kbd>                              | Delete character left.                                            | Bound to VSCode key               |
-| <kbd>C-t</kbd>                              | Indent lines right.                                               | Bound to VSCode indent line       |
-| <kbd>C-d</kbd>                              | Indent lines left.                                                | Bound to VSCode outindent line    |
-| <kbd>C-j</kbd>                              | Insert line.                                                      | Bound to VSCode insert line after |
-| <kbd>C-c</kbd>                              | Escape.                                                           | Works                             |
+| Key                                          | Description                                                       | Status                            |
+| -------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
+| <kbd>C-r</kbd> <kbd>[0-9a-z"%#*+:.-=/]</kbd> | Paste from register.                                              | Works                             |
+| <kbd>C-a</kbd>                               | Paste previous inserted content.                                  | Works                             |
+| <kbd>C-o</kbd>                               | Switch to normal mode for a single command, then back.            | Works                             |
+| <kbd>C-u</kbd>                               | Delete all text till beginning of line. If empty, delete newline. | Bound to VSCode key               |
+| <kbd>C-w</kbd>                               | Delete word left.                                                 | Bound to VSCode key               |
+| <kbd>C-h</kbd>                               | Delete character left.                                            | Bound to VSCode key               |
+| <kbd>C-t</kbd>                               | Indent lines right.                                               | Bound to VSCode indent line       |
+| <kbd>C-d</kbd>                               | Indent lines left.                                                | Bound to VSCode outindent line    |
+| <kbd>C-j</kbd>                               | Insert line.                                                      | Bound to VSCode insert line after |
+| <kbd>C-c</kbd>                               | Escape.                                                           | Works                             |
 
 Other keys are not supported in insert mode.
 
@@ -581,7 +599,7 @@ to your init.vim. The underline color can be changed by the `guisp` tag.
 ## 📑 How it works
 
 -   VScode connects to neovim instance
--   When opening a some file, a scratch buffer is created in nvim and being init with text content from vscode
+-   When opening a file, a scratch buffer is created in nvim and being init with text content from vscode
 -   Normal/visual mode commands are being sent directly to neovim. The extension listens for buffer events and applies
     edits from neovim
 -   When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to vscode

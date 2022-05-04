@@ -39,7 +39,8 @@ interface CursorInfo {
 }
 
 export class CursorManager
-    implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable, NeovimRangeCommandProcessable {
+    implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable, NeovimRangeCommandProcessable
+{
     private disposables: Disposable[] = [];
     /**
      * Vim cursor mode mappings
@@ -97,10 +98,8 @@ export class CursorManager
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        const gridCursorUpdates: Map<
-            number,
-            { line: number; col: number; grid: number; isByteCol: boolean }
-        > = new Map();
+        const gridCursorUpdates: Map<number, { line: number; col: number; grid: number; isByteCol: boolean }> =
+            new Map();
         const gridCursorViewportHint: Map<number, { line: number; col: number }> = new Map();
         // need to process win_viewport events first
         for (const [name, ...args] of batch) {
@@ -226,7 +225,7 @@ export class CursorManager
                         // !To not mess the cursor, try to debounce the update
                         this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
                     } catch (e) {
-                        this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
+                        this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
                     }
                 });
             } else {
@@ -242,7 +241,7 @@ export class CursorManager
                     this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
                     this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
                 } catch (e) {
-                    this.logger.warn(`${LOG_PREFIX}: ${e.message}`);
+                    this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
                 }
             }
         }
