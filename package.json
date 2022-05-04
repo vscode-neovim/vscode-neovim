@@ -1305,8 +1305,8 @@
         "source-map-support": "^0.5.19",
         "ts-loader": "^8.0.18",
         "typescript": "^4.2.3",
-        "vscode-test": "^1.5.1",
         "vsce": "^2.6.3",
+        "vscode-test": "^1.5.1",
         "webpack": "^5.26.1",
         "webpack-cli": "^4.5.0",
         "yarn": "^1.22.18"
@@ -1315,6 +1315,7 @@
         "fast-diff": "^1.2.0",
         "lodash-es": "^4.17.21",
         "neovim": "^4.9.0",
+        "sinon": "^13.0.2",
         "ts-wcwidth": "^2.0.3"
     }
 }
