@@ -449,8 +449,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
-        const cursor = getNeovimCursorPosFromEditor(activeEditor);
-        await this.client.request("nvim_win_set_cursor", [winId, cursor]);
         await this.client.request("nvim_set_current_win", [winId]);
     };
 

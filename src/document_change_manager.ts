@@ -221,13 +221,9 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             this.bufferSkipTicks.set(bufId, bufTick + bufLinesRequests.length);
             requests.push(...bufLinesRequests);
         }
-
-        // when changing document while in insert mode, this condition causes the cursor in the origin document
-        // to be set to the same coordinates as the target document. See https://github.com/vscode-neovim/vscode-neovim/issues/776
-        // leaving it here for now just in case removing it breaks something
-        // if (window.activeTextEditor) {
-        //     requests.push(["nvim_win_set_cursor", [0, getNeovimCursorPosFromEditor(window.activeTextEditor)]]);
-        // }
+        if (window.activeTextEditor) {
+            requests.push(["nvim_win_set_cursor", [0, getNeovimCursorPosFromEditor(window.activeTextEditor)]]);
+        }
         if (!requests.length) {
             return;
         }
