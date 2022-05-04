@@ -596,14 +596,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     private findPathFromFileName(name: string): string {
-        const rootFolderPath = workspace.workspaceFolders![0].uri.fsPath;
-        let filePath: string;
-        if (rootFolderPath) {
-            filePath = path.resolve(rootFolderPath, name);
+        const folders = workspace.workspaceFolders;
+        if (folders) {
+            return path.resolve(folders[0].uri.fsPath, name);
         } else {
-            filePath = name;
+            return name;
         }
-        return filePath;
     }
 
     private findDocFromUri(uri: string): TextDocument | undefined {
