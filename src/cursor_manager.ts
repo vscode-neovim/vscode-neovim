@@ -449,7 +449,6 @@ export class CursorManager
         }
         const currCursor = editor.selection.active;
         const deltaLine = newLine - currCursor.line;
-        let deltaChar = newCol - currCursor.character;
         this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
         const newPos = new Selection(newLine, newCol, newLine, newCol);
         if (!editor.selection.isEqual(newPos)) {
