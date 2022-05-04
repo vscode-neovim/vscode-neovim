@@ -5,6 +5,8 @@ import glob from "glob";
 import "source-map-support/register";
 
 export async function run(): Promise<void> {
+    // Tell vscode-neovim to create a debug connection
+    process.env.NEOVIM_DEBUG = "1";
     // Create the mocha test
     const mocha = new Mocha({
         ui: "bdd",
