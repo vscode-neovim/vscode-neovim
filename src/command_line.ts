@@ -205,7 +205,7 @@ export class CommandLineController implements Disposable {
     private matchCursor = (): void => {
         this.redrawExpected = true;
         this.callbacks.onMatchCursor();
-    }
+    };
 
     private clean(): void {
         if (this.completionTimer) {
