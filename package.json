@@ -309,8 +309,8 @@
                 "title": "Neovim: Delete char cmdline"
             },
             {
-                "command": "vscode-neovim.match-cursor-search",
-                "title": "Neovim: Match cursor search"
+                "command": "vscode-neovim.match-cursor-search-cmdline",
+                "title": "Neovim: Match cursor search cmdline"
             },
             {
                 "command": "vscode-neovim.complete-selection-cmdline",
@@ -790,7 +790,7 @@
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace"
             },
             {
-                "command": "vscode-neovim.match-cursor-search",
+                "command": "vscode-neovim.match-cursor-search-cmdline",
                 "key": "ctrl+l",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace"
             },

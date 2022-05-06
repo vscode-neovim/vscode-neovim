@@ -45,7 +45,7 @@ export class CommandLineController implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-word-left-cmdline", this.deleteWord));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-all-cmdline", this.deleteAll));
         this.disposables.push(commands.registerCommand("vscode-neovim.delete-char-left-cmdline", this.deleteChar));
-        this.disposables.push(commands.registerCommand("vscode-neovim.match-cursor-search", this.matchCursor));
+        this.disposables.push(commands.registerCommand("vscode-neovim.match-cursor-search-cmdline", this.matchCursor));
         this.disposables.push(commands.registerCommand("vscode-neovim.history-up-cmdline", this.onHistoryUp));
         this.disposables.push(commands.registerCommand("vscode-neovim.history-down-cmdline", this.onHistoryDown));
         this.disposables.push(

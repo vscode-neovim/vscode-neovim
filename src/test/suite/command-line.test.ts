@@ -25,8 +25,8 @@ describe("Command line", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
         await sendVSCodeKeys("/a");
-        await vscode.commands.executeCommand("vscode-neovim.match-cursor-search");
-        await vscode.commands.executeCommand("vscode-neovim.match-cursor-search");
+        await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
+        await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
         await sendVSCodeKeys("\n");
         assert.equal(await client.commandOutput("echo getreg('/')"), "abc");
     });
