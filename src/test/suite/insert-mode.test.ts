@@ -529,6 +529,28 @@ describe("Insert mode and buffer syncronization", () => {
         );
     });
 
+    // currently fails
+    it.skip("Handles repeating last inserted text with newline", async () => {
+        const doc = await vscode.workspace.openTextDocument({ content: ["blah1 blah3"].join("\n") });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("wiblah2\n");
+        await sendEscapeKey(1000);
+        await sendVSCodeKeys("A");
+        vscode.commands.executeCommand("vscode-neovim.ctrl-a-insert");
+        await wait();
+
+        await sendEscapeKey(1000);
+
+        await assertContent(
+            {
+                content: ["blah1 blah2", "blah3blah2"],
+            },
+            client,
+        );
+    });
+
     it("Handles nvim cursor movement commands after sending ctrl+o key", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: "test",
