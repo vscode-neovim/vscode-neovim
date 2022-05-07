@@ -113,14 +113,7 @@ endfunction
 
 " Used for ctrl-a insert keybinding
 function! VSCodeGetLastInsertText()
-    let [lineStart, colStart] = getpos("'[")[1:2]
-    let [lineEnd, colEnd] = getpos("']")[1:2]
-    if (lineStart == 0)
-        return []
-    endif
-    let lines = getline(lineStart, lineEnd)
-    let lines[-1] = lines[-1][:colEnd - 2]
-    let lines[0] = lines[0][colStart - 1:]
+    let lines = split(getreg("."), "^@")
     return lines
 endfunction
 
