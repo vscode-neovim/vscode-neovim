@@ -530,8 +530,8 @@ describe("Insert mode and buffer syncronization", () => {
     });
 
     // currently fails
-    it.skip("Handles repeating last inserted text with newline", async () => {
-        const doc = await vscode.workspace.openTextDocument({ content: ["blah1 blah3"].join("\n") });
+    it("Handles repeating last inserted text with newline", async () => {
+        const doc = await vscode.workspace.openTextDocument({ content: "blah1 blah3" });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
@@ -545,7 +545,7 @@ describe("Insert mode and buffer syncronization", () => {
 
         await assertContent(
             {
-                content: ["blah1 blah2", "blah3blah2"],
+                content: ["blah1 blah2", "blah3blah2", ""],
             },
             client,
         );
