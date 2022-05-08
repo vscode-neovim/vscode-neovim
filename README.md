@@ -607,7 +607,7 @@ highlight QuickScopePrimary guifg='#afff5f' gui=underline ctermfg=155 cterm=unde
 highlight QuickScopeSecondary guifg='#5fffff' gui=underline ctermfg=81 cterm=underline
 ```
 
-to your init.vim. The underline color can be changed by the `guisp` tag.
+to your init.vim. The underline color can be changed by the `guifp` tag.
 
 ## 📑 How it works
 
