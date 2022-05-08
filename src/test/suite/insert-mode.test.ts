@@ -529,7 +529,6 @@ describe("Insert mode and buffer syncronization", () => {
         );
     });
 
-    // currently fails
     it("Handles repeating last inserted text with newline", async () => {
         const doc = await vscode.workspace.openTextDocument({ content: "blah1 blah3" });
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
