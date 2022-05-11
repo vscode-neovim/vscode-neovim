@@ -42,6 +42,7 @@ export class TypingManager implements Disposable {
         private changeManager: DocumentChangeManager,
     ) {
         this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
+        this.disposables.push(commands.registerCommand("replacePreviousChar", this.onVSCodeReplacePreviousChar));
         this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(
@@ -111,6 +112,14 @@ export class TypingManager implements Disposable {
             this.pendingKeysAfterExit += type.text;
         } else {
             commands.executeCommand("default:type", { text: type.text });
+        }
+    };
+
+    // Fix Non-English input method can replace previous chars
+    // see https://github.com/vscode-neovim/vscode-neovim/issues/560
+    private onVSCodeReplacePreviousChar = (type: { text: string; replaceCharCnt: number }): void => {
+        if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode && !this.isEnteringInsertMode) {
+            commands.executeCommand("default:replacePreviousChar", type);
         }
     };
 
