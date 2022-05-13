@@ -40,7 +40,7 @@ export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcess
                     }
                     // remove empty last line (since we always put \n at the end)
                     const lines = str.split("\n").slice(1);
-                    if (lines.length > 1) {
+                    if (lines.length > 2) {
                         this.channel.show(true);
                     }
                     this.channel.append(str);
