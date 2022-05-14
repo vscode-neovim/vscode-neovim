@@ -479,20 +479,16 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                                             range.start == range.end && range.newStart == range.newEnd;
 
                                         let editorOps;
-                                        let isSupportedOperation;
 
                                         if (changeSpansOneLineOnly) {
                                             editorOps = computeEditorOperationsFromDiff(diff(oldText, newText));
-
-                                            // Insert breaks cursor position after undo. Support only delete operation for now.
-                                            isSupportedOperation = editorOps.length == 1 && editorOps[0].op === -1;
                                         }
 
                                         // If supported, efficiently modify only part of line that has changed by
                                         // generating a diff and computing editor operations from it. This prevents
                                         // flashes of non syntax-highlighted text (e.g. when `x` or `cw`, only
                                         // remove a single char/the word).
-                                        if (editorOps && changeSpansOneLineOnly && isSupportedOperation) {
+                                        if (editorOps && changeSpansOneLineOnly) {
                                             applyEditorDiffOperations(builder, { editorOps, line: range.newStart });
                                         } else {
                                             builder.replace(
