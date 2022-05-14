@@ -447,7 +447,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     }
                     this.documentSkipVersionOnChange.set(doc, doc.version + 1);
 
-                    // const cursor = editor.selection.active;
+                    const cursorBefore = editor.selection.active;
                     const success = await editor.edit(
                         (builder) => {
                             for (const range of ranges) {
@@ -521,6 +521,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     if (success) {
                         if (!editor.selection.anchor.isEqual(editor.selection.active)) {
                             editor.selections = [new Selection(editor.selection.active, editor.selection.active)];
+                        } else {
+                            // Some editor operations change cursor position. This confuses cursor
+                            // sync from Vim to Code (e.g. when cursor did not change in Vim but
+                            // changed in Code). Fix by forcing cursor position to stay the same
+                            // indepent of the diff operation in question.
+                            editor.selections = [new Selection(cursorBefore, cursorBefore)];
                         }
                         this.cursorAfterTextDocumentChange.set(editor.document, {
                             line: editor.selection.active.line,
