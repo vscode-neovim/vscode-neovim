@@ -1,5 +1,5 @@
 import { NeovimClient } from "neovim";
-import { Disposable } from "vscode";
+import { Disposable, OutputChannel, window } from "vscode";
 
 import { CommandLineController } from "./command_line";
 import { Logger } from "./logger";
@@ -41,7 +41,10 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
                         number,
                         number,
                     ];
-                    const allContent = content.map(([, str]) => str).join("");
+                    let allContent = content.map(([, str]) => str).join("");
+                    if (allContent.endsWith('\f')) {
+                        allContent = allContent.slice(0, -1);
+                    }
                     // !note: neovim can send cmdline_hide followed by cmdline_show events
                     // !since quickpick can be destroyed slightly at later time after handling cmdline_hide we want to create new command line
                     // !controller and input for every visible cmdline_show event

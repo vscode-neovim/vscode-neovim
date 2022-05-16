@@ -77,10 +77,12 @@ export class CommandLineController implements Disposable {
             if (newTitle !== this.input.title) {
                 this.input.title = newTitle;
             }
+
             // we want take content for the search modes if <c-l> was used
-            if (this.redrawExpected && (this.mode === "/" || this.mode === "?")) {
-                this.input.value = initialContent;
+            if (this.redrawExpected) {
                 this.redrawExpected = false;
+                this.input.value = initialContent;
+                this.onChange(this.input.value);
             }
         }
     }
