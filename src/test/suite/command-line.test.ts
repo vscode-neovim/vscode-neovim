@@ -3,7 +3,7 @@ import { strict as assert } from "assert";
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
-import { attachTestNvimClient, sendVSCodeKeys, wait, closeAllActiveEditors, closeNvimClient, sendEscapeKey } from "../utils";
+import { attachTestNvimClient, sendVSCodeKeys, wait, closeAllActiveEditors, closeNvimClient } from "../utils";
 
 describe("Command line", () => {
     let client: NeovimClient;

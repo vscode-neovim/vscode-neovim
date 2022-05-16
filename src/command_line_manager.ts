@@ -1,5 +1,5 @@
 import { NeovimClient } from "neovim";
-import { Disposable, OutputChannel, window } from "vscode";
+import { Disposable } from "vscode";
 
 import { CommandLineController } from "./command_line";
 import { Logger } from "./logger";
@@ -42,7 +42,7 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
                         number,
                     ];
                     let allContent = content.map(([, str]) => str).join("");
-                    if (allContent.endsWith('\f')) {
+                    if (allContent.endsWith("\f")) {
                         allContent = allContent.slice(0, -1);
                     }
                     // !note: neovim can send cmdline_hide followed by cmdline_show events
