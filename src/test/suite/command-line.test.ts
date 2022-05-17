@@ -3,7 +3,14 @@ import { strict as assert } from "assert";
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
-import { attachTestNvimClient, sendVSCodeKeys, wait, closeAllActiveEditors, closeNvimClient } from "../utils";
+import {
+    attachTestNvimClient,
+    sendVSCodeKeys,
+    wait,
+    closeAllActiveEditors,
+    closeNvimClient,
+    sendVSCodeKeysAtomic,
+} from "../utils";
 
 describe("Command line", () => {
     let client: NeovimClient;
@@ -25,30 +32,41 @@ describe("Command line", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("/");
+        await sendVSCodeKeysAtomic("/1");
+        await wait(1000);
         await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
+        await wait(100);
         await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
-        await sendVSCodeKeys("\n");
-        assert.equal(await client.commandOutput("echo getreg('/')"), "1a");
+        await wait(100);
+        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
+        assert.equal(await client.commandOutput("echo getreg('/')"), "1ab");
 
-        await sendVSCodeKeys("/a");
+        await sendVSCodeKeysAtomic("/a");
+        await wait(1000);
         await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
+        await wait(100);
         await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
-        await sendVSCodeKeys("\n");
+        await wait(100);
+        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
         assert.equal(await client.commandOutput("echo getreg('/')"), "abc");
 
-        await sendVSCodeKeys(":%s/a");
+        await sendVSCodeKeysAtomic(":%s/a");
+        await wait(1000);
         await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
+        await wait(100);
         await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
+        await wait(100);
         await sendVSCodeKeys("/xyz/g");
-        await sendVSCodeKeys("\n");
+        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
         assert.equal(await client.commandOutput("echo getreg('/')"), "abc");
 
-        await sendVSCodeKeys(":%s/");
+        await sendVSCodeKeysAtomic(":%s/");
         await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
+        await wait(100);
         await vscode.commands.executeCommand("vscode-neovim.match-cursor-search-cmdline");
+        await wait(100);
         await sendVSCodeKeys("xyz/abc/g");
-        await sendVSCodeKeys("\n");
+        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
         assert.equal(await client.commandOutput("echo getreg('/')"), "xyz");
     });
 });
