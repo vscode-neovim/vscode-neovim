@@ -20,9 +20,9 @@ export class CommandLineController implements Disposable {
 
     private completionTimer?: NodeJS.Timeout;
 
-    private currentCommand: string = "";
+    private currentCommand = "";
 
-    private historyLocation: number = 0;
+    private historyLocation = 0;
 
     private completionItems: QuickPickItem[] = [];
 
@@ -114,7 +114,7 @@ export class CommandLineController implements Disposable {
         if (!this.isDisplayed) {
             return;
         }
-        if(this.historyLocation == 0) {
+        if (this.historyLocation == 0) {
             this.currentCommand = e;
         }
         const mode = this.mode;
@@ -247,8 +247,8 @@ export class CommandLineController implements Disposable {
                 this.historyLocation--;
                 this.input.value = res;
             }
-            if(this.historyLocation == 0) {
-               this.input.value = this.currentCommand; 
+            if (this.historyLocation == 0) {
+                this.input.value = this.currentCommand;
             }
             this.input.show();
         }
