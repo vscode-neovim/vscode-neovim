@@ -1,4 +1,11 @@
-import { Range, TextEditorDecorationType, ThemableDecorationRenderOptions, ThemeColor, window } from "vscode";
+import {
+    DecorationOptions,
+    Range,
+    TextEditorDecorationType,
+    ThemableDecorationRenderOptions,
+    ThemeColor,
+    window,
+} from "vscode";
 
 export interface VimHighlightUIAttributes {
     foreground?: number;
@@ -32,6 +39,17 @@ export interface HighlightConfiguration {
     };
 }
 
+export interface HightlightExtMark {
+    hlId: number;
+    /**
+     * mapping with virt_text_pos on ext_mark in neovim
+     * currently support overylay option
+     */
+    virtTextPos?: "overlay" | "right_align" | "eol";
+    virtText?: string;
+    overlayPos?: number;
+    line?: string;
+}
 /**
  * Convert VIM HL attributes to vscode text decoration attributes
  * @param uiAttrs VIM UI attribute
@@ -124,7 +142,7 @@ export class HighlightProvider {
     /**
      * Current HL. key is the grid id and values is two dimension array representing rows and cols. Array may contain empty values
      */
-    private highlights: Map<number, number[][]> = new Map();
+    private highlights: Map<number, HightlightExtMark[][]> = new Map();
     private prevGridHighlightsIds: Map<number, Set<string>> = new Map();
     /**
      * Maps highlight id to highlight group name
@@ -247,6 +265,7 @@ export class HighlightProvider {
         grid: number,
         row: number,
         start: number,
+        lineText: string,
         external: boolean,
         cells: [string, number?, number?][],
     ): boolean {
@@ -271,7 +290,10 @@ export class HighlightProvider {
                 cellHlId = hlId;
             }
             const groupName = this.getHighlightGroupName(cellHlId, external);
-            const repeatTo = text === "\t" || text === "❥" ? 1 : repeat || 1;
+
+            const listCharsTab = "❥";
+
+            const repeatTo = text === "\t" || text === listCharsTab ? 1 : repeat || 1;
             // const repeatTo =
             //     text === "\t" || line[cellIdx] === "\t" ? Math.ceil((repeat || tabSize) / tabSize) : repeat || 1;
             for (let i = 0; i < repeatTo; i++) {
@@ -280,7 +302,17 @@ export class HighlightProvider {
                 }
                 if (groupName) {
                     hasUpdates = true;
-                    gridHl[row][cellIdx] = cellHlId;
+                    const hlDeco: HightlightExtMark = {
+                        hlId: cellHlId,
+                    };
+                    const curChar = lineText.slice(cellIdx, cellIdx + text.length);
+                    // text is not same as the cell text on buffer
+                    if (curChar != text && text != " " && text != "" && text != listCharsTab) {
+                        hlDeco.virtText = text;
+                        hlDeco.virtTextPos = "overlay";
+                        hlDeco.overlayPos = lineText.length > 0 ? cellIdx : 1;
+                    }
+                    gridHl[row][cellIdx] = hlDeco;
                 } else if (gridHl[row][cellIdx]) {
                     hasUpdates = true;
                     delete gridHl[row][cellIdx];
@@ -333,9 +365,12 @@ export class HighlightProvider {
         }
     }
 
-    public getGridHighlights(grid: number, topLine: number): [TextEditorDecorationType, Range[]][] {
-        const result: [TextEditorDecorationType, Range[]][] = [];
-        const hlRanges: Map<string, Array<{ lineS: number; lineE: number; colS: number; colE: number }>> = new Map();
+    public getGridHighlights(grid: number, topLine: number): [TextEditorDecorationType, DecorationOptions[]][] {
+        const result: [TextEditorDecorationType, DecorationOptions[]][] = [];
+        const hlRanges: Map<
+            string,
+            Array<{ lineS: number; lineE: number; colS: number; colE: number; hl?: HightlightExtMark }>
+        > = new Map();
         const gridHl = this.highlights.get(grid);
 
         if (gridHl) {
@@ -347,8 +382,22 @@ export class HighlightProvider {
             let currHlEndCol = 0;
             // forEach faster than for in/of for arrays while iterating on array with empty values
             gridHl.forEach((rowHighlights, rowIdx) => {
-                rowHighlights.forEach((cellHlId, cellIdx) => {
-                    const cellHlName = this.highlightIdToGroupName.get(cellHlId);
+                rowHighlights.forEach((hlDeco, cellIdx) => {
+                    const cellHlName = this.highlightIdToGroupName.get(hlDeco.hlId);
+                    if (cellHlName && hlDeco.virtTextPos === "overlay") {
+                        if (!hlRanges.has(cellHlName)) {
+                            hlRanges.set(cellHlName, []);
+                        }
+                        // it only has one character we don't need group like normal highlight
+                        hlRanges.get(cellHlName)!.push({
+                            lineS: rowIdx,
+                            lineE: rowIdx,
+                            colS: hlDeco.overlayPos || cellIdx,
+                            colE: cellIdx + 1,
+                            hl: hlDeco,
+                        });
+                        return;
+                    }
                     if (
                         cellHlName &&
                         currHlName === cellHlName &&
@@ -401,11 +450,24 @@ export class HighlightProvider {
             if (!decorator) {
                 continue;
             }
-            const decoratorRanges = ranges.map(
-                (r) => new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1),
-            );
+            const decoratorRanges = ranges.map((r) => {
+                if (r.hl) {
+                    const conf = this.getDecoratorOptions(decorator);
+                    return this.createVirtTextDecorationOption(
+                        r.hl.virtText!,
+                        { ...conf, backgroundColor: conf.backgroundColor || new ThemeColor("editor.background") },
+                        topLine + r.lineS,
+                        r.colS + 1,
+                        r.colE,
+                    );
+                }
+                return {
+                    range: new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1),
+                } as DecorationOptions;
+            });
             result.push([decorator, decoratorRanges]);
         }
+
         const prevHighlights = this.prevGridHighlightsIds.get(grid);
         if (prevHighlights) {
             for (const groupName of prevHighlights) {
@@ -443,5 +505,39 @@ export class HighlightProvider {
         const decorator = window.createTextEditorDecorationType(options);
         this.decoratorConfigurations.set(decorator, options);
         this.highlighGroupToDecorator.set(groupName, decorator);
+    }
+
+    public createVirtTextDecorationOption(
+        text: string,
+        conf: ThemableDecorationRenderOptions,
+        lineNum: number,
+        col: number,
+        lineLength: number,
+    ): DecorationOptions {
+        const textDeco: DecorationOptions = {
+            range: new Range(lineNum, col + text.length - 1, lineNum, col + text.length - 1),
+            renderOptions: {
+                // Inspired by https://github.com/VSCodeVim/Vim/blob/badecf1b7ecd239e3ed58720245b6f4a74e439b7/src/actions/plugins/easymotion/easymotion.ts#L64
+                after: {
+                    // What's up with the negative right
+                    // margin? That shifts the decoration to the
+                    // right. By default VSCode places the
+                    // decoration behind the text. If we
+                    // shift it one character to the right,
+                    // it will be on top.
+                    // Why do all that math in the right
+                    // margin?  If we try to draw off the
+                    // end of the screen, VSCode will place
+                    // the text in a column we weren't
+                    // expecting. This code accounts for that.
+                    margin: `0 0 0 -${Math.min(text.length - (col + text.length - 1 - lineLength), text.length)}ch`,
+                    ...conf,
+                    ...conf.before,
+                    width: `${text.length}ch; position:absoulute; z-index:99;`,
+                    contentText: text,
+                },
+            },
+        };
+        return textDeco;
     }
 }
