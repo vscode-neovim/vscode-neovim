@@ -1,5 +1,23 @@
 # Change Log
 
+## [0.0.85]
+
+-   Show more messages in output ( #881, #902 )
+-   Fix insert mode C-a ( #737 )
+-   Improve efficiency applying small edits ( #830 )
+-   Support extmark_overlay, adding hop/lightspeed/sneak support ( #868 )
+-   Fix CI
+
+## [0.0.84]
+
+-   More keybinding improvements with notebook support ( #680 )
+-   Small bugfixes and project maintenance ( #772, #723, #731 )
+
+## [0.0.83]
+
+-   Allow installation in Codespaces ( #262 )
+-   Send visual selection with C-S-F ( #535 )
+
 ## [0.0.82]
 
 -   Big updates to keybindings ! ( #513 , #654 , #557 , #585 , #655 )
@@ -106,7 +124,7 @@ in this release. So if you see any regression - please fill an issue
 -   Fix brackets for substitute command ( #300 )
 -   Add logger and log-related configuration to options
 -   Change some default code-actions mappings ( #339 )
--   Add extension icon. Many thanks to https://github.com/ngscheurich
+-   Add extension icon. Many thanks to <https://github.com/ngscheurich>
 
 ## [0.0.52]
 
