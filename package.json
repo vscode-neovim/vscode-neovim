@@ -1560,12 +1560,6 @@
             },
             {
                 "command": "vscode-neovim.send-redraw",
-                "key": "ctrl+a",
-                "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
-                "args": "<C-a>"
-            },
-            {
-                "command": "vscode-neovim.send-redraw",
                 "key": "ctrl+l",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "<C-l>"
