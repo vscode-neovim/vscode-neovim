@@ -8,6 +8,11 @@ import { normalizeInputString } from "./utils";
 
 const LOG_PREFIX = "TypingManager";
 
+interface CompositeEscapeArgs {
+    key: string,
+    timeoutLen?: number
+}
+
 export class TypingManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
@@ -38,6 +43,7 @@ export class TypingManager implements Disposable {
      * j or k, the first composite escape key that was pressed.
      */
     private compositeEscapeFirstPressKey?: string;
+    private orange?: any;
 
     public constructor(
         private logger: Logger,
@@ -45,13 +51,16 @@ export class TypingManager implements Disposable {
         private modeManager: ModeManager,
         private changeManager: DocumentChangeManager,
     ) {
+        //Create output channel
+        this.orange = window.createOutputChannel("Apple2");
+
         this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
         this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
-                this.handleCompositeEscape(key),
-            ),
+            commands.registerCommand("vscode-neovim.compositeEscape1", (x: CompositeEscapeArgs) => {
+                this.handleCompositeEscape(x.key, x.timeoutLen)
+            }),
         );
         this.modeManager.onModeChange(this.onModeChange);
     }
@@ -163,12 +172,13 @@ export class TypingManager implements Disposable {
     //   if last key pressed was the other (j for k, k for j)
     //      and pressed recently enough,
     //   then backspace and simulate esc
-    private handleCompositeEscape = async (key: string): Promise<void> => {
+    private handleCompositeEscape = async (key: string, timeoutLen: number=200): Promise<void> => {
+                this.orange.appendLine("I am a banana.."+key);
         const now = new Date().getTime();
         if (this.compositeEscapeFirstPressKey &&
             this.compositeEscapeFirstPressKey === (key === 'j' ? 'k' : 'j') &&
             this.compositeEscapeFirstPressTimestamp &&
-            now - this.compositeEscapeFirstPressTimestamp <= 200
+            now - this.compositeEscapeFirstPressTimestamp <= timeoutLen
         ) {
             this.compositeEscapeFirstPressTimestamp = undefined;
             this.compositeEscapeFirstPressKey = undefined;
