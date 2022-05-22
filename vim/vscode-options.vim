@@ -49,6 +49,7 @@ set modelines=0
 
 " Turn off auto-folding
 set nofoldenable
+set foldcolumn=0
 set foldmethod=manual
 
 " Turn on auto-indenting
