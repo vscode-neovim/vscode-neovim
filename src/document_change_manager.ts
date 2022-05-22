@@ -19,7 +19,9 @@ import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
     accumulateDotRepeatChange,
+    applyEditorDiffOperations,
     callAtomic,
+    computeEditorOperationsFromDiff,
     diffLineToChars,
     DotRepeatChange,
     getDocumentLineArray,
@@ -221,13 +223,9 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             this.bufferSkipTicks.set(bufId, bufTick + bufLinesRequests.length);
             requests.push(...bufLinesRequests);
         }
-
-        // when changing document while in insert mode, this condition causes the cursor in the origin document
-        // to be set to the same coordinates as the target document. See https://github.com/vscode-neovim/vscode-neovim/issues/776
-        // leaving it here for now just in case removing it breaks something
-        // if (window.activeTextEditor) {
-        //     requests.push(["nvim_win_set_cursor", [0, getNeovimCursorPosFromEditor(window.activeTextEditor)]]);
-        // }
+        if (window.activeTextEditor) {
+            requests.push(["nvim_win_set_cursor", [0, getNeovimCursorPosFromEditor(window.activeTextEditor)]]);
+        }
         if (!requests.length) {
             return;
         }
@@ -449,7 +447,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     }
                     this.documentSkipVersionOnChange.set(doc, doc.version + 1);
 
-                    // const cursor = editor.selection.active;
+                    const cursorBefore = editor.selection.active;
                     const success = await editor.edit(
                         (builder) => {
                             for (const range of ranges) {
@@ -477,7 +475,27 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                                             newText.slice(oldText.length),
                                         );
                                     } else {
-                                        builder.replace(new Range(range.start, 0, range.end, 999999), text.join("\n"));
+                                        const changeSpansOneLineOnly =
+                                            range.start == range.end && range.newStart == range.newEnd;
+
+                                        let editorOps;
+
+                                        if (changeSpansOneLineOnly) {
+                                            editorOps = computeEditorOperationsFromDiff(diff(oldText, newText));
+                                        }
+
+                                        // If supported, efficiently modify only part of line that has changed by
+                                        // generating a diff and computing editor operations from it. This prevents
+                                        // flashes of non syntax-highlighted text (e.g. when `x` or `cw`, only
+                                        // remove a single char/the word).
+                                        if (editorOps && changeSpansOneLineOnly) {
+                                            applyEditorDiffOperations(builder, { editorOps, line: range.newStart });
+                                        } else {
+                                            builder.replace(
+                                                new Range(range.start, 0, range.end, 999999),
+                                                text.join("\n"),
+                                            );
+                                        }
                                     }
                                 } else if (range.type === "added") {
                                     if (range.start >= editor.document.lineCount) {
@@ -499,6 +517,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     if (success) {
                         if (!editor.selection.anchor.isEqual(editor.selection.active)) {
                             editor.selections = [new Selection(editor.selection.active, editor.selection.active)];
+                        } else {
+                            // Some editor operations change cursor position. This confuses cursor
+                            // sync from Vim to Code (e.g. when cursor did not change in Vim but
+                            // changed in Code). Fix by forcing cursor position to stay the same
+                            // indepent of the diff operation in question.
+                            editor.selections = [new Selection(cursorBefore, cursorBefore)];
                         }
                         this.cursorAfterTextDocumentChange.set(editor.document, {
                             line: editor.selection.active.line,

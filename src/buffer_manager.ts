@@ -449,8 +449,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
-        const cursor = getNeovimCursorPosFromEditor(activeEditor);
-        await this.client.request("nvim_win_set_cursor", [winId, cursor]);
         await this.client.request("nvim_set_current_win", [winId]);
     };
 
@@ -598,14 +596,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     private findPathFromFileName(name: string): string {
-        const rootFolderPath = workspace.workspaceFolders![0].uri.fsPath;
-        let filePath: string;
-        if (rootFolderPath) {
-            filePath = path.resolve(rootFolderPath, name);
+        const folders = workspace.workspaceFolders;
+        if (folders) {
+            return path.resolve(folders[0].uri.fsPath, name);
         } else {
-            filePath = name;
+            return name;
         }
-        return filePath;
     }
 
     private findDocFromUri(uri: string): TextDocument | undefined {
