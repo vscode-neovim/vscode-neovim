@@ -105,7 +105,7 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
     private onCmdChange = async (e: string, complete: boolean): Promise<void> => {
         let keys = "<C-u>" + normalizeInputString(e);
         if (complete) {
-            keys += "<C-d>";
+            keys += "<C-e>";
         }
         await this.client.input(keys);
     };
