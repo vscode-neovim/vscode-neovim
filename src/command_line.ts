@@ -103,6 +103,7 @@ export class CommandLineController implements Disposable {
         if (!this.isDisplayed) {
             return;
         }
+        this.callbacks.onChanged(this.input.value, false);
         this.callbacks.onAccepted();
     };
 
