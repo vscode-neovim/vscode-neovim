@@ -44,7 +44,7 @@ export class CommandLineController implements Disposable {
         this.disposables.push(
             commands.registerCommand("vscode-neovim.complete-selection-cmdline", this.acceptSelection),
         );
-        this.disposables.push(commands.registerCommand("vscode-neovim.send-redraw", this.sendRedraw));
+        this.disposables.push(commands.registerCommand("vscode-neovim.send-cmdline", this.sendRedraw));
     }
 
     public show(content = "", mode: string, prompt = ""): void {
