@@ -45,6 +45,7 @@ export class CommandLineController implements Disposable {
             commands.registerCommand("vscode-neovim.complete-selection-cmdline", this.acceptSelection),
         );
         this.disposables.push(commands.registerCommand("vscode-neovim.send-cmdline", this.sendRedraw));
+        this.disposables.push(commands.registerCommand("vscode-neovim.test-cmdline", this.testCmdline));
     }
 
     public show(content = "", mode: string, prompt = ""): void {
@@ -75,7 +76,7 @@ export class CommandLineController implements Disposable {
                 this.redrawExpected = false;
                 this.updatedFromNvim = true;
             } else {
-                this.logger.debug(`${LOG_PREFIX}: Ignoring cmdline_show because no redraw expected`);
+                this.logger.debug(`${LOG_PREFIX}: Ignoring cmdline_show because no redraw expected: ${content}`);
             }
         }
     }
@@ -131,8 +132,9 @@ export class CommandLineController implements Disposable {
         }
         if (this.updatedFromNvim) {
             this.updatedFromNvim = false;
-            this.logger.debug(`${LOG_PREFIX}: Skipped updating cmdline because change originates from nvim`);
+            this.logger.debug(`${LOG_PREFIX}: Skipped updating cmdline because change originates from nvim: ${e}`);
         } else {
+            this.logger.debug(`${LOG_PREFIX}: Sending cmdline to nvim: ${e}`);
             this.callbacks.onChanged(e, useCompletion);
         }
     };
@@ -219,5 +221,9 @@ export class CommandLineController implements Disposable {
     private sendRedraw = (keys: string): void => {
         this.redrawExpected = true;
         this.client.input(keys);
+    };
+
+    private testCmdline = (e: string): void => {
+        this.input.value += e;
     };
 }

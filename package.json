@@ -831,7 +831,7 @@
             },
             {
                 "command": "deleteAllLeft",
-                "key": "ctrl-u",
+                "key": "ctrl+u",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert"
             },
             {
@@ -974,31 +974,31 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r shift-'",
+                "key": "ctrl+r shift+'",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "\""
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r shift-5",
+                "key": "ctrl+r shift+5",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "%"
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r shift-3",
+                "key": "ctrl+r shift+3",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "#"
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r shift-8",
+                "key": "ctrl+r shift+8",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "*"
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r shift-=",
+                "key": "ctrl+r shift+=",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "+"
             },
@@ -1010,7 +1010,7 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
-                "key": "ctrl+r shift-;",
+                "key": "ctrl+r shift+;",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": ":"
             },
@@ -1278,31 +1278,31 @@
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r shift-'",
+                "key": "ctrl+r shift+'",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "<C-r>\""
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r shift-5",
+                "key": "ctrl+r shift+5",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "<C-r>%"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r shift-3",
+                "key": "ctrl+r shift+3",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "<C-r>#"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r shift-8",
+                "key": "ctrl+r shift+8",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "<C-r>*"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r shift-=",
+                "key": "ctrl+r shift+=",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "<C-r>+"
             },
@@ -1314,7 +1314,7 @@
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r shift-;",
+                "key": "ctrl+r shift+;",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace",
                 "args": "<C-r>:"
             },
