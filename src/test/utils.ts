@@ -119,6 +119,15 @@ export function hasVSCodeCursorStyle(style: "block" | "underline" | "line", edit
     }
 }
 
+export async function sendVSCodeCommand(command: string, args: unknown = "", waitTimeout = 200): Promise<void> {
+    await commands.executeCommand(command, args);
+    await wait(waitTimeout);
+}
+
+export async function sendVSCodeKeysAtomic(keys: string, waitTimeout = 200): Promise<void> {
+    sendVSCodeCommand("type", { text: keys }, waitTimeout);
+}
+
 export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<void> {
     let key = "";
     let append = false;
@@ -130,19 +139,13 @@ export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<v
             append = false;
         }
         if (!append) {
-            await commands.executeCommand("type", { text: key });
-            await wait(waitTimeout);
+            sendVSCodeKeysAtomic(key, waitTimeout);
         }
     }
 }
 
 export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTimeout = 1000): Promise<void> {
     await client.input(keys);
-    await wait(waitTimeout);
-}
-
-export async function sendVSCodeKeysAtomic(keys: string, waitTimeout = 200): Promise<void> {
-    await commands.executeCommand("type", { text: keys });
     await wait(waitTimeout);
 }
 
