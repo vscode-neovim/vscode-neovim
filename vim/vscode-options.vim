@@ -77,6 +77,7 @@ function s:forceLocalOptions()
         setlocal syntax=off
     endif
     setlocal nofoldenable
+    setlocal foldcolumn=0
     setlocal foldmethod=manual
     setlocal nolazyredraw
 endfunction
