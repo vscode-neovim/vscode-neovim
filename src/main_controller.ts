@@ -119,9 +119,10 @@ export class MainController implements vscode.Disposable {
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
             `source ${neovimSupportScriptPath}`,
-            "-c",
-            `cd ${cwd}`,
         ];
+        if (vscode.env.remoteName != "ssh-remote") {
+            args.push("-c", `cd ${cwd}`);
+        }
         if (settings.useWsl) {
             args.unshift(settings.neovimPath);
         }
