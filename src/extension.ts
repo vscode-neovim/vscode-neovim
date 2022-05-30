@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { MainController } from "./main_controller";
-import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME } from "./utils";
+import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME, getCurrentViewPortHeight } from "./utils";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -45,7 +45,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             } as any,
             mouseSelection: mouseVisualSelection,
             neovimPath: neovimPath,
-            neovimViewportHeight: 201,
+            neovimViewportHeight: getCurrentViewPortHeight(vscode.window.activeTextEditor),
             useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
             neovimViewportWidth: neovimWidth,
             textDecorationsAtTop: textDecorationsAtTop,

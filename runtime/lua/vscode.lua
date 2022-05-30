@@ -6,7 +6,7 @@ local M = {}
 M.scroll_viewport = function(vscode_topline, vscode_endline)
     local scrolloff = vim.wo.scrolloff ~= -1 and vim.wo.scrolloff or vim.o.scrolloff
     local current_height = vim.api.nvim_win_get_height(0)
-    local new_height = vscode_endline - vscode_topline + scrolloff * 2
+    local new_height = vscode_endline - vscode_topline + scrolloff * 2 + 2
 
     -- resize height
     if current_height ~= new_height then

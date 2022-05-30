@@ -608,3 +608,11 @@ export function applyEditorDiffOperations(
         }
     });
 }
+
+export function getCurrentViewPortHeight(editor: TextEditor | undefined, defaultValue = 201): number {
+    if (!editor || editor.visibleRanges.length === 0) {
+        return defaultValue;
+    }
+    //default value scrolloff is 3. It double the value
+    return editor.visibleRanges[editor.visibleRanges.length - 1].end.line - editor.visibleRanges[0].start.line + 6;
+}

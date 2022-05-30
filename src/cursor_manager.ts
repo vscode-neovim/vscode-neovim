@@ -464,6 +464,7 @@ export class CursorManager
                     value: Math.abs(deltaLine),
                     select: false,
                 });
+                this.scrollNeovim(editor.visibleRanges);
             }
             if (Math.abs(deltaChar) > 0) {
                 if (Math.abs(deltaLine) > 0) {
@@ -507,7 +508,6 @@ export class CursorManager
                 commands.executeCommand("editor.action.wordHighlight.trigger");
             }
         }
-        this.scrollNeovim(editor.visibleRanges);
     };
 
     private getDebouncedUpdateCursorPos = (editor: TextEditor): CursorManager["updateCursorPosInEditor"] => {
@@ -581,7 +581,6 @@ export class CursorManager
     };
 
     private scrollNeovim(ranges: readonly Range[]): void {
-
         if (!ranges || ranges.length == 0) {
             return;
         }

@@ -24,7 +24,7 @@ import { CommandLineManager } from "./command_line_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { HighlightManager } from "./highlight_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
-import { findLastEvent } from "./utils";
+import { findLastEvent, getCurrentViewPortHeight } from "./utils";
 import { MutlilineMessagesManager } from "./multiline_messages_manager";
 
 interface RequestResponse {
@@ -52,9 +52,6 @@ export interface ControllerSettings {
 const LOG_PREFIX = "MainController";
 
 export class MainController implements vscode.Disposable {
-    // to not deal with screenrow positioning, we set height to high value and scrolloff to value / 2. so screenrow will be always constant
-    // big scrolloff is needed to make sure that editor visible space will be always within virtual vim boundaries, regardless of current
-    // cursor positioning
     private NEOVIM_WIN_HEIGHT = 201;
     private NEOVIM_WIN_WIDTH = 1000;
 
@@ -183,7 +180,7 @@ export class MainController implements vscode.Disposable {
         this.disposables.push(this.modeManager);
 
         this.bufferManager = new BufferManager(this.logger, this.client, {
-            neovimViewportHeight: 201,
+            neovimViewportHeight: getCurrentViewPortHeight(vscode.window.activeTextEditor),
             neovimViewportWidth: 1000,
         });
         this.disposables.push(this.bufferManager);
