@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { MainController } from "./main_controller";
-import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME, getCurrentViewPortHeight } from "./utils";
+import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME } from "./utils";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -24,6 +24,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useWsl = isWindows && settings.get("useWSL", false);
     const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
+    const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 3);
     const customInit = getNeovimInitPath() ?? "";
     const logPath = settings.get("logPath", "");
     const logLevel = settings.get("logLevel", "none");
@@ -45,7 +46,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             } as any,
             mouseSelection: mouseVisualSelection,
             neovimPath: neovimPath,
-            neovimViewportHeight: getCurrentViewPortHeight(vscode.window.activeTextEditor),
+            neovimViewportHeightExtend: neovimViewportHeightExtend,
             useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
             neovimViewportWidth: neovimWidth,
             textDecorationsAtTop: textDecorationsAtTop,

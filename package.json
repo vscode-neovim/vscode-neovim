@@ -94,6 +94,12 @@
                     "title": "Neovim width",
                     "description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
                 },
+                "vscode-neovim.neovimViewportHeightExtend": {
+                    "type": "number",
+                    "default": 3,
+                    "title": "Neovim viewport height extend",
+                    "description": "the height difference of neovim viewport and the vscode viewport by this amount."
+                },
                 "vscode-neovim.useCtrlKeysForNormalMode": {
                     "type": "boolean",
                     "default": true,

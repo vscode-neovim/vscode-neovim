@@ -3,7 +3,6 @@ import { NeovimClient, Window } from "neovim";
 import {
     commands,
     Disposable,
-    Range,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
@@ -72,6 +71,7 @@ export class CursorManager
         private bufferManager: BufferManager,
         private changeManager: DocumentChangeManager,
         private settings: CursorManagerSettings,
+        private neovimViewportHeightExtend: number,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
@@ -464,7 +464,6 @@ export class CursorManager
                     value: Math.abs(deltaLine),
                     select: false,
                 });
-                this.scrollNeovim(editor.visibleRanges);
             }
             if (Math.abs(deltaChar) > 0) {
                 if (Math.abs(deltaLine) > 0) {
@@ -487,6 +486,7 @@ export class CursorManager
                     }
                 }
             }
+            this.scrollNeovim(editor);
         } else {
             this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
             const newPos = new Selection(newLine, newCol, newLine, newCol);
@@ -580,21 +580,31 @@ export class CursorManager
         }
     };
 
-    private scrollNeovim(ranges: readonly Range[]): void {
+    private scrollNeovim(editor: TextEditor | null): void {
+        if (editor == null || !this.modeManager.isNormalMode) {
+            return;
+        }
+        const ranges = editor.visibleRanges;
         if (!ranges || ranges.length == 0) {
             return;
         }
-        const startLine = ranges[0].start.line + 1;
+        const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
         // when it have fold we need get the last range. it need add 1 line on multiple fold
-        const endLine = ranges[ranges.length - 1].end.line + ranges.length;
+        const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
 
-        this.client.executeLua("vscode.scroll_viewport(...)", [startLine, endLine]);
+        const currentLine = editor.selection.active.line;
+        const neovimLine = this.neovimCursorPosition.get(editor)?.line || 0;
+        const gridId = this.bufferManager.getGridIdFromEditor(editor);
+        if (gridId == null) {
+            return;
+        }
+        const viewport = this.gridVisibleViewport.get(gridId);
+        if (viewport && neovimLine == currentLine && startLine != viewport?.top + 1) {
+            this.client.executeLua("vscode.scroll_viewport(...)", [startLine, endLine]);
+        }
     }
 
     private onDidChangeVisibleRange = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
-        if (e.textEditor !== window.activeTextEditor || !this.modeManager.isNormalMode) {
-            return;
-        }
-        this.scrollNeovim(e.visibleRanges);
+        this.scrollNeovim(e.textEditor);
     };
 }
