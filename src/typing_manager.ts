@@ -10,7 +10,8 @@ const LOG_PREFIX = "TypingManager";
 
 interface CompositeEscapeArgs {
     key: string,
-    timeoutLen?: number
+    timeoutLen?: number,
+    escOnDoubleTap?: boolean,
 }
 
 export class TypingManager implements Disposable {
@@ -58,8 +59,8 @@ export class TypingManager implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape1", (x: CompositeEscapeArgs) => {
-                this.handleCompositeEscape(x.key, x.timeoutLen)
+            commands.registerCommand("vscode-neovim.compositeEscape", (x: CompositeEscapeArgs) => {
+                this.handleCompositeEscape(x.key, x.timeoutLen, x.escOnDoubleTap)
             }),
         );
         this.modeManager.onModeChange(this.onModeChange);
@@ -168,15 +169,13 @@ export class TypingManager implements Disposable {
         await this.client.input(`<c-o>${keys}`);
     };
 
-    // whenever j or k is pressed,
-    //   if last key pressed was the other (j for k, k for j)
-    //      and pressed recently enough,
-    //   then backspace and simulate esc
-    private handleCompositeEscape = async (key: string, timeoutLen: number=200): Promise<void> => {
-                this.orange.appendLine("I am a banana.."+key);
+    private handleCompositeEscape = async (key: string, timeoutLen: number=200, escOnDoubleTap=false): Promise<void> => {
         const now = new Date().getTime();
         if (this.compositeEscapeFirstPressKey &&
-            this.compositeEscapeFirstPressKey === (key === 'j' ? 'k' : 'j') &&
+            (
+                escOnDoubleTap ||
+                this.compositeEscapeFirstPressKey !== key
+            ) &&
             this.compositeEscapeFirstPressTimestamp &&
             now - this.compositeEscapeFirstPressTimestamp <= timeoutLen
         ) {
