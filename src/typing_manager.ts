@@ -9,9 +9,9 @@ import { normalizeInputString } from "./utils";
 const LOG_PREFIX = "TypingManager";
 
 interface CompositeEscapeArgs {
-    key: string,
-    timeoutLen?: number,
-    escOnDoubleTap?: boolean,
+    key: string;
+    timeoutLen?: number;
+    escOnDoubleTap?: boolean;
 }
 
 export class TypingManager implements Disposable {
@@ -44,7 +44,6 @@ export class TypingManager implements Disposable {
      * j or k, the first composite escape key that was pressed.
      */
     private compositeEscapeFirstPressKey?: string;
-    private orange?: any;
 
     public constructor(
         private logger: Logger,
@@ -52,15 +51,12 @@ export class TypingManager implements Disposable {
         private modeManager: ModeManager,
         private changeManager: DocumentChangeManager,
     ) {
-        //Create output channel
-        this.orange = window.createOutputChannel("Apple2");
-
         this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
         this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.compositeEscape", (x: CompositeEscapeArgs) => {
-                this.handleCompositeEscape(x.key, x.timeoutLen, x.escOnDoubleTap)
+                this.handleCompositeEscape(x.key, x.timeoutLen, x.escOnDoubleTap);
             }),
         );
         this.modeManager.onModeChange(this.onModeChange);
@@ -169,13 +165,11 @@ export class TypingManager implements Disposable {
         await this.client.input(`<c-o>${keys}`);
     };
 
-    private handleCompositeEscape = async (key: string, timeoutLen: number=200, escOnDoubleTap=false): Promise<void> => {
+    private handleCompositeEscape = async (key: string, timeoutLen = 200, escOnDoubleTap = false): Promise<void> => {
         const now = new Date().getTime();
-        if (this.compositeEscapeFirstPressKey &&
-            (
-                escOnDoubleTap ||
-                this.compositeEscapeFirstPressKey !== key
-            ) &&
+        if (
+            this.compositeEscapeFirstPressKey &&
+            (escOnDoubleTap || this.compositeEscapeFirstPressKey !== key) &&
             this.compositeEscapeFirstPressTimestamp &&
             now - this.compositeEscapeFirstPressTimestamp <= timeoutLen
         ) {

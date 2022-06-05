@@ -27,12 +27,12 @@ describe("Composite escape key", () => {
         await closeNvimClient(client);
     });
 
-    beforeEach(async () => await sendVSCodeKeys("S"))
+    beforeEach(async () => await sendVSCodeKeys("S"));
 
     it("escapes on jk and removes 'j'", async () => {
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'j'});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "j" });
         await wait(50);
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'k'});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "k" });
         await wait(69);
         await assertContent(
             {
@@ -44,9 +44,9 @@ describe("Composite escape key", () => {
     });
 
     it("escapes on jj if escOnDoubleTap=true and removes 'j'", async () => {
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'j'});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "j" });
         await wait(50);
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'j', escOnDoubleTap: true});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "j", escOnDoubleTap: true });
         await wait(50);
         await assertContent(
             {
@@ -58,9 +58,9 @@ describe("Composite escape key", () => {
     });
 
     it("does not escape on jj if escOnDoubleTap unset (defaults to false) and does not delete 'jj'", async () => {
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'j'});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "j" });
         await wait(50);
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'j'});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "j" });
         await wait(50);
         await assertContent(
             {
@@ -79,9 +79,9 @@ describe("Composite escape key", () => {
     });
 
     it("handles default timeoutLen", async () => {
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'j'});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "j" });
         await wait(250);
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'k'});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "k" });
         await wait(50);
         await assertContent(
             {
@@ -99,10 +99,10 @@ describe("Composite escape key", () => {
     });
 
     it("handles custom timeoutLen", async () => {
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'j'});
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "j" });
         await wait(250);
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", {key: 'k', timeoutLen: 300});
-        await wait(50)
+        await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "k", timeoutLen: 300 });
+        await wait(50);
         await assertContent(
             {
                 content: [""],
