@@ -17,7 +17,7 @@ describe("Composite escape key", () => {
     before(async () => {
         client = await attachTestNvimClient();
         doc = await vscode.workspace.openTextDocument({
-            content: "",
+            content: "abc",
         });
         await vscode.window.showTextDocument(doc);
         await wait(1000);
@@ -27,7 +27,10 @@ describe("Composite escape key", () => {
         await closeNvimClient(client);
     });
 
-    beforeEach(async () => await sendVSCodeKeys("S"));
+    beforeEach(async () => {
+        // reset content to `abc` and remain in insert mode
+        await sendVSCodeKeys("Sabc");
+    });
 
     it("escapes on jk and removes 'j'", async () => {
         await vscode.commands.executeCommand("vscode-neovim.compositeEscape", { key: "j" });
@@ -36,7 +39,7 @@ describe("Composite escape key", () => {
         await wait(69);
         await assertContent(
             {
-                content: [""],
+                content: ["abc"],
                 mode: "n",
             },
             client,
@@ -50,7 +53,7 @@ describe("Composite escape key", () => {
         await wait(50);
         await assertContent(
             {
-                content: [""],
+                content: ["abc"],
                 mode: "n",
             },
             client,
@@ -72,7 +75,7 @@ describe("Composite escape key", () => {
         await sendEscapeKey();
         await assertContent(
             {
-                content: ["jj"],
+                content: ["abcjj"],
             },
             client,
         );
@@ -92,7 +95,7 @@ describe("Composite escape key", () => {
         await sendEscapeKey();
         await assertContent(
             {
-                content: ["jk"],
+                content: ["abcjk"],
             },
             client,
         );
@@ -105,7 +108,7 @@ describe("Composite escape key", () => {
         await wait(50);
         await assertContent(
             {
-                content: [""],
+                content: ["abc"],
                 mode: "n",
             },
             client,
