@@ -21,7 +21,7 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
     private isRecording = false;
 
     private eventEmitter = new EventEmitter();
-
+    public neovimToggle = true
     public constructor(private logger: Logger, private client: NeovimClient) {
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
     }
@@ -81,7 +81,7 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
     }
 
     private onDidChangeActiveTextEditor = (): void => {
-        if (!this.isNormalMode) {
+        if (!this.isNormalMode&&this.neovimToggle) {
             commands.executeCommand("vscode-neovim.escape");
         }
     };
