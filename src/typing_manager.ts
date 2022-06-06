@@ -41,6 +41,7 @@ export class TypingManager implements Disposable {
         private modeManager: ModeManager,
         private changeManager: DocumentChangeManager,
     ) {
+        this.disposables.push(commands.registerCommand("vscode-neovim.toggle", () => {this.modeManager.neovimToggle=!this.modeManager.neovimToggle}));
         this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
         this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
@@ -115,6 +116,7 @@ export class TypingManager implements Disposable {
     };
 
     private onEscapeKeyCommand = async (): Promise<void> => {
+    if(this.modeManager.neovimToggle){
         this.logger.debug(`${LOG_PREFIX}: Escape key`);
         if (this.modeManager.isInsertMode) {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim`);
@@ -138,6 +140,7 @@ export class TypingManager implements Disposable {
         // console.log(lines.length);
         // console.log(lines.join("\n"));
         // console.log("====END====");
+    }
     };
 
     private onInsertCtrlOCommand = async (): Promise<void> => {
