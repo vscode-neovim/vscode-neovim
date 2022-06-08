@@ -1,5 +1,14 @@
-import { workspace, TextEditor, TextDocumentContentChangeEvent, Position, TextDocument, EndOfLine } from "vscode";
-import { Diff } from "fast-diff";
+import {
+    workspace,
+    TextEditor,
+    TextDocumentContentChangeEvent,
+    Position,
+    TextDocument,
+    EndOfLine,
+    Range,
+    TextEditorEdit,
+} from "vscode";
+import diff, { Diff } from "fast-diff";
 import wcwidth from "ts-wcwidth";
 import { NeovimClient } from "neovim";
 
@@ -521,4 +530,81 @@ export async function callAtomic(
     if (errors.length) {
         logger.error(`${prefix}:\n${errors.join("\n")}`);
     }
+}
+
+type EditorDiffOperation = { op: -1 | 0 | 1; range: [number, number]; chars: string | null };
+
+export function computeEditorOperationsFromDiff(diffs: diff.Diff[]): EditorDiffOperation[] {
+    let curCol = 0;
+    return diffs
+        .map(([op, chars]: diff.Diff) => {
+            let editorOp: EditorDiffOperation | null = null;
+
+            switch (op) {
+                // -1
+                case diff.DELETE:
+                    editorOp = {
+                        op,
+                        range: [curCol, curCol + chars.length],
+                        chars: null,
+                    };
+                    curCol += chars.length;
+                    break;
+
+                // 0
+                case diff.EQUAL:
+                    curCol += chars.length;
+                    break;
+
+                // +1
+                case diff.INSERT:
+                    editorOp = {
+                        op,
+                        range: [curCol, curCol],
+                        chars,
+                    };
+                    curCol += 0; // NOP
+                    break;
+
+                default:
+                    throw new Error("Operation not supported");
+            }
+
+            return editorOp;
+        })
+        .filter(isNotNull);
+
+    // User-Defined Type Guard
+    // https://stackoverflow.com/a/54318054
+    function isNotNull<T>(argument: T | null): argument is T {
+        return argument !== null;
+    }
+}
+
+export function applyEditorDiffOperations(
+    builder: TextEditorEdit,
+    { editorOps, line }: { editorOps: EditorDiffOperation[]; line: number },
+): void {
+    editorOps.forEach((editorOp) => {
+        const {
+            op,
+            range: [from, to],
+            chars,
+        } = editorOp;
+
+        switch (op) {
+            case diff.DELETE:
+                builder.delete(new Range(new Position(line, from), new Position(line, to)));
+                break;
+
+            case diff.INSERT:
+                if (chars) {
+                    builder.insert(new Position(line, from), chars);
+                }
+                break;
+
+            default:
+                break;
+        }
+    });
 }

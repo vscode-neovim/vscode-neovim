@@ -397,11 +397,7 @@ export class CursorManager
                         this.logger.debug(
                             `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
                         );
-                        requests.push([
-                            "nvim_input_mouse",
-                            // nvim_input_mouse is zero based while getNeovimCursorPosForEditor() returns 1 based line
-                            ["left", "press", "", grid, mouseClickPos[0] - 1, mouseClickPos[1]],
-                        ]);
+                        requests.push(["nvim_win_set_cursor", [winId, mouseClickPos]]);
                         requests.push(["nvim_input", ["v"]]);
                     }
                     const lastSelection = selections.slice(-1)[0];

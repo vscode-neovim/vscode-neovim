@@ -78,9 +78,10 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         never,
                         [{ kind: "ui"; ui_name: string; hi_name: string }],
                     ][]) {
-                        if (info && info[0] && info[0].hi_name) {
-                            const name = info[0].hi_name;
-                            this.highlightProvider.addHighlightGroup(id, name, uiAttrs);
+                        // a cell can have multiple highlight groups when it overlap by another highlight
+                        if (info && info.length) {
+                            const groupName = info.reduce((acc, cur) => cur.hi_name + acc, "");
+                            this.highlightProvider.addHighlightGroup(id, groupName, uiAttrs);
                         }
                     }
                     break;
@@ -157,6 +158,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             grid,
                             row,
                             finalStartCol,
+                            line,
                             isExternal,
                             cells,
                         );
@@ -226,7 +228,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
                 for (const [colNum, text] of cols) {
                     if (this.textDecorationsAtTop) {
-                        const width = text.length;
                         // vim sends column in bytes, need to convert to characters
                         const col = convertByteNumToCharNum(line, colNum);
                         const mapKey = [lineNum, Math.min(col + text.length - 1, line.length)].toString();
@@ -245,33 +246,13 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                                 ogText.length,
                             );
                         } else {
-                            const opt: DecorationOptions = {
-                                range: new Range(lineNum, col + text.length - 1, lineNum, col + text.length - 1),
-                                renderOptions: {
-                                    // Inspired by https://github.com/VSCodeVim/Vim/blob/badecf1b7ecd239e3ed58720245b6f4a74e439b7/src/actions/plugins/easymotion/easymotion.ts#L64
-                                    after: {
-                                        // What's up with the negative right
-                                        // margin? That shifts the decoration to the
-                                        // right. By default VSCode places the
-                                        // decoration behind the text. If we
-                                        // shift it one character to the right,
-                                        // it will be on top.
-                                        // Why do all that math in the right
-                                        // margin?  If we try to draw off the
-                                        // end of the screen, VSCode will place
-                                        // the text in a column we weren't
-                                        // expecting. This code accounts for that.
-                                        margin: `0 0 0 -${Math.min(
-                                            text.length - (col + text.length - 1 - line.length),
-                                            text.length,
-                                        )}ch`,
-                                        ...conf,
-                                        ...conf.before,
-                                        width: `${width}ch; position:absoulute; z-index:99;`,
-                                        contentText: text,
-                                    },
-                                },
-                            };
+                            const opt = this.highlightProvider.createVirtTextDecorationOption(
+                                text,
+                                conf,
+                                lineNum,
+                                col,
+                                line.length,
+                            );
                             drawnAt.set(mapKey, opt);
                             options.push(opt);
                         }

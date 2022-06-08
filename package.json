@@ -8,7 +8,7 @@
         "ui",
         "workspace"
     ],
-    "version": "0.0.85",
+    "version": "0.0.86",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -1315,7 +1315,6 @@
         "fast-diff": "^1.2.0",
         "lodash-es": "^4.17.21",
         "neovim": "^4.9.0",
-        "sinon": "^13.0.2",
         "ts-wcwidth": "^2.0.3"
     }
 }
