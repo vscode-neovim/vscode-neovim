@@ -117,7 +117,7 @@ How to run tests:
 -   On a Mac, the <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd> and <kbd>l</kbd> movement keys may not repeat when held, to
     fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
--   To have the explorer keybindings work at all, you will need to set `"workbench.list.keyboardNavigation": "simple"`.
+-   To have the explorer keybindings work at all, you will need to set `"workbench.list.automaticKeyboardNavigation": false`.
     Note that this will disable the filtering in the explorer that occurs when you usually start typing.
 -   The extension works best if `editor.scrollBeyondLastLine` is disabled.
 
