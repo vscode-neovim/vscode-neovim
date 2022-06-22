@@ -1006,7 +1006,19 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad0",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "0"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r 1",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "1"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad1",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "1"
             },
@@ -1018,7 +1030,19 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad2",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "2"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r 3",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "3"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad3",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "3"
             },
@@ -1030,7 +1054,19 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad4",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "4"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r 5",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "5"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad5",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "5"
             },
@@ -1042,7 +1078,19 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad6",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "6"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r 7",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "7"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad7",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "7"
             },
@@ -1054,7 +1102,19 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad8",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "8"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r 9",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "9"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad9",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "9"
             },
@@ -1084,7 +1144,19 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad_Multiply",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "*"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r shift-=",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "+"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad_Add",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "+"
             },
@@ -1108,6 +1180,12 @@
             },
             {
                 "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad_Subtract",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "-"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r =",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "="
@@ -1115,6 +1193,12 @@
             {
                 "command": "vscode-neovim.paste-register",
                 "key": "ctrl+r /",
+                "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
+                "args": "/"
+            },
+            {
+                "command": "vscode-neovim.paste-register",
+                "key": "ctrl+r NumPad_Divide",
                 "when": "editorTextFocus && neovim.mode == insert && !neovim.recording && neovim.ctrlKeysInsert",
                 "args": "/"
             },
