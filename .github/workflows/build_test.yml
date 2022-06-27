@@ -38,6 +38,7 @@ jobs:
                   NEOVIM_DEBUG: 1
                   NEOVIM_DEBUG_HOST: 127.0.0.1
                   NEOVIM_DEBUG_PORT: 4000
+                  DBUS_SESSION_BUS_ADDRESS:
               with:
                   run: yarn run test
     create:
