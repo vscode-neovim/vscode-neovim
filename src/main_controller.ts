@@ -107,9 +107,6 @@ export class MainController implements vscode.Disposable {
         const neovimSupportScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
         const neovimOptionScriptPath = path.posix.join(extensionPath, "vim", "vscode-options.vim");
 
-        const workspaceFolder = vscode.workspace.workspaceFolders;
-        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : "~";
-
         const args = [
             "-N",
             "--embed",
@@ -119,9 +116,14 @@ export class MainController implements vscode.Disposable {
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
             `source ${neovimSupportScriptPath}`,
-            "-c",
-            `cd ${cwd}`,
         ];
+
+        const workspaceFolder = vscode.workspace.workspaceFolders;
+        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : undefined;
+        if (cwd && !settings.useWsl && !vscode.env.remoteName) {
+            args.push("-c", `cd ${cwd}`);
+        }
+
         if (settings.useWsl) {
             args.unshift(settings.neovimPath);
         }
