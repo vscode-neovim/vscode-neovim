@@ -218,7 +218,19 @@ export class CommandLineController implements Disposable {
         if (!sel) {
             return;
         }
-        this.input.value = this.input.value.split(" ").slice(0, -1).concat(sel.label).join(" ");
+        const selected = sel.label;
+        let lastInputEl = this.input.value;
+        // if there is more than one command, get the last one (command, path or space delimited)
+        const symbolCheck = /[\s/\\!@#$:<'>%]/g;
+        if (symbolCheck.test(lastInputEl)) {
+            lastInputEl = lastInputEl.split(symbolCheck).pop()!;
+        }
+        const isSubstring = selected.search(lastInputEl);
+        if ((lastInputEl && isSubstring !== -1) || lastInputEl === "~") {
+            this.input.value = this.input.value.replace(lastInputEl, selected);
+        } else {
+            this.input.value += selected;
+        }
         this.onChange(this.input.value);
     };
 
