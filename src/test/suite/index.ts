@@ -14,6 +14,7 @@ export async function run(): Promise<void> {
         bail: false,
         slow: 20000,
         fullStackTrace: true,
+        retries: 3,
         grep: ".*",
     });
     const testsRoot = path.resolve(__dirname, "..");
