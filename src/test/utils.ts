@@ -125,7 +125,7 @@ export async function sendVSCodeCommand(command: string, args: unknown = "", wai
 }
 
 export async function sendVSCodeKeysAtomic(keys: string, waitTimeout = 200): Promise<void> {
-    sendVSCodeCommand("type", { text: keys }, waitTimeout);
+    await sendVSCodeCommand("type", { text: keys }, waitTimeout);
 }
 
 export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<void> {
@@ -139,7 +139,7 @@ export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<v
             append = false;
         }
         if (!append) {
-            sendVSCodeKeysAtomic(key, waitTimeout);
+            await sendVSCodeKeysAtomic(key, waitTimeout);
         }
     }
 }
