@@ -2,6 +2,9 @@ import { Disposable, window, QuickPick, QuickPickItem, commands } from "vscode";
 import { NeovimClient } from "neovim";
 
 import { GlyphChars } from "./constants";
+import { Logger } from "./logger";
+
+const LOG_PREFIX = "CmdLine";
 
 export interface CommandLineCallbacks {
     onAccepted(): void;
@@ -24,14 +27,13 @@ export class CommandLineController implements Disposable {
 
     private mode = "";
 
-    private neovimClient: NeovimClient;
-
     private ignoreHideEvent = false;
 
-    private callbacks: CommandLineCallbacks;
+    private redrawExpected = false; // whether to accept incoming cmdline_show
 
-    public constructor(client: NeovimClient, callbacks: CommandLineCallbacks) {
-        this.neovimClient = client;
+    private updatedFromNvim = false; // whether to replace nvim cmdline with new content
+
+    public constructor(private logger: Logger, private client: NeovimClient, private callbacks: CommandLineCallbacks) {
         this.callbacks = callbacks;
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;
@@ -39,43 +41,42 @@ export class CommandLineController implements Disposable {
         this.disposables.push(this.input.onDidChangeValue(this.onChange));
         this.disposables.push(this.input.onDidHide(this.onHide));
         this.disposables.push(commands.registerCommand("vscode-neovim.commit-cmdline", this.onAccept));
-        this.disposables.push(commands.registerCommand("vscode-neovim.delete-word-left-cmdline", this.deleteWord));
-        this.disposables.push(commands.registerCommand("vscode-neovim.delete-all-cmdline", this.deleteAll));
-        this.disposables.push(commands.registerCommand("vscode-neovim.delete-char-left-cmdline", this.deleteChar));
-        this.disposables.push(commands.registerCommand("vscode-neovim.history-up-cmdline", this.onHistoryUp));
-        this.disposables.push(commands.registerCommand("vscode-neovim.history-down-cmdline", this.onHistoryDown));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.complete-selection-cmdline", this.acceptSelection),
         );
+        this.disposables.push(commands.registerCommand("vscode-neovim.send-cmdline", this.sendRedraw));
+        this.disposables.push(commands.registerCommand("vscode-neovim.test-cmdline", this.testCmdline));
     }
 
-    public show(initialContent = "", mode: string, prompt = ""): void {
+    public show(content = "", mode: string, prompt = ""): void {
         if (!this.isDisplayed) {
             this.input.value = "";
             this.isDisplayed = true;
-            this.input.value = "";
             this.mode = mode;
             this.input.title = prompt || this.getTitle(mode);
             this.input.show();
             // display content after cmdline appears - otherwise it will be preselected that is not good when calling from visual mode
-            if (initialContent) {
-                this.input.value = initialContent;
+            if (content) {
+                this.input.value = content;
             }
             // Display completions only after 1.5secons, so it won't bother for simple things like ":w" or ":noh"
             this.completionAllowed = false;
             this.completionItems = [];
             this.input.items = [];
             this.completionTimer = setTimeout(this.processCompletionTimer, 1500);
-            // breaks mappings with command line mode, e.g. :call stuff()
-            // this.onChange(this.input.value);
         } else {
             const newTitle = prompt || this.getTitle(mode);
             if (newTitle !== this.input.title) {
                 this.input.title = newTitle;
             }
-            // we want take content for the search modes, because <c-l>/<c-w><c-r> keybindings
-            if (this.mode === "/" || this.mode === "?") {
-                this.input.value = initialContent;
+            // only redraw if triggered from a known keybinding. Otherwise, delayed nvim
+            // cmdline_show could replace fast typing. Also ignores completion artifacts.
+            if (this.redrawExpected && this.input.value !== content) {
+                this.input.value = content;
+                this.redrawExpected = false;
+                this.updatedFromNvim = true;
+            } else {
+                this.logger.debug(`${LOG_PREFIX}: Ignoring cmdline_show because no redraw expected: ${content}`);
             }
         }
     }
@@ -103,6 +104,7 @@ export class CommandLineController implements Disposable {
         if (!this.isDisplayed) {
             return;
         }
+        this.callbacks.onChanged(this.input.value, false);
         this.callbacks.onAccepted();
     };
 
@@ -128,7 +130,13 @@ export class CommandLineController implements Disposable {
         if (!useCompletion) {
             this.cancelCompletions();
         }
-        this.callbacks.onChanged(e, useCompletion);
+        if (this.updatedFromNvim) {
+            this.updatedFromNvim = false;
+            this.logger.debug(`${LOG_PREFIX}: Skipped updating cmdline because change originates from nvim: ${e}`);
+        } else {
+            this.logger.debug(`${LOG_PREFIX}: Sending cmdline to nvim: ${e}`);
+            this.callbacks.onChanged(e, useCompletion);
+        }
     };
 
     private onHide = (): void => {
@@ -172,31 +180,6 @@ export class CommandLineController implements Disposable {
         }
     }
 
-    private deleteAll = (): void => {
-        if (!this.isDisplayed) {
-            return;
-        }
-        this.input.value = "";
-        this.onChange("");
-    };
-
-    private deleteChar = (): void => {
-        if (!this.isDisplayed) {
-            return;
-        }
-        this.input.value = this.input.value.slice(0, -1);
-        this.onChange(this.input.value);
-    };
-
-    private deleteWord = (): void => {
-        if (!this.isDisplayed) {
-            return;
-        }
-
-        this.input.value = this.input.value.trimRight().split(" ").slice(0, -1).join(" ");
-        this.onChange(this.input.value);
-    };
-
     private clean(): void {
         if (this.completionTimer) {
             clearTimeout(this.completionTimer);
@@ -234,21 +217,13 @@ export class CommandLineController implements Disposable {
         this.onChange(this.input.value);
     };
 
-    private onHistoryUp = async (): Promise<void> => {
-        await this.neovimClient.input("<Up>");
-        const res = await this.neovimClient.callFunction("getcmdline", []);
-        if (res) {
-            this.input.value = res;
-            this.input.show();
-        }
+    // use this function for keybindings in command line that cause content to update
+    private sendRedraw = (keys: string): void => {
+        this.redrawExpected = true;
+        this.client.input(keys);
     };
 
-    private onHistoryDown = async (): Promise<void> => {
-        await this.neovimClient.input("<Down>");
-        const res = await this.neovimClient.callFunction("getcmdline", []);
-        if (res) {
-            this.input.value = res;
-            this.input.show();
-        }
+    private testCmdline = (e: string): void => {
+        this.input.value += e;
     };
 }
