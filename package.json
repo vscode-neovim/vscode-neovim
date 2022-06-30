@@ -285,6 +285,10 @@
                 "title": "Neovim: Sync pending insert-mode changes and send key"
             },
             {
+                "command": "vscode-neovim.escape",
+                "title": "Escape key"
+            },
+            {
                 "command": "vscode-neovim.compositeEscape1",
                 "title": "Composite escape key 1"
             },
@@ -343,34 +347,29 @@
         ],
         "keybindings": [
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.escape",
                 "key": "ctrl+[",
-                "when": "editorTextFocus && neovim.init",
-                "args": "<Esc>"
+                "when": "editorTextFocus && neovim.init"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.escape",
                 "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init && neovim.mode == normal && neovim.ctrlKeysNormal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible",
-                "args": "<Esc>"
+                "when": "editorTextFocus && neovim.init && neovim.mode == normal && neovim.ctrlKeysNormal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.escape",
                 "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init && neovim.mode != normal && neovim.ctrlKeysInsert",
-                "args": "<Esc>"
+                "when": "editorTextFocus && neovim.init && neovim.mode != normal && neovim.ctrlKeysInsert"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.escape",
                 "key": "Escape",
-                "when": "editorTextFocus && neovim.init && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible",
-                "args": "<Esc>"
+                "when": "editorTextFocus && neovim.init && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.escape",
                 "key": "Escape",
-                "when": "editorTextFocus && neovim.init && neovim.mode != normal",
-                "args": "<Esc>"
+                "when": "editorTextFocus && neovim.init && neovim.mode != normal"
             },
             {
                 "command": "vscode-neovim.send",
