@@ -102,16 +102,10 @@ export class TypingManager implements Disposable {
     };
 
     private onVSCodeType = (_editor: TextEditor, edit: TextEditorEdit, type: { text: string }): void => {
-        if (!this.modeManager.isInsertMode || this.modeManager.isRecordingInInsertMode || this.isEnteringInsertMode) {
-            if (this.isEnteringInsertMode) {
-                this.pendingKeysAfterEnter += type.text;
-            } else {
-                this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
-            }
-        } else if (this.isExitingInsertMode) {
+        if (this.isExitingInsertMode || this.isEnteringInsertMode) {
             this.pendingKeysAfterExit += type.text;
         } else {
-            commands.executeCommand("default:type", { text: type.text });
+            this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
         }
     };
 
@@ -119,7 +113,7 @@ export class TypingManager implements Disposable {
         this.logger.debug(`${LOG_PREFIX}: Sync and send for: ${key}`);
         if (this.modeManager.isInsertMode) {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
-            this.isExitingInsertMode = true;
+            if (key.toLowerCase() == "<esc>") this.isExitingInsertMode = true;
             // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
             // see https://github.com/asvetliakov/vscode-neovim/issues/324
             if (!this.typeHandlerDisposable) {
@@ -141,7 +135,7 @@ export class TypingManager implements Disposable {
             // jj
             this.compositeEscapeFirstPressTimestamp = undefined;
             await commands.executeCommand("deleteLeft");
-            this.onSyncSendCommand("<esc>");
+            this.onSyncSendCommand("<Esc>");
         } else {
             this.compositeEscapeFirstPressTimestamp = now;
             // insert character
@@ -154,7 +148,7 @@ export class TypingManager implements Disposable {
         if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
             this.compositeEscapeFirstPressTimestamp = undefined;
             await commands.executeCommand("deleteLeft");
-            this.onSyncSendCommand("<esc>");
+            this.onSyncSendCommand("<Esc>");
         } else {
             await commands.executeCommand("default:type", { text: key });
         }
