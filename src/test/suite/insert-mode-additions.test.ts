@@ -85,7 +85,7 @@ describe("Simulated insert keys", () => {
         await sendEscapeKey();
 
         await sendVSCodeKeys("o");
-        await vscode.commands.executeCommand("vscode-neovim.paste-register", "<C-a>");
+        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-a>");
         await wait();
 
         await sendEscapeKey();
@@ -111,10 +111,32 @@ describe("Simulated insert keys", () => {
         await wait();
 
         await sendEscapeKey();
+        await sendVSCodeKeys("k");
         await assertContent(
             {
                 content: ["blah blah", "blah blah", ""],
-                cursor: [2, 0],
+                cursor: [1, 0],
+            },
+            client,
+        );
+    });
+
+    it("Ctrl-r <esc>", async () => {
+        const doc = await vscode.workspace.openTextDocument({ content: "blah blah" });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("I");
+        await vscode.commands.executeCommand("vscode-neovim.paste-register", "<C-r>");
+        await sendEscapeKey();
+        await sendVSCodeKeys("l");
+        await wait();
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["lblah blah"],
+                cursor: [0, 0],
             },
             client,
         );
