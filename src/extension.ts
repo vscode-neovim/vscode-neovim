@@ -25,6 +25,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
     const customInit = getNeovimInitPath() ?? "";
+    const clean = settings.get("neovimClean", false);
     const logPath = settings.get("logPath", "");
     const logLevel = settings.get("logLevel", "none");
     const outputToConsole = settings.get("logOutputToConsole", false);
@@ -36,6 +37,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     try {
         const plugin = new MainController({
             customInitFile: customInit,
+            clean: clean,
             extensionPath: context.extensionPath.replace(/\\/g, "\\\\"),
             highlightsConfiguration: {
                 highlights: highlightConfHighlights,
