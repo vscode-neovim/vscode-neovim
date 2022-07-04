@@ -141,4 +141,56 @@ describe("Simulated insert keys", () => {
             client,
         );
     });
+
+    it("Ctrl-w/Ctrl-h", async () => {
+        const doc = await vscode.workspace.openTextDocument({ content: "blah blah" });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("wi");
+        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-w>");
+        await wait();
+
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["blah"],
+                cursor: [0, 0],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("ea");
+        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-h>");
+        await wait();
+
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["bla"],
+                cursor: [0, 2],
+            },
+            client,
+        );
+    });
+
+    it("Ctrl-u", async () => {
+        const doc = await vscode.workspace.openTextDocument({ content: "blah blah" });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await sendVSCodeKeys("wi");
+        await sendVSCodeKeys("blah blah");
+        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-u>");
+        await wait();
+
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["blah blah"],
+                cursor: [0, 4],
+            },
+            client,
+        );
+    });
 });
