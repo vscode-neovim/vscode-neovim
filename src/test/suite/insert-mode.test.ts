@@ -446,7 +446,7 @@ describe("Insert mode and buffer syncronization", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("ea");
+        await sendVSCodeKeys("0ea");
         await sendVSCodeKeys("aaa");
 
         await Promise.all([sendEscapeKey(1000), sendVSCodeKeys("$")]);

@@ -127,17 +127,19 @@ export class TypingManager implements Disposable {
         }
     };
 
-    private onSyncSendCommand = async (key: string, isExitingInsertMode = false): Promise<void> => {
+    private onSyncSendCommand = async (key: string): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: Sync and send for: ${key}`);
         const mode = await this.client.mode;
         if (this.modeManager.isInsertMode && !mode.blocking) {
-            if (isExitingInsertMode) this.isExitingInsertMode = true;
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
             await this.changeManager.syncDocumentsWithNeovim();
             await this.changeManager.syncDotRepatWithNeovim();
+        } else {
+            this.isExitingInsertMode = false;
         }
         const keys = normalizeInputString(this.pendingKeysAfterExit);
-        this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);
+        if (this.pendingKeysAfterExit !== "")
+            this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);
         this.pendingKeysAfterExit = "";
         await this.client.input(`${key}${keys}`);
     };
@@ -146,7 +148,8 @@ export class TypingManager implements Disposable {
         // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
         // see https://github.com/asvetliakov/vscode-neovim/issues/324
         this.registerType();
-        await this.onSyncSendCommand(key, true);
+        this.isExitingInsertMode = true;
+        await this.onSyncSendCommand(key);
     };
 
     private onPasteRegisterCommand = async (): Promise<void> => {
