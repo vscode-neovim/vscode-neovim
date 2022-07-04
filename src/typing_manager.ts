@@ -8,6 +8,12 @@ import { normalizeInputString } from "./utils";
 
 const LOG_PREFIX = "TypingManager";
 
+interface CompositeEscapeArgs {
+    key: string;
+    timeoutLen?: number;
+    escOnDoubleTap?: boolean;
+}
+
 export class TypingManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
@@ -34,6 +40,10 @@ export class TypingManager implements Disposable {
      * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
      */
     private compositeEscapeFirstPressTimestamp?: number;
+    /**
+     * j or k, the first composite escape key that was pressed.
+     */
+    private compositeEscapeFirstPressKey?: string;
 
     public constructor(
         private logger: Logger,
@@ -45,14 +55,9 @@ export class TypingManager implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
-                this.handleCompositeEscapeFirstKey(key),
-            ),
-        );
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape2", (key: string) =>
-                this.handleCompositeEscapeSecondKey(key),
-            ),
+            commands.registerCommand("vscode-neovim.compositeEscape", (x: CompositeEscapeArgs) => {
+                this.handleCompositeEscape(x.key, x.timeoutLen, x.escOnDoubleTap);
+            }),
         );
         this.modeManager.onModeChange(this.onModeChange);
     }
@@ -160,27 +165,23 @@ export class TypingManager implements Disposable {
         await this.client.input(`<c-o>${keys}`);
     };
 
-    private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {
+    private handleCompositeEscape = async (key: string, timeoutLen = 200, escOnDoubleTap = false): Promise<void> => {
         const now = new Date().getTime();
-        if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
-            // jj
+        if (
+            this.compositeEscapeFirstPressKey &&
+            (escOnDoubleTap || this.compositeEscapeFirstPressKey !== key) &&
+            this.compositeEscapeFirstPressTimestamp &&
+            now - this.compositeEscapeFirstPressTimestamp <= timeoutLen
+        ) {
             this.compositeEscapeFirstPressTimestamp = undefined;
+            this.compositeEscapeFirstPressKey = undefined;
+
             await commands.executeCommand("deleteLeft");
             this.onEscapeKeyCommand();
         } else {
             this.compositeEscapeFirstPressTimestamp = now;
+            this.compositeEscapeFirstPressKey = key;
             // insert character
-            await commands.executeCommand("default:type", { text: key });
-        }
-    };
-
-    private handleCompositeEscapeSecondKey = async (key: string): Promise<void> => {
-        const now = new Date().getTime();
-        if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
-            this.compositeEscapeFirstPressTimestamp = undefined;
-            await commands.executeCommand("deleteLeft");
-            this.onEscapeKeyCommand();
-        } else {
             await commands.executeCommand("default:type", { text: key });
         }
     };
