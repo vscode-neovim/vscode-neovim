@@ -129,8 +129,7 @@ export class TypingManager implements Disposable {
 
     private onSyncSendCommand = async (key: string): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: Sync and send for: ${key}`);
-        const mode = await this.client.mode;
-        if (this.modeManager.isInsertMode && !mode.blocking) {
+        if (this.modeManager.isInsertMode && !(await this.client.mode).blocking) {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
             await this.changeManager.syncDocumentsWithNeovim();
             await this.changeManager.syncDotRepatWithNeovim();
