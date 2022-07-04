@@ -13,7 +13,7 @@ export async function run(): Promise<void> {
         timeout: 35000,
         bail: false,
         slow: 20000,
-        fullStackTrace: true,
+        fullTrace: true,
         retries: 3,
         grep: ".*",
     });
