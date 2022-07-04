@@ -35,7 +35,7 @@ describe("Simulated insert keys", () => {
         await setCursor(0, 2);
         await sendVSCodeKeys("i123");
         await wait();
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-o>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-o>");
         await wait();
         await sendVSCodeKeys("h");
         await wait();
@@ -61,7 +61,7 @@ describe("Simulated insert keys", () => {
         await sendVSCodeSpecialKey("cursorLeft");
         await sendVSCodeSpecialKey("cursorLeft");
         await wait();
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-o>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-o>");
         await wait();
         await sendVSCodeKeys("x");
         await wait();
@@ -85,7 +85,7 @@ describe("Simulated insert keys", () => {
         await sendEscapeKey();
 
         await sendVSCodeKeys("o");
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-a>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
         await wait();
 
         await sendEscapeKey();
@@ -148,7 +148,7 @@ describe("Simulated insert keys", () => {
         await wait();
 
         await sendVSCodeKeys("wi");
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-w>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-w>");
         await wait();
 
         await sendEscapeKey();
@@ -161,7 +161,7 @@ describe("Simulated insert keys", () => {
         );
 
         await sendVSCodeKeys("ea");
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-h>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-h>");
         await wait();
 
         await sendEscapeKey();
@@ -181,7 +181,7 @@ describe("Simulated insert keys", () => {
 
         await sendVSCodeKeys("wi");
         await sendVSCodeKeys("blah blah");
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-u>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-u>");
         await wait();
 
         await sendEscapeKey();

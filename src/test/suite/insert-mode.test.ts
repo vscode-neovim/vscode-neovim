@@ -494,7 +494,7 @@ describe("Insert mode and buffer syncronization", () => {
         await sendVSCodeKeys("a3");
         await sendEscapeKey(1000);
         await sendVSCodeKeys("a");
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-a>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
         await wait();
 
         await sendEscapeKey(1000);
@@ -515,7 +515,7 @@ describe("Insert mode and buffer syncronization", () => {
         await sendVSCodeKeys("ea blah2");
         await sendEscapeKey(1000);
         await sendVSCodeKeys("A");
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-a>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
         await wait();
 
         await sendEscapeKey(1000);
@@ -536,7 +536,7 @@ describe("Insert mode and buffer syncronization", () => {
         await sendVSCodeKeys("wiblah2\n");
         await sendEscapeKey(1000);
         await sendVSCodeKeys("A");
-        await vscode.commands.executeCommand("vscode-neovim.sync-send", "<C-a>");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
         await wait();
 
         await sendEscapeKey(1000);

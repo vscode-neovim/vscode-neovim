@@ -42,9 +42,7 @@ export class TypingManager implements Disposable {
         private changeManager: DocumentChangeManager,
     ) {
         this.registerType();
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.sync-send", (key) => this.onSyncSendCommand(key)),
-        );
+        this.disposables.push(commands.registerCommand("vscode-neovim.send", (key) => this.onSendCommand(key)));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.paste-register", this.onPasteRegisterCommand));
         this.disposables.push(
@@ -127,20 +125,20 @@ export class TypingManager implements Disposable {
         }
     };
 
-    private onSyncSendCommand = async (key: string): Promise<void> => {
-        this.logger.debug(`${LOG_PREFIX}: Sync and send for: ${key}`);
+    private onSendCommand = async (key: string): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX}: Send for: ${key}`);
         if (this.modeManager.isInsertMode && !(await this.client.mode).blocking) {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
             await this.changeManager.syncDocumentsWithNeovim();
             await this.changeManager.syncDotRepatWithNeovim();
+            const keys = normalizeInputString(this.pendingKeysAfterExit);
+            this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);
+            this.pendingKeysAfterExit = "";
+            await this.client.input(`${key}${keys}`);
         } else {
             this.isExitingInsertMode = false;
+            await this.client.input(`${key}`);
         }
-        const keys = normalizeInputString(this.pendingKeysAfterExit);
-        if (this.pendingKeysAfterExit !== "")
-            this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);
-        this.pendingKeysAfterExit = "";
-        await this.client.input(`${key}${keys}`);
     };
 
     private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
@@ -148,12 +146,12 @@ export class TypingManager implements Disposable {
         // see https://github.com/asvetliakov/vscode-neovim/issues/324
         this.registerType();
         this.isExitingInsertMode = true;
-        await this.onSyncSendCommand(key);
+        await this.onSendCommand(key);
     };
 
     private onPasteRegisterCommand = async (): Promise<void> => {
         this.registerType();
-        await this.onSyncSendCommand("<C-r>");
+        await this.onSendCommand("<C-r>");
     };
 
     private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {

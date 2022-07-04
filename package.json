@@ -286,10 +286,6 @@
                 "title": "Neovim: send key"
             },
             {
-                "command": "vscode-neovim.sync-send",
-                "title": "Neovim: Sync pending insert-mode changes and send key"
-            },
-            {
                 "command": "vscode-neovim.escape",
                 "title": "Escape key"
             },
@@ -830,43 +826,43 @@
                 "args": "<C-o>"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+u",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert",
                 "args": "<C-u>"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+w",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert",
                 "args": "<C-w>"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+h",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert",
                 "args": "<C-h>"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+t",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert",
                 "args": "<C-t>"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+d",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert",
                 "args": "<C-d>"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+j",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert",
                 "args": "<C-j>"
             },
             {
-                "command": "vscode-neovim.sync-send",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+a",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert",
                 "args": "<C-a>"

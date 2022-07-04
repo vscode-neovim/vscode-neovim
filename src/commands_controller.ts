@@ -13,8 +13,6 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     public constructor(client: NeovimClient, revealCursorScrollLine: boolean) {
         this.client = client;
         this.revealCursorScrollLine = revealCursorScrollLine;
-
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.send", (key) => this.sendToVim(key)));
         this.disposables.push(
             vscode.commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
         );
@@ -70,10 +68,6 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
             }
         }
     }
-
-    private sendToVim = (keys: string): void => {
-        this.client.input(keys);
-    };
 
     /// SCROLL COMMANDS ///
     private scrollPage = (by: "page" | "halfPage", to: "up" | "down"): void => {
