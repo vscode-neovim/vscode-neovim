@@ -38,6 +38,7 @@ export interface ControllerSettings {
     mouseSelection: boolean;
     useWsl: boolean;
     customInitFile: string;
+    clean: boolean;
     neovimViewportWidth: number;
     neovimViewportHeight: number;
     textDecorationsAtTop: boolean;
@@ -137,6 +138,9 @@ export class MainController implements vscode.Disposable {
         }
         if (settings.customInitFile) {
             args.push("-u", settings.customInitFile);
+        }
+        if (settings.clean) {
+            args.push("--clean");
         }
         this.logger.debug(
             `${LOG_PREFIX}: Spawning nvim, path: ${settings.neovimPath}, useWsl: ${

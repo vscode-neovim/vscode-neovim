@@ -88,6 +88,11 @@
                     "title": "Custom init.vim path on Linux",
                     "markdownDescription": "Full path to custom neovim init.vim file on Linux/WSL, equals to startup option `-u`. If the `useWSL` setting is checked, this path will be used to find `init.vim` in Windows Subsystem for Linux. You can also use `exists('g:vscode')` in your init.vim to check if neovim is being run in vscode and share init file between neovim/vscode"
                 },
+                "vscode-neovim.neovimClean": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Equivalent to the startup option `--clean`."
+                },
                 "vscode-neovim.neovimWidth": {
                     "type": "number",
                     "default": 1000,
