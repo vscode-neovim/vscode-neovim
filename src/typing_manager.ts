@@ -42,9 +42,9 @@ export class TypingManager implements Disposable {
         private changeManager: DocumentChangeManager,
     ) {
         this.registerType();
-        this.disposables.push(commands.registerCommand("vscode-neovim.send", (key) => this.onSendCommand(key)));
+        this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
+        this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.paste-register", this.onPasteRegisterCommand));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
                 this.handleCompositeEscapeFirstKey(key),
@@ -141,17 +141,16 @@ export class TypingManager implements Disposable {
         }
     };
 
-    private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
-        // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
-        // see https://github.com/asvetliakov/vscode-neovim/issues/324
+    private onSendBlockingCommand = async (key: string): Promise<void> => {
         this.registerType();
-        this.isExitingInsertMode = true;
         await this.onSendCommand(key);
     };
 
-    private onPasteRegisterCommand = async (): Promise<void> => {
-        this.registerType();
-        await this.onSendCommand("<C-r>");
+    private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
+        // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
+        // see https://github.com/asvetliakov/vscode-neovim/issues/324
+        this.isExitingInsertMode = true;
+        await this.onSendBlockingCommand(key);
     };
 
     private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {

@@ -283,15 +283,15 @@
         "commands": [
             {
                 "command": "vscode-neovim.send",
-                "title": "Neovim: send key"
+                "title": "Neovim: send key to neovim, syncing if in insert mode"
+            },
+            {
+                "command": "vscode-neovim.send-blocking",
+                "title": "Neovim: send multiple keys to neovim, used for insert mode paste"
             },
             {
                 "command": "vscode-neovim.escape",
-                "title": "Escape key"
-            },
-            {
-                "command": "vscode-neovim.paste-register",
-                "title": "Neovim: Paste from register"
+                "title": "Neovim send escape key to neovim, or other keys that will exit insert mode"
             },
             {
                 "command": "vscode-neovim.compositeEscape1",
@@ -868,7 +868,7 @@
                 "args": "<C-a>"
             },
             {
-                "command": "vscode-neovim.paste-register",
+                "command": "vscode-neovim.send-blocking",
                 "key": "ctrl+r",
                 "when": "editorTextFocus && neovim.mode == insert && neovim.ctrlKeysInsert",
                 "args": "<C-r>"
