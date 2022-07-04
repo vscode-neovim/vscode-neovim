@@ -113,8 +113,7 @@ export class TypingManager implements Disposable {
         } else if (this.isExitingInsertMode) {
             this.pendingKeysAfterExit += type.text;
         } else if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode) {
-            const mode = await this.client.mode;
-            if (mode.blocking) {
+            if ((await this.client.mode).blocking) {
                 this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
             } else {
                 this.disposeType();
@@ -156,14 +155,12 @@ export class TypingManager implements Disposable {
     private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {
         const now = new Date().getTime();
         if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
-            // jj
             this.compositeEscapeFirstPressTimestamp = undefined;
             await commands.executeCommand("deleteLeft");
             await this.onEscapeKeyCommand();
         } else {
             this.compositeEscapeFirstPressTimestamp = now;
-            // insert character
-            await commands.executeCommand("default:type", { text: key });
+            await commands.executeCommand("type", { text: key });
         }
     };
 
@@ -174,7 +171,7 @@ export class TypingManager implements Disposable {
             await commands.executeCommand("deleteLeft");
             await this.onEscapeKeyCommand();
         } else {
-            await commands.executeCommand("default:type", { text: key });
+            await commands.executeCommand("type", { text: key });
         }
     };
 }
