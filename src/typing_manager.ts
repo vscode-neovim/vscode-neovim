@@ -129,7 +129,7 @@ export class TypingManager implements Disposable {
         if (this.modeManager.isInsertMode && !(await this.client.mode).blocking) {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
             await this.changeManager.syncDocumentsWithNeovim();
-            await this.changeManager.syncDotRepatWithNeovim();
+            if (this.isExitingInsertMode) await this.changeManager.syncDotRepeatWithNeovim();
             const keys = normalizeInputString(this.pendingKeysAfterExit);
             this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);
             this.pendingKeysAfterExit = "";
