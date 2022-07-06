@@ -367,13 +367,8 @@
             },
             {
                 "command": "vscode-neovim.escape",
-                "key": "Escape",
-                "when": "editorTextFocus && neovim.init && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible"
-            },
-            {
-                "command": "vscode-neovim.escape",
-                "key": "Escape",
-                "when": "editorTextFocus && neovim.init && neovim.mode != normal"
+                "key": "escape",
+                "when": "editorTextFocus && neovim.init && !dirtyDiffVisible && !findWidgetVisible && !inReferenceSearchEditor && !markersNavigationVisible && !notebookCellFocused && !notificationCenterVisible && !notificationToastsVisible && !parameterHintsVisible && !referenceSearchVisible && !suggestWidgetVisible && !editorHasSelection && !editorHasMultipleSelections"
             },
             {
                 "command": "vscode-neovim.send",
