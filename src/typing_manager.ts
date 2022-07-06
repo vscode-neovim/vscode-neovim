@@ -1,10 +1,10 @@
 import { NeovimClient } from "neovim";
-import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode";
+import { commands, Disposable, TextEditor, TextEditorEdit, window, workspace } from "vscode";
 
 import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
 import { ModeManager } from "./mode_manager";
-import { normalizeInputString } from "./utils";
+import { EXT_NAME, normalizeInputString } from "./utils";
 
 const LOG_PREFIX = "TypingManager";
 
@@ -111,6 +111,12 @@ export class TypingManager implements Disposable {
             this.pendingKeysAfterExit += type.text;
         } else {
             commands.executeCommand("default:type", { text: type.text });
+        }
+
+        const experimentalSelectionSync = workspace.getConfiguration(EXT_NAME).get("experimentalSelectionSync", false);
+
+        if (experimentalSelectionSync && this.modeManager.isVisualMode) {
+            this.client.command(`call VSCodeNotifyVisual('noop', 1)`);
         }
     };
 
