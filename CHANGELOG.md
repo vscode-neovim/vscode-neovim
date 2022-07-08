@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.0.87]
+
+-   Command line improvements! Enable paste cmdline keybindings and fix history (#908) and fix path completions (#860)
+
+## [0.0.86]
+
+-   Fix bug with remote workspaces/WSL where plugin would try to set pwd to invalid path
+
 ## [0.0.85]
 
 -   Show more messages in output ( #881, #902 )

@@ -38,9 +38,9 @@ export interface ControllerSettings {
     mouseSelection: boolean;
     useWsl: boolean;
     customInitFile: string;
+    clean: boolean;
     neovimViewportWidth: number;
     neovimViewportHeight: number;
-    textDecorationsAtTop: boolean;
     revealCursorScrollLine: boolean;
     logConf: {
         level: "none" | "error" | "warn" | "debug";
@@ -107,9 +107,6 @@ export class MainController implements vscode.Disposable {
         const neovimSupportScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
         const neovimOptionScriptPath = path.posix.join(extensionPath, "vim", "vscode-options.vim");
 
-        const workspaceFolder = vscode.workspace.workspaceFolders;
-        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : "~";
-
         const args = [
             "-N",
             "--embed",
@@ -119,9 +116,14 @@ export class MainController implements vscode.Disposable {
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
             `source ${neovimSupportScriptPath}`,
-            "-c",
-            `cd ${cwd}`,
         ];
+
+        const workspaceFolder = vscode.workspace.workspaceFolders;
+        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : undefined;
+        if (cwd && !settings.useWsl && !vscode.env.remoteName) {
+            args.push("-c", `cd ${cwd}`);
+        }
+
         if (settings.useWsl) {
             args.unshift(settings.neovimPath);
         }
@@ -135,6 +137,9 @@ export class MainController implements vscode.Disposable {
         }
         if (settings.customInitFile) {
             args.push("-u", settings.customInitFile);
+        }
+        if (settings.clean) {
+            args.push("--clean");
         }
         this.logger.debug(
             `${LOG_PREFIX}: Spawning nvim, path: ${settings.neovimPath}, useWsl: ${
@@ -191,7 +196,6 @@ export class MainController implements vscode.Disposable {
         this.highlightManager = new HighlightManager(this.logger, this.bufferManager, {
             highlight: this.settings.highlightsConfiguration,
             viewportHeight: this.settings.neovimViewportHeight,
-            textDecorationsAtTop: this.settings.textDecorationsAtTop,
         });
         this.disposables.push(this.highlightManager);
 
