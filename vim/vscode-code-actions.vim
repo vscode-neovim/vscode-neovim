@@ -1,5 +1,3 @@
-
-
 function! s:vscodeFormat(...) abort
     if !a:0
         let &operatorfunc = matchstr(expand('<sfile>'), '[^. ]*$')
