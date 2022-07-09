@@ -1,4 +1,4 @@
-import { DecorationOptions, Disposable, Range, window } from "vscode";
+import { DecorationOptions, Disposable, window } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
