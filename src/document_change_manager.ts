@@ -232,7 +232,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
     }
 
-    public async syncDotRepatWithNeovim(): Promise<void> {
+    public async syncDotRepeatWithNeovim(): Promise<void> {
         // dot-repeat executes last change across all buffers. So we'll create a temporary buffer & window,
         // replay last changes here to trick neovim and destroy it after
         if (!this.dotRepeatChange) {
