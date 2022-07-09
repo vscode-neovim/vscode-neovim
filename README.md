@@ -19,38 +19,38 @@ editor commands, making the best use of both editors.
 <details>
  <summary><strong>Table of Contents</strong> (click to expand)</summary>
 
-- [🧰 Installation](#-installation)
-- [🔧 Build](#-build)
-- [💡 Tips and Features](#-tips-and-features)
-  - [Important](#important)
-  - [VSCode specific differences](#vscode-specific-differences)
-  - [Performance problems](#performance-problems)
-  - [Conditional init.vim](#conditional-initvim)
-  - [Custom escape keys](#custom-escape-keys)
-  - [Jumplist](#jumplist)
-  - [Wildmenu completion](#wildmenu-completion)
-  - [Multiple cursors](#multiple-cursors)
-  - [Keyboard Quickfix](#keyboard-quickfix)
-  - [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
-    - [Examples](#examples)
-- [⌨️ Bindings](#️-bindings)
-  - [File management](#file-management)
-  - [Tab management](#tab-management)
-  - [Buffer/window management](#bufferwindow-management)
-  - [Insert mode special keys](#insert-mode-special-keys)
-  - [Normal mode control keys](#normal-mode-control-keys)
-  - [Cmdline special keys](#cmdline-special-keys)
-  - [VSCode specific bindings](#vscode-specific-bindings)
-    - [Editor command](#editor-command)
-    - [Explorer/list navigation](#explorerlist-navigation)
-    - [Explorer file manipulation](#explorer-file-manipulation)
-  - [Custom keybindings](#custom-keybindings)
-- [🤝 Vim Plugins](#-vim-plugins)
-  - [vim-easymotion](#vim-easymotion)
-  - [vim-commentary](#vim-commentary)
-  - [quick-scope](#quick-scope)
-- [📑 How it works](#-how-it-works)
-- [❤️ Credits & External Resources](#️-credits--external-resources)
+-   [🧰 Installation](#-installation)
+-   [🔧 Build](#-build)
+-   [💡 Tips and Features](#-tips-and-features)
+    -   [Important](#important)
+    -   [VSCode specific differences](#vscode-specific-differences)
+    -   [Performance problems](#performance-problems)
+    -   [Conditional init.vim](#conditional-initvim)
+    -   [Custom escape keys](#custom-escape-keys)
+    -   [Jumplist](#jumplist)
+    -   [Wildmenu completion](#wildmenu-completion)
+    -   [Multiple cursors](#multiple-cursors)
+    -   [Keyboard Quickfix](#keyboard-quickfix)
+    -   [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
+        -   [Examples](#examples)
+-   [⌨️ Bindings](#️-bindings)
+    -   [File management](#file-management)
+    -   [Tab management](#tab-management)
+    -   [Buffer/window management](#bufferwindow-management)
+    -   [Insert mode special keys](#insert-mode-special-keys)
+    -   [Normal mode control keys](#normal-mode-control-keys)
+    -   [Cmdline special keys](#cmdline-special-keys)
+    -   [VSCode specific bindings](#vscode-specific-bindings)
+        -   [Editor command](#editor-command)
+        -   [Explorer/list navigation](#explorerlist-navigation)
+        -   [Explorer file manipulation](#explorer-file-manipulation)
+    -   [Custom keybindings](#custom-keybindings)
+-   [🤝 Vim Plugins](#-vim-plugins)
+    -   [vim-easymotion](#vim-easymotion)
+    -   [vim-commentary](#vim-commentary)
+    -   [quick-scope](#quick-scope)
+-   [📑 How it works](#-how-it-works)
+-   [❤️ Credits & External Resources](#️-credits--external-resources)
 
 </details>
 
@@ -117,8 +117,9 @@ How to run tests:
 -   On a Mac, the <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd> and <kbd>l</kbd> movement keys may not repeat when held, to
     fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
--   To have the explorer keybindings work at all, you will need to set `"workbench.list.automaticKeyboardNavigation": false`.
-    Note that this will disable the filtering in the explorer that occurs when you usually start typing.
+-   To have the explorer keybindings work at all, you will need to set
+    `"workbench.list.automaticKeyboardNavigation": false`. Note that this will disable the filtering in the explorer
+    that occurs when you usually start typing.
 -   The extension works best if `editor.scrollBeyondLastLine` is disabled.
 
 ### VSCode specific differences
