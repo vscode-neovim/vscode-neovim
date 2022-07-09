@@ -578,13 +578,6 @@ touch your text and instead use vscode text decorations. Just add my fork to you
 favorite vim plugin installer and delete original vim-easymotion. Also overwin motions won't work (obviously) so don't
 use them.
 
-By default, text decorations will appear behind of the associated text as shown in the screenshot. To show the
-decorations on top of the text, set `vscode-neovim.textDecorationsAtTop` to true.
-
-Happy jumping!
-
-![easymotion](/images/easy-motion-vscode.png)
-
 ### vim-commentary
 
 You can use [vim-commentary](https://github.com/tpope/vim-commentary) if you like it. But vscode already has such
