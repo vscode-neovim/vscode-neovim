@@ -198,7 +198,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                 break;
             }
             case "update-window": {
-                const [view] = args as [WinView];
+                const [winId, view] = args as [number, WinView];
                 this.viewInfo = view;
             }
         }

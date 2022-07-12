@@ -62,9 +62,13 @@ export class CursorManager
      */
     private gridVisibleViewport: Map<number, { top: number; bottom: number }> = new Map();
     /**
-     * Current grid viewport info
+     * Current grid viewport, indexed by grid
      */
-    private viewInfo: WinView;
+    private gridViewport: Map<number, WinView> = new Map();
+    /**
+     * Current window viewport, indexed by winId
+     */
+    private winViewport: Map<number, WinView> = new Map();
 
     private debouncedCursorUpdates: WeakMap<TextEditor, CursorManager["updateCursorPosInEditor"]> = new WeakMap();
 
@@ -79,16 +83,6 @@ export class CursorManager
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
         this.modeManager.onModeChange(this.onModeChange);
-        this.viewInfo = {
-            lnum: 0,
-            leftcol: 0,
-            col: 0,
-            topfill: 0,
-            topline: 0,
-            coladd: 0,
-            skipcol: 0,
-            curswant: 0,
-        };
     }
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -110,8 +104,8 @@ export class CursorManager
                 break;
             }
             case "update-window": {
-                const [view] = args as [WinView];
-                this.viewInfo = view;
+                const [winId, view] = args as [number, WinView];
+                this.winViewport.set(winId, view);
             }
         }
     }
@@ -135,6 +129,18 @@ export class CursorManager
                     ][]) {
                         this.gridVisibleViewport.set(grid, { top: topline, bottom: botline });
                         gridCursorViewportHint.set(grid, { line: curline, col: curcol });
+                        const gridViewport = this.winViewport.get(win.id);
+                        if (gridViewport) {
+                            this.gridViewport.set(grid, gridViewport);
+                            this.winViewport.delete(win.id);
+                            // Force update cursor as we will not receive `grid_cursor_goto` when cursor stays at the same position relative to grid
+                            gridCursorUpdates.set(grid, {
+                                grid,
+                                line: curline,
+                                col: curcol,
+                                isByteCol: true,
+                            });
+                        }
                     }
                     break;
                 }
@@ -144,7 +150,7 @@ export class CursorManager
             const firstArg = args[0] || [];
             switch (name) {
                 case "grid_cursor_goto": {
-                    for (const [grid, row, colOffset] of args as [number, number, number][]) {
+                    for (const [grid, row, col] of args as [number, number, number][]) {
                         const viewportHint = gridCursorViewportHint.get(grid);
                         // leverage viewport hint if available. It may be NOT available and go in different batch
                         if (viewportHint) {
@@ -156,8 +162,8 @@ export class CursorManager
                             });
                         } else {
                             const topline = this.gridVisibleViewport.get(grid)?.top || 0;
-                            const col = colOffset + this.viewInfo.leftcol;
-                            gridCursorUpdates.set(grid, { grid, line: topline + row, col, isByteCol: false });
+                            const colStart = this.gridViewport.get(grid)?.leftcol || 0;
+                            gridCursorUpdates.set(grid, { grid, line: topline + row, col: colStart + col, isByteCol: false });
                         }
                     }
                     break;
