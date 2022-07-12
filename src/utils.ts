@@ -35,6 +35,17 @@ export interface GridConf {
     bottomScreenLineStr: string;
 }
 
+export interface WinView {
+    lnum: number;
+    col: number;
+    coladd: number;
+    curswant: number;
+    topline: number;
+    topfill: number;
+    leftcol: number;
+    skipcol: number;
+}
+
 export type GridLineEvent = [number, number, number, [string, number, number][]];
 
 /**
