@@ -4,7 +4,7 @@ import { BufferManager } from "./buffer_manager";
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { calculateEditorColFromVimScreenCol, convertByteNumToCharNum, GridLineEvent } from "./utils";
+import { calculateEditorColFromVimScreenCol, convertByteNumToCharNum, GridLineEvent, WinView } from "./utils";
 
 export interface HighlightManagerSettings {
     highlight: HighlightConfiguration;
@@ -33,12 +33,25 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private commandsDisposables: Disposable[] = [];
 
+    private viewInfo: WinView;
+
     public constructor(
         private logger: Logger,
         private bufferManager: BufferManager,
         private settings: HighlightManagerSettings,
     ) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
+
+        this.viewInfo = {
+            lnum: 0,
+            leftcol: 0,
+            col: 0,
+            topfill: 0,
+            topline: 0,
+            coladd: 0,
+            skipcol: 0,
+            curswant: 0,
+        };
         // this.commandsDisposables.push(
         //     commands.registerCommand("editor.action.indentationToTabs", () =>
         //         this.resetHighlight("editor.action.indentationToTabs"),
@@ -59,6 +72,10 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
         this.commandsDisposables.forEach((d) => d.dispose());
+    }
+
+    public setView(newViewInfo: WinView): void {
+        this.viewInfo = newViewInfo;
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
@@ -122,7 +139,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                     const gridEvents = args as GridLineEvent[];
 
                     // eslint-disable-next-line prefer-const
-                    for (let [grid, row, colStart, cells] of gridEvents) {
+                    for (let [grid, row, col, cells] of gridEvents) {
                         if (row > this.lastViewportRow) {
                             continue;
                         }
@@ -147,6 +164,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             continue;
                         }
                         const line = editor.document.lineAt(highlightLine).text;
+                        const colStart = col + this.viewInfo.leftcol;
                         const tabSize = editor.options.tabSize as number;
                         const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
                         const isExternal = this.bufferManager.isExternalTextDocument(editor.document);
@@ -178,6 +196,10 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                 const [hlName, cols] = args as any;
                 this.applyTextDecorations(hlName, cols);
                 break;
+            }
+            case "update-window": {
+                const [view] = args as [WinView];
+                this.viewInfo = view;
             }
         }
     }
