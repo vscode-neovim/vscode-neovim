@@ -486,7 +486,7 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
-        
+
         await sendVSCodeKeys("iabc");
         await sendEscapeKey();
         await assertContent(
@@ -521,7 +521,7 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
-        
+
         await sendVSCodeKeys("$");
         await assertContent(
             {

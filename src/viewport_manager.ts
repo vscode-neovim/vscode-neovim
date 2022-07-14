@@ -33,7 +33,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     }
 
     /**
-     * @param gridId: grid id  
+     * @param gridId: grid id
      * @returns (0, 0)-indexed cursor position and flag indicating byte col
      */
     public getCursorFromViewport(gridId: number): { line: number; col: number; isByteCol: boolean } | undefined {
@@ -46,7 +46,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     }
 
     /**
-     * @param gridId: grid id  
+     * @param gridId: grid id
      * @returns (0, 0)-indexed grid offset
      */
     public getGridOffset(gridId: number): { topLine: number; leftCol: number } | undefined {
@@ -86,7 +86,9 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                         number,
                     ][]) {
                         if (!this.gridViewport.has(grid)) {
-                            this.logger.debug(`${LOG_PREFIX}: No existing view for gridId: ${grid}, initializing a new one...`);
+                            this.logger.debug(
+                                `${LOG_PREFIX}: No existing view for gridId: ${grid}, initializing a new one...`,
+                            );
                             const view = {
                                 lnum: 1,
                                 leftcol: 0,

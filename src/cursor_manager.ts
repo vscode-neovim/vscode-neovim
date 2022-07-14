@@ -154,9 +154,7 @@ export class CursorManager
             }
         }
         for (const gridId of this.gridCursorUpdates) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}`,
-            );
+            this.logger.debug(`${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}`);
             const editor = this.bufferManager.getEditorFromGridId(gridId);
             if (!editor) {
                 this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
