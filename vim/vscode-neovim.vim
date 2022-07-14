@@ -162,5 +162,5 @@ augroup VscodeGeneral
     autocmd BufAdd * call <SID>runFileTypeDetection()
     " Looks like external windows are coming with "set wrap" set automatically, disable them
     " autocmd WinNew,WinEnter * :set nowrap
-    autocmd WinScrolled,WinEnter * call VSCodeExtensionNotify('update-window', win_getid(), winsaveview())
+    autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
 augroup END
