@@ -166,7 +166,7 @@ reporting.
 
 ### Conditional init.vim
 
-To determine if neovim is running in vscode, add to your init.vim:
+To determine if neovim is running in vscode, add to your `init.vim`:
 
 ```vim
 if exists('g:vscode')
@@ -174,6 +174,17 @@ if exists('g:vscode')
 else
     " ordinary neovim
 endif
+```
+
+Or to your `init.lua`
+
+```lua
+if vim.fn.exists('g:vscode') ~= 0 then
+    -- VSCode extension
+else
+    -- ordinary neovim
+end
+
 ```
 
 To conditionally activate plugins, `vim-plug` has a
