@@ -26,6 +26,7 @@ import { HighlightManager } from "./highlight_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
 import { findLastEvent } from "./utils";
 import { MutlilineMessagesManager } from "./multiline_messages_manager";
+import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
@@ -82,6 +83,7 @@ export class MainController implements vscode.Disposable {
     private highlightManager!: HighlightManager;
     private customCommandsManager!: CustomCommandsManager;
     private multilineMessagesManager!: MutlilineMessagesManager;
+    private viewportManager!: ViewportManager;
 
     public constructor(settings: ControllerSettings) {
         this.settings = settings;
@@ -193,7 +195,10 @@ export class MainController implements vscode.Disposable {
         });
         this.disposables.push(this.bufferManager);
 
-        this.highlightManager = new HighlightManager(this.logger, this.bufferManager, {
+        this.viewportManager = new ViewportManager(this.logger, this.client, this.bufferManager);
+        this.disposables.push(this.viewportManager);
+
+        this.highlightManager = new HighlightManager(this.logger, this.bufferManager, this.viewportManager, {
             highlight: this.settings.highlightsConfiguration,
             viewportHeight: this.settings.neovimViewportHeight,
         });
@@ -208,6 +213,7 @@ export class MainController implements vscode.Disposable {
             this.modeManager,
             this.bufferManager,
             this.changeManager,
+            this.viewportManager,
             {
                 mouseSelectionEnabled: this.settings.mouseSelection,
             },
@@ -264,6 +270,7 @@ export class MainController implements vscode.Disposable {
         const redrawManagers: NeovimRedrawProcessable[] = [
             this.modeManager,
             this.bufferManager,
+            this.viewportManager,
             this.cursorManager,
             this.commandLineManager,
             this.statusLineManager,
@@ -275,6 +282,7 @@ export class MainController implements vscode.Disposable {
             this.changeManager,
             this.commandsController,
             this.bufferManager,
+            this.viewportManager,
             this.highlightManager,
             this.cursorManager,
         ];

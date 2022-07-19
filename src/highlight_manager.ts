@@ -5,21 +5,11 @@ import { HighlightConfiguration, HighlightProvider } from "./highlight_provider"
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { calculateEditorColFromVimScreenCol, convertByteNumToCharNum, GridLineEvent } from "./utils";
+import { ViewportManager } from "./viewport_manager";
 
 export interface HighlightManagerSettings {
     highlight: HighlightConfiguration;
     viewportHeight: number;
-}
-
-interface GridLineInfo {
-    /**
-     * Visible top line
-     */
-    topLine: number;
-    /**
-     * Visible bottom line
-     */
-    bottomLine: number;
 }
 
 // const LOG_PREFIX = "HighlightManager";
@@ -29,16 +19,16 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private highlightProvider: HighlightProvider;
 
-    private gridLineInfo: Map<number, GridLineInfo> = new Map();
-
     private commandsDisposables: Disposable[] = [];
 
     public constructor(
         private logger: Logger,
         private bufferManager: BufferManager,
+        private viewportManager: ViewportManager,
         private settings: HighlightManagerSettings,
     ) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
+
         // this.commandsDisposables.push(
         //     commands.registerCommand("editor.action.indentationToTabs", () =>
         //         this.resetHighlight("editor.action.indentationToTabs"),
@@ -55,7 +45,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
         //     ),
         // );
     }
-
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
         this.commandsDisposables.forEach((d) => d.dispose());
@@ -79,20 +68,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             const groupName = info.reduce((acc, cur) => cur.hi_name + acc, "");
                             this.highlightProvider.addHighlightGroup(id, groupName, uiAttrs);
                         }
-                    }
-                    break;
-                }
-                case "win_viewport": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [grid, win, topLine, bottomLine, curline, curcol] of args as [
-                        number,
-                        Window,
-                        number,
-                        number,
-                        number,
-                        number,
-                    ][]) {
-                        this.gridLineInfo.set(grid, { topLine, bottomLine });
                     }
                     break;
                 }
@@ -122,12 +97,12 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                     const gridEvents = args as GridLineEvent[];
 
                     // eslint-disable-next-line prefer-const
-                    for (let [grid, row, colStart, cells] of gridEvents) {
+                    for (let [grid, row, col, cells] of gridEvents) {
                         if (row > this.lastViewportRow) {
                             continue;
                         }
-                        const lineInfo = this.gridLineInfo.get(grid);
-                        if (!lineInfo) {
+                        const gridOffset = this.viewportManager.getGridOffset(grid);
+                        if (!gridOffset) {
                             continue;
                         }
 
@@ -137,7 +112,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         }
 
                         // const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
-                        const topScreenLine = lineInfo.topLine;
+                        const topScreenLine = gridOffset.topLine;
                         const highlightLine = topScreenLine + row;
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             if (highlightLine > 0) {
@@ -147,6 +122,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             continue;
                         }
                         const line = editor.document.lineAt(highlightLine).text;
+                        const colStart = col + gridOffset.leftCol;
                         const tabSize = editor.options.tabSize as number;
                         const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
                         const isExternal = this.bufferManager.isExternalTextDocument(editor.document);
@@ -188,12 +164,12 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private applyHLGridUpdates = (updates: Set<number>): void => {
         for (const grid of updates) {
-            const gridConf = this.gridLineInfo.get(grid);
+            const gridOffset = this.viewportManager.getGridOffset(grid);
             const editor = this.bufferManager.getEditorFromGridId(grid);
-            if (!editor || !gridConf) {
+            if (!editor || !gridOffset) {
                 continue;
             }
-            const hls = this.highlightProvider.getGridHighlights(grid, gridConf.topLine);
+            const hls = this.highlightProvider.getGridHighlights(grid, gridOffset.topLine);
             for (const [decorator, ranges] of hls) {
                 editor.setDecorations(decorator, ranges);
             }
