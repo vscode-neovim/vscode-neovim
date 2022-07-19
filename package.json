@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.54.0"
+        "vscode": "^1.69.0"
     },
     "keywords": [
         "keybindings",
@@ -1272,12 +1272,12 @@
         "@types/lodash-es": "^4.17.4",
         "@types/mocha": "^9.1.1",
         "@types/msgpack-lite": "^0.1.7",
-        "@types/node": "^18.0.1",
-        "@types/vscode": "^1.54.0",
-        "@typescript-eslint/eslint-plugin": "^5.30.4",
-        "@typescript-eslint/parser": "^5.30.4",
+        "@types/node": "^18.0.6",
+        "@types/vscode": "^1.69.0",
+        "@typescript-eslint/eslint-plugin": "^5.30.7",
+        "@typescript-eslint/parser": "^5.30.7",
         "@vscode/test-electron": "^2.1.5",
-        "eslint": "^8.19.0",
+        "eslint": "^8.20.0",
         "eslint-config-prettier": "^8.1.0",
         "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-prettier": "^4.2.1",
@@ -1287,7 +1287,7 @@
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.3.1",
         "typescript": "^4.2.3",
-        "vsce": "^2.6.3",
+        "vsce": "^2.9.3",
         "webpack": "^5.26.1",
         "webpack-cli": "^4.5.0",
         "yarn": "^1.22.18"
