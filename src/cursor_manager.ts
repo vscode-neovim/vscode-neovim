@@ -1,5 +1,5 @@
 import { debounce } from "lodash-es";
-import { NeovimClient, Window } from "neovim";
+import { NeovimClient } from "neovim";
 import {
     commands,
     Disposable,
@@ -97,7 +97,8 @@ export class CursorManager
                 break;
             }
             case "window-scroll": {
-                const [winId, view] = args as [number, any];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [winId] = args as [number, any];
                 const gridId = this.bufferManager.getGridIdForWinId(winId);
                 if (gridId) {
                     this.gridCursorUpdates.add(gridId);
@@ -111,6 +112,7 @@ export class CursorManager
             const firstArg = args[0] || [];
             switch (name) {
                 case "grid_cursor_goto": {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     for (const [grid, row, col] of args as [number, number, number][]) {
                         this.gridCursorUpdates.add(grid);
                     }
