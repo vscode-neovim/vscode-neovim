@@ -1,7 +1,7 @@
 import { NeovimClient } from "neovim";
-import { commands, Disposable, window } from "vscode";
-import { BufferManager } from "./buffer_manager";
+import { Disposable } from "vscode";
 
+import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 
