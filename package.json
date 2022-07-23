@@ -8,7 +8,7 @@
         "ui",
         "workspace"
     ],
-    "version": "0.0.88",
+    "version": "0.0.89",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.70.0"
+        "vscode": "^1.69.0"
     },
     "keywords": [
         "keybindings",
