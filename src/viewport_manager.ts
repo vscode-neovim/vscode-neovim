@@ -39,7 +39,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     public getCursorFromViewport(gridId: number): { line: number; col: number; isByteCol: boolean } | undefined {
         const view = this.gridViewport.get(gridId);
         if (!view) {
-            this.logger.error(`${LOG_PREFIX}: No viewport for gridId: ${gridId}`);
             return;
         }
         return { line: view.lnum - 1, col: view.col, isByteCol: true };
@@ -52,7 +51,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     public getGridOffset(gridId: number): { topLine: number; leftCol: number } | undefined {
         const view = this.gridViewport.get(gridId);
         if (!view) {
-            this.logger.error(`${LOG_PREFIX}: No viewport for gridId: ${gridId}`);
             return;
         }
         return { topLine: view.topline - 1, leftCol: view.leftcol };
@@ -64,7 +62,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                 const [winId, view] = args as [number, WinView];
                 const gridId = this.bufferManager.getGridIdForWinId(winId);
                 if (!gridId) {
-                    this.logger.warn(`${LOG_PREFIX}: No gird for winId: ${winId}`);
+                    this.logger.warn(`${LOG_PREFIX}: Unable to update scrolled view. No gird for winId: ${winId}`);
                     break;
                 }
                 this.gridViewport.set(gridId, view);
