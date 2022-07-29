@@ -1,5 +1,5 @@
 import { debounce } from "lodash-es";
-import { NeovimClient, Window } from "neovim";
+import { NeovimClient } from "neovim";
 import {
     commands,
     Disposable,
@@ -27,6 +27,7 @@ import {
     editorPositionToNeovimPosition,
     getNeovimCursorPosFromEditor,
 } from "./utils";
+import { ViewportManager } from "./viewport_manager";
 
 const LOG_PREFIX = "CursorManager";
 
@@ -57,9 +58,9 @@ export class CursorManager
      */
     private ignoreSelectionEvents = false;
     /**
-     * Current grid viewport boundaries
+     * Set of grid that needs to undergo cursor update
      */
-    private gridVisibleViewport: Map<number, { top: number; bottom: number }> = new Map();
+    private gridCursorUpdates: Set<number> = new Set();
 
     private debouncedCursorUpdates: WeakMap<TextEditor, CursorManager["updateCursorPosInEditor"]> = new WeakMap();
 
@@ -69,6 +70,7 @@ export class CursorManager
         private modeManager: ModeManager,
         private bufferManager: BufferManager,
         private changeManager: DocumentChangeManager,
+        private viewportManager: ViewportManager,
         private settings: CursorManagerSettings,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
@@ -94,51 +96,25 @@ export class CursorManager
                 );
                 break;
             }
+            case "window-scroll": {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [winId] = args as [number, any];
+                const gridId = this.bufferManager.getGridIdForWinId(winId);
+                if (gridId) {
+                    this.gridCursorUpdates.add(gridId);
+                }
+            }
         }
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        const gridCursorUpdates: Map<number, { line: number; col: number; grid: number; isByteCol: boolean }> =
-            new Map();
-        const gridCursorViewportHint: Map<number, { line: number; col: number }> = new Map();
-        // need to process win_viewport events first
-        for (const [name, ...args] of batch) {
-            switch (name) {
-                case "win_viewport": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [grid, win, topline, botline, curline, curcol] of args as [
-                        number,
-                        Window,
-                        number,
-                        number,
-                        number,
-                        number,
-                    ][]) {
-                        this.gridVisibleViewport.set(grid, { top: topline, bottom: botline });
-                        gridCursorViewportHint.set(grid, { line: curline, col: curcol });
-                    }
-                    break;
-                }
-            }
-        }
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
                 case "grid_cursor_goto": {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     for (const [grid, row, col] of args as [number, number, number][]) {
-                        const viewportHint = gridCursorViewportHint.get(grid);
-                        // leverage viewport hint if available. It may be NOT available and go in different batch
-                        if (viewportHint) {
-                            gridCursorUpdates.set(grid, {
-                                grid,
-                                line: viewportHint.line,
-                                col: viewportHint.col,
-                                isByteCol: true,
-                            });
-                        } else {
-                            const topline = this.gridVisibleViewport.get(grid)?.top || 0;
-                            gridCursorUpdates.set(grid, { grid, line: topline + row, col, isByteCol: false });
-                        }
+                        this.gridCursorUpdates.add(grid);
                     }
                     break;
                 }
@@ -155,22 +131,7 @@ export class CursorManager
                         number,
                         number,
                     ][]) {
-                        // When changing pos via grid scroll there must be always win_viewport event, leverage it
-                        const viewportHint = gridCursorViewportHint.get(grid);
-                        if (viewportHint) {
-                            gridCursorUpdates.set(grid, {
-                                grid,
-                                line: viewportHint.line,
-                                col: viewportHint.col,
-                                isByteCol: true,
-                            });
-                        }
-                    }
-                    break;
-                }
-                case "grid_destroy": {
-                    for (const [grid] of args as [number][]) {
-                        this.gridVisibleViewport.delete(grid);
+                        this.gridCursorUpdates.add(grid);
                     }
                     break;
                 }
@@ -194,13 +155,16 @@ export class CursorManager
                 }
             }
         }
-        for (const [gridId, cursorPos] of gridCursorUpdates) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}, pos: [${cursorPos.line}, ${cursorPos.col}]`,
-            );
+        for (const gridId of this.gridCursorUpdates) {
+            this.logger.debug(`${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}`);
             const editor = this.bufferManager.getEditorFromGridId(gridId);
             if (!editor) {
                 this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
+                continue;
+            }
+            const cursorPos = this.viewportManager.getCursorFromViewport(gridId);
+            if (!cursorPos) {
+                this.logger.warn(`${LOG_PREFIX}: No cursor for gridId from viewport: ${gridId}`);
                 continue;
             }
             // !For text changes neovim sends first buf_lines_event followed by redraw event
@@ -245,7 +209,7 @@ export class CursorManager
                 }
             }
         }
-        gridCursorUpdates.clear();
+        this.gridCursorUpdates.clear();
     }
 
     /**
