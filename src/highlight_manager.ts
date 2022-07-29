@@ -1,26 +1,15 @@
-import { DecorationOptions, Disposable, Range, window } from "vscode";
+import { DecorationOptions, Disposable, window } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { calculateEditorColFromVimScreenCol, convertByteNumToCharNum, GridLineEvent } from "./utils";
+import { ViewportManager } from "./viewport_manager";
 
 export interface HighlightManagerSettings {
     highlight: HighlightConfiguration;
     viewportHeight: number;
-    textDecorationsAtTop: boolean;
-}
-
-interface GridLineInfo {
-    /**
-     * Visible top line
-     */
-    topLine: number;
-    /**
-     * Visible bottom line
-     */
-    bottomLine: number;
 }
 
 // const LOG_PREFIX = "HighlightManager";
@@ -30,19 +19,16 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private highlightProvider: HighlightProvider;
 
-    private gridLineInfo: Map<number, GridLineInfo> = new Map();
-
     private commandsDisposables: Disposable[] = [];
-
-    private textDecorationsAtTop = false;
 
     public constructor(
         private logger: Logger,
         private bufferManager: BufferManager,
+        private viewportManager: ViewportManager,
         private settings: HighlightManagerSettings,
     ) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
-        this.textDecorationsAtTop = settings.textDecorationsAtTop;
+
         // this.commandsDisposables.push(
         //     commands.registerCommand("editor.action.indentationToTabs", () =>
         //         this.resetHighlight("editor.action.indentationToTabs"),
@@ -59,7 +45,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
         //     ),
         // );
     }
-
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
         this.commandsDisposables.forEach((d) => d.dispose());
@@ -83,20 +68,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             const groupName = info.reduce((acc, cur) => cur.hi_name + acc, "");
                             this.highlightProvider.addHighlightGroup(id, groupName, uiAttrs);
                         }
-                    }
-                    break;
-                }
-                case "win_viewport": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [grid, win, topLine, bottomLine, curline, curcol] of args as [
-                        number,
-                        Window,
-                        number,
-                        number,
-                        number,
-                        number,
-                    ][]) {
-                        this.gridLineInfo.set(grid, { topLine, bottomLine });
                     }
                     break;
                 }
@@ -126,12 +97,12 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                     const gridEvents = args as GridLineEvent[];
 
                     // eslint-disable-next-line prefer-const
-                    for (let [grid, row, colStart, cells] of gridEvents) {
+                    for (let [grid, row, col, cells] of gridEvents) {
                         if (row > this.lastViewportRow) {
                             continue;
                         }
-                        const lineInfo = this.gridLineInfo.get(grid);
-                        if (!lineInfo) {
+                        const gridOffset = this.viewportManager.getGridOffset(grid);
+                        if (!gridOffset) {
                             continue;
                         }
 
@@ -141,7 +112,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         }
 
                         // const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
-                        const topScreenLine = lineInfo.topLine;
+                        const topScreenLine = gridOffset.topLine;
                         const highlightLine = topScreenLine + row;
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             if (highlightLine > 0) {
@@ -151,6 +122,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             continue;
                         }
                         const line = editor.document.lineAt(highlightLine).text;
+                        const colStart = col + gridOffset.leftCol;
                         const tabSize = editor.options.tabSize as number;
                         const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
                         const isExternal = this.bufferManager.isExternalTextDocument(editor.document);
@@ -192,12 +164,12 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private applyHLGridUpdates = (updates: Set<number>): void => {
         for (const grid of updates) {
-            const gridConf = this.gridLineInfo.get(grid);
+            const gridOffset = this.viewportManager.getGridOffset(grid);
             const editor = this.bufferManager.getEditorFromGridId(grid);
-            if (!editor || !gridConf) {
+            if (!editor || !gridOffset) {
                 continue;
             }
-            const hls = this.highlightProvider.getGridHighlights(grid, gridConf.topLine);
+            const hls = this.highlightProvider.getGridHighlights(grid, gridOffset.topLine);
             for (const [decorator, ranges] of hls) {
                 editor.setDecorations(decorator, ranges);
             }
@@ -225,50 +197,33 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                 const lineNum = parseInt(lineStr, 10) - 1;
                 const line = editor.document.lineAt(lineNum).text;
                 const drawnAt = new Map();
-
                 for (const [colNum, text] of cols) {
-                    if (this.textDecorationsAtTop) {
-                        // vim sends column in bytes, need to convert to characters
-                        const col = convertByteNumToCharNum(line, colNum);
-                        const mapKey = [lineNum, Math.min(col + text.length - 1, line.length)].toString();
-                        if (drawnAt.has(mapKey)) {
-                            // VSCode only lets us draw a single text decoration
-                            // at any given character. Any text decorations drawn
-                            // past the end of the line get moved back to the end of
-                            // the line. This becomes a problem if you have a
-                            // line with multiple 2 character marks right
-                            // next to each other at the end. The solution is to
-                            // use a single text decoration but modify it when a
-                            // new decoration would be pushed on top of it.
-                            const ogText = drawnAt.get(mapKey).renderOptions.after.contentText;
-                            drawnAt.get(mapKey).renderOptions.after.contentText = (text[0] + ogText).substr(
-                                0,
-                                ogText.length,
-                            );
-                        } else {
-                            const opt = this.highlightProvider.createVirtTextDecorationOption(
-                                text,
-                                conf,
-                                lineNum,
-                                col,
-                                line.length,
-                            );
-                            drawnAt.set(mapKey, opt);
-                            options.push(opt);
-                        }
+                    // vim sends column in bytes, need to convert to characters
+                    const col = convertByteNumToCharNum(line, colNum);
+                    const mapKey = [lineNum, Math.min(col + text.length - 1, line.length)].toString();
+                    if (drawnAt.has(mapKey)) {
+                        // VSCode only lets us draw a single text decoration
+                        // at any given character. Any text decorations drawn
+                        // past the end of the line get moved back to the end of
+                        // the line. This becomes a problem if you have a
+                        // line with multiple 2 character marks right
+                        // next to each other at the end. The solution is to
+                        // use a single text decoration but modify it when a
+                        // new decoration would be pushed on top of it.
+                        const ogText = drawnAt.get(mapKey).renderOptions.after.contentText;
+                        drawnAt.get(mapKey).renderOptions.after.contentText = (text[0] + ogText).substr(
+                            0,
+                            ogText.length,
+                        );
                     } else {
-                        // vim sends column in bytes, need to convert to characters
-                        const col = convertByteNumToCharNum(line, colNum - 1);
-                        const opt: DecorationOptions = {
-                            range: new Range(lineNum, col, lineNum, col),
-                            renderOptions: {
-                                before: {
-                                    ...conf,
-                                    ...conf.before,
-                                    contentText: text,
-                                },
-                            },
-                        };
+                        const opt = this.highlightProvider.createVirtTextDecorationOption(
+                            text,
+                            conf,
+                            lineNum,
+                            col,
+                            line.length,
+                        );
+                        drawnAt.set(mapKey, opt);
                         options.push(opt);
                     }
                 }

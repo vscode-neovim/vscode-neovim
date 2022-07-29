@@ -26,6 +26,7 @@ import { HighlightManager } from "./highlight_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
 import { findLastEvent, getCurrentViewPortHeight } from "./utils";
 import { MutlilineMessagesManager } from "./multiline_messages_manager";
+import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
@@ -38,9 +39,9 @@ export interface ControllerSettings {
     mouseSelection: boolean;
     useWsl: boolean;
     customInitFile: string;
+    clean: boolean;
     neovimViewportWidth: number;
     neovimViewportHeightExtend: number;
-    textDecorationsAtTop: boolean;
     revealCursorScrollLine: boolean;
     logConf: {
         level: "none" | "error" | "warn" | "debug";
@@ -78,6 +79,7 @@ export class MainController implements vscode.Disposable {
     private highlightManager!: HighlightManager;
     private customCommandsManager!: CustomCommandsManager;
     private multilineMessagesManager!: MutlilineMessagesManager;
+    private viewportManager!: ViewportManager;
     private neovimViewportHeightExtend = 3;
 
     public constructor(settings: ControllerSettings) {
@@ -104,9 +106,6 @@ export class MainController implements vscode.Disposable {
         const neovimSupportScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
         const neovimOptionScriptPath = path.posix.join(extensionPath, "vim", "vscode-options.vim");
 
-        const workspaceFolder = vscode.workspace.workspaceFolders;
-        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : "~";
-
         const args = [
             "-N",
             "--embed",
@@ -116,9 +115,14 @@ export class MainController implements vscode.Disposable {
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
             `source ${neovimSupportScriptPath}`,
-            "-c",
-            `cd ${cwd}`,
         ];
+
+        const workspaceFolder = vscode.workspace.workspaceFolders;
+        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : undefined;
+        if (cwd && !settings.useWsl && !vscode.env.remoteName) {
+            args.push("-c", `cd ${cwd}`);
+        }
+
         if (settings.useWsl) {
             args.unshift(settings.neovimPath);
         }
@@ -132,6 +136,9 @@ export class MainController implements vscode.Disposable {
         }
         if (settings.customInitFile) {
             args.push("-u", settings.customInitFile);
+        }
+        if (settings.clean) {
+            args.push("--clean");
         }
         this.logger.debug(
             `${LOG_PREFIX}: Spawning nvim, path: ${settings.neovimPath}, useWsl: ${
@@ -189,10 +196,12 @@ export class MainController implements vscode.Disposable {
         });
         this.disposables.push(this.bufferManager);
 
-        this.highlightManager = new HighlightManager(this.logger, this.bufferManager, {
+        this.viewportManager = new ViewportManager(this.logger, this.client, this.bufferManager);
+        this.disposables.push(this.viewportManager);
+
+        this.highlightManager = new HighlightManager(this.logger, this.bufferManager, this.viewportManager, {
             highlight: this.settings.highlightsConfiguration,
             viewportHeight: viewportHeight,
-            textDecorationsAtTop: this.settings.textDecorationsAtTop,
         });
         this.disposables.push(this.highlightManager);
 
@@ -205,6 +214,7 @@ export class MainController implements vscode.Disposable {
             this.modeManager,
             this.bufferManager,
             this.changeManager,
+            this.viewportManager,
             {
                 mouseSelectionEnabled: this.settings.mouseSelection,
             },
@@ -262,6 +272,7 @@ export class MainController implements vscode.Disposable {
         const redrawManagers: NeovimRedrawProcessable[] = [
             this.modeManager,
             this.bufferManager,
+            this.viewportManager,
             this.cursorManager,
             this.commandLineManager,
             this.statusLineManager,
@@ -273,6 +284,7 @@ export class MainController implements vscode.Disposable {
             this.changeManager,
             this.commandsController,
             this.bufferManager,
+            this.viewportManager,
             this.highlightManager,
             this.cursorManager,
         ];

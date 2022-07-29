@@ -1,5 +1,5 @@
 import { debounce } from "lodash-es";
-import { NeovimClient, Window } from "neovim";
+import { NeovimClient } from "neovim";
 import {
     commands,
     Disposable,
@@ -28,6 +28,7 @@ import {
     editorPositionToNeovimPosition,
     getNeovimCursorPosFromEditor,
 } from "./utils";
+import { ViewportManager } from "./viewport_manager";
 
 const LOG_PREFIX = "CursorManager";
 
@@ -58,9 +59,9 @@ export class CursorManager
      */
     private ignoreSelectionEvents = false;
     /**
-     * Current grid viewport boundaries
+     * Set of grid that needs to undergo cursor update
      */
-    private gridVisibleViewport: Map<number, { top: number; bottom: number }> = new Map();
+    private gridCursorUpdates: Set<number> = new Set();
 
     private debouncedCursorUpdates: WeakMap<TextEditor, CursorManager["updateCursorPosInEditor"]> = new WeakMap();
 
@@ -70,6 +71,7 @@ export class CursorManager
         private modeManager: ModeManager,
         private bufferManager: BufferManager,
         private changeManager: DocumentChangeManager,
+        private viewportManager: ViewportManager,
         private settings: CursorManagerSettings,
         private neovimViewportHeightExtend: number,
     ) {
@@ -97,51 +99,25 @@ export class CursorManager
                 );
                 break;
             }
+            case "window-scroll": {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [winId] = args as [number, any];
+                const gridId = this.bufferManager.getGridIdForWinId(winId);
+                if (gridId) {
+                    this.gridCursorUpdates.add(gridId);
+                }
+            }
         }
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        const gridCursorUpdates: Map<number, { line: number; col: number; grid: number; isByteCol: boolean }> =
-            new Map();
-        const gridCursorViewportHint: Map<number, { line: number; col: number }> = new Map();
-        // need to process win_viewport events first
-        for (const [name, ...args] of batch) {
-            switch (name) {
-                case "win_viewport": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [grid, win, topline, botline, curline, curcol] of args as [
-                        number,
-                        Window,
-                        number,
-                        number,
-                        number,
-                        number,
-                    ][]) {
-                        this.gridVisibleViewport.set(grid, { top: topline, bottom: botline });
-                        gridCursorViewportHint.set(grid, { line: curline, col: curcol });
-                    }
-                    break;
-                }
-            }
-        }
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
                 case "grid_cursor_goto": {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     for (const [grid, row, col] of args as [number, number, number][]) {
-                        const viewportHint = gridCursorViewportHint.get(grid);
-                        // leverage viewport hint if available. It may be NOT available and go in different batch
-                        if (viewportHint) {
-                            gridCursorUpdates.set(grid, {
-                                grid,
-                                line: viewportHint.line,
-                                col: viewportHint.col,
-                                isByteCol: true,
-                            });
-                        } else {
-                            const topline = this.gridVisibleViewport.get(grid)?.top || 0;
-                            gridCursorUpdates.set(grid, { grid, line: topline + row, col, isByteCol: false });
-                        }
+                        this.gridCursorUpdates.add(grid);
                     }
                     break;
                 }
@@ -158,22 +134,7 @@ export class CursorManager
                         number,
                         number,
                     ][]) {
-                        // When changing pos via grid scroll there must be always win_viewport event, leverage it
-                        const viewportHint = gridCursorViewportHint.get(grid);
-                        if (viewportHint) {
-                            gridCursorUpdates.set(grid, {
-                                grid,
-                                line: viewportHint.line,
-                                col: viewportHint.col,
-                                isByteCol: true,
-                            });
-                        }
-                    }
-                    break;
-                }
-                case "grid_destroy": {
-                    for (const [grid] of args as [number][]) {
-                        this.gridVisibleViewport.delete(grid);
+                        this.gridCursorUpdates.add(grid);
                     }
                     break;
                 }
@@ -197,13 +158,16 @@ export class CursorManager
                 }
             }
         }
-        for (const [gridId, cursorPos] of gridCursorUpdates) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}, pos: [${cursorPos.line}, ${cursorPos.col}]`,
-            );
+        for (const gridId of this.gridCursorUpdates) {
+            this.logger.debug(`${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}`);
             const editor = this.bufferManager.getEditorFromGridId(gridId);
             if (!editor) {
                 this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
+                continue;
+            }
+            const cursorPos = this.viewportManager.getCursorFromViewport(gridId);
+            if (!cursorPos) {
+                this.logger.warn(`${LOG_PREFIX}: No cursor for gridId from viewport: ${gridId}`);
                 continue;
             }
             // !For text changes neovim sends first buf_lines_event followed by redraw event
@@ -248,7 +212,7 @@ export class CursorManager
                 }
             }
         }
-        gridCursorUpdates.clear();
+        this.gridCursorUpdates.clear();
     }
 
     /**
@@ -448,65 +412,25 @@ export class CursorManager
         }
         const currCursor = editor.selection.active;
         const deltaLine = newLine - currCursor.line;
-        let deltaChar = newCol - currCursor.character;
-        if (Math.abs(deltaLine) <= 1) {
-            this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} using cursorMove command`);
-            if (Math.abs(deltaLine) > 0) {
-                if (newCol !== currCursor.character) {
-                    deltaChar = newCol;
-                    commands.executeCommand("cursorLineStart");
-                } else {
-                    deltaChar = 0;
-                }
-                commands.executeCommand("cursorMove", {
-                    to: deltaLine > 0 ? "down" : "up",
-                    by: "line",
-                    value: Math.abs(deltaLine),
-                    select: false,
-                });
-            }
-            if (Math.abs(deltaChar) > 0) {
-                if (Math.abs(deltaLine) > 0) {
-                    this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} Moving cursor by char: ${deltaChar}`);
-                    commands.executeCommand("cursorMove", {
-                        to: deltaChar > 0 ? "right" : "left",
-                        by: "character",
-                        value: Math.abs(deltaChar),
-                        select: false,
-                    });
-                } else {
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Editor: ${editorName} setting cursor directly since zero line delta`,
-                    );
-                    const newPos = new Selection(newLine, newCol, newLine, newCol);
-                    if (!editor.selection.isEqual(newPos)) {
-                        editor.selections = [newPos];
-                        editor.revealRange(newPos, TextEditorRevealType.Default);
-                        commands.executeCommand("editor.action.wordHighlight.trigger");
-                    }
-                }
-            }
+        this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
+        const newPos = new Selection(newLine, newCol, newLine, newCol);
+        if (!editor.selection.isEqual(newPos)) {
+            editor.selections = [newPos];
+            const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
+            const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
+            const type =
+                deltaLine > 0
+                    ? newLine > bottomVisibleLine + 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : deltaLine < 0
+                    ? newLine < topVisibleLine - 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : TextEditorRevealType.Default;
+            editor.revealRange(newPos, type);
+            commands.executeCommand("editor.action.wordHighlight.trigger");
             this.scrollNeovim(editor);
-        } else {
-            this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
-            const newPos = new Selection(newLine, newCol, newLine, newCol);
-            if (!editor.selection.isEqual(newPos)) {
-                editor.selections = [newPos];
-                const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
-                const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
-                const type =
-                    deltaLine > 0
-                        ? newLine > bottomVisibleLine + 10
-                            ? TextEditorRevealType.InCenterIfOutsideViewport
-                            : TextEditorRevealType.Default
-                        : deltaLine < 0
-                        ? newLine < topVisibleLine - 10
-                            ? TextEditorRevealType.InCenterIfOutsideViewport
-                            : TextEditorRevealType.Default
-                        : TextEditorRevealType.Default;
-                editor.revealRange(newPos, type);
-                commands.executeCommand("editor.action.wordHighlight.trigger");
-            }
         }
     };
 

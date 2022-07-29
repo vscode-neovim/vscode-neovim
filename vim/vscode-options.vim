@@ -48,6 +48,7 @@ set modelines=0
 
 " Turn off auto-folding
 set nofoldenable
+set foldcolumn=0
 set foldmethod=manual
 
 " Turn on auto-indenting
@@ -74,6 +75,7 @@ function s:forceLocalOptions()
         setlocal syntax=off
     endif
     setlocal nofoldenable
+    setlocal foldcolumn=0
     setlocal foldmethod=manual
     setlocal nolazyredraw
 endfunction
