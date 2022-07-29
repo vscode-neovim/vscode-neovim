@@ -124,7 +124,7 @@ export class TypingManager implements Disposable {
             this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
         }
     };
-    
+
     // Fix Non-English input method can replace previous chars
     // see https://github.com/vscode-neovim/vscode-neovim/issues/560
     private onVSCodeReplacePreviousChar = (type: { text: string; replaceCharCnt: number }): void => {
