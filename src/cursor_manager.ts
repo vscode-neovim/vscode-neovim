@@ -9,7 +9,6 @@ import {
     TextEditorRevealType,
     TextEditorSelectionChangeEvent,
     TextEditorSelectionChangeKind,
-    TextEditorVisibleRangesChangeEvent,
     window,
 } from "vscode";
 
@@ -73,11 +72,9 @@ export class CursorManager
         private changeManager: DocumentChangeManager,
         private viewportManager: ViewportManager,
         private settings: CursorManagerSettings,
-        private neovimViewportHeightExtend: number,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
-        this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
         this.modeManager.onModeChange(this.onModeChange);
     }
     public dispose(): void {
@@ -430,7 +427,7 @@ export class CursorManager
                     : TextEditorRevealType.Default;
             editor.revealRange(newPos, type);
             commands.executeCommand("editor.action.wordHighlight.trigger");
-            this.scrollNeovim(editor);
+            this.viewportManager.scrollNeovim(editor);
         }
     };
 
@@ -502,33 +499,5 @@ export class CursorManager
                 new Selection(window.activeTextEditor.selection.active, window.activeTextEditor.selection.active),
             ];
         }
-    };
-
-    private scrollNeovim(editor: TextEditor | null): void {
-        if (editor == null || !this.modeManager.isNormalMode) {
-            return;
-        }
-        const ranges = editor.visibleRanges;
-        if (!ranges || ranges.length == 0) {
-            return;
-        }
-        const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
-        // when it have fold we need get the last range. it need add 1 line on multiple fold
-        const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
-
-        const currentLine = editor.selection.active.line;
-        const neovimLine = this.neovimCursorPosition.get(editor)?.line || 0;
-        const gridId = this.bufferManager.getGridIdFromEditor(editor);
-        if (gridId == null) {
-            return;
-        }
-        const viewport = this.gridVisibleViewport.get(gridId);
-        if (viewport && neovimLine == currentLine && startLine != viewport?.top + 1) {
-            this.client.executeLua("vscode.scroll_viewport(...)", [startLine, endLine]);
-        }
-    }
-
-    private onDidChangeVisibleRange = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
-        this.scrollNeovim(e.textEditor);
     };
 }

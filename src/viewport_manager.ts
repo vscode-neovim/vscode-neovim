@@ -1,5 +1,5 @@
 import { NeovimClient } from "neovim";
-import { Disposable } from "vscode";
+import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
@@ -26,7 +26,14 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      */
     private gridViewport: Map<number, WinView> = new Map();
 
-    public constructor(private logger: Logger, private client: NeovimClient, private bufferManager: BufferManager) {}
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private bufferManager: BufferManager,
+        private neovimViewportHeightExtend: number,
+    ) {
+        this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
+    }
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -69,6 +76,33 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             }
         }
     }
+
+    public scrollNeovim(editor: TextEditor | null): void {
+        if (editor == null) {
+            return;
+        }
+        const ranges = editor.visibleRanges;
+        if (!ranges || ranges.length == 0) {
+            return;
+        }
+        const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
+        // when it have fold we need get the last range. it need add 1 line on multiple fold
+        const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
+        const currentLine = editor.selection.active.line;
+
+        const gridId = this.bufferManager.getGridIdFromEditor(editor);
+        if (gridId == null) {
+            return;
+        }
+        const viewport = this.gridViewport.get(gridId);
+        if (viewport && startLine != viewport?.topline && currentLine == viewport?.lnum - 1) {
+            this.client.executeLua("vscode.scroll_viewport(...)", [startLine, endLine]);
+        }
+    }
+
+    private onDidChangeVisibleRange = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
+        this.scrollNeovim(e.textEditor);
+    };
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
         for (const [name, ...args] of batch) {

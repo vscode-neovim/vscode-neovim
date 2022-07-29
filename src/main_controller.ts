@@ -196,7 +196,12 @@ export class MainController implements vscode.Disposable {
         });
         this.disposables.push(this.bufferManager);
 
-        this.viewportManager = new ViewportManager(this.logger, this.client, this.bufferManager);
+        this.viewportManager = new ViewportManager(
+            this.logger,
+            this.client,
+            this.bufferManager,
+            this.neovimViewportHeightExtend,
+        );
         this.disposables.push(this.viewportManager);
 
         this.highlightManager = new HighlightManager(this.logger, this.bufferManager, this.viewportManager, {
@@ -218,7 +223,6 @@ export class MainController implements vscode.Disposable {
             {
                 mouseSelectionEnabled: this.settings.mouseSelection,
             },
-            this.neovimViewportHeightExtend,
         );
         this.disposables.push(this.cursorManager);
 
