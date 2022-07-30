@@ -1,5 +1,28 @@
 # Change Log
 
+## [0.0.89]
+
+-   silence "No viewport for gridId" warning (#978)
+-   improve readme, and add plugins to wiki (#969)
+-   fix non-english input replacing chars in normal mode (#900)
+-   improve compatibility with lightspeed/leap by fixing highlight provider (#982)
+
+## [0.0.88]
+
+-   add `--clean` option (#952)
+-   remove `textDecorationsAtTop` (#957)
+-   remove custom insert mode mappings, now C-w/C-u/C-r/etc are called natively (#886)
+-   fix freezing after switching windows (#886)
+-   fix cursor and highlight on long lines (#971)
+
+## [0.0.87]
+
+-   Command line improvements! Enable paste cmdline keybindings and fix history (#908) and fix path completions (#860)
+
+## [0.0.86]
+
+-   Fix bug with remote workspaces/WSL where plugin would try to set pwd to invalid path
+
 ## [0.0.85]
 
 -   Show more messages in output ( #881, #902 )

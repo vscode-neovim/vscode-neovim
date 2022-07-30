@@ -62,6 +62,9 @@ set inccommand=
 " lazyredraw breaks the movement
 set nolazyredraw
 
+" make cursor visible for plugins what use fake cursor
+hi Cursor gui=reverse
+
 function s:forceLocalOptions()
     setlocal nowrap
     setlocal conceallevel=0

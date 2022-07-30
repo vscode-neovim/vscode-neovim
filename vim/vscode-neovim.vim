@@ -111,17 +111,6 @@ function! VSCodeSetTextDecorations(hlName, rowsCols)
     call VSCodeExtensionNotify('text-decorations', a:hlName, a:rowsCols)
 endfunction
 
-" Used for ctrl-a insert keybinding
-function! VSCodeGetLastInsertText()
-    let lines = split(getreg("."), "^@")
-    return lines
-endfunction
-
-" Used for ctrl-r [reg] insert keybindings
-function! VSCodeGetRegister(reg)
-    return getreg(a:reg)
-endfunction
-
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
     if exists('b:vscode_temp') && b:vscode_temp
@@ -173,4 +162,5 @@ augroup VscodeGeneral
     autocmd BufAdd * call <SID>runFileTypeDetection()
     " Looks like external windows are coming with "set wrap" set automatically, disable them
     " autocmd WinNew,WinEnter * :set nowrap
+    autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
 augroup END
