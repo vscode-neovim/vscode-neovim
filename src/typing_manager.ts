@@ -41,16 +41,13 @@ export class TypingManager implements Disposable {
         private modeManager: ModeManager,
         private changeManager: DocumentChangeManager,
     ) {
-<<<<<<< HEAD
         this.disposables.push(commands.registerCommand("vscode-neovim.toggle", () => {this.modeManager.neovimToggle=!this.modeManager.neovimToggle}));
         this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
         this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlOCommand));
-=======
         this.registerType();
         this.disposables.push(commands.registerCommand("replacePreviousChar", this.onVSCodeReplacePreviousChar));
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
->>>>>>> 14ca24c16e9208340ccff98fd5225da8e34e1b1d
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
@@ -131,7 +128,6 @@ export class TypingManager implements Disposable {
         }
     };
 
-<<<<<<< HEAD
     private onEscapeKeyCommand = async (): Promise<void> => {
     if(this.modeManager.neovimToggle){
         this.logger.debug(`${LOG_PREFIX}: Escape key`);
@@ -158,14 +154,12 @@ export class TypingManager implements Disposable {
         // console.log(lines.join("\n"));
         // console.log("====END====");
     }
-=======
     // Fix Non-English input method can replace previous chars
     // see https://github.com/vscode-neovim/vscode-neovim/issues/560
     private onVSCodeReplacePreviousChar = (type: { text: string; replaceCharCnt: number }): void => {
         if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode && !this.isEnteringInsertMode) {
             commands.executeCommand("default:replacePreviousChar", type);
         }
->>>>>>> 14ca24c16e9208340ccff98fd5225da8e34e1b1d
     };
 
     private onSendCommand = async (key: string): Promise<void> => {
