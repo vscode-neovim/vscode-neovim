@@ -58,31 +58,32 @@ export interface HightlightExtMark {
 function vimHighlightToVSCodeOptions(uiAttrs: VimHighlightUIAttributes): ThemableDecorationRenderOptions {
     const options: ThemableDecorationRenderOptions = {};
     // for absent color keys color should not be changed
-    if (uiAttrs.background) {
-        options.backgroundColor = "#" + uiAttrs.background.toString(16);
+    if (uiAttrs.background !== undefined) {
+        options.backgroundColor = "#" + uiAttrs.background.toString(16).padStart(6, "0");
     }
-    if (uiAttrs.foreground) {
-        options.color = "#" + uiAttrs.foreground.toString(16);
+    if (uiAttrs.foreground !== undefined) {
+        options.color = "#" + uiAttrs.foreground.toString(16).padStart(6, "0");
     }
-    const specialColor = uiAttrs.special ? "#" + uiAttrs.special.toString(16) : "";
 
-    if (uiAttrs.reverse) {
+    const specialColor = uiAttrs.special !== undefined ? "#" + uiAttrs.special.toString(16).padStart(6, "0") : "";
+
+    if (uiAttrs.reverse !== undefined) {
         options.backgroundColor = new ThemeColor("editor.foreground");
         options.color = new ThemeColor("editor.background");
     }
-    if (uiAttrs.italic) {
+    if (uiAttrs.italic !== undefined) {
         options.fontStyle = "italic";
     }
-    if (uiAttrs.bold) {
+    if (uiAttrs.bold !== undefined) {
         options.fontWeight = "bold";
     }
-    if (uiAttrs.strikethrough) {
+    if (uiAttrs.strikethrough !== undefined) {
         options.textDecoration = "line-through solid";
     }
-    if (uiAttrs.underline) {
+    if (uiAttrs.underline !== undefined) {
         options.textDecoration = `underline ${specialColor} solid`;
     }
-    if (uiAttrs.undercurl) {
+    if (uiAttrs.undercurl !== undefined) {
         options.textDecoration = `underline ${specialColor} wavy`;
     }
     return options;
@@ -175,9 +176,6 @@ export class HighlightProvider {
         "SpecialKey",
         "TermCursor",
         "TermCursorNC",
-        "Cursor",
-        "lCursor",
-        "VisualNC",
         // "Visual",
         "Conceal",
         "CursorLine",
