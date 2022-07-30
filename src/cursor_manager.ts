@@ -427,8 +427,8 @@ export class CursorManager
                     : TextEditorRevealType.Default;
             editor.revealRange(newPos, type);
             commands.executeCommand("editor.action.wordHighlight.trigger");
-            this.viewportManager.scrollNeovim(editor);
         }
+        this.viewportManager.scrollNeovim(editor);
     };
 
     private getDebouncedUpdateCursorPos = (editor: TextEditor): CursorManager["updateCursorPosInEditor"] => {
