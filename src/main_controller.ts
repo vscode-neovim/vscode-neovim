@@ -80,12 +80,9 @@ export class MainController implements vscode.Disposable {
     private customCommandsManager!: CustomCommandsManager;
     private multilineMessagesManager!: MutlilineMessagesManager;
     private viewportManager!: ViewportManager;
-    private neovimViewportHeightExtend = 3;
 
     public constructor(settings: ControllerSettings) {
         this.settings = settings;
-        this.NEOVIM_WIN_WIDTH = settings.neovimViewportWidth;
-        this.neovimViewportHeightExtend = settings.neovimViewportHeightExtend;
         if (!settings.neovimPath) {
             throw new Error("Neovim path is not defined");
         }
@@ -166,13 +163,7 @@ export class MainController implements vscode.Disposable {
     }
 
     public async init(): Promise<void> {
-        this.logger.debug(`${LOG_PREFIX}: Init`);
-        const viewportHeight = getCurrentViewPortHeight(
-            vscode.window.activeTextEditor,
-            this.neovimViewportHeightExtend,
-        );
-
-        this.logger.debug(`${LOG_PREFIX}: Attaching to neovim notifications`);
+        this.logger.debug(`${LOG_PREFIX}: Init, attaching to neovim notifications`);
         this.client.on("disconnect", () => {
             this.logger.error(`${LOG_PREFIX}: Neovim was disconnected`);
         });
@@ -184,6 +175,11 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
+        const viewportHeight = getCurrentViewPortHeight(
+            vscode.window.activeTextEditor,
+            this.settings.neovimViewportHeightExtend,
+        );
+
         this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
         this.disposables.push(this.commandsController);
 
@@ -191,8 +187,8 @@ export class MainController implements vscode.Disposable {
         this.disposables.push(this.modeManager);
 
         this.bufferManager = new BufferManager(this.logger, this.client, {
+            neovimViewportWidth: this.settings.neovimViewportWidth,
             neovimViewportHeight: viewportHeight,
-            neovimViewportWidth: 1000,
         });
         this.disposables.push(this.bufferManager);
 
@@ -200,13 +196,12 @@ export class MainController implements vscode.Disposable {
             this.logger,
             this.client,
             this.bufferManager,
-            this.neovimViewportHeightExtend,
+            this.settings.neovimViewportHeightExtend,
         );
         this.disposables.push(this.viewportManager);
 
         this.highlightManager = new HighlightManager(this.logger, this.bufferManager, this.viewportManager, {
             highlight: this.settings.highlightsConfiguration,
-            viewportHeight: viewportHeight,
         });
         this.disposables.push(this.highlightManager);
 
@@ -243,7 +238,7 @@ export class MainController implements vscode.Disposable {
 
         this.logger.debug(`${LOG_PREFIX}: UIAttach`);
         // !Attach after setup of notifications, otherwise we can get blocking call and stuck
-        await this.client.uiAttach(this.NEOVIM_WIN_WIDTH, viewportHeight, {
+        await this.client.uiAttach(this.settings.neovimViewportWidth, viewportHeight, {
             rgb: true,
             // override: true,
             ext_cmdline: true,

@@ -47,9 +47,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             } as any,
             mouseSelection: mouseVisualSelection,
             neovimPath: neovimPath,
-            neovimViewportHeightExtend: neovimViewportHeightExtend,
             useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
             neovimViewportWidth: neovimWidth,
+            neovimViewportHeightExtend: neovimViewportHeightExtend,
             revealCursorScrollLine: revealCursorScrollLine,
             logConf: {
                 logPath,
