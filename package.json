@@ -101,9 +101,9 @@
                 },
                 "vscode-neovim.neovimViewportHeightExtend": {
                     "type": "number",
-                    "default": 3,
+                    "default": 1,
                     "title": "Neovim viewport height extend",
-                    "description": "the height difference of neovim viewport and the vscode viewport by this amount."
+                    "description": "How much to extend neovim viewport on each side beyond vscode editor size. Increase if you are not seeing decorations or highlights on the edges of the editor."
                 },
                 "vscode-neovim.useCtrlKeysForNormalMode": {
                     "type": "boolean",
