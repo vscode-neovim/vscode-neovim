@@ -260,7 +260,7 @@
         "commands": [
             {
                 "command": "vscode-neovim.toggle",
-                "title": "Neovim: toggle on/off"
+                "title": "Neovim: toggle On/Off"
             },
             {
                 "command": "vscode-neovim.send",
