@@ -82,7 +82,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             return;
         }
         const ranges = editor.visibleRanges;
-        if (!ranges || ranges.length == 0) {
+        if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
             return;
         }
         const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
@@ -96,7 +96,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         }
         const viewport = this.gridViewport.get(gridId);
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.lnum - 1) {
-            this.client.executeLua("vscode.scroll_viewport(...)", [startLine, endLine]);
+            this.client.executeLua("vscode.scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
         }
     }
 
