@@ -612,7 +612,7 @@ export function applyEditorDiffOperations(
 export function getCurrentViewPortHeight(
     editor: TextEditor | undefined,
     viewPortExtend: number,
-    defaultValue = 201,
+    defaultValue = 100,
 ): number {
     if (!editor || editor.visibleRanges.length === 0) {
         return defaultValue;

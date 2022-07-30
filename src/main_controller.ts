@@ -24,7 +24,7 @@ import { CommandLineManager } from "./command_line_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { HighlightManager } from "./highlight_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
-import { findLastEvent, getCurrentViewPortHeight } from "./utils";
+import { findLastEvent } from "./utils";
 import { MutlilineMessagesManager } from "./multiline_messages_manager";
 import { ViewportManager } from "./viewport_manager";
 
@@ -175,11 +175,6 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        const viewportHeight = getCurrentViewPortHeight(
-            vscode.window.activeTextEditor,
-            this.settings.neovimViewportHeightExtend,
-        );
-
         this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
         this.disposables.push(this.commandsController);
 
@@ -188,7 +183,6 @@ export class MainController implements vscode.Disposable {
 
         this.bufferManager = new BufferManager(this.logger, this.client, {
             neovimViewportWidth: this.settings.neovimViewportWidth,
-            neovimViewportHeight: viewportHeight,
         });
         this.disposables.push(this.bufferManager);
 
@@ -239,7 +233,7 @@ export class MainController implements vscode.Disposable {
 
         this.logger.debug(`${LOG_PREFIX}: UIAttach`);
         // !Attach after setup of notifications, otherwise we can get blocking call and stuck
-        await this.client.uiAttach(this.settings.neovimViewportWidth, viewportHeight, {
+        await this.client.uiAttach(this.settings.neovimViewportWidth, 100, {
             rgb: true,
             // override: true,
             ext_cmdline: true,
