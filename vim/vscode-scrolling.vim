@@ -14,10 +14,3 @@ nnoremap z- <Cmd>call <SID>reveal('bottom', 1)<CR>
 xnoremap z- <Cmd>call <SID>reveal('bottom', 1)<CR>
 nnoremap zb <Cmd>call <SID>reveal('bottom', 0)<CR>
 xnoremap zb <Cmd>call <SID>reveal('bottom', 0)<CR>
-
-
-" Disabled due to scroll problems (the ext binds them directly)
-" nnoremap <silent> <expr> <C-e> VSCodeExtensionNotify('scroll-line', 'down')
-" xnoremap <silent> <expr> <C-e> VSCodeExtensionNotify('scroll-line', 'down')
-" nnoremap <silent> <expr> <C-y> VSCodeExtensionNotify('scroll-line', 'up')
-" xnoremap <silent> <expr> <C-y> VSCodeExtensionNotify('scroll-line', 'up')
