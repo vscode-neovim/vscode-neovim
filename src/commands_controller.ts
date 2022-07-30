@@ -4,15 +4,9 @@ import { NeovimClient } from "neovim";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 export class CommandsController implements Disposable, NeovimExtensionRequestProcessable {
-    private client: NeovimClient;
-
     private disposables: Disposable[] = [];
 
-    private revealCursorScrollLine: boolean;
-
-    public constructor(client: NeovimClient, revealCursorScrollLine: boolean) {
-        this.client = client;
-        this.revealCursorScrollLine = revealCursorScrollLine;
+    public constructor(private client: NeovimClient) {
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-e", () => this.scrollLine("down")));
         this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-y", () => this.scrollLine("up")));
     }
@@ -31,25 +25,12 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
                 this.revealLine(at, !!updateCursor);
                 break;
             }
-            case "scroll-line": {
-                const [to] = args as ["up" | "down"];
-                this.scrollLine(to);
-                break;
-            }
-            case "insert-line": {
-                const [type] = args as ["before" | "after"];
-                await this.client.command("startinsert");
-                await vscode.commands.executeCommand(
-                    type === "before" ? "editor.action.insertLineBefore" : "editor.action.insertLineAfter",
-                );
-                break;
-            }
         }
     }
 
     /// SCROLL COMMANDS ///
     private scrollLine = (to: "up" | "down"): void => {
-        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: this.revealCursorScrollLine });
+        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: true });
     };
 
     // zz, zt, zb and others

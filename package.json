@@ -119,11 +119,6 @@
                     "default": false,
                     "markdownDescription": "Use neovim installed in WSL. If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting"
                 },
-                "vscode-neovim.revealCursorScrollLine": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "If 'true' reveals the cursor when scrolling by line and if it is outside view port"
-                },
                 "vscode-neovim.logPath": {
                     "type": "string",
                     "default": "",
