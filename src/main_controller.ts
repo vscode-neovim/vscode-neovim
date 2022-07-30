@@ -196,6 +196,7 @@ export class MainController implements vscode.Disposable {
             this.logger,
             this.client,
             this.bufferManager,
+            this.modeManager,
             this.settings.neovimViewportHeightExtend,
         );
         this.disposables.push(this.viewportManager);

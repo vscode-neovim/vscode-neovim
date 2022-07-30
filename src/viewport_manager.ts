@@ -3,6 +3,7 @@ import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent } fr
 
 import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
+import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 
 const LOG_PREFIX = "ViewportManager";
@@ -30,6 +31,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         private logger: Logger,
         private client: NeovimClient,
         private bufferManager: BufferManager,
+        private modeManager: ModeManager,
         private neovimViewportHeightExtend: number,
     ) {
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
@@ -78,7 +80,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     }
 
     public scrollNeovim(editor: TextEditor | null): void {
-        if (editor == null) {
+        if (editor == null || this.modeManager.isInsertMode) {
             return;
         }
         const ranges = editor.visibleRanges;
