@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.0.89]
+
+-   silence "No viewport for gridId" warning (#978)
+-   improve readme, and add plugins to wiki (#969)
+-   fix non-english input replacing chars in normal mode (#900)
+-   improve compatibility with lightspeed/leap by fixing highlight provider (#982)
+
 ## [0.0.88]
 
 -   add `--clean` option (#952)

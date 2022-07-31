@@ -5,6 +5,9 @@ let s:currDir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
 " Adjust rtp path
 let &runtimepath = &runtimepath . ',' . s:currDir . '/vim-altercmd'
 
+let s:luaPath = fnamemodify(s:currDir, ':h') . '/runtime'
+let &runtimepath = &runtimepath . ',' . s:luaPath
+
 " Used to execute vscode command
 let s:vscodeCommandEventName = 'vscode-command'
 " Used to execute vscode command with some range (the specified range will be selected and the command will be executed on this range)
@@ -85,26 +88,6 @@ function! VSCodeClearUndo(bufId)
     unlet oldlevels
 endfunction
 
-" Called from extension to align screen row in neovim after scrolling
-" function! VSCodeAlignScreenRow(row)
-"     let currentRow = winline()
-"     let diff = abs(currentRow - a:row)
-"     if diff > 0
-"         if (a:row - currentRow) < 0
-"             if diff > 1
-"                 silent! exe "normal! " . diff . "\<C-e>"
-"             else
-"                 silent! exe "normal! \<C-e>"
-"             endif
-"         else
-"             if diff > 1
-"                 silent! exe "normal! " . diff . "\<C-y>"
-"             else
-"                 silent! exe "normal! \<C-y>"
-"             endif
-"         endif
-"     endif
-" endfunction
 
 " Set text decorations for given ranges. Used in easymotion
 function! VSCodeSetTextDecorations(hlName, rowsCols)
@@ -164,3 +147,8 @@ augroup VscodeGeneral
     " autocmd WinNew,WinEnter * :set nowrap
     autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
 augroup END
+
+
+lua << EOF
+require("vscode")
+EOF
