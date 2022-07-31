@@ -1,5 +1,12 @@
 import { NeovimClient } from "neovim";
-import vscode, { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent } from "vscode";
+import vscode, {
+    Disposable,
+    TextEditor,
+    window,
+    TextEditorVisibleRangesChangeEvent,
+    Selection,
+    TextEditorRevealType,
+} from "vscode";
 
 import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
@@ -193,8 +200,9 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             if (startLine === newTopLine) {
                 break;
             }
-            this.queueScrollingCommands(() => {
-                return vscode.commands.executeCommand("revealLine", { lineNumber: newTopLine, at: "top" });
+            this.queueScrollingCommands(async (): Promise<void> => {
+                const newPos = new Selection(newTopLine, 0, newTopLine, 0);
+                editor.revealRange(newPos, TextEditorRevealType.AtTop);
             });
         }
         this.scrolledGrids.clear();
