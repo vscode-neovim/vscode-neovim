@@ -7,7 +7,6 @@ import { attach, NeovimClient } from "neovim";
 import { createLogger, transports as loggerTransports } from "winston";
 
 import { HighlightConfiguration } from "./highlight_provider";
-import { CommandsController } from "./commands_controller";
 import { ModeManager } from "./mode_manager";
 import { BufferManager } from "./buffer_manager";
 import { TypingManager } from "./typing_manager";
@@ -72,7 +71,6 @@ export class MainController implements vscode.Disposable {
     private changeManager!: DocumentChangeManager;
     private typingManager!: TypingManager;
     private cursorManager!: CursorManager;
-    private commandsController!: CommandsController;
     private commandLineManager!: CommandLineManager;
     private statusLineManager!: StatusLineManager;
     private highlightManager!: HighlightManager;
@@ -174,9 +172,6 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.commandsController = new CommandsController(this.client);
-        this.disposables.push(this.commandsController);
-
         this.modeManager = new ModeManager(this.logger, this.client);
         this.disposables.push(this.modeManager);
 
@@ -215,13 +210,7 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.cursorManager);
 
-        this.typingManager = new TypingManager(
-            this.logger,
-            this.client,
-            this.modeManager,
-            this.changeManager,
-            this.viewportManager,
-        );
+        this.typingManager = new TypingManager(this.logger, this.client, this.modeManager, this.changeManager);
         this.disposables.push(this.typingManager);
 
         this.commandLineManager = new CommandLineManager(this.logger, this.client);
@@ -281,7 +270,6 @@ export class MainController implements vscode.Disposable {
         const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
             this.modeManager,
             this.changeManager,
-            this.commandsController,
             this.bufferManager,
             this.viewportManager,
             this.highlightManager,
@@ -366,7 +354,6 @@ export class MainController implements vscode.Disposable {
         const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
             this.modeManager,
             this.changeManager,
-            this.commandsController,
             this.bufferManager,
             this.highlightManager,
             this.cursorManager,

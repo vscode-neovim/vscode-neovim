@@ -407,25 +407,10 @@ export class CursorManager
             }
             return;
         }
-        const currCursor = editor.selection.active;
-        const deltaLine = newLine - currCursor.line;
         this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
         const newPos = new Selection(newLine, newCol, newLine, newCol);
         if (!editor.selection.isEqual(newPos)) {
             editor.selections = [newPos];
-            const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
-            const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
-            const type =
-                deltaLine > 0
-                    ? newLine > bottomVisibleLine + 10
-                        ? TextEditorRevealType.InCenterIfOutsideViewport
-                        : TextEditorRevealType.Default
-                    : deltaLine < 0
-                    ? newLine < topVisibleLine - 10
-                        ? TextEditorRevealType.InCenterIfOutsideViewport
-                        : TextEditorRevealType.Default
-                    : TextEditorRevealType.Default;
-            editor.revealRange(newPos, type);
             commands.executeCommand("editor.action.wordHighlight.trigger");
         }
         this.viewportManager.scrollNeovim(editor);

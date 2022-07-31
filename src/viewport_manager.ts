@@ -28,11 +28,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     private gridViewport: Map<number, WinView> = new Map();
 
     /**
-     * Flag to indicate if a scroll is expected. Update vscode viewport upon next `window-scroll` notification
-     */
-    private scrollExpected = false;
-
-    /**
      * Promise for handling vscode scrolling
      */
     private vscodeScrollPromise: Promise<void> = Promise.resolve();
@@ -80,10 +75,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         return { topLine: view.topline - 1, leftCol: view.leftcol };
     }
 
-    public expectScrollCommand(): void {
-        this.scrollExpected = true;
-    }
-
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
         switch (name) {
             case "window-scroll": {
@@ -94,17 +85,13 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                     break;
                 }
                 this.gridViewport.set(gridId, view);
-
-                if (this.scrollExpected) {
-                    this.scrollExpected = false;
-                    this.scrolledGrids.add(gridId);
-                }
+                this.scrolledGrids.add(gridId);
             }
         }
     }
 
     public scrollNeovim(editor: TextEditor | null): void {
-        this.queueScrollingCommands(() => {
+        this.queueScrollingCommands(async (): Promise<void> => {
             this.scrollNeovimInner(editor);
             return;
         });
