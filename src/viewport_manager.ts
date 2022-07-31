@@ -99,12 +99,11 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
     public scrollNeovim(editor: TextEditor | null): void {
         this.queueScrollingCommands(async (): Promise<void> => {
-            this.scrollNeovimInner(editor);
-            return;
+            return this.scrollNeovimInner(editor);
         });
     }
 
-    private scrollNeovimInner(editor: TextEditor | null): void {
+    private async scrollNeovimInner(editor: TextEditor | null): Promise<void> {
         if (editor == null || this.modeManager.isInsertMode) {
             return;
         }
@@ -126,7 +125,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             this.logger.debug(
                 `${LOG_PREFIX}: Scrolling neovim viewport from ${viewport?.topline} to ${Math.max(startLine, 0)}`,
             );
-            this.client.executeLua("vscode.scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
+            await this.client.executeLua("vscode.scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
         }
     }
 
@@ -134,10 +133,8 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         this.scrollNeovim(e.textEditor);
     };
 
-    private queueScrollingCommands(f: () => PromiseLike<void> | void): void {
-        this.vscodeScrollPromise = this.vscodeScrollPromise.then(() => {
-            return f();
-        });
+    private queueScrollingCommands(f: () => PromiseLike<void>): void {
+        this.vscodeScrollPromise = this.vscodeScrollPromise.then(f);
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
@@ -202,7 +199,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             }
             this.queueScrollingCommands(async (): Promise<void> => {
                 const newPos = new Selection(newTopLine, 0, newTopLine, 0);
-                editor.revealRange(newPos, TextEditorRevealType.AtTop);
+                return editor.revealRange(newPos, TextEditorRevealType.AtTop);
             });
         }
         this.scrolledGrids.clear();
