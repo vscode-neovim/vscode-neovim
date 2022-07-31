@@ -662,13 +662,13 @@
                 "args": "<C-a>"
             },
             {
-                "command": "vscode-neovim.send",
+                "command": "vscode-neovim.sendScroll",
                 "key": "ctrl+b",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
                 "args": "<C-b>"
             },
             {
-                "command": "vscode-neovim.send",
+                "command": "vscode-neovim.sendScroll",
                 "key": "ctrl+d",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
                 "args": "<C-d>"
@@ -679,7 +679,7 @@
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
             },
             {
-                "command": "vscode-neovim.send",
+                "command": "vscode-neovim.sendScroll",
                 "key": "ctrl+f",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
                 "args": "<C-f>"
@@ -703,7 +703,7 @@
                 "args": "<C-r>"
             },
             {
-                "command": "vscode-neovim.send",
+                "command": "vscode-neovim.sendScroll",
                 "key": "ctrl+u",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
                 "args": "<C-u>"
