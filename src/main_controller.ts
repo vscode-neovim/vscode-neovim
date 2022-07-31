@@ -215,7 +215,13 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.cursorManager);
 
-        this.typingManager = new TypingManager(this.logger, this.client, this.modeManager, this.changeManager, this.viewportManager);
+        this.typingManager = new TypingManager(
+            this.logger,
+            this.client,
+            this.modeManager,
+            this.changeManager,
+            this.viewportManager,
+        );
         this.disposables.push(this.typingManager);
 
         this.commandLineManager = new CommandLineManager(this.logger, this.client);

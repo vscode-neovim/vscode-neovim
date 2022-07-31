@@ -1,5 +1,5 @@
 import { NeovimClient } from "neovim";
-import vscode, { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent, Range } from "vscode";
+import vscode, { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
@@ -26,17 +26,20 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      * Current grid viewport, indexed by grid
      */
     private gridViewport: Map<number, WinView> = new Map();
-    
+
     /**
      * Flag to indicate if a scroll is expected. Update vscode viewport upon next `window-scroll` notification
      */
-    private scrollExpected: Boolean = false;
-    
+    private scrollExpected = false;
+
     /**
      * Promise for handling vscode scrolling
      */
     private vscodeScrollPromise: Promise<void> = Promise.resolve();
-    
+
+    /**
+     * Set of grids that received Scrolled notification
+     */
     private scrolledGrids: Set<number> = new Set();
 
     public constructor(
@@ -76,7 +79,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         }
         return { topLine: view.topline - 1, leftCol: view.leftcol };
     }
-    
+
     public expectScrollCommand(): void {
         this.scrollExpected = true;
     }
@@ -99,11 +102,12 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             }
         }
     }
-    
-    public scrollNeovim(editor: TextEditor | null): void { 
+
+    public scrollNeovim(editor: TextEditor | null): void {
         this.queueScrollingCommands(() => {
             this.scrollNeovimInner(editor);
-        })
+            return;
+        });
     }
 
     private scrollNeovimInner(editor: TextEditor | null): void {
@@ -125,7 +129,9 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         }
         const viewport = this.gridViewport.get(gridId);
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.lnum - 1) {
-            this.logger.debug(`${LOG_PREFIX}: Scrolling neovim viewport from ${viewport?.topline} to: ${Math.max(startLine, 0)}`)
+            this.logger.debug(
+                `${LOG_PREFIX}: Scrolling neovim viewport from ${viewport?.topline} to ${Math.max(startLine, 0)}`,
+            );
             this.client.executeLua("vscode.scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
         }
     }
@@ -133,8 +139,8 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     private onDidChangeVisibleRange = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
         this.scrollNeovim(e.textEditor);
     };
-    
-    private queueScrollingCommands(f: Function) {
+
+    private queueScrollingCommands(f: () => PromiseLike<void> | void): void {
         this.vscodeScrollPromise = this.vscodeScrollPromise.then(() => {
             return f();
         });
@@ -201,8 +207,8 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                 break;
             }
             this.queueScrollingCommands(() => {
-                return vscode.commands.executeCommand("revealLine", { lineNumber: newTopLine, at: 'top' });
-            })
+                return vscode.commands.executeCommand("revealLine", { lineNumber: newTopLine, at: "top" });
+            });
         }
         this.scrolledGrids.clear();
     }

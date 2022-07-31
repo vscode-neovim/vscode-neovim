@@ -142,11 +142,11 @@ export class TypingManager implements Disposable {
             await this.client.input(`${key}`);
         }
     };
-    
+
     private onSendScrollCommand = async (key: string): Promise<void> => {
         this.viewportManager.expectScrollCommand();
         this.onSendCommand(key);
-    }
+    };
 
     private onSendBlockingCommand = async (key: string): Promise<void> => {
         this.registerType();
