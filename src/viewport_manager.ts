@@ -36,6 +36,8 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      * Promise for handling vscode scrolling
      */
     private vscodeScrollPromise: Promise<void> = Promise.resolve();
+    
+    private scrolledGrids: Set<number> = new Set();
 
     public constructor(
         private logger: Logger,
@@ -92,20 +94,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
                 if (this.scrollExpected) {
                     this.scrollExpected = false;
-                    const editor = this.bufferManager.getEditorFromWinId(winId);
-                    const ranges = editor?.visibleRanges;
-                    if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
-                        break;
-                    }
-                    const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
-                    const newTopLine = view.topline + this.neovimViewportHeightExtend - 1;
-                    this.logger.debug(`Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
-                    if (startLine === newTopLine) {
-                        break;
-                    }
-                    this.queueScrollingCommands(() => {
-                        return vscode.commands.executeCommand("revealLine", { lineNumber: newTopLine, at: 'top' });
-                    })
+                    this.scrolledGrids.add(gridId);
                 }
             }
         }
@@ -136,7 +125,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         }
         const viewport = this.gridViewport.get(gridId);
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.lnum - 1) {
-            this.logger.debug(`Scrolling neovim viewport from ${viewport?.topline} to: ${Math.max(startLine, 0)}`)
+            this.logger.debug(`${LOG_PREFIX}: Scrolling neovim viewport from ${viewport?.topline} to: ${Math.max(startLine, 0)}`)
             this.client.executeLua("vscode.scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
         }
     }
@@ -195,5 +184,26 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                 }
             }
         }
+        for (const gridId of this.scrolledGrids) {
+            const editor = this.bufferManager.getEditorFromGridId(gridId);
+            const ranges = editor?.visibleRanges;
+            if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
+                break;
+            }
+            const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
+            const view = this.gridViewport.get(gridId);
+            if (!view) {
+                break;
+            }
+            const newTopLine = view.topline + this.neovimViewportHeightExtend - 1;
+            this.logger.debug(`${LOG_PREFIX}: Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
+            if (startLine === newTopLine) {
+                break;
+            }
+            this.queueScrollingCommands(() => {
+                return vscode.commands.executeCommand("revealLine", { lineNumber: newTopLine, at: 'top' });
+            })
+        }
+        this.scrolledGrids.clear();
     }
 }
