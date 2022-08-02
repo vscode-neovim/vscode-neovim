@@ -65,6 +65,7 @@ describe("Composite escape key", () => {
             },
             client,
         );
+        await sendVSCodeKeys("i");
         await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
         await wait(50);
         await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");

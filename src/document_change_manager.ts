@@ -82,10 +82,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      */
     private dotRepeatChange: DotRepeatChange | undefined;
     /**
-     * A hint for dot-repeat indicating of how the insert mode was started
-     */
-    private dotRepeatStartModeInsertHint?: "o" | "O";
-    /**
      * True when we're currently applying edits, so incoming changes will go into pending events queue
      */
     private applyingEdits = false;
@@ -123,12 +119,8 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         return (this.textDocumentChangePromise.get(doc)?.length || 0) > 0;
     }
 
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        if (name === "insert-line") {
-            const [type] = args as ["before" | "after"];
-            this.dotRepeatStartModeInsertHint = type === "before" ? "O" : "o";
-            this.logger.debug(`${LOG_PREFIX}: Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
-        }
+    public async handleExtensionRequest(): Promise<void> {
+        // skip
     }
 
     public async syncDocumentsWithNeovim(): Promise<void> {
@@ -232,7 +224,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
     }
 
-    public async syncDotRepatWithNeovim(): Promise<void> {
+    public async syncDotRepeatWithNeovim(): Promise<void> {
         // dot-repeat executes last change across all buffers. So we'll create a temporary buffer & window,
         // replay last changes here to trick neovim and destroy it after
         if (!this.dotRepeatChange) {
@@ -273,13 +265,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             );
         }
         let editStr = "";
-        if (dotRepeatChange.startMode) {
-            editStr += `<Esc>${dotRepeatChange.startMode}`;
-            // remove EOL from first change
-            if (dotRepeatChange.text.startsWith(dotRepeatChange.eol)) {
-                dotRepeatChange.text = dotRepeatChange.text.slice(dotRepeatChange.eol.length);
-            }
-        }
         if (dotRepeatChange.rangeLength) {
             editStr += [...new Array(dotRepeatChange.rangeLength).keys()].map(() => "<BS>").join("");
         }
@@ -570,12 +555,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             return;
         }
 
-        const startModeHint = this.dotRepeatStartModeInsertHint;
         const activeEditor = window.activeTextEditor;
 
         // Store dot repeat
         if (activeEditor && activeEditor.document === document && this.modeManager.isInsertMode) {
-            this.dotRepeatStartModeInsertHint = undefined;
             const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
             const cursor = activeEditor.selection.active;
             for (const change of contentChanges) {
@@ -583,7 +566,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     if (this.dotRepeatChange && isChangeSubsequentToChange(change, this.dotRepeatChange)) {
                         this.dotRepeatChange = accumulateDotRepeatChange(change, this.dotRepeatChange);
                     } else {
-                        this.dotRepeatChange = normalizeDotRepeatChange(change, eol, startModeHint);
+                        this.dotRepeatChange = normalizeDotRepeatChange(change, eol);
                     }
                 }
             }

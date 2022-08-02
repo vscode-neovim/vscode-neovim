@@ -4,6 +4,8 @@ import { debounce } from "lodash-es";
 import { Buffer, NeovimClient, Window } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
 import {
+    CancellationToken,
+    CancellationTokenSource,
     commands,
     Disposable,
     EndOfLine,
@@ -28,7 +30,6 @@ import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromE
 
 export interface BufferManagerSettings {
     neovimViewportWidth: number;
-    neovimViewportHeight: number;
 }
 
 const LOG_PREFIX = "BufferManager";
@@ -45,6 +46,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      */
     private changeLayoutPromise?: Promise<void>;
     private changeLayoutPromiseResolve?: () => void;
+    private cancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
     /**
      * Currently opened editors
      * !Note: Order can be any, it doesn't relate to visible order
@@ -102,7 +104,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
-        await this.syncLayout();
+        // this.cancelTokenSource will always be cancelled when the visible editors change
+        await this.syncLayout(this.cancelTokenSource.token);
         await this.syncActiveEditor();
     }
 
@@ -305,7 +308,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!this.changeLayoutPromise) {
             this.changeLayoutPromise = new Promise((res) => (this.changeLayoutPromiseResolve = res));
         }
-        this.syncLayoutDebounced();
+
+        // Cancel the previous syncLayout call, and then create a new token source for the new
+        // syncLayout call
+        this.cancelTokenSource.cancel();
+        this.cancelTokenSource = new CancellationTokenSource();
+        this.syncLayoutDebounced(this.cancelTokenSource.token);
     };
 
     private onDidChangeActiveTextEditor = (): void => {
@@ -313,7 +321,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.syncActiveEditorDebounced();
     };
 
-    private syncLayout = async (): Promise<void> => {
+    private syncLayout = async (cancelToken: CancellationToken): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: syncing layout`);
         // store in copy, just in case
         const currentVisibleEditors = [...window.visibleTextEditors];
@@ -419,6 +427,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         // remember new visible editors
         this.openedEditors = currentVisibleEditors;
+
+        if (cancelToken.isCancellationRequested) {
+            // If the visible editors has changed since we started, don't resolve the promise,
+            // because syncActiveEditor assumes that this promise is only resolved when the
+            // layout is synced, and currently the layout is synced based on outdated data
+            this.logger.debug(`${LOG_PREFIX}: Cancellation requested in syncLayout, returning`);
+            return;
+        }
         if (this.changeLayoutPromiseResolve) {
             this.changeLayoutPromiseResolve();
         }
@@ -439,7 +455,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
         const winId = this.textEditorToWinId.get(activeEditor);
         if (!winId) {
-            this.logger.warn(
+            // If we reach here, then the current window in Neovim is out of sync with the
+            // active editor, which manifests itself as the editor being completely unresponsive
+            // when in normal mode
+            this.logger.error(
                 `${LOG_PREFIX}: Unable to determine neovim windows id for editor viewColumn: ${
                     activeEditor.viewColumn
                 }, docUri: ${activeEditor.document.uri.toString()}`,
@@ -565,7 +584,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         const win = await this.client.openWindow(bufId as any, false, {
             external: true,
             width: this.settings.neovimViewportWidth,
-            height: this.settings.neovimViewportHeight,
+            height: 100,
         });
         await this.client.setOption("eventignore", "");
         if (typeof win === "number") {

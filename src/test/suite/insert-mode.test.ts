@@ -14,7 +14,6 @@ import {
     copyVSCodeSelection,
     pasteVSCode,
     sendVSCodeKeysAtomic,
-    setCursor,
 } from "../utils";
 
 describe("Insert mode and buffer syncronization", () => {
@@ -447,7 +446,7 @@ describe("Insert mode and buffer syncronization", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("ea");
+        await sendVSCodeKeys("0ea");
         await sendVSCodeKeys("aaa");
 
         await Promise.all([sendEscapeKey(1000), sendVSCodeKeys("$")]);
@@ -495,7 +494,7 @@ describe("Insert mode and buffer syncronization", () => {
         await sendVSCodeKeys("a3");
         await sendEscapeKey(1000);
         await sendVSCodeKeys("a");
-        vscode.commands.executeCommand("vscode-neovim.ctrl-a-insert");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
         await wait();
 
         await sendEscapeKey(1000);
@@ -516,7 +515,7 @@ describe("Insert mode and buffer syncronization", () => {
         await sendVSCodeKeys("ea blah2");
         await sendEscapeKey(1000);
         await sendVSCodeKeys("A");
-        vscode.commands.executeCommand("vscode-neovim.ctrl-a-insert");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
         await wait();
 
         await sendEscapeKey(1000);
@@ -537,7 +536,7 @@ describe("Insert mode and buffer syncronization", () => {
         await sendVSCodeKeys("wiblah2\n");
         await sendEscapeKey(1000);
         await sendVSCodeKeys("A");
-        vscode.commands.executeCommand("vscode-neovim.ctrl-a-insert");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
         await wait();
 
         await sendEscapeKey(1000);
@@ -545,55 +544,6 @@ describe("Insert mode and buffer syncronization", () => {
         await assertContent(
             {
                 content: ["blah1 blah2", "blah3blah2", ""],
-            },
-            client,
-        );
-    });
-
-    it("Handles nvim cursor movement commands after sending ctrl+o key", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "test",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
-        await setCursor(0, 2);
-        await sendVSCodeKeys("i123");
-        await wait();
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-o-insert");
-        await wait();
-        await sendVSCodeKeys("h");
-        await wait();
-        await assertContent(
-            {
-                mode: "i",
-                cursor: [0, 4],
-                content: ["te123st"],
-            },
-            client,
-        );
-    });
-
-    it("Handles nvim editing commands after sending ctrl+o key", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "test",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
-        await setCursor(0, 2);
-        await sendVSCodeKeys("i123");
-        await wait();
-        await sendVSCodeSpecialKey("cursorLeft");
-        await sendVSCodeSpecialKey("cursorLeft");
-        await wait();
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-o-insert");
-        await wait();
-        await sendVSCodeKeys("x");
-        await wait();
-        await assertContent(
-            {
-                mode: "i",
-                cursor: [0, 3],
-                content: ["te13st"],
             },
             client,
         );
