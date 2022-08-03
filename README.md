@@ -83,6 +83,17 @@ else
 endif
 ```
 
+Or to your `init.lua`
+
+```lua
+if vim.g.vscode then
+    -- VSCode extension
+else
+    -- ordinary neovim
+end
+
+```
+
 To conditionally activate plugins, `vim-plug` has a
 [few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation). For example, using the `Cond`
 helper, you can conditionally activate installed plugins
@@ -186,42 +197,6 @@ If you have any performance problems (cursor jitter usually) make sure you're no
 
 If you're not sure, disable all other extensions, **reload vscode window**, and see if the problem persists before
 reporting.
-
-### Conditional init.vim
-
-To determine if neovim is running in vscode, add to your `init.vim`:
-
-```vim
-if exists('g:vscode')
-    " VSCode extension
-else
-    " ordinary neovim
-endif
-```
-
-Or to your `init.lua`
-
-```lua
-if vim.g.vscode then
-    -- VSCode extension
-else
-    -- ordinary neovim
-end
-
-```
-
-To conditionally activate plugins, `vim-plug` has a
-[few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation). For example, using the `Cond`
-helper, you can conditionally activate installed plugins
-([source](https://github.com/asvetliakov/vscode-neovim/issues/415#issuecomment-715533865)):
-
-```vim
-" inside plug#begin:
-" use normal easymotion when in vim mode
-Plug 'easymotion/vim-easymotion', Cond(!exists('g:vscode'))
-" use vscode easymotion when in vscode mode
-Plug 'asvetliakov/vim-easymotion', Cond(exists('g:vscode'), { 'as': 'vsc-easymotion' })
-```
 
 ### Composite escape keys
 
