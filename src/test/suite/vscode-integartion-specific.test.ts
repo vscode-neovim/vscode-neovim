@@ -100,7 +100,7 @@ describe("VSCode integration specific stuff", () => {
         );
         const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait(1000);
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-f");
+        await sendVSCodeKeys("<C-f>", 0);
         await wait(1500);
 
         let visibleRange = editor.visibleRanges[0];
@@ -465,6 +465,67 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 cursor: [170, 20],
+            },
+            client,
+        );
+    });
+
+    it("Edit on long lines works", async () => {
+        const doc = await vscode.workspace.openTextDocument(
+            path.join(__dirname, "../../../test_fixtures/long-line.txt"),
+        );
+        await vscode.window.showTextDocument(doc);
+        await wait();
+        await sendVSCodeKeys("gg^");
+
+        await sendVSCodeKeys("2jb");
+        await wait(1000);
+        await assertContent(
+            {
+                cursor: [1, 1580],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("iabc");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                cursor: [1, 1582],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("jhk");
+        await assertContent(
+            {
+                cursor: [1, 10],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("Aabc");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                cursor: [1, 1589],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("Iabc");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                cursor: [1, 2],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("$");
+        await assertContent(
+            {
+                cursor: [1, 1592],
             },
             client,
         );

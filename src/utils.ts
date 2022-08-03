@@ -54,10 +54,6 @@ export interface DotRepeatChange {
      */
     text: string;
     /**
-     * Set if it was the first change and started either through o or O
-     */
-    startMode?: "o" | "O";
-    /**
      * Text eol
      */
     eol: string;
@@ -416,16 +412,11 @@ export function getNeovimInitPath(): string | undefined {
     return getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
 }
 
-export function normalizeDotRepeatChange(
-    change: TextDocumentContentChangeEvent,
-    eol: string,
-    startMode?: "o" | "O",
-): DotRepeatChange {
+export function normalizeDotRepeatChange(change: TextDocumentContentChangeEvent, eol: string): DotRepeatChange {
     return {
         rangeLength: change.rangeLength,
         rangeOffset: change.rangeOffset,
         text: change.text,
-        startMode,
         eol,
     };
 }
@@ -607,4 +598,19 @@ export function applyEditorDiffOperations(
                 break;
         }
     });
+}
+
+export function getCurrentViewPortHeight(
+    editor: TextEditor | undefined,
+    viewPortExtend: number,
+    defaultValue = 100,
+): number {
+    if (!editor || editor.visibleRanges.length === 0) {
+        return defaultValue;
+    }
+    return (
+        editor.visibleRanges[editor.visibleRanges.length - 1].end.line -
+        editor.visibleRanges[0].start.line +
+        viewPortExtend * 2
+    );
 }

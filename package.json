@@ -8,7 +8,7 @@
         "ui",
         "workspace"
     ],
-    "version": "0.0.88",
+    "version": "0.0.90",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.54.0"
+        "vscode": "^1.69.0"
     },
     "keywords": [
         "keybindings",
@@ -99,6 +99,12 @@
                     "title": "Neovim width",
                     "description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
                 },
+                "vscode-neovim.neovimViewportHeightExtend": {
+                    "type": "number",
+                    "default": 1,
+                    "title": "Neovim viewport height extend",
+                    "description": "How much to extend neovim viewport on each side beyond vscode editor size. Increase if you are not seeing decorations or highlights on the edges of the editor."
+                },
                 "vscode-neovim.useCtrlKeysForNormalMode": {
                     "type": "boolean",
                     "default": true,
@@ -118,11 +124,6 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Use neovim installed in WSL. If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting"
-                },
-                "vscode-neovim.revealCursorScrollLine": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "If 'true' reveals the cursor when scrolling by line and if it is outside view port"
                 },
                 "vscode-neovim.logPath": {
                     "type": "string",
@@ -150,43 +151,25 @@
                     "title": "Ignore Highlighs Groups",
                     "description": "List of vim highlights groups to ignore",
                     "default": [
-                        "SpecialKey",
                         "EndOfBuffer",
-                        "TermCursor",
-                        "TermCursorNC",
-                        "NonText",
                         "ErrorMsg",
                         "MoreMsg",
                         "ModeMsg",
-                        "LineNr",
-                        "CursorLineNr",
                         "Question",
-                        "StatusLine",
-                        "StatusLineNC",
-                        "VertSplit",
-                        "Title",
                         "VisualNC",
                         "WarningMsg",
-                        "WildMenu",
                         "^Diff",
                         "Sign",
                         "SignColumn",
                         "^Spell",
                         "^Pmenu",
                         "^Tab",
-                        "^Cursor",
                         "ColorColumn",
                         "QuickFixLine",
-                        "Whitespace",
-                        "NormalNC",
-                        "Normal",
-                        "NormalFloat",
                         "MsgSeparator",
                         "MsgArea",
                         "^RedrawDebug",
-                        "Cursor",
-                        "lCursor",
-                        "MatchParen",
+                        "^.*MatchParen",
                         "^Nvim",
                         "Operator",
                         "Delimiter",
@@ -309,40 +292,12 @@
                 "title": "Neovim: Send key in cmdline"
             },
             {
-                "command": "vscode-neovim.ctrl-b",
-                "title": "Neovim: ctrl-b"
-            },
-            {
-                "command": "vscode-neovim.ctrl-d",
-                "title": "Neovim: ctrl-d"
-            },
-            {
                 "command": "vscode-neovim.ctrl-e",
                 "title": "Neovim: ctrl-e"
             },
             {
-                "command": "vscode-neovim.ctrl-f",
-                "title": "Neovim: ctrl-f"
-            },
-            {
-                "command": "vscode-neovim.ctrl-u",
-                "title": "Neovim: ctrl-u"
-            },
-            {
                 "command": "vscode-neovim.ctrl-y",
                 "title": "Neovim: ctrl-y"
-            },
-            {
-                "command": "vscode-neovim.shift-m",
-                "title": "Neovim: shift-m"
-            },
-            {
-                "command": "vscode-neovim.shift-l",
-                "title": "Neovim: shift-l"
-            },
-            {
-                "command": "vscode-neovim:shift-h",
-                "title": "Neovim: shift-h"
             }
         ],
         "keybindings": [
@@ -707,14 +662,16 @@
                 "args": "<C-a>"
             },
             {
-                "command": "vscode-neovim.ctrl-b",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+b",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-b>"
             },
             {
-                "command": "vscode-neovim.ctrl-d",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+d",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-d>"
             },
             {
                 "command": "vscode-neovim.ctrl-e",
@@ -722,9 +679,10 @@
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
             },
             {
-                "command": "vscode-neovim.ctrl-f",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+f",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-f>"
             },
             {
                 "command": "vscode-neovim.send",
@@ -745,9 +703,10 @@
                 "args": "<C-r>"
             },
             {
-                "command": "vscode-neovim.ctrl-u",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+u",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-u>"
             },
             {
                 "command": "vscode-neovim.send",
@@ -1272,12 +1231,12 @@
         "@types/lodash-es": "^4.17.4",
         "@types/mocha": "^9.1.1",
         "@types/msgpack-lite": "^0.1.7",
-        "@types/node": "^18.0.1",
-        "@types/vscode": "^1.54.0",
-        "@typescript-eslint/eslint-plugin": "^5.30.4",
-        "@typescript-eslint/parser": "^5.30.4",
+        "@types/node": "^18.0.6",
+        "@types/vscode": "^1.69.0",
+        "@typescript-eslint/eslint-plugin": "^5.30.7",
+        "@typescript-eslint/parser": "^5.30.7",
         "@vscode/test-electron": "^2.1.5",
-        "eslint": "^8.19.0",
+        "eslint": "^8.20.0",
         "eslint-config-prettier": "^8.1.0",
         "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-prettier": "^4.2.1",
@@ -1287,7 +1246,7 @@
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.3.1",
         "typescript": "^4.2.3",
-        "vsce": "^2.6.3",
+        "vsce": "^2.9.3",
         "webpack": "^5.26.1",
         "webpack-cli": "^4.5.0",
         "yarn": "^1.22.18"
