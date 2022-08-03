@@ -179,7 +179,7 @@ endif
 Or to your `init.lua`
 
 ```lua
-if vim.fn.exists('g:vscode') ~= 0 then
+if vim.g.vscode then
     -- VSCode extension
 else
     -- ordinary neovim
