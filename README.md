@@ -83,7 +83,7 @@ else
 endif
 ```
 
-Or to your `init.lua`
+Or to your `init.lua`:
 
 ```lua
 if vim.g.vscode then
@@ -91,7 +91,6 @@ if vim.g.vscode then
 else
     -- ordinary neovim
 end
-
 ```
 
 To conditionally activate plugins, `vim-plug` has a
