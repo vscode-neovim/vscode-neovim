@@ -19,7 +19,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const highlightConfHighlights = settings.get("highlightGroups.highlights");
     const highlightConfUnknown = settings.get("highlightGroups.unknownHighlight");
     const mouseVisualSelection = settings.get("mouseSelectionStartVisualMode", false);
-    const mouseInsertSelection = settings.get("mouseSelectionStartInsertMode", false);
+    const mouseInsertSelection = settings.get("mouseSelectionStartInsertMode", true);
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = isWindows && settings.get("useWSL", false);
