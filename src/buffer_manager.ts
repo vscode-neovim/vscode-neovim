@@ -383,10 +383,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     requests.push(["nvim_win_set_cursor", [winId, cursor]]);
 
                     const viewport = getNeovimViewportPosFromEditor(visibleEditor);
-                    requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
+                    let viewportMsg = "no available viewport";
+                    if (viewport) {
+                        requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
+                        viewportMsg = `[${viewport[0]}, ${viewport[1]}]`;
+                    }
 
                     this.logger.debug(
-                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}], viewport: [${viewport[0]}, ${viewport[1]}]`,
+                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}], viewport: ${viewportMsg}`,
                     );
                     await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
 
