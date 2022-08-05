@@ -1,17 +1,19 @@
+import { debounce } from "lodash-es";
 import { NeovimClient } from "neovim";
 import vscode, {
     Disposable,
     TextEditor,
     window,
     TextEditorVisibleRangesChangeEvent,
-    Selection,
-    TextEditorRevealType,
+    TextEditorSelectionChangeEvent,
 } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
+import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
 import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
+import { callAtomic } from "./utils";
 
 const LOG_PREFIX = "ViewportManager";
 
@@ -26,6 +28,11 @@ export interface WinView {
     skipcol: number;
 }
 
+export enum VSCodeSynchronizableEvent {
+    TextEditorVisibleRangesChangeEvent,
+    TextEditorSelectionChangeEvent,
+}
+
 export class ViewportManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
 
@@ -35,27 +42,50 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     private gridViewport: Map<number, WinView> = new Map();
 
     /**
-     * Promise for handling vscode scrolling
+     * Lock indicating whether vscode is currently scrolling
      */
-    private vscodeScrollPromise: Promise<void> = Promise.resolve();
+    private vscodeScrollingLock: Promise<void> = Promise.resolve();
 
     /**
-     * Set of grids that received Scrolled notification
+     * Map of grids that received Scrolled notification to their scrolled view
      */
-    private scrolledGrids: Set<number> = new Set();
+    private scrolledGrids: Map<number, WinView> = new Map();
+
+    /**
+     * Map each text editor to pending viewport-related events (keeps only the last event)
+     */
+    private triggeredViewportEvents: Map<TextEditor, Map<VSCodeSynchronizableEvent, unknown>> = new Map();
+
+    /**
+     * Handlers for `DidChangeTextEditorSelection`
+     */
+    private selectionHandlers: ((e: TextEditorSelectionChangeEvent, requests: [string, unknown[]][]) => void)[] = [];
 
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
         private bufferManager: BufferManager,
         private modeManager: ModeManager,
+        private changeManager: DocumentChangeManager,
         private neovimViewportHeightExtend: number,
     ) {
-        this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
+        this.disposables.push(window.onDidChangeTextEditorSelection(this.onDidChangeTextEditorSelection));
+        this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeTextEditorVisibleRanges));
     }
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
+    }
+
+    /**
+     * Registers a handler on `DidChangeTextEditorSelection` event. Fires when
+     * viewport-related pending events are resolved
+     * @param f handler for selection event
+     */
+    public registerSelectionHandler(
+        f: (e: TextEditorSelectionChangeEvent, requests: [string, unknown[]][]) => void,
+    ): void {
+        this.selectionHandlers.push(f);
     }
 
     /**
@@ -91,19 +121,85 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                     this.logger.warn(`${LOG_PREFIX}: Unable to update scrolled view. No gird for winId: ${winId}`);
                     break;
                 }
-                this.gridViewport.set(gridId, view);
-                this.scrolledGrids.add(gridId);
+                this.scrolledGrids.set(gridId, view);
             }
         }
     }
 
-    public scrollNeovim(editor: TextEditor | null): void {
-        this.queueScrollingCommands(async (): Promise<void> => {
-            return this.scrollNeovimInner(editor);
-        });
-    }
+    private onDidChangeTextEditorSelection = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX}: SelectionChanged`);
+        this.queueViewportSync(e.textEditor, VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent, e);
+    };
 
-    private async scrollNeovimInner(editor: TextEditor | null): Promise<void> {
+    private onDidChangeTextEditorVisibleRanges = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX}: VisibleRangeChanged. New top line: ${e.visibleRanges[0].start.line}`);
+        this.queueViewportSync(e.textEditor, VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent, e);
+    };
+
+    private queueViewportSync = async (
+        textEditor: TextEditor,
+        eventType: VSCodeSynchronizableEvent,
+        e: unknown,
+    ): Promise<void> => {
+        if (this.modeManager.isInsertMode) {
+            return;
+        }
+        const queue = this.triggeredViewportEvents.get(textEditor);
+
+        if (queue) {
+            queue.set(eventType, e);
+            return;
+        }
+        this.triggeredViewportEvents.set(textEditor, new Map([[eventType, e]]));
+
+        // wait for possible layout updates first
+        this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
+        await this.bufferManager.waitForLayoutSync();
+        // wait for possible change document events
+        this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
+        await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
+
+        this.logger.debug(`${LOG_PREFIX}: Waiting 20 ms for possible multiple operations`);
+
+        this.syncViewportWithNeovim(textEditor);
+    };
+
+    private syncViewportWithNeovim = debounce(
+        async (textEditor: TextEditor) => {
+            this.logger.debug(`${LOG_PREFIX}: Waiting for vscode content scrolling`);
+            await this.acquireScrollingLock();
+            this.logger.debug(`${LOG_PREFIX}: Waiting done`);
+            const triggeredEvents = this.triggeredViewportEvents.get(textEditor);
+            this.triggeredViewportEvents.delete(textEditor);
+            if (!triggeredEvents) {
+                return;
+            }
+            const requests: [string, unknown[]][] = [];
+            for (const [eventType, e] of triggeredEvents) {
+                switch (eventType) {
+                    case VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent: {
+                        this.logger.debug(`${LOG_PREFIX}: Scrolling neovim cursor`);
+                        for (const handler of this.selectionHandlers) {
+                            handler(<TextEditorSelectionChangeEvent>e, requests);
+                        }
+                        break;
+                    }
+                    case VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent: {
+                        this.logger.debug(`${LOG_PREFIX}: Scrolling neovim viewport`);
+                        this.scrollNeovim(textEditor, requests);
+                        break;
+                    }
+                }
+            }
+            if (requests.length) {
+                await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+            }
+        },
+        20,
+        { leading: false, trailing: true },
+    );
+
+    private scrollNeovim(editor: TextEditor | null, requests: [string, unknown[]][]): void {
         if (editor == null || this.modeManager.isInsertMode) {
             return;
         }
@@ -114,30 +210,41 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
         // when it have fold we need get the last range. it need add 1 line on multiple fold
         const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
-        const currentLine = editor.selection.active.line;
 
         const gridId = this.bufferManager.getGridIdFromEditor(editor);
         if (gridId == null) {
             return;
         }
         const viewport = this.gridViewport.get(gridId);
-        if (viewport && startLine != viewport?.topline && currentLine == viewport?.lnum - 1) {
+        if (viewport && startLine != viewport?.topline) {
+            const finalStartLine = Math.max(startLine, 0);
             this.logger.debug(
-                `${LOG_PREFIX}: Scrolling neovim viewport from ${viewport?.topline} to ${Math.max(startLine, 0)}`,
+                `${LOG_PREFIX}: Scrolling neovim viewport from ${viewport?.topline} to ${finalStartLine}`,
             );
-            await this.client.executeLua("vscode.scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
+            const view = this.gridViewport.get(gridId);
+            if (view) {
+                view.topline = finalStartLine + 1;
+            }
+            requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [finalStartLine, endLine]]]);
         }
     }
 
-    private onDidChangeVisibleRange = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
-        this.scrollNeovim(e.textEditor);
-    };
-
     private queueScrollingCommands(f: () => PromiseLike<void>): void {
-        this.vscodeScrollPromise = this.vscodeScrollPromise.then(f);
+        this.vscodeScrollingLock = this.vscodeScrollingLock.then(f);
+    }
+
+    private async acquireScrollingLock(): Promise<void> {
+        let lock;
+        do {
+            lock = this.vscodeScrollingLock;
+            await lock;
+        } while (lock !== this.vscodeScrollingLock);
     }
 
     public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
+        for (const [gridId, view] of this.scrolledGrids) {
+            this.gridViewport.set(gridId, view);
+        }
         for (const [name, ...args] of batch) {
             switch (name) {
                 case "win_viewport": {
@@ -181,7 +288,8 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                 }
             }
         }
-        for (const gridId of this.scrolledGrids) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        for (const [gridId, view] of this.scrolledGrids) {
             const editor = this.bufferManager.getEditorFromGridId(gridId);
             const ranges = editor?.visibleRanges;
             if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
@@ -198,8 +306,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                 break;
             }
             this.queueScrollingCommands(async (): Promise<void> => {
-                const newPos = new Selection(newTopLine, 0, newTopLine, 0);
-                return editor.revealRange(newPos, TextEditorRevealType.AtTop);
+                return vscode.commands.executeCommand("revealLine", { lineNumber: newTopLine, at: "top" });
             });
         }
         this.scrolledGrids.clear();
