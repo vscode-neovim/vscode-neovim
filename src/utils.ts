@@ -470,6 +470,17 @@ export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, numbe
     }
 }
 
+export function getNeovimViewportPosFromEditor(
+    editor: TextEditor,
+    neovimViewportHeightExtend: number,
+): [number, number] {
+    const ranges = editor.visibleRanges;
+    const startLine = ranges[0].start.line + 1 - neovimViewportHeightExtend;
+    const endLine = ranges[ranges.length - 1].end.line + ranges.length + neovimViewportHeightExtend;
+
+    return [Math.max(startLine, 0), endLine];
+}
+
 export function getDocumentLineArray(doc: TextDocument): string[] {
     const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
     return doc.getText().split(eol);

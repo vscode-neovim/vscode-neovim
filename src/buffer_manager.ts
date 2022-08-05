@@ -21,7 +21,12 @@ import {
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromEditor } from "./utils";
+import {
+    calculateEditorColFromVimScreenCol,
+    callAtomic,
+    getNeovimCursorPosFromEditor,
+    getNeovimViewportPosFromEditor,
+} from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -30,6 +35,7 @@ import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromE
 
 export interface BufferManagerSettings {
     neovimViewportWidth: number;
+    neovimViewportHeightExtend: number;
 }
 
 const LOG_PREFIX = "BufferManager";
@@ -373,11 +379,21 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     winId = await this.createNeovimWindow(editorBufferId);
                     this.logger.debug(`${LOG_PREFIX}: Created new window: ${winId}`);
                     this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
+                    const requests: [string, unknown[]][] = [];
                     const cursor = getNeovimCursorPosFromEditor(visibleEditor);
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
+                    requests.push(["nvim_win_set_cursor", [winId, cursor]]);
+
+                    const viewport = getNeovimViewportPosFromEditor(
+                        visibleEditor,
+                        this.settings.neovimViewportHeightExtend,
                     );
-                    await this.client.request("nvim_win_set_cursor", [winId, cursor]);
+                    requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
+
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}], viewport: [${viewport[0]}, ${viewport[1]}]`,
+                    );
+                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+
                     this.textEditorToWinId.set(visibleEditor, winId);
                     this.winIdToEditor.set(winId, visibleEditor);
                 }
