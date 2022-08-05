@@ -67,7 +67,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         private bufferManager: BufferManager,
         private modeManager: ModeManager,
         private changeManager: DocumentChangeManager,
-        private neovimViewportHeightExtend: number,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onDidChangeTextEditorSelection));
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeTextEditorVisibleRanges));
@@ -207,9 +206,9 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
             return;
         }
-        const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
+        const startLine = ranges[0].start.line + 1;
         // when it have fold we need get the last range. it need add 1 line on multiple fold
-        const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
+        const endLine = ranges[ranges.length - 1].end.line + ranges.length;
 
         const gridId = this.bufferManager.getGridIdFromEditor(editor);
         const winId = this.bufferManager.getWinIdForTextEditor(editor);
@@ -296,12 +295,12 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
                 break;
             }
-            const startLine = ranges[0].start.line + 1 - this.neovimViewportHeightExtend;
+            const startLine = ranges[0].start.line + 1;
             const view = this.gridViewport.get(gridId);
             if (!view) {
                 break;
             }
-            const newTopLine = view.topline + this.neovimViewportHeightExtend - 1;
+            const newTopLine = view.topline - 1;
             this.logger.debug(`${LOG_PREFIX}: Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
             if (startLine === newTopLine) {
                 break;

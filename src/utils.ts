@@ -470,13 +470,10 @@ export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, numbe
     }
 }
 
-export function getNeovimViewportPosFromEditor(
-    editor: TextEditor,
-    neovimViewportHeightExtend: number,
-): [number, number] {
+export function getNeovimViewportPosFromEditor(editor: TextEditor): [number, number] {
     const ranges = editor.visibleRanges;
-    const startLine = ranges[0].start.line + 1 - neovimViewportHeightExtend;
-    const endLine = ranges[ranges.length - 1].end.line + ranges.length + neovimViewportHeightExtend;
+    const startLine = ranges[0].start.line + 1;
+    const endLine = ranges[ranges.length - 1].end.line + ranges.length;
 
     return [Math.max(startLine, 0), endLine];
 }

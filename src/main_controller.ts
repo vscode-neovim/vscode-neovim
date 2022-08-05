@@ -40,7 +40,6 @@ export interface ControllerSettings {
     customInitFile: string;
     clean: boolean;
     neovimViewportWidth: number;
-    neovimViewportHeightExtend: number;
     logConf: {
         level: "none" | "error" | "warn" | "debug";
         logPath: string;
@@ -177,7 +176,6 @@ export class MainController implements vscode.Disposable {
 
         this.bufferManager = new BufferManager(this.logger, this.client, {
             neovimViewportWidth: this.settings.neovimViewportWidth,
-            neovimViewportHeightExtend: this.settings.neovimViewportHeightExtend,
         });
         this.disposables.push(this.bufferManager);
 
@@ -190,7 +188,6 @@ export class MainController implements vscode.Disposable {
             this.bufferManager,
             this.modeManager,
             this.changeManager,
-            this.settings.neovimViewportHeightExtend,
         );
         this.disposables.push(this.viewportManager);
 
@@ -279,8 +276,6 @@ export class MainController implements vscode.Disposable {
         ];
         const vscodeComandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
         const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
-
-        console.debug(events);
 
         if (method === "vscode-command") {
             const [vscodeCommand, commandArgs] = events as [string, unknown[]];

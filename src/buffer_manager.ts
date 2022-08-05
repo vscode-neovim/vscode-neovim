@@ -35,7 +35,6 @@ import {
 
 export interface BufferManagerSettings {
     neovimViewportWidth: number;
-    neovimViewportHeightExtend: number;
 }
 
 const LOG_PREFIX = "BufferManager";
@@ -383,10 +382,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     const cursor = getNeovimCursorPosFromEditor(visibleEditor);
                     requests.push(["nvim_win_set_cursor", [winId, cursor]]);
 
-                    const viewport = getNeovimViewportPosFromEditor(
-                        visibleEditor,
-                        this.settings.neovimViewportHeightExtend,
-                    );
+                    const viewport = getNeovimViewportPosFromEditor(visibleEditor);
                     requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
 
                     this.logger.debug(
