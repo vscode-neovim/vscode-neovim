@@ -36,7 +36,8 @@ export interface ControllerSettings {
     neovimPath: string;
     extensionPath: string;
     highlightsConfiguration: HighlightConfiguration;
-    mouseSelection: boolean;
+    mouseSelectionVisual: boolean;
+    mouseSelectionInsert: boolean;
     useWsl: boolean;
     customInitFile: string;
     clean: boolean;
@@ -215,7 +216,8 @@ export class MainController implements vscode.Disposable {
             this.changeManager,
             this.viewportManager,
             {
-                mouseSelectionEnabled: this.settings.mouseSelection,
+                mouseSelectionEnabledVisual: this.settings.mouseSelectionVisual,
+                mouseSelectionEnabledInsert: this.settings.mouseSelectionInsert,
             },
         );
         this.disposables.push(this.cursorManager);

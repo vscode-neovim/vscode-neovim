@@ -114,6 +114,11 @@
                     "default": false,
                     "description": "Mouse selection starts visual mode"
                 },
+                "vscode-neovim.mouseSelectionStartInstertMode": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Mouse selection starts insert mode (only if visual mode inactive)"
+                },
                 "vscode-neovim.useWSL": {
                     "type": "boolean",
                     "default": false,
@@ -260,7 +265,11 @@
         "commands": [
             {
                 "command": "vscode-neovim.toggle",
-                "title": "Neovim: toggle On/Off"
+                "title": "Neovim Toggle: Stay in InsertMode Forever"
+            },
+            {
+                "command": "vscode-neovim.toggle2",
+                "title": "Neovim Toggle: Stay in InsertMode OnBufferChange"
             },
             {
                 "command": "vscode-neovim.send",
