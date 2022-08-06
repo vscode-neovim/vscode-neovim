@@ -5,6 +5,8 @@ import vscode, {
     window,
     TextEditorVisibleRangesChangeEvent,
     TextEditorSelectionChangeEvent,
+    Selection,
+    TextEditorRevealType,
 } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
@@ -43,7 +45,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     /**
      * Lock indicating whether vscode is currently scrolling
      */
-    private vscodeScrollingLock: Promise<void> = Promise.resolve();
+    private vscodeScrollingLock: Thenable<void> = Promise.resolve();
 
     /**
      * Map of grids that received Scrolled notification to their scrolled view
@@ -240,17 +242,9 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         const offset = this.getGridOffset(gridId);
         if (offset && startLine != offset.topLine) {
             this.logger.debug(`${LOG_PREFIX}: Scrolling neovim viewport from ${offset.topLine} to ${startLine}`);
-            const view = this.gridViewport.get(gridId);
-            if (view) {
-                view.topline = viewport[0];
-            }
             this.desyncedViewport.delete(editor);
             requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
         }
-    }
-
-    private queueScrollingCommands(f: () => PromiseLike<void>): void {
-        this.vscodeScrollingLock = this.vscodeScrollingLock.then(f);
     }
 
     private async acquireScrollingLock(): Promise<void> {
@@ -326,9 +320,15 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             }
 
             this.logger.debug(`${LOG_PREFIX}: Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
-            this.queueScrollingCommands(async (): Promise<void> => {
-                return vscode.commands.executeCommand("revealLine", { lineNumber: newTopLine, at: "top" });
-            });
+            if (window.activeTextEditor === editor) {
+                this.vscodeScrollingLock = vscode.commands.executeCommand("revealLine", {
+                    lineNumber: newTopLine,
+                    at: "top",
+                });
+            } else {
+                const newPos = new Selection(newTopLine, 0, newTopLine, 0);
+                editor.revealRange(newPos, TextEditorRevealType.AtTop);
+            }
         }
         this.scrolledGrids.clear();
     }
