@@ -131,19 +131,19 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
     private onDidChangeTextEditorSelection = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: SelectionChanged`);
-        this.syncViewportWithNeovim(e.textEditor, VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent, e);
+        this.queueSyncViewportWithNeovim(e.textEditor, VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent, e);
     };
 
     private onDidChangeTextEditorVisibleRanges = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: VisibleRangeChanged. New top line: ${e.visibleRanges[0].start.line}`);
-        this.syncViewportWithNeovim(e.textEditor, VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent, e);
+        this.queueSyncViewportWithNeovim(e.textEditor, VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent, e);
     };
 
-    private syncViewportWithNeovim = async (
+    private queueSyncViewportWithNeovim(
         textEditor: TextEditor,
         eventType: VSCodeSynchronizableEvent,
         e: unknown,
-    ): Promise<void> => {
+    ): void {
         if (this.modeManager.isInsertMode) {
             return;
         }
@@ -154,7 +154,10 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             return;
         }
         this.triggeredViewportEvents.set(textEditor, new Map([[eventType, e]]));
+        this.syncViewportWithNeovim(textEditor);
+    }
 
+    private async syncViewportWithNeovim(textEditor: TextEditor): Promise<void> {
         // wait for possible layout updates first
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
         await this.bufferManager.waitForLayoutSync();
@@ -205,7 +208,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         if (requests.length) {
             await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
         }
-    };
+    }
 
     private scrollNeovim(editor: TextEditor | null, requests: [string, unknown[]][]): void {
         if (editor == null || this.modeManager.isInsertMode) {
