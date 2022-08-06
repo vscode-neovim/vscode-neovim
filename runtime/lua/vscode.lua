@@ -33,6 +33,7 @@ M.scroll_viewport = function(win_handle, visible_ranges)
         vim.api.nvim_win_set_height(win_handle, new_height)
     end
 
+    local vscode_topline = visible_ranges[1][1]
     local top_line = vim.fn.line('w0')
     local diff = top_line - vscode_topline
 
