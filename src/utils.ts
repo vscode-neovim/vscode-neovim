@@ -470,12 +470,17 @@ export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, numbe
     }
 }
 
+/**
+ * @param editor editor in question
+ * @returns (1, 0)-indexed viewport range
+ */
 export function getNeovimViewportPosFromEditor(editor: TextEditor): [number, number] | undefined {
     try {
         const ranges = editor.visibleRanges;
-        const startLine = ranges[0].start.line + 1;
-        const endLine = ranges[ranges.length - 1].end.line + ranges.length;
-        return [Math.max(startLine, 0), endLine];
+        const startLine = ranges[0].start.line;
+        const endLine = ranges[ranges.length - 1].end.line;
+
+        return [startLine + 1, endLine + 1];
     } catch {
         return;
     }

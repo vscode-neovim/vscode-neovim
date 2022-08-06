@@ -13,7 +13,7 @@ import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
 import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { callAtomic } from "./utils";
+import { callAtomic, getNeovimViewportPosFromEditor } from "./utils";
 
 const LOG_PREFIX = "ViewportManager";
 
@@ -206,26 +206,23 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
             return;
         }
-        const startLine = ranges[0].start.line + 1;
-        // when it have fold we need get the last range. it need add 1 line on multiple fold
-        const endLine = ranges[ranges.length - 1].end.line + ranges.length;
 
+        const viewport = getNeovimViewportPosFromEditor(editor);
         const gridId = this.bufferManager.getGridIdFromEditor(editor);
         const winId = this.bufferManager.getWinIdForTextEditor(editor);
-        if (winId == null || gridId == null) {
+        if (winId == null || gridId == null || !viewport) {
             return;
         }
-        const viewport = this.gridViewport.get(gridId);
-        if (viewport && startLine != viewport?.topline) {
-            const finalStartLine = Math.max(startLine, 0);
-            this.logger.debug(
-                `${LOG_PREFIX}: Scrolling neovim viewport from ${viewport?.topline} to ${finalStartLine}`,
-            );
+        // (0, 0)-indexed start line
+        const startLine = viewport[0] - 1;
+        const offset = this.getGridOffset(gridId);
+        if (offset && startLine != offset.topLine) {
+            this.logger.debug(`${LOG_PREFIX}: Scrolling neovim viewport from ${offset.topLine} to ${startLine}`);
             const view = this.gridViewport.get(gridId);
             if (view) {
-                view.topline = finalStartLine + 1;
+                view.topline = viewport[0];
             }
-            requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, finalStartLine, endLine]]]);
+            requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
         }
     }
 
@@ -295,12 +292,12 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
                 break;
             }
-            const startLine = ranges[0].start.line + 1;
-            const view = this.gridViewport.get(gridId);
-            if (!view) {
+            const startLine = ranges[0].start.line;
+            const offset = this.getGridOffset(gridId);
+            if (!offset) {
                 break;
             }
-            const newTopLine = view.topline - 1;
+            const newTopLine = offset.topLine;
             this.logger.debug(`${LOG_PREFIX}: Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
             if (startLine === newTopLine) {
                 break;
