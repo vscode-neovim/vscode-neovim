@@ -61,6 +61,11 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      */
     private selectionHandlers: ((e: TextEditorSelectionChangeEvent, requests: [string, unknown[]][]) => void)[] = [];
 
+    /**
+     * Set of desynced viewport
+     */
+    private desyncedViewport: WeakSet<TextEditor> = new WeakSet();
+
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
@@ -173,6 +178,9 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             if (!triggeredEvents) {
                 return;
             }
+            // record whether selection is changed in this synchronization for
+            // forcing viewport update when necessary
+            let selectionChanged = false;
             const requests: [string, unknown[]][] = [];
             for (const [eventType, e] of triggeredEvents) {
                 switch (eventType) {
@@ -181,6 +189,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                         for (const handler of this.selectionHandlers) {
                             handler(<TextEditorSelectionChangeEvent>e, requests);
                         }
+                        selectionChanged = true;
                         break;
                     }
                     case VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent: {
@@ -190,6 +199,12 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                     }
                 }
             }
+
+            if (selectionChanged && this.desyncedViewport.has(textEditor)) {
+                this.logger.debug(`${LOG_PREFIX}: Forcing scrolling neovim viewport as it is not synced`);
+                this.scrollNeovim(textEditor, requests);
+            }
+
             if (requests.length) {
                 await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
             }
@@ -207,12 +222,22 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             return;
         }
 
+        // (1, 0)-indexed viewport tuple
         const viewport = getNeovimViewportPosFromEditor(editor);
         const gridId = this.bufferManager.getGridIdFromEditor(editor);
         const winId = this.bufferManager.getWinIdForTextEditor(editor);
         if (winId == null || gridId == null || !viewport) {
             return;
         }
+
+        // (1, 0)-indexed cursor line
+        const cursorLine = editor.selection.active.line + 1;
+        if (cursorLine < viewport[0] || cursorLine > viewport[1]) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping scrolling neovim viewport as cursor is outside of viewport`);
+            this.desyncedViewport.add(editor);
+            return;
+        }
+
         // (0, 0)-indexed start line
         const startLine = viewport[0] - 1;
         const offset = this.getGridOffset(gridId);
@@ -222,6 +247,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             if (view) {
                 view.topline = viewport[0];
             }
+            this.desyncedViewport.delete(editor);
             requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
         }
     }
@@ -298,10 +324,11 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                 break;
             }
             const newTopLine = offset.topLine;
-            this.logger.debug(`${LOG_PREFIX}: Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
             if (startLine === newTopLine) {
                 break;
             }
+
+            this.logger.debug(`${LOG_PREFIX}: Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
             this.queueScrollingCommands(async (): Promise<void> => {
                 return vscode.commands.executeCommand("revealLine", { lineNumber: newTopLine, at: "top" });
             });
