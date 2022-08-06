@@ -385,8 +385,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     const viewport = getNeovimViewportPosFromEditor(visibleEditor);
                     let viewportMsg = "no available viewport";
                     if (viewport) {
-                        requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
-                        viewportMsg = `[${viewport[0] - 1}, ${viewport[1] - 1}]`;
+                        requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, viewport]]]);
+                        viewportMsg = `[${viewport[0][0] - 1}, ${viewport[viewport.length - 1][1] - 1}]`;
                     }
 
                     this.logger.debug(

@@ -231,19 +231,19 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
         // (1, 0)-indexed cursor line
         const cursorLine = editor.selection.active.line + 1;
-        if (cursorLine < viewport[0] || cursorLine > viewport[1]) {
+        if (cursorLine < viewport[0][0] || cursorLine > viewport[viewport.length - 1][1]) {
             this.logger.debug(`${LOG_PREFIX}: Skipping scrolling neovim viewport as cursor is outside of viewport`);
             this.desyncedViewport.add(editor);
             return;
         }
 
         // (0, 0)-indexed start line
-        const startLine = viewport[0] - 1;
+        const startLine = viewport[0][0] - 1;
         const offset = this.getGridOffset(gridId);
         if (offset && startLine != offset.topLine) {
             this.logger.debug(`${LOG_PREFIX}: Scrolling neovim viewport from ${offset.topLine} to ${startLine}`);
             this.desyncedViewport.delete(editor);
-            requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
+            requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, viewport]]]);
         }
     }
 

@@ -474,13 +474,14 @@ export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, numbe
  * @param editor editor in question
  * @returns (1, 0)-indexed viewport range
  */
-export function getNeovimViewportPosFromEditor(editor: TextEditor): [number, number] | undefined {
+export function getNeovimViewportPosFromEditor(editor: TextEditor): number[][] | undefined {
     try {
         const ranges = editor.visibleRanges;
-        const startLine = ranges[0].start.line;
-        const endLine = ranges[ranges.length - 1].end.line;
-
-        return [startLine + 1, endLine + 1];
+        const visibleRanges = [];
+        for (const range of ranges) {
+            visibleRanges.push([range.start.line + 1, range.end.line + 1]);
+        }
+        return visibleRanges;
     } catch {
         return;
     }
