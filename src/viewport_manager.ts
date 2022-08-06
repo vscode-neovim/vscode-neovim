@@ -1,4 +1,3 @@
-import { debounce } from "lodash-es";
 import { NeovimClient } from "neovim";
 import vscode, {
     Disposable,
@@ -132,15 +131,15 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
     private onDidChangeTextEditorSelection = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: SelectionChanged`);
-        this.queueViewportSync(e.textEditor, VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent, e);
+        this.syncViewportWithNeovim(e.textEditor, VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent, e);
     };
 
     private onDidChangeTextEditorVisibleRanges = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: VisibleRangeChanged. New top line: ${e.visibleRanges[0].start.line}`);
-        this.queueViewportSync(e.textEditor, VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent, e);
+        this.syncViewportWithNeovim(e.textEditor, VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent, e);
     };
 
-    private queueViewportSync = async (
+    private syncViewportWithNeovim = async (
         textEditor: TextEditor,
         eventType: VSCodeSynchronizableEvent,
         e: unknown,
@@ -163,55 +162,50 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
         await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
 
-        this.logger.debug(`${LOG_PREFIX}: Waiting 20 ms for possible multiple operations`);
+        this.logger.debug(`${LOG_PREFIX}: Waiting 20 ms for combining possible multiple operations`);
+        await new Promise((resolve) => setTimeout(resolve, 20));
 
-        this.syncViewportWithNeovim(textEditor);
-    };
+        this.logger.debug(`${LOG_PREFIX}: Waiting for vscode content scrolling`);
+        await this.acquireScrollingLock();
 
-    private syncViewportWithNeovim = debounce(
-        async (textEditor: TextEditor) => {
-            this.logger.debug(`${LOG_PREFIX}: Waiting for vscode content scrolling`);
-            await this.acquireScrollingLock();
-            this.logger.debug(`${LOG_PREFIX}: Waiting done`);
-            const triggeredEvents = this.triggeredViewportEvents.get(textEditor);
-            this.triggeredViewportEvents.delete(textEditor);
-            if (!triggeredEvents) {
-                return;
-            }
-            // record whether selection is changed in this synchronization for
-            // forcing viewport update when necessary
-            let selectionChanged = false;
-            const requests: [string, unknown[]][] = [];
-            for (const [eventType, e] of triggeredEvents) {
-                switch (eventType) {
-                    case VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent: {
-                        this.logger.debug(`${LOG_PREFIX}: Scrolling neovim cursor`);
-                        for (const handler of this.selectionHandlers) {
-                            handler(<TextEditorSelectionChangeEvent>e, requests);
-                        }
-                        selectionChanged = true;
-                        break;
+        this.logger.debug(`${LOG_PREFIX}: Waiting done`);
+
+        const triggeredEvents = this.triggeredViewportEvents.get(textEditor);
+        this.triggeredViewportEvents.delete(textEditor);
+        if (!triggeredEvents) {
+            return;
+        }
+        // record whether selection is changed in this synchronization for
+        // forcing viewport update when necessary
+        let selectionChanged = false;
+        const requests: [string, unknown[]][] = [];
+        for (const [eventType, e] of triggeredEvents) {
+            switch (eventType) {
+                case VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent: {
+                    this.logger.debug(`${LOG_PREFIX}: Scrolling neovim cursor`);
+                    for (const handler of this.selectionHandlers) {
+                        handler(<TextEditorSelectionChangeEvent>e, requests);
                     }
-                    case VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent: {
-                        this.logger.debug(`${LOG_PREFIX}: Scrolling neovim viewport`);
-                        this.scrollNeovim(textEditor, requests);
-                        break;
-                    }
+                    selectionChanged = true;
+                    break;
+                }
+                case VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent: {
+                    this.logger.debug(`${LOG_PREFIX}: Scrolling neovim viewport`);
+                    this.scrollNeovim(textEditor, requests);
+                    break;
                 }
             }
+        }
 
-            if (selectionChanged && this.desyncedViewport.has(textEditor)) {
-                this.logger.debug(`${LOG_PREFIX}: Forcing scrolling neovim viewport as it is not synced`);
-                this.scrollNeovim(textEditor, requests);
-            }
+        if (selectionChanged && this.desyncedViewport.has(textEditor)) {
+            this.logger.debug(`${LOG_PREFIX}: Forcing scrolling neovim viewport as it is not synced`);
+            this.scrollNeovim(textEditor, requests);
+        }
 
-            if (requests.length) {
-                await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
-            }
-        },
-        20,
-        { leading: false, trailing: true },
-    );
+        if (requests.length) {
+            await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+        }
+    };
 
     private scrollNeovim(editor: TextEditor | null, requests: [string, unknown[]][]): void {
         if (editor == null || this.modeManager.isInsertMode) {
