@@ -306,7 +306,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         for (const [gridId, view] of this.scrolledGrids) {
             const editor = this.bufferManager.getEditorFromGridId(gridId);
             const ranges = editor?.visibleRanges;
-            if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
+            if (!ranges || ranges.length == 0 || ranges[ranges.length - 1].end.line - ranges[0].start.line <= 1) {
                 break;
             }
             const startLine = ranges[0].start.line;
