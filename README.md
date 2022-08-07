@@ -7,12 +7,12 @@
 <a href="https://gitter.im/vscode-neovim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge"><img src="https://badges.gitter.im/vscode-neovim/community.svg"></a>
 </p>
 
-[Neovim](https://neovim.io/) is a fork of VIM to allow greater extensibility and integration. This extension uses a full
+[Neovim](https://neovim.io/) is a fork of VIM to allow greater extensibility and integration. This extension uses a fully
 embedded Neovim instance, no more half-complete VIM emulation! VSCode's native functionality is used for insert mode and
 editor commands, making the best use of both editors.
 
--   🎉 Almost fully feature-complete VIM integration by utilizing neovim as a backend.
--   🔧 Supports custom `init.vim` and many vim plugins.
+-   🎉 Almost fully feature-complete VIM integration by utilizing Neovim as a backend.
+-   🔧 Supports custom `init.vim` and many VIM plugins.
 -   🥇 First-class and lag-free insert mode, letting VSCode do what it does best.
 -   🤝 Complete integration with VSCode features (lsp/autocompletion/snippets/multi-cursor/etc).
 
@@ -31,8 +31,8 @@ editor commands, making the best use of both editors.
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
-    -   [Keyboard Quickfix](#keyboard-quickfix)
-    -   [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
+    -   [Keyboard quickfix](#keyboard-quickfix)
+    -   [Invoking VSCode actions from Neovim](#invoking-vscode-actions-from-neovim)
         -   [Examples](#examples)
 -   [⌨️ Bindings](#️-bindings)
     -   [VSCode specific bindings](#vscode-specific-bindings)
@@ -46,7 +46,7 @@ editor commands, making the best use of both editors.
     -   [Normal mode control keys](#normal-mode-control-keys)
     -   [Cmdline special keys](#cmdline-special-keys)
 -   [🔧 Build](#-build)
--   [📑 How it works](#-how-it-works)
+-   [📑 How It Works](#-how-it-works)
 -   [❤️ Credits & External Resources](#️-credits--external-resources)
 
 </details>
@@ -58,28 +58,28 @@ editor commands, making the best use of both editors.
 -   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim)
     extension.
 -   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.5.0** or greater.
-    -   Set the neovim path in the extension settings. You must specify full path to neovim, like
+    -   Set the Neovim path in the extension settings. You must specify full path to Neovim, like
         "`C:\Neovim\bin\nvim.exe"` or "`/usr/local/bin/nvim`".
     -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
--   If you want to use neovim from WSL, set the `useWSL` configuration toggle and specify linux path to nvim binary.
-    `wsl.exe` windows binary and `wslpath` linux binary are required for this. `wslpath` must be available through
-    `$PATH` linux env setting. Use `wsl --list` to check for the correct default linux distribution.
+-   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify Linux path to nvim binary.
+    `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available through
+    `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
 
 ### Neovim configuration
 
-Since many vim plugins can cause issues in vscode, it is recommended to start from an empty `init.vim`. For a guide for
+Since many VIM plugins can cause issues in VSCode, it is recommended to start from an empty `init.vim`. For a guide for
 which types of plugins are supported, see [troubleshooting](#troubleshooting).
 
-Before creating an issue on github, make sure you can reproduce the problem with an empty `init.vim` and no vscode
+Before creating an issue on Github, make sure you can reproduce the problem with an empty `init.vim` and no VSCode
 extensions.
 
-To determine if neovim is running in vscode, add to your `init.vim`:
+To determine if Neovim is running in VSCode, add to your `init.vim`:
 
 ```vim
 if exists('g:vscode')
     " VSCode extension
 else
-    " ordinary neovim
+    " ordinary Neovim
 endif
 ```
 
@@ -89,7 +89,7 @@ Or to your `init.lua`:
 if vim.g.vscode then
     -- VSCode extension
 else
-    -- ordinary neovim
+    -- ordinary Neovim
 end
 ```
 
@@ -100,13 +100,13 @@ helper, you can conditionally activate installed plugins
 
 ```vim
 " inside plug#begin:
-" use normal easymotion when in vim mode
+" use normal easymotion when in VIM mode
 Plug 'easymotion/vim-easymotion', Cond(!exists('g:vscode'))
-" use vscode easymotion when in vscode mode
+" use VSCode easymotion when in VSCode mode
 Plug 'asvetliakov/vim-easymotion', Cond(exists('g:vscode'), { 'as': 'vsc-easymotion' })
 ```
 
-See [plugins](plugins) in the wiki for tips on configuring vim plugins.
+See [plugins](plugins) in the wiki for tips on configuring VIM plugins.
 
 ### VSCode configuration
 
@@ -115,14 +115,14 @@ See [plugins](plugins) in the wiki for tips on configuring vim plugins.
 -   On a Mac, the <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd> and <kbd>l</kbd> movement keys may not repeat when held, to
     fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
--   To fix remapped escape key not working in linux, set `"keyboard.dispatch": "keyCode"`
+-   To fix remapped escape key not working in Linux, set `"keyboard.dispatch": "keyCode"`
 
 ### Adding keybindings
 
-Every special (control/alt) keyboard shortcut must be explicitly defined in vscode to send to neovim. By default, only
-bindings that are included by neovim by default are sent.
+Every special (control/alt) keyboard shortcut must be explicitly defined in VSCode to send to neovim. By default, only
+bindings that are included by Neovim by default are sent.
 
-To pass custom bindings to neovim, for example <kbd>C-h</kbd> in normal mode, add to your keybindings.json:
+To pass custom bindings to Neovim, for example <kbd>C-h</kbd> in normal mode, add to your keybindings.json:
 
 ```jsonc
 {
@@ -131,7 +131,7 @@ To pass custom bindings to neovim, for example <kbd>C-h</kbd> in normal mode, ad
     "key": "ctrl+h",
     // don't activate during insert mode
     "when": "editorTextFocus && neovim.mode != insert",
-    // the input to send to neovim
+    // the input to send to Neovim
     "args": "<C-h>"
 }
 ```
@@ -145,31 +145,31 @@ To disable an existing shortcut, for example <kbd>C-a</kbd>, add to your keybind
 }
 ```
 
-The vscode keybindings editor provides a good way to delete keybindings.
+The VSCode keybindings editor provides a good way to delete keybindings.
 
 ## 💡 Tips and Features
 
 ### VSCode specific differences
 
 -   File and editor management commands such as `:e`/`:w`/`:q`/`:vsplit`/`:tabnext`/etc are mapped to corresponding
-    vscode commands and behavior may be different ([see below](#️-bindings)). **Do not** use vim commands like `:w` in
+    VSCode commands and behavior may be different ([see below](#️-bindings)). **Do not** use vVIM commands like `:w` in
     scripts/keybindings, they won't work. If you're using them in some custom commands/mappings, you might need to
-    rebind them to call vscode commands from neovim with `VSCodeCall/VSCodeNotify`
+    rebind them to call VSCode commands from Neovim with `VSCodeCall/VSCodeNotify`
     ([see below](#invoking-vscode-actions-from-neovim)).
--   Visual modes don't produce vscode selections, so any vscode commands expecting selection won't work. To round the
+-   Visual modes don't produce VSCode selections, so any VSCode commands expecting selection won't work. To round the
     corners, invoking the VSCode command picker from visual mode through the default hotkeys
-    (<kbd>f1</kbd>/<kbd>ctrl/cmd+shift+p</kbd>) converts vim selection to real vscode selection. This conversion is also
+    (<kbd>f1</kbd>/<kbd>ctrl/cmd+shift+p</kbd>) converts VIM selection to real VSCode selection. This conversion is also
     done automatically for some commands like commenting and formatting. If you're using some custom mapping for calling
-    vscode commands that depends on real vscode selection, you can use
+    VSCode commands that depends on real VSCode selection, you can use
     `VSCodeNotifyRange`/`VSCodeNotifyRangePos`/`VSCodeNotifyVisual` (linewise, characterwise, and automatic) which will
-    convert vim visual mode selection to vscode selection before calling the command
+    convert VIM visual mode selection to VSCode selection before calling the command
     ([see below](#invoking-vscode-actions-from-neovim)).
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
 -   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat.
-    sequence. In neovim, if you type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here
-    the repeat sequence would be `1`. However in vscode it would be `a1bc`. Another difference is that when you delete
+    sequence. In Neovim, if you type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here
+    the repeat sequence would be `1`. However in VSCode it would be `a1bc`. Another difference is that when you delete
     some text in insert mode, dot repeat only works from right-to-left, meaning it will treat <kbd>Del</kbd> key as
     <kbd>BS</kbd> keys when running dot repeat.
 
@@ -189,17 +189,17 @@ If you have any performance problems (cursor jitter usually) make sure you're no
     -   Brackets highlighter extensions (VSCode has built-in feature)
 -   VSCode extensions that delay the extension host like "Bracket Pair Colorizer"
 -   VIM plugins that increase latency and cause performance problems.
-    -   Make sure to disable unneeded plugins, as many of them don't make sense with vscode and may cause problems.
-    -   You don't need any code, highlighting, completion, lsp plugins as well any plugins that spawn windows/buffers
+    -   Make sure to disable unneeded plugins, as many of them don't make sense with VSCode and may cause problems.
+    -   You don't need any code, highlighting, completion, LSP plugins as well any plugins that spawn windows/buffers
         (nerdtree and similar), fuzzy-finders, etc.
     -   Many navigation/textobject/editing plugins should be fine.
 
-If you're not sure, disable all other extensions, **reload vscode window**, and see if the problem persists before
-reporting.
+If you're not sure, disable all other extensions, **reload VSCode window**, and see if the problem persists before
+reporting it.
 
 ### Composite escape keys
 
-Since VSCode is responsible for insert mode, custom insert-mode vim mappings don't work. To map composite escape keys,
+Since VSCode is responsible for insert mode, custom insert-mode VIM mappings don't work. To map composite escape keys,
 put into your keybindings.json:
 
 for <kbd>jj</kbd>
@@ -293,14 +293,14 @@ nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
 
 There are a
 [few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/master/vim/vscode-neovim.vim#L17-L39) that are
-used to invoke vscode commands from neovim:
+used to invoke VSCode commands from Neovim:
 
 | Command                                                                                                                                                           | Description                                                                                                                                                                                                |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VSCodeNotify(command, ...)` <br/> `VSCodeCall(command, ...)`                                                                                                     | Invoke vscode command with optional arguments.                                                                                                                                                             |
-| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce linewise vscode selection from `line1` to `line2` and invoke vscode command. Setting `leaveSelection` to 1 keeps vscode selection active after invoking the command.                               |
-| `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` <br/> `VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` | Produce characterwise vscode selection from `line1.pos1` to `line2.pos2` and invoke vscode command.                                                                                                        |
-| `VSCodeNotifyVisual(command, leaveSelection, ...)` <br/> `VSCodeCallVisual(command, leaveSelection, ...)`                                                         | Produce linewise (visual line) or characterwise (visual and visual block) selection from visual mode selection and invoke vscode command. Behaves like `VSCodeNotify/Call` when visual mode is not active. |
+| `VSCodeNotify(command, ...)` <br/> `VSCodeCall(command, ...)`                                                                                                     | Invoke VSCode command with optional arguments.                                                                                                                                                             |
+| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce linewise VSCode selection from `line1` to `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after invoking the command.                               |
+| `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` <br/> `VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` | Produce characterwise VSCode selection from `line1.pos1` to `line2.pos2` and invoke VSCode command.                                                                                                        |
+| `VSCodeNotifyVisual(command, leaveSelection, ...)` <br/> `VSCodeCallVisual(command, leaveSelection, ...)`                                                         | Produce linewise (visual line) or characterwise (visual and visual block) selection from visual mode selection and invoke VSCode command. Behaves like `VSCodeNotify/Call` when visual mode is not active. |
 
 > 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
 > unless you really need a blocking call.
@@ -392,14 +392,14 @@ These are the default commands and bindings available for file/scroll/window/tab
 | Command                                                                              | Description                                                                                                                                                                                                                                                                                    |
 | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `e[dit]` / `ex`                                                                      | Open quickopen. <br/> With filename, e.g. `:e $MYVIMRC`: open the file in new tab. The file must exist. <br/> With bang: revert file to last saved version. <br/> With filename and bang e.g. `:e! $MYVIMRC`: close current file (discard any changes) and open the file. The file must exist. |
-| `ene[w]`                                                                             | Create new untitled document in vscode. <br/> With bang: close current file (discard any changes) and create new document.                                                                                                                                                                     |
-| `fin[d]`                                                                             | Open vscode's quick open window. Arguments and count are not supported.                                                                                                                                                                                                                        |
+| `ene[w]`                                                                             | Create new untitled document in VSCode. <br/> With bang: close current file (discard any changes) and create new document.                                                                                                                                                                     |
+| `fin[d]`                                                                             | Open VSCode's quick open window. Arguments and count are not supported.                                                                                                                                                                                                                        |
 | `w[rite]`                                                                            | Save current file. With bang: open 'save as' dialog.                                                                                                                                                                                                                                           |
 | `sav[eas]`                                                                           | Open 'save as' dialog.                                                                                                                                                                                                                                                                         |
 | `wa[ll]`                                                                             | Save all files.                                                                                                                                                                                                                                                                                |
 | `q[uit]` / <kbd>C-w</kbd> <kbd>q</kbd> / <kbd>C-w</kbd> <kbd>c</kbd> / <kbd>ZQ</kbd> | Close the active editor. With bang: revert changes and close the active editor.                                                                                                                                                                                                                |
 | `wq` / <kbd>ZZ</kbd>                                                                 | Save and close the active editor.                                                                                                                                                                                                                                                              |
-| `qa[ll]`                                                                             | Close all editors, but don't quit vscode. Acts like `qall!`, so beware of unsaved changes.                                                                                                                                                                                                     |
+| `qa[ll]`                                                                             | Close all editors, but don't quit VSCode. Acts like `qall!`, so beware of unsaved changes.                                                                                                                                                                                                     |
 | `wqa[ll]` / `xa[ll]`                                                                 | Save all editors & close.                                                                                                                                                                                                                                                                      |
 
 ### Tab management
@@ -409,11 +409,11 @@ These are the default commands and bindings available for file/scroll/window/tab
 | `tabe[dit]`                     | Similar to `e[dit]`. Open quickopen. <br/> With argument: open the file in new tab.                                                        |
 | `tabnew`                        | Open new untitled file.                                                                                                                    |
 | `tabf[ind]`                     | Open quickopen window.                                                                                                                     |
-| `tab`/`tabs`                    | Not supported. Doesn't make sense with vscode.                                                                                             |
+| `tab`/`tabs`                    | Not supported. Doesn't make sense with VSCode.                                                                                             |
 | `tabc[lose]`                    | Close active editor (tab).                                                                                                                 |
-| `tabo[nly]`                     | Close other tabs in vscode **group** (pane). This differs from vim where a `tab` is a like a new window, but doesn't make sense in vscode. |
-| `tabn[ext]` / <kbd>gt</kbd>     | Switch to next (or `count` tabs if argument is given) in the active vscode **group** (pane).                                               |
-| `tabp[revious]` / <kbd>gT</kbd> | Switch to previous (or `count` tabs if argument is given) in the active vscode **group** (pane).                                           |
+| `tabo[nly]`                     | Close other tabs in VSCode **group** (pane). This differs from VIM where a `tab` is a like a new window, but doesn't make sense in VSCode. |
+| `tabn[ext]` / <kbd>gt</kbd>     | Switch to next (or `count` tabs if argument is given) in the active VSCode **group** (pane).                                               |
+| `tabp[revious]` / <kbd>gT</kbd> | Switch to previous (or `count` tabs if argument is given) in the active VSCode **group** (pane).                                           |
 | `tabfir[st]`                    | Switch to the first tab in the active editor group.                                                                                        |
 | `tabl[ast]`                     | Switch to the last tab in the active editor group.                                                                                         |
 | `tabm[ove]`                     | Not supported yet.                                                                                                                         |
@@ -434,7 +434,7 @@ These are the default commands and bindings available for file/scroll/window/tab
 |            | <kbd>[count]</kbd> <kbd>C-w</kbd> <kbd>\<</kbd>              | Decrease editor width by (optional) count.                                                                                                                                                                                                                                                                                |
 | `on[ly]`   | <kbd>C-w</kbd> <kbd>o</kbd>                                  | Without bang: merge all editor groups into the one. Don't close editors. <br/> With bang: close all editors from all groups except current one.                                                                                                                                                                           |
 |            | <kbd>C-w</kbd> <kbd>j/k/h/l</kbd>                            | Focus group below/above/left/right.                                                                                                                                                                                                                                                                                       |
-|            | <kbd>C-w</kbd> <kbd>C-j/i/h/l</kbd>                          | Move editor to group below/above/left/right. <br/> **Note**: <kbd>C-w</kbd> <kbd>C-i</kbd> moves editor up. Ideally it should be <kbd>C-w</kbd> <kbd>C-k</kbd> but vscode has many commands mapped to <kbd>C-k</kbd> <kbd>[key]</kbd> and doesn't allow using <kbd>C-w</kbd> <kbd>C-k</kbd> without unbinding them first. |
+|            | <kbd>C-w</kbd> <kbd>C-j/i/h/l</kbd>                          | Move editor to group below/above/left/right. <br/> **Note**: <kbd>C-w</kbd> <kbd>C-i</kbd> moves editor up. Ideally it should be <kbd>C-w</kbd> <kbd>C-k</kbd> but VSCode has many commands mapped to <kbd>C-k</kbd> <kbd>[key]</kbd> and doesn't allow using <kbd>C-w</kbd> <kbd>C-k</kbd> without unbinding them first. |
 |            | <kbd>C-w</kbd> <kbd>J/K/H/L</kbd>                            | Move whole editor group below/above/left/right.                                                                                                                                                                                                                                                                           |
 |            | <kbd>C-w</kbd> <kbd>w</kbd> or <kbd>C-w</kbd> <kbd>C-w</kbd> | Focus next group. The behavior may differ than in vim.                                                                                                                                                                                                                                                                    |
 |            | <kbd>C-w</kbd> <kbd>W</kbd> or <kbd>C-w</kbd> <kbd>p</kbd>   | Focus previous group. The behavior may differ than in vim. <kbd>C-w</kbd> <kbd>p</kbd> is completely different from vim.                                                                                                                                                                                                  |
@@ -442,7 +442,7 @@ These are the default commands and bindings available for file/scroll/window/tab
 |            | <kbd>C-w</kbd> <kbd>r/R/x</kbd>                              | Not supported, use <kbd>C-w</kbd> <kbd>C-j</kbd> and similar to move editors.                                                                                                                                                                                                                                             |
 
 > 💡 Split size distribution is controlled by `workbench.editor.splitSizing` setting. By default, it's `distribute`,
-> which is equal to vim's `equalalways` and `eadirection = 'both'` (default).
+> which is equal to VIM's `equalalways` and `eadirection = 'both'` (default).
 
 To use VSCode command 'Increase/decrease current view size' instead of separate bindings for width and height:
 
@@ -476,7 +476,7 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 
 Enabled by `useCtrlKeysForInsertMode` (default true).
 
-Refer to vim manual for their use.
+Refer to VIM's manual for their use.
 
 -   <kbd>C-c</kbd>
 -   <kbd>C-o</kbd>
@@ -493,7 +493,7 @@ Refer to vim manual for their use.
 
 Enabled by `useCtrlKeysForNormalMode` (default true).
 
-Refer to vim manual for their use.
+Refer to VIM's manual for their use.
 
 -   <kbd>C-a</kbd>
 -   <kbd>C-b</kbd>
@@ -521,7 +521,7 @@ Refer to vim manual for their use.
 
 Always enabled.
 
-Refer to vim manual for their use.
+Refer to VIM's manual for their use.
 
 -   <kbd>C-h</kbd>
 -   <kbd>C-w</kbd>
@@ -556,31 +556,31 @@ How to build (and install) from source:
     ./node_modules/.bin/yarn run vsce package -o vscode-neovim.vsix
     ```
 
-4. From vscode, use the `Extensions: Install from VSIX` command to install the package.
+4. From VSCode, use the `Extensions: Install from VSIX` command to install the package.
 
 How to develop:
 
-1. Open the repo in VSCode
-2. Go to debug view and click `Run Extension` (F5)
+1. Open the repo in VSCode.
+2. Go to debug view and click `Run Extension` (F5).
 
 How to run tests:
 
-1. Open the repo in VSCode
-2. Go to debug view and click `Extension Tests` (F5)
-3. To run individual tests, modify `grep: ".*"` in `src/test/suite/index.ts`
+1. Open the repo in VSCode.
+2. Go to debug view and click `Extension Tests` (F5).
+3. To run individual tests, modify `grep: ".*"` in `src/test/suite/index.ts`.
 
 ## 📑 How it works
 
--   VScode connects to neovim instance
--   When opening a file, a scratch buffer is created in nvim and being init with text content from vscode
--   Normal/visual mode commands are being sent directly to neovim. The extension listens for buffer events and applies
-    edits from neovim
--   When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to vscode
-    (no neovim communication is being performed here)
--   After pressing escape key from the insert mode, extension sends changes obtained from the insert mode to neovim
+-   VScode connects to Neovim instance.
+-   When opening a file, a scratch buffer is created within Neovim and being initialized with text content from VSCode
+-   Normal/visual mode commands are being sent directly to Neovim. The extension listens for buffer events and applies
+    edits from Neovim.
+-   When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to VSCode
+    (no Neovim communication is being performed here).
+-   After pressing escape key from the insert mode, extension sends changes obtained from the insert mode to Neovim.
 
 ## ❤️ Credits & External Resources
 
--   [vim-altercmd](https://github.com/kana/vim-altercmd) - Used for rebinding default commands to call vscode command
--   [neovim nodejs client](https://github.com/neovim/node-client) - NodeJS library for communicating with Neovim
--   [VSCodeVim](https://github.com/VSCodeVim/Vim) - Used for various inspiration
+-   [vim-altercmd](https://github.com/kana/vim-altercmd) - Used for rebinding default commands to call VSCode command.
+-   [neovim nodejs client](https://github.com/neovim/node-client) - NodeJS library for communicating with Neovim.
+-   [VSCodeVim](https://github.com/VSCodeVim/Vim) - Used for various inspiration.
