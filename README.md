@@ -572,7 +572,7 @@ How to run tests:
 ## 📑 How it works
 
 -   VScode connects to Neovim instance.
--   When opening a file, a scratch buffer is created within Neovim and being initialized with text content from VSCode
+-   When opening a file, a scratch buffer is created within Neovim and being initialized with text content from VSCode.
 -   Normal/visual mode commands are being sent directly to Neovim. The extension listens for buffer events and applies
     edits from Neovim.
 -   When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to VSCode
