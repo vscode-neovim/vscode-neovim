@@ -19,7 +19,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const highlightConfHighlights = settings.get("highlightGroups.highlights");
     const highlightConfUnknown = settings.get("highlightGroups.unknownHighlight");
     const mouseVisualSelection = settings.get("mouseSelectionStartVisualMode", false);
-    const mouseInsertSelection = settings.get("mouseSelectionStartInsertMode", true);
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = isWindows && settings.get("useWSL", false);
@@ -45,8 +44,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 unknownHighlight: highlightConfUnknown,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any,
-            mouseSelectionVisual: mouseVisualSelection,
-            mouseSelectionInsert: mouseInsertSelection,
+            mouseSelection: mouseVisualSelection,
             neovimPath: neovimPath,
             useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
             neovimViewportWidth: neovimWidth,

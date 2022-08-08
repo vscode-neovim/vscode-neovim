@@ -32,8 +32,7 @@ import { ViewportManager } from "./viewport_manager";
 const LOG_PREFIX = "CursorManager";
 
 export interface CursorManagerSettings {
-    mouseSelectionEnabledVisual: boolean;
-    mouseSelectionEnabledInsert: boolean;
+    mouseSelectionEnabled: boolean;
 }
 
 interface CursorInfo {
@@ -349,14 +348,9 @@ export class CursorManager
                 (kind === TextEditorSelectionChangeKind.Mouse && !selections[0].active.isEqual(selections[0].anchor)) ||
                 this.modeManager.isVisualMode
             ) {
-                if (kind !== TextEditorSelectionChangeKind.Mouse ) {
+                if (kind !== TextEditorSelectionChangeKind.Mouse || !this.settings.mouseSelectionEnabled) {
                     return;
-                } else if (this.settings.mouseSelectionEnabledInsert) {
-                    const requests: [string, unknown[]][] = [];
-                    requests.push(["nvim_input", ["i"]]);
-                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
-                    return;
-                } else if (this.settings.mouseSelectionEnabledVisual) {
+                } else {
                     const grid = this.bufferManager.getGridIdForWinId(winId);
                     this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
                     const requests: [string, unknown[]][] = [];
@@ -380,18 +374,18 @@ export class CursorManager
                     );
                     requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
                     await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
-                } else {
-                    const cursorPos = getNeovimCursorPosFromEditor(textEditor);
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
-                    );
-                    const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
-                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
                 }
+            } else {
+                const cursorPos = getNeovimCursorPosFromEditor(textEditor);
+                this.logger.debug(
+                    `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
+                );
+                const requests: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, cursorPos]]];
+                await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
             }
         },
-                20,
-                { leading: false, trailing: true },
+        20,
+        { leading: false, trailing: true },
     );
 
     /**
@@ -427,10 +421,10 @@ export class CursorManager
                         ? TextEditorRevealType.InCenterIfOutsideViewport
                         : TextEditorRevealType.Default
                     : deltaLine < 0
-                        ? newLine < topVisibleLine - 10
-                            ? TextEditorRevealType.InCenterIfOutsideViewport
-                            : TextEditorRevealType.Default
-                        : TextEditorRevealType.Default;
+                    ? newLine < topVisibleLine - 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : TextEditorRevealType.Default;
             editor.revealRange(newPos, type);
             commands.executeCommand("editor.action.wordHighlight.trigger");
         }
