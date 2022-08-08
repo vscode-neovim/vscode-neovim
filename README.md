@@ -83,6 +83,16 @@ else
 endif
 ```
 
+Or to your `init.lua`:
+
+```lua
+if vim.g.vscode then
+    -- VSCode extension
+else
+    -- ordinary neovim
+end
+```
+
 To conditionally activate plugins, `vim-plug` has a
 [few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation). For example, using the `Cond`
 helper, you can conditionally activate installed plugins

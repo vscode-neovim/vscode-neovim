@@ -99,6 +99,12 @@
                     "title": "Neovim width",
                     "description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
                 },
+                "vscode-neovim.neovimViewportHeightExtend": {
+                    "type": "number",
+                    "default": 1,
+                    "title": "Neovim viewport height extend",
+                    "description": "How much to extend neovim viewport on each side beyond vscode editor size. Increase if you are not seeing decorations or highlights on the edges of the editor."
+                },
                 "vscode-neovim.useCtrlKeysForNormalMode": {
                     "type": "boolean",
                     "default": true,
@@ -123,11 +129,6 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "Use neovim installed in WSL. If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting"
-                },
-                "vscode-neovim.revealCursorScrollLine": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "If 'true' reveals the cursor when scrolling by line and if it is outside view port"
                 },
                 "vscode-neovim.logPath": {
                     "type": "string",
@@ -304,40 +305,12 @@
                 "title": "Neovim: Send key in cmdline"
             },
             {
-                "command": "vscode-neovim.ctrl-b",
-                "title": "Neovim: ctrl-b"
-            },
-            {
-                "command": "vscode-neovim.ctrl-d",
-                "title": "Neovim: ctrl-d"
-            },
-            {
                 "command": "vscode-neovim.ctrl-e",
                 "title": "Neovim: ctrl-e"
             },
             {
-                "command": "vscode-neovim.ctrl-f",
-                "title": "Neovim: ctrl-f"
-            },
-            {
-                "command": "vscode-neovim.ctrl-u",
-                "title": "Neovim: ctrl-u"
-            },
-            {
                 "command": "vscode-neovim.ctrl-y",
                 "title": "Neovim: ctrl-y"
-            },
-            {
-                "command": "vscode-neovim.shift-m",
-                "title": "Neovim: shift-m"
-            },
-            {
-                "command": "vscode-neovim.shift-l",
-                "title": "Neovim: shift-l"
-            },
-            {
-                "command": "vscode-neovim:shift-h",
-                "title": "Neovim: shift-h"
             }
         ],
         "keybindings": [
@@ -702,14 +675,16 @@
                 "args": "<C-a>"
             },
             {
-                "command": "vscode-neovim.ctrl-b",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+b",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-b>"
             },
             {
-                "command": "vscode-neovim.ctrl-d",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+d",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-d>"
             },
             {
                 "command": "vscode-neovim.ctrl-e",
@@ -717,9 +692,10 @@
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
             },
             {
-                "command": "vscode-neovim.ctrl-f",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+f",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-f>"
             },
             {
                 "command": "vscode-neovim.send",
@@ -740,9 +716,10 @@
                 "args": "<C-r>"
             },
             {
-                "command": "vscode-neovim.ctrl-u",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+u",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-u>"
             },
             {
                 "command": "vscode-neovim.send",
