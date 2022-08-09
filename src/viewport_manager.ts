@@ -323,11 +323,12 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
             this.logger.debug(`${LOG_PREFIX}: Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
             if (window.activeTextEditor === editor) {
-                vscode.commands.executeCommand("revealLine", {
-                    lineNumber: newTopLine,
-                    at: "top",
-                });
-                this.vscodeScrollingLock = new Promise((resolve) => setTimeout(resolve, SMOOTH_SCROLLING_TIME + 1));
+                this.vscodeScrollingLock = vscode.commands
+                    .executeCommand("revealLine", {
+                        lineNumber: newTopLine,
+                        at: "top",
+                    })
+                    .then(() => new Promise((resolve) => setTimeout(resolve, SMOOTH_SCROLLING_TIME + 1)));
             } else {
                 const newPos = new Selection(newTopLine, 0, newTopLine, 0);
                 editor.revealRange(newPos, TextEditorRevealType.AtTop);
