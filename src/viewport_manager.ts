@@ -17,6 +17,8 @@ import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./ne
 import { callAtomic, getNeovimViewportPosFromEditor } from "./utils";
 
 const LOG_PREFIX = "ViewportManager";
+// https://github.com/microsoft/vscode/blob/380ad48e3240676b48d96343f8ad565d4fea8063/src/vs/editor/common/viewLayout/viewLayout.ts#L16
+const SMOOTH_SCROLLING_TIME = 125;
 
 export interface WinView {
     lnum: number;
@@ -321,10 +323,11 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
             this.logger.debug(`${LOG_PREFIX}: Scrolling vscode viewport from ${startLine} to ${newTopLine}`);
             if (window.activeTextEditor === editor) {
-                this.vscodeScrollingLock = vscode.commands.executeCommand("revealLine", {
+                vscode.commands.executeCommand("revealLine", {
                     lineNumber: newTopLine,
                     at: "top",
                 });
+                this.vscodeScrollingLock = new Promise((resolve) => setTimeout(resolve, SMOOTH_SCROLLING_TIME + 1));
             } else {
                 const newPos = new Selection(newTopLine, 0, newTopLine, 0);
                 editor.revealRange(newPos, TextEditorRevealType.AtTop);
