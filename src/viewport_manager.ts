@@ -169,8 +169,8 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
         await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
 
-        this.logger.debug(`${LOG_PREFIX}: Waiting 20 ms for combining possible multiple operations`);
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        this.logger.debug(`${LOG_PREFIX}: Waiting 126 ms for combining possible multiple operations`);
+        await new Promise((resolve) => setTimeout(resolve, SMOOTH_SCROLLING_TIME + 1));
 
         this.logger.debug(`${LOG_PREFIX}: Waiting for vscode content scrolling`);
         await this.acquireScrollingLock();
