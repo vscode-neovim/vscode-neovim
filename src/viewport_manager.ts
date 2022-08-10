@@ -17,9 +17,9 @@ import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./ne
 import { callAtomic, getNeovimViewportPosFromEditor } from "./utils";
 
 const LOG_PREFIX = "ViewportManager";
-// https://github.com/microsoft/vscode/blob/380ad48e3240676b48d96343f8ad565d4fea8063/src/vs/editor/common/viewLayout/viewLayout.ts#L16
-const SMOOTH_SCROLLING_TIME = 125;
 const SELECTION_CHANGED_WAIT_TIME = 10;
+// https://github.com/microsoft/vscode/blob/380ad48e3240676b48d96343f8ad565d4fea8063/src/vs/editor/common/viewLayout/viewLayout.ts#L16
+export const SMOOTH_SCROLLING_TIME = 125;
 
 export interface WinView {
     lnum: number;
@@ -152,10 +152,10 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         if (this.modeManager.isInsertMode) {
             return;
         }
-        const queue = this.triggeredViewportEvents.get(textEditor);
+        const triggeredEvents = this.triggeredViewportEvents.get(textEditor);
 
-        if (queue) {
-            queue.set(eventType, e);
+        if (triggeredEvents) {
+            triggeredEvents.set(eventType, e);
             return;
         }
         this.triggeredViewportEvents.set(textEditor, new Map([[eventType, e]]));
@@ -175,11 +175,8 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         );
         await new Promise((resolve) => setTimeout(resolve, SELECTION_CHANGED_WAIT_TIME));
 
-        if (
-            this.triggeredViewportEvents
-                .get(textEditor)
-                ?.has(VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent)
-        ) {
+        const triggeredEvents = this.triggeredViewportEvents.get(textEditor);
+        if (triggeredEvents?.has(VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent)) {
             const extra_wait_time = SMOOTH_SCROLLING_TIME + 1 - SELECTION_CHANGED_WAIT_TIME;
             this.logger.debug(
                 `${LOG_PREFIX}: Waiting an extra ${extra_wait_time} ms for possible smooth scrolling event`,
@@ -192,7 +189,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
         this.logger.debug(`${LOG_PREFIX}: Waiting done`);
 
-        const triggeredEvents = this.triggeredViewportEvents.get(textEditor);
         this.triggeredViewportEvents.delete(textEditor);
         if (!triggeredEvents) {
             return;

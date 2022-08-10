@@ -27,6 +27,7 @@ import {
     getNeovimCursorPosFromEditor,
     getNeovimViewportPosFromEditor,
 } from "./utils";
+import { SMOOTH_SCROLLING_TIME } from "./viewport_manager";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -487,7 +488,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         await this.client.request("nvim_set_current_win", [winId]);
     };
 
-    private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 100, { leading: false, trailing: true });
+    private syncActiveEditorDebounced = debounce(this.syncActiveEditor, SMOOTH_SCROLLING_TIME + 10, {
+        leading: false,
+        trailing: true,
+    });
 
     private onDidChangeEditorOptions = (e: TextEditorOptionsChangeEvent): void => {
         this.logger.debug(`${LOG_PREFIX}: Received onDidChangeEditorOptions`);
