@@ -5,7 +5,6 @@
     "icon": "images/icon.png",
     "publisher": "asvetliakov",
     "extensionKind": [
-        "ui",
         "workspace"
     ],
     "version": "0.0.90",
