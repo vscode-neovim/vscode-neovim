@@ -19,6 +19,7 @@ import { callAtomic, getNeovimViewportPosFromEditor } from "./utils";
 const LOG_PREFIX = "ViewportManager";
 // https://github.com/microsoft/vscode/blob/380ad48e3240676b48d96343f8ad565d4fea8063/src/vs/editor/common/viewLayout/viewLayout.ts#L16
 const SMOOTH_SCROLLING_TIME = 125;
+const SELECTION_CHANGED_WAIT_TIME = 10;
 
 export interface WinView {
     lnum: number;
@@ -169,8 +170,22 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
         await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
 
-        this.logger.debug(`${LOG_PREFIX}: Waiting 126 ms for combining possible multiple operations`);
-        await new Promise((resolve) => setTimeout(resolve, SMOOTH_SCROLLING_TIME + 1));
+        this.logger.debug(
+            `${LOG_PREFIX}: Waiting ${SELECTION_CHANGED_WAIT_TIME} ms for combining possible multiple operations`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, SELECTION_CHANGED_WAIT_TIME));
+
+        if (
+            this.triggeredViewportEvents
+                .get(textEditor)
+                ?.has(VSCodeSynchronizableEvent.TextEditorVisibleRangesChangeEvent)
+        ) {
+            const extra_wait_time = SMOOTH_SCROLLING_TIME + 1 - SELECTION_CHANGED_WAIT_TIME;
+            this.logger.debug(
+                `${LOG_PREFIX}: Waiting an extra ${extra_wait_time} ms for possible smooth scrolling event`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, extra_wait_time));
+        }
 
         this.logger.debug(`${LOG_PREFIX}: Waiting for vscode content scrolling`);
         await this.acquireScrollingLock();
