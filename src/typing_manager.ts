@@ -42,6 +42,7 @@ export class TypingManager implements Disposable {
         private changeManager: DocumentChangeManager,
     ) {
         this.registerType();
+        this.disposables.push(commands.registerCommand("replacePreviousChar", this.onVSCodeReplacePreviousChar));
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
@@ -121,6 +122,12 @@ export class TypingManager implements Disposable {
             }
         } else {
             this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
+        }
+    };
+
+    private onVSCodeReplacePreviousChar = (type: { text: string; replaceCharCnt: number }): void => {
+        if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode && !this.isEnteringInsertMode) {
+            commands.executeCommand("default:replacePreviousChar", type);
         }
     };
 
