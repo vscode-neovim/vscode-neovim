@@ -15,6 +15,10 @@ export class TypingManager implements Disposable {
      */
     private typeHandlerDisposable?: Disposable;
     /**
+     * Separate "replacePrevChar" command disposable since we init/dispose it often
+     */
+    private replacePrevCharHandlerDisposable?: Disposable;
+    /**
      * Flag indicating that we're going to exit insert mode and sync buffers into neovim
      */
     private isExitingInsertMode = false;
@@ -34,6 +38,32 @@ export class TypingManager implements Disposable {
      * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
      */
     private compositeEscapeFirstPressTimestamp?: number;
+    /**
+     * Composing flag
+     */
+    private isInComposition = false;
+    /**
+     * The text that we need to send to nvim after composition
+     */
+    private composingText = "";
+
+    public registerReplacePrevChar(): void {
+        if (!this.replacePrevCharHandlerDisposable) {
+            this.logger.debug(`${LOG_PREFIX}: Enabling replacePrevChar handler`);
+            this.replacePrevCharHandlerDisposable = commands.registerCommand(
+                "replacePreviousChar",
+                this.onVSCodeReplacePreviousChar,
+            );
+        }
+    }
+
+    public disposeReplacePrevChar(): void {
+        if (this.replacePrevCharHandlerDisposable) {
+            this.logger.debug(`${LOG_PREFIX}: Disabling replacePrevChar handler`);
+            this.replacePrevCharHandlerDisposable.dispose();
+            this.replacePrevCharHandlerDisposable = undefined;
+        }
+    }
 
     public constructor(
         private logger: Logger,
@@ -42,7 +72,9 @@ export class TypingManager implements Disposable {
         private changeManager: DocumentChangeManager,
     ) {
         this.registerType();
-        this.disposables.push(commands.registerCommand("replacePreviousChar", this.onVSCodeReplacePreviousChar));
+        this.registerReplacePrevChar();
+        this.disposables.push(commands.registerCommand("compositionStart", () => (this.isInComposition = true)));
+        this.disposables.push(commands.registerCommand("compositionEnd", this.onVSCodeCompositionEnd));
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
@@ -61,6 +93,7 @@ export class TypingManager implements Disposable {
 
     public dispose(): void {
         this.typeHandlerDisposable?.dispose();
+        this.replacePrevCharHandlerDisposable?.dispose();
         this.disposables.forEach((d) => d.dispose());
     }
 
@@ -90,7 +123,10 @@ export class TypingManager implements Disposable {
                 );
                 this.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
                     this.isEnteringInsertMode = false;
-                    if (this.modeManager.isInsertMode) this.disposeType();
+                    if (this.modeManager.isInsertMode) {
+                        this.disposeType();
+                        this.disposeReplacePrevChar();
+                    }
                     if (this.pendingKeysAfterEnter) {
                         commands.executeCommand(this.modeManager.isInsertMode ? "default:type" : "type", {
                             text: this.pendingKeysAfterEnter,
@@ -105,30 +141,46 @@ export class TypingManager implements Disposable {
             this.isEnteringInsertMode = false;
             this.isExitingInsertMode = false;
             this.registerType();
+            this.registerReplacePrevChar();
         }
     };
 
     private onVSCodeType = async (_editor: TextEditor, edit: TextEditorEdit, type: { text: string }): Promise<void> => {
+        if (this.isInComposition) {
+            this.composingText += type.text;
+        }
         if (this.isEnteringInsertMode) {
             this.pendingKeysAfterEnter += type.text;
         } else if (this.isExitingInsertMode) {
             this.pendingKeysAfterExit += type.text;
         } else if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode) {
             if ((await this.client.mode).blocking) {
-                this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
+                if (!this.isInComposition)
+                    this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
             } else {
                 this.disposeType();
                 commands.executeCommand("default:type", { text: type.text });
             }
-        } else {
+        } else if (!this.isInComposition) {
             this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
         }
     };
 
     private onVSCodeReplacePreviousChar = (type: { text: string; replaceCharCnt: number }): void => {
-        if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode && !this.isEnteringInsertMode) {
-            commands.executeCommand("default:replacePreviousChar", type);
+        if (this.isInComposition) {
+            this.composingText =
+                this.composingText.substring(0, this.composingText.length - type.replaceCharCnt) + type.text;
         }
+    };
+
+    private onVSCodeCompositionEnd = (): void => {
+        this.isInComposition = false;
+
+        if (!this.modeManager.isInsertMode) {
+            this.client.input(normalizeInputString(this.composingText, !this.modeManager.isRecordingInInsertMode));
+        }
+
+        this.composingText = "";
     };
 
     private onSendCommand = async (key: string): Promise<void> => {
@@ -149,6 +201,7 @@ export class TypingManager implements Disposable {
 
     private onSendBlockingCommand = async (key: string): Promise<void> => {
         this.registerType();
+        this.registerReplacePrevChar();
         await this.onSendCommand(key);
     };
 
