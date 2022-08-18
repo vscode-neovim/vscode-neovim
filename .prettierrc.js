@@ -4,6 +4,6 @@ module.exports = {
     singleQuote: true,
     printWidth: 120,
     tabWidth: 4,
-    singleQuote: false
+    singleQuote: false,
+    proseWrap: "always",
 };
-

@@ -1,5 +1,76 @@
 # Change Log
 
+## [0.0.89]
+
+-   silence "No viewport for gridId" warning (#978)
+-   improve readme, and add plugins to wiki (#969)
+-   fix non-english input replacing chars in normal mode (#900)
+-   improve compatibility with lightspeed/leap by fixing highlight provider (#982)
+
+## [0.0.88]
+
+-   add `--clean` option (#952)
+-   remove `textDecorationsAtTop` (#957)
+-   remove custom insert mode mappings, now C-w/C-u/C-r/etc are called natively (#886)
+-   fix freezing after switching windows (#886)
+-   fix cursor and highlight on long lines (#971)
+
+## [0.0.87]
+
+-   Command line improvements! Enable paste cmdline keybindings and fix history (#908) and fix path completions (#860)
+
+## [0.0.86]
+
+-   Fix bug with remote workspaces/WSL where plugin would try to set pwd to invalid path
+
+## [0.0.85]
+
+-   Show more messages in output ( #881, #902 )
+-   Fix insert mode C-a ( #737 )
+-   Improve efficiency applying small edits ( #830 )
+-   Support extmark_overlay, adding hop/lightspeed/sneak support ( #868 )
+-   Fix CI
+
+## [0.0.84]
+
+-   More keybinding improvements with notebook support ( #680 )
+-   Small bugfixes and project maintenance ( #772, #723, #731 )
+
+## [0.0.83]
+
+-   Allow installation in Codespaces ( #262 )
+-   Send visual selection with C-S-F ( #535 )
+
+## [0.0.82]
+
+-   Big updates to keybindings ! ( #513 , #654 , #557 , #585 , #655 )
+
+## [0.0.81]
+
+-   Revert ( #649 )
+
+## [0.0.80]
+
+-   Improve cursor position behaviour ( #649 )
+
+## [0.0.79]
+
+-   Fix infinity file opened loop on recent neovim versions ( #632 )
+
+## [0.0.78]
+
+-   Fix init error with no workspace folders open ( #526 )
+-   Update README.md ( #527 )
+
+## [0.0.77]
+
+-   Fix cursor with tab indentation ( #516 , #515 )
+-   Handle correctly WSL path with spaces ( #509 )
+
+## [0.0.76]
+
+-   Fix mutli-column character handling ( #503 )
+
 ## [0.0.75]
 
 -   Improvements to cursor logic ( #501 )
@@ -39,13 +110,15 @@
 
 ## [0.0.63]
 
--   Allow to put text decorations (usually EasyMotion ones) at top setting (`vscode-neovim.textDecorationsAtTop`) ( #358 ), contributed by @jhgarner
+-   Allow to put text decorations (usually EasyMotion ones) at top setting (`vscode-neovim.textDecorationsAtTop`) ( #358
+    ), contributed by @jhgarner
 -   Fix incorrect `<C-w><C-w>/<C-w>w` mappings ( #359 ), contributed by @tschaei
 -   Replace/modernize neovim vscode command line interop mappings by `<Cmd>call` ( #362 ), contributed by @theol0403
 -   Fix incorrect `<C-w>gf` mapping ( #365 ), contributed by @Yuuki77
 -   Fix applying vim HL (such as `MatchParen`) at end of a line ( #371 )
 -   Fix incorrect cursor position when selecting next/prev search result ( #366 )
--   Fix/improve behavior of auto-accepting vim return prompt `Press enter to continue`. In some cases it was excess ( #372 )
+-   Fix/improve behavior of auto-accepting vim return prompt `Press enter to continue`. In some cases it was excess (
+    #372 )
 -   Bundle extension by webpack ( #377 )
 
 ## [0.0.62]
@@ -56,22 +129,25 @@
 
 ## [0.0.60/61]
 
-Started from this version `neovim 0.5` nightly version is required
-Many things have been refactored/changed internally in this release. So if you see any regression - please fill an issue
+Started from this version `neovim 0.5` nightly version is required Many things have been refactored/changed internally
+in this release. So if you see any regression - please fill an issue
 
 -   Turn on VIM smartindenting/autoindenting and remove custom vscode bindings to `o`/`O` (so it uses VIM ones)
--   New buffer,window and cursor management. This makes the extension finally work with git diff view, peek views, search editor views and even in output channels! ( #53 , #187 , #220 , #223, #226)
--   Implement multi-line messages pager. Things like `:registers`, `:changes`, `:jumps`, `:messages` are working correctly now ( #202 , #78 , #296 )
+-   New buffer,window and cursor management. This makes the extension finally work with git diff view, peek views,
+    search editor views and even in output channels! ( #53 , #187 , #220 , #223, #226)
+-   Implement multi-line messages pager. Things like `:registers`, `:changes`, `:jumps`, `:messages` are working
+    correctly now ( #202 , #78 , #296 )
 -   Fix tab indent problems and sync vscode tab settings with neovim ( #275 , #239 , #264 , #167 , #100 , #152 , #289 )
 -   Fix few macro recording problems ( #207 )
--   Fix ghost keys after exiting insert mode ( #324 ). For `jj` / `jk` users there are still few problems ( #330 ) but they will be sorted in next releases
+-   Fix ghost keys after exiting insert mode ( #324 ). For `jj` / `jk` users there are still few problems ( #330 ) but
+    they will be sorted in next releases
 -   Fix few command line problems ( #155 , #288 )
 -   Fix some buffer desync issues ( #312 )
 -   Fix `<C-w>v/<C-w>s` split shortcuts ( #331 )
 -   Fix brackets for substitute command ( #300 )
 -   Add logger and log-related configuration to options
 -   Change some default code-actions mappings ( #339 )
--   Add extension icon. Many thanks to https://github.com/ngscheurich
+-   Add extension icon. Many thanks to <https://github.com/ngscheurich>
 
 ## [0.0.52]
 
@@ -109,13 +185,17 @@ Many things have been refactored/changed internally in this release. So if you s
 
 ## [0.0.46]
 
--   Update `neovim-client` to latest version. This should eliminate delay between operations and generally improve the performance. Kudos to @kwonoj for impressive work here
+-   Update `neovim-client` to latest version. This should eliminate delay between operations and generally improve the
+    performance. Kudos to @kwonoj for impressive work here
 -   Fix cursor movement for 2-byte chars ( #127 )
 
 ## [0.0.45]
 
--   Fix VIM filetype detection ( #115 ). This means `FileType` autocmd should work correctly now. Also fixes `vim-matchup` plugin. This may introduce some side effects from previously disabled filetype plugins - just fill an issue if something doesn't work
--   Fix broken cursor position in insert mode for special keys (such as `del`/`backspace`/etc) if you had recorded a macro in insert mode previously
+-   Fix VIM filetype detection ( #115 ). This means `FileType` autocmd should work correctly now. Also fixes
+    `vim-matchup` plugin. This may introduce some side effects from previously disabled filetype plugins - just fill an
+    issue if something doesn't work
+-   Fix broken cursor position in insert mode for special keys (such as `del`/`backspace`/etc) if you had recorded a
+    macro in insert mode previously
 
 ## [0.0.44]
 
@@ -123,7 +203,18 @@ Many things have been refactored/changed internally in this release. So if you s
 
 ## [0.0.43]
 
--   Visual modes DON'T produce vscode selections right now. These were implemented through various workarounds, gave really small value and were constant origin of headache. Also this fixes few issues related to visual modes ( #105, #118 ). To round the corners, invoking vscode's command palette (by using default vscode hotkeys) from visual mode will convert neovim visual selection to vscode visual selection, this should cover most use cases. Also, there are `VScodeNotifyRange`/`VSCodeCallRange`/`VSCodeNotifyRangePos`/`VSCodeCallRangePos` vim functions if you need to call vscode command with selection. See [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54) and [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98) if you're doing custom mappings and assuming there is some vscode selection exist. Use `VSCodeNotifyRange` when you don't need a column pos (e.g. for visual line mode) and `VSCodeNotifyRangePos` when you need them (e.g for visual mode).
+-   Visual modes DON'T produce vscode selections right now. These were implemented through various workarounds, gave
+    really small value and were constant origin of headache. Also this fixes few issues related to visual modes ( #105,
+    #118 ). To round the corners, invoking vscode's command palette (by using default vscode hotkeys) from visual mode
+    will convert neovim visual selection to vscode visual selection, this should cover most use cases. Also, there are
+    `VScodeNotifyRange`/`VSCodeCallRange`/`VSCodeNotifyRangePos`/`VSCodeCallRangePos` vim functions if you need to call
+    vscode command with selection. See
+    [this for example](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L42-L54)
+    and
+    [mapping](https://github.com/asvetliakov/vscode-neovim/blob/e61832119988bb1e73b81df72956878819426ce2/vim/vscode-code-actions.vim#L98)
+    if you're doing custom mappings and assuming there is some vscode selection exist. Use `VSCodeNotifyRange` when you
+    don't need a column pos (e.g. for visual line mode) and `VSCodeNotifyRangePos` when you need them (e.g for visual
+    mode).
 -   Refactored vscode<->neovim cursor syncrhonization
 -   Fix `ma`/`mi` not working when selecting lines upward ( #117 )
 -   Changed `ma`/`mi` to skip empty lines. Added `mA`/`mI` for the previous behavior
@@ -140,9 +231,12 @@ Many things have been refactored/changed internally in this release. So if you s
 
 ## [0.0.40]
 
--   Fix cursor/highlight not working with multi-byte width characters (Russian, Chinese, Japanese, etc...), i.e the extension should work normally with them (#68, #91)
+-   Fix cursor/highlight not working with multi-byte width characters (Russian, Chinese, Japanese, etc...), i.e the
+    extension should work normally with them (#68, #91)
 -   Fix incorrect vim highlight when using tab indentation (#81)
--   Removed multiple cursors by default from visual line/block modes (visual block mode still spawns cursors but they are pruly visual) (#59, #61). Previous behavior is still accessible by `mi` or `ma` keybindings while in visual line/block modes
+-   Removed multiple cursors by default from visual line/block modes (visual block mode still spawns cursors but they
+    are pruly visual) (#59, #61). Previous behavior is still accessible by `mi` or `ma` keybindings while in visual
+    line/block modes
 -   Allow to override keys/mappings set by extension (previously they have been set after user config loaded)
 -   Allow to identify if neovim is running through vscode extension by checking `if exists('g:vscode')` (#83)
 -   Added `<C-[>` and `Escape` as escape keys (#74)
@@ -152,7 +246,8 @@ Many things have been refactored/changed internally in this release. So if you s
 -   Pass `<S-Tab>` to neovim
 -   Allow to pass additional ctrl keys to neovim (see Readme)
 -   Added workaround for `gk`/`gj` motions
--   Corrected `gf`/`gF` keybindings. Add `<C-]>` as go-to-def (works in help too) (#77). Add `gd`/`gD` as secondary mappings to go-to-def/peek-def. Add `<C-w>gd` to reveal definition aside
+-   Corrected `gf`/`gF` keybindings. Add `<C-]>` as go-to-def (works in help too) (#77). Add `gd`/`gD` as secondary
+    mappings to go-to-def/peek-def. Add `<C-w>gd` to reveal definition aside
 
 ## [0.0.39]
 
@@ -165,7 +260,8 @@ Many things have been refactored/changed internally in this release. So if you s
 
 ## [0.0.37]
 
--   Fix performance of o/O. If you're using custom bindings for them, you might need to rebind them to call new action. See vscode-insert.vim
+-   Fix performance of o/O. If you're using custom bindings for them, you might need to rebind them to call new action.
+    See vscode-insert.vim
 
 ## [0.0.36]
 
@@ -192,8 +288,11 @@ Many things have been refactored/changed internally in this release. So if you s
 
 ## [0.0.30]
 
--   Implemented nvim's ext_multigrid support. This solves almost all problems with vim highlighting and potentially enables easymotion's overwin motions (they still don't work however). Window management still should be performed by vscode
--   Removed vim-style cursor following on editor scrolling. This totally screwed vscode jumplist, so better to have working jumplist than such minor feature.
+-   Implemented nvim's ext_multigrid support. This solves almost all problems with vim highlighting and potentially
+    enables easymotion's overwin motions (they still don't work however). Window management still should be performed by
+    vscode
+-   Removed vim-style cursor following on editor scrolling. This totally screwed vscode jumplist, so better to have
+    working jumplist than such minor feature.
 -   Cursor position fixes
 -   `:e [filepath]` works again
 
@@ -205,15 +304,18 @@ Many things have been refactored/changed internally in this release. So if you s
 
 ## [0.0.28]
 
--   Use non-blocking rpc requests when communicatings with vscode for file management operations (closing, opening, etc...). Should eliminate the issue when vim is 'stuck' and doesn't respond anymore
+-   Use non-blocking rpc requests when communicatings with vscode for file management operations (closing, opening,
+    etc...). Should eliminate the issue when vim is 'stuck' and doesn't respond anymore
 -   Fix incorrect cursor positions after opening `:help something` (#44)
 -   Fix visual block selection for single column in multiple rows (#42)
--   Enable VIM syntax highlighting for help files and external buffers like `:PlugStatus`. It's slow and sometimes buggy but better than nothing in meantime
+-   Enable VIM syntax highlighting for help files and external buffers like `:PlugStatus`. It's slow and sometimes buggy
+    but better than nothing in meantime
 
 ## [0.0.27]
 
 -   Fix incsearch and allow to use `<C-t>`/`<C-g>` with it
--   Reworked/Refactored command line. Now with wildmenu completion support. Also keys like `<C-w>` or `<C-u>` are working fine now in cmdline now
+-   Reworked/Refactored command line. Now with wildmenu completion support. Also keys like `<C-w>` or `<C-u>` are
+    working fine now in cmdline now
 
 ## [0.0.26]
 
@@ -223,7 +325,8 @@ Many things have been refactored/changed internally in this release. So if you s
 
 -   Tab management commands & keys, like `gt` or `tabo[nly]`
 -   Window management commands & keys like `sp[lit]`/`vs[plit]` and `<C-w> j/k/l/h` keys
--   Bind scroll commands in neovim instead of vscode extension ([#41](https://github.com/asvetliakov/vscode-neovim/issues/41))
+-   Bind scroll commands in neovim instead of vscode extension
+    ([#41](https://github.com/asvetliakov/vscode-neovim/issues/41))
 
 ## [0.0.24]
 
@@ -236,9 +339,11 @@ Many things have been refactored/changed internally in this release. So if you s
 -   Correct editing and the cursor management
 -   Control keys in the insert & normal/visual modes
 -   Visual mode produces vscode selections
--   Working VIM highlighting (most of a default VIM HL groups are ignored since they don't make sense in VSCode, but non standard groups are processed, so things like vim-easymotion or vim-highlight are working fine)
+-   Working VIM highlighting (most of a default VIM HL groups are ignored since they don't make sense in VSCode, but non
+    standard groups are processed, so things like vim-easymotion or vim-highlight are working fine)
 -   Scrolling commands (scrolling is done by vscode so things are slighly different here)
--   Special vim-easymotion fork to use vscode text decorators instead of replacing text (as original vim-easymotion does)
+-   Special vim-easymotion fork to use vscode text decorators instead of replacing text (as original vim-easymotion
+    does)
 -   Analogue of vim-commentary (original vim-commentary works fine too)
 -   Working external vim buffers, like `:help` or `:PlugStatus`
 -   Multiple cursors for visual line/visual block modes

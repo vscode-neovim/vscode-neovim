@@ -19,7 +19,9 @@ import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
     accumulateDotRepeatChange,
+    applyEditorDiffOperations,
     callAtomic,
+    computeEditorOperationsFromDiff,
     diffLineToChars,
     DotRepeatChange,
     getDocumentLineArray,
@@ -80,10 +82,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      */
     private dotRepeatChange: DotRepeatChange | undefined;
     /**
-     * A hint for dot-repeat indicating of how the insert mode was started
-     */
-    private dotRepeatStartModeInsertHint?: "o" | "O";
-    /**
      * True when we're currently applying edits, so incoming changes will go into pending events queue
      */
     private applyingEdits = false;
@@ -121,12 +119,8 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         return (this.textDocumentChangePromise.get(doc)?.length || 0) > 0;
     }
 
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        if (name === "insert-line") {
-            const [type] = args as ["before" | "after"];
-            this.dotRepeatStartModeInsertHint = type === "before" ? "O" : "o";
-            this.logger.debug(`${LOG_PREFIX}: Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
-        }
+    public async handleExtensionRequest(): Promise<void> {
+        // skip
     }
 
     public async syncDocumentsWithNeovim(): Promise<void> {
@@ -230,7 +224,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
     }
 
-    public async syncDotRepatWithNeovim(): Promise<void> {
+    public async syncDotRepeatWithNeovim(): Promise<void> {
         // dot-repeat executes last change across all buffers. So we'll create a temporary buffer & window,
         // replay last changes here to trick neovim and destroy it after
         if (!this.dotRepeatChange) {
@@ -248,11 +242,13 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             return;
         }
         // create temporary win
+        await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
         const win = await this.client.openWindow(buf, true, {
             external: true,
             width: 100,
             height: 100,
         });
+        await this.client.setOption("eventignore", "");
         if (typeof win === "number") {
             return;
         }
@@ -269,13 +265,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             );
         }
         let editStr = "";
-        if (dotRepeatChange.startMode) {
-            editStr += `<Esc>${dotRepeatChange.startMode}`;
-            // remove EOL from first change
-            if (dotRepeatChange.text.startsWith(dotRepeatChange.eol)) {
-                dotRepeatChange.text = dotRepeatChange.text.slice(dotRepeatChange.eol.length);
-            }
-        }
         if (dotRepeatChange.rangeLength) {
             editStr += [...new Array(dotRepeatChange.rangeLength).keys()].map(() => "<BS>").join("");
         }
@@ -346,7 +335,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         // const edits = this.pendingEvents.splice(0);
         let resolveProgress: undefined | (() => void);
         const progressTimer = setTimeout(() => {
-            window.withProgress(
+            window.withProgress<void>(
                 { location: ProgressLocation.Notification, title: "Applying neovim edits" },
                 () => new Promise((res) => (resolveProgress = res)),
             );
@@ -443,7 +432,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     }
                     this.documentSkipVersionOnChange.set(doc, doc.version + 1);
 
-                    // const cursor = editor.selection.active;
+                    const cursorBefore = editor.selection.active;
                     const success = await editor.edit(
                         (builder) => {
                             for (const range of ranges) {
@@ -471,7 +460,27 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                                             newText.slice(oldText.length),
                                         );
                                     } else {
-                                        builder.replace(new Range(range.start, 0, range.end, 999999), text.join("\n"));
+                                        const changeSpansOneLineOnly =
+                                            range.start == range.end && range.newStart == range.newEnd;
+
+                                        let editorOps;
+
+                                        if (changeSpansOneLineOnly) {
+                                            editorOps = computeEditorOperationsFromDiff(diff(oldText, newText));
+                                        }
+
+                                        // If supported, efficiently modify only part of line that has changed by
+                                        // generating a diff and computing editor operations from it. This prevents
+                                        // flashes of non syntax-highlighted text (e.g. when `x` or `cw`, only
+                                        // remove a single char/the word).
+                                        if (editorOps && changeSpansOneLineOnly) {
+                                            applyEditorDiffOperations(builder, { editorOps, line: range.newStart });
+                                        } else {
+                                            builder.replace(
+                                                new Range(range.start, 0, range.end, 999999),
+                                                text.join("\n"),
+                                            );
+                                        }
                                     }
                                 } else if (range.type === "added") {
                                     if (range.start >= editor.document.lineCount) {
@@ -493,6 +502,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     if (success) {
                         if (!editor.selection.anchor.isEqual(editor.selection.active)) {
                             editor.selections = [new Selection(editor.selection.active, editor.selection.active)];
+                        } else {
+                            // Some editor operations change cursor position. This confuses cursor
+                            // sync from Vim to Code (e.g. when cursor did not change in Vim but
+                            // changed in Code). Fix by forcing cursor position to stay the same
+                            // indepent of the diff operation in question.
+                            editor.selections = [new Selection(cursorBefore, cursorBefore)];
                         }
                         this.cursorAfterTextDocumentChange.set(editor.document, {
                             line: editor.selection.active.line,
@@ -511,7 +526,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                         this.logger.warn(`${LOG_PREFIX}: Changes were not applied for ${doc.uri.toString()}`);
                     }
                 } catch (e) {
-                    this.logger.error(`${LOG_PREFIX}: Error applying neovim edits, error: ${e.message}`);
+                    this.logger.error(`${LOG_PREFIX}: Error applying neovim edits, error: ${(e as Error).message}`);
                 }
             }
         }
@@ -540,12 +555,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             return;
         }
 
-        const startModeHint = this.dotRepeatStartModeInsertHint;
         const activeEditor = window.activeTextEditor;
 
         // Store dot repeat
         if (activeEditor && activeEditor.document === document && this.modeManager.isInsertMode) {
-            this.dotRepeatStartModeInsertHint = undefined;
             const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
             const cursor = activeEditor.selection.active;
             for (const change of contentChanges) {
@@ -553,7 +566,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                     if (this.dotRepeatChange && isChangeSubsequentToChange(change, this.dotRepeatChange)) {
                         this.dotRepeatChange = accumulateDotRepeatChange(change, this.dotRepeatChange);
                     } else {
-                        this.dotRepeatChange = normalizeDotRepeatChange(change, eol, startModeHint);
+                        this.dotRepeatChange = normalizeDotRepeatChange(change, eol);
                     }
                 }
             }

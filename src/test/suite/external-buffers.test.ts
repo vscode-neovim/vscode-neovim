@@ -67,7 +67,7 @@ describe("Neovim external buffers", () => {
 
         const vscodeCursor = getVScodeCursor();
         const neovimCursor = await getNeovimCursor(client);
-        assert.ok(vscodeCursor[0] >= 185 && vscodeCursor[0] <= 187);
-        assert.ok(neovimCursor[0] >= 185 && neovimCursor[0] <= 187);
+        assert.ok(vscodeCursor[0] >= 189 && vscodeCursor[0] <= 191);
+        assert.ok(neovimCursor[0] >= 189 && neovimCursor[0] <= 191);
     });
 });

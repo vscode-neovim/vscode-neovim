@@ -1,7 +1,11 @@
+import path from "path";
+
 import { debounce } from "lodash-es";
 import { Buffer, NeovimClient, Window } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
 import {
+    CancellationToken,
+    CancellationTokenSource,
     commands,
     Disposable,
     EndOfLine,
@@ -26,7 +30,6 @@ import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromE
 
 export interface BufferManagerSettings {
     neovimViewportWidth: number;
-    neovimViewportHeight: number;
 }
 
 const LOG_PREFIX = "BufferManager";
@@ -43,6 +46,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      */
     private changeLayoutPromise?: Promise<void>;
     private changeLayoutPromiseResolve?: () => void;
+    private cancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
     /**
      * Currently opened editors
      * !Note: Order can be any, it doesn't relate to visible order
@@ -100,7 +104,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
-        await this.syncLayout();
+        // this.cancelTokenSource will always be cancelled when the visible editors change
+        await this.syncLayout(this.cancelTokenSource.token);
         await this.syncActiveEditor();
     }
 
@@ -189,10 +194,16 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const [fileName, close] = args as [string, number | "all"];
                 const currEditor = window.activeTextEditor;
                 let doc: TextDocument | undefined;
-                if (fileName === "__vscode_new__") {
-                    doc = await workspace.openTextDocument();
-                } else {
-                    doc = await workspace.openTextDocument(fileName.trim());
+                try {
+                    if (fileName === "__vscode_new__") {
+                        doc = await workspace.openTextDocument();
+                    } else {
+                        const normalizedName = fileName.trim();
+                        const filePath = this.findPathFromFileName(normalizedName);
+                        doc = await workspace.openTextDocument(filePath);
+                    }
+                } catch (error) {
+                    this.logger.error(`${LOG_PREFIX}: Error opening file ${fileName}, ${error}`);
                 }
                 if (!doc) {
                     return;
@@ -297,7 +308,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!this.changeLayoutPromise) {
             this.changeLayoutPromise = new Promise((res) => (this.changeLayoutPromiseResolve = res));
         }
-        this.syncLayoutDebounced();
+
+        // Cancel the previous syncLayout call, and then create a new token source for the new
+        // syncLayout call
+        this.cancelTokenSource.cancel();
+        this.cancelTokenSource = new CancellationTokenSource();
+        this.syncLayoutDebounced(this.cancelTokenSource.token);
     };
 
     private onDidChangeActiveTextEditor = (): void => {
@@ -305,7 +321,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.syncActiveEditorDebounced();
     };
 
-    private syncLayout = async (): Promise<void> => {
+    private syncLayout = async (cancelToken: CancellationToken): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: syncing layout`);
         // store in copy, just in case
         const currentVisibleEditors = [...window.visibleTextEditors];
@@ -366,7 +382,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.winIdToEditor.set(winId, visibleEditor);
                 }
             } catch (e) {
-                this.logger.error(`${LOG_PREFIX}: ${e.message}`);
+                this.logger.error(`${LOG_PREFIX}: ${(e as Error).message}`);
                 continue;
             }
         }
@@ -411,6 +427,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         // remember new visible editors
         this.openedEditors = currentVisibleEditors;
+
+        if (cancelToken.isCancellationRequested) {
+            // If the visible editors has changed since we started, don't resolve the promise,
+            // because syncActiveEditor assumes that this promise is only resolved when the
+            // layout is synced, and currently the layout is synced based on outdated data
+            this.logger.debug(`${LOG_PREFIX}: Cancellation requested in syncLayout, returning`);
+            return;
+        }
         if (this.changeLayoutPromiseResolve) {
             this.changeLayoutPromiseResolve();
         }
@@ -431,7 +455,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
         const winId = this.textEditorToWinId.get(activeEditor);
         if (!winId) {
-            this.logger.warn(
+            // If we reach here, then the current window in Neovim is out of sync with the
+            // active editor, which manifests itself as the editor being completely unresponsive
+            // when in normal mode
+            this.logger.error(
                 `${LOG_PREFIX}: Unable to determine neovim windows id for editor viewColumn: ${
                     activeEditor.viewColumn
                 }, docUri: ${activeEditor.document.uri.toString()}`,
@@ -552,12 +579,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Create new neovim window
      */
     private async createNeovimWindow(bufId: number): Promise<number> {
+        await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const win = await this.client.openWindow(bufId as any, false, {
             external: true,
             width: this.settings.neovimViewportWidth,
-            height: this.settings.neovimViewportHeight,
+            height: 100,
         });
+        await this.client.setOption("eventignore", "");
         if (typeof win === "number") {
             throw new Error(`Unable to create a new neovim window, code: ${win}`);
         }
@@ -568,7 +597,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         try {
             await this.client.command(`bunload! ${bufId}`);
         } catch (e) {
-            this.logger.warn(`${LOG_PREFIX}: Can't unload the buffer: ${bufId}, err: ${e?.message}`);
+            this.logger.warn(`${LOG_PREFIX}: Can't unload the buffer: ${bufId}, err: ${(e as Error)?.message}`);
         }
     }
 
@@ -583,6 +612,15 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             return true;
         }
         return false;
+    }
+
+    private findPathFromFileName(name: string): string {
+        const folders = workspace.workspaceFolders;
+        if (folders) {
+            return path.resolve(folders[0].uri.fsPath, name);
+        } else {
+            return name;
+        }
     }
 
     private findDocFromUri(uri: string): TextDocument | undefined {
@@ -675,7 +713,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.client.request("nvim_win_close", [closeWinId, true]);
                 } catch (e) {
                     this.logger.warn(
-                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${e.message}`,
+                        `${LOG_PREFIX}: Closing the window: ${closeWinId} for external buffer failed: ${
+                            (e as Error).message
+                        }`,
                     );
                 }
             }, 5000);

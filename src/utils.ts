@@ -6,8 +6,9 @@ import {
     TextDocument,
     EndOfLine,
     Range,
+    TextEditorEdit,
 } from "vscode";
-import { Diff } from "fast-diff";
+import diff, { Diff } from "fast-diff";
 import wcwidth from "ts-wcwidth";
 import { NeovimClient } from "neovim";
 
@@ -52,10 +53,6 @@ export interface DotRepeatChange {
      * Change text
      */
     text: string;
-    /**
-     * Set if it was the first change and started either through o or O
-     */
-    startMode?: "o" | "O";
     /**
      * Text eol
      */
@@ -415,16 +412,11 @@ export function getNeovimInitPath(): string | undefined {
     return getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
 }
 
-export function normalizeDotRepeatChange(
-    change: TextDocumentContentChangeEvent,
-    eol: string,
-    startMode?: "o" | "O",
-): DotRepeatChange {
+export function normalizeDotRepeatChange(change: TextDocumentContentChangeEvent, eol: string): DotRepeatChange {
     return {
         rangeLength: change.rangeLength,
         rangeOffset: change.rangeOffset,
         text: change.text,
-        startMode,
         eol,
     };
 }
@@ -531,7 +523,7 @@ export async function callAtomic(
     }
 }
 
-export function isLineWithinFold(visibleRanges: Range[], line: number): boolean {
+export function isLineWithinFold(visibleRanges: readonly Range[], line: number): boolean {
     if (visibleRanges.find((r) => r.contains(new Position(line, 0)))) {
         return false;
     }
@@ -539,5 +531,96 @@ export function isLineWithinFold(visibleRanges: Range[], line: number): boolean 
     // Is this always true? Seems so
     return !!visibleRanges.find(
         (r, idx) => line > r.end.line && visibleRanges[idx + 1] && line < visibleRanges[idx + 1].start.line,
+    )
+}
+type EditorDiffOperation = { op: -1 | 0 | 1; range: [number, number]; chars: string | null };
+
+export function computeEditorOperationsFromDiff(diffs: diff.Diff[]): EditorDiffOperation[] {
+    let curCol = 0;
+    return diffs
+        .map(([op, chars]: diff.Diff) => {
+            let editorOp: EditorDiffOperation | null = null;
+
+            switch (op) {
+                // -1
+                case diff.DELETE:
+                    editorOp = {
+                        op,
+                        range: [curCol, curCol + chars.length],
+                        chars: null,
+                    };
+                    curCol += chars.length;
+                    break;
+
+                // 0
+                case diff.EQUAL:
+                    curCol += chars.length;
+                    break;
+
+                // +1
+                case diff.INSERT:
+                    editorOp = {
+                        op,
+                        range: [curCol, curCol],
+                        chars,
+                    };
+                    curCol += 0; // NOP
+                    break;
+
+                default:
+                    throw new Error("Operation not supported");
+            }
+
+            return editorOp;
+        })
+        .filter(isNotNull);
+
+    // User-Defined Type Guard
+    // https://stackoverflow.com/a/54318054
+    function isNotNull<T>(argument: T | null): argument is T {
+        return argument !== null;
+    }
+}
+
+export function applyEditorDiffOperations(
+    builder: TextEditorEdit,
+    { editorOps, line }: { editorOps: EditorDiffOperation[]; line: number },
+): void {
+    editorOps.forEach((editorOp) => {
+        const {
+            op,
+            range: [from, to],
+            chars,
+        } = editorOp;
+
+        switch (op) {
+            case diff.DELETE:
+                builder.delete(new Range(new Position(line, from), new Position(line, to)));
+                break;
+
+            case diff.INSERT:
+                if (chars) {
+                    builder.insert(new Position(line, from), chars);
+                }
+                break;
+
+            default:
+                break;
+        }
+    });
+}
+
+export function getCurrentViewPortHeight(
+    editor: TextEditor | undefined,
+    viewPortExtend: number,
+    defaultValue = 100,
+): number {
+    if (!editor || editor.visibleRanges.length === 0) {
+        return defaultValue;
+    }
+    return (
+        editor.visibleRanges[editor.visibleRanges.length - 1].end.line -
+        editor.visibleRanges[0].start.line +
+        viewPortExtend * 2
     );
 }

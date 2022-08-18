@@ -5,13 +5,17 @@ import glob from "glob";
 import "source-map-support/register";
 
 export async function run(): Promise<void> {
+    // Tell vscode-neovim to create a debug connection
+    process.env.NEOVIM_DEBUG = "1";
     // Create the mocha test
     const mocha = new Mocha({
         ui: "bdd",
         timeout: 35000,
         bail: false,
         slow: 20000,
-        fullStackTrace: true,
+        fullTrace: true,
+        retries: 3,
+        grep: ".*",
     });
     const testsRoot = path.resolve(__dirname, "..");
     return new Promise((c, e) => {

@@ -22,13 +22,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = isWindows && settings.get("useWSL", false);
-    const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
+    const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 1);
     const customInit = getNeovimInitPath() ?? "";
+    const clean = settings.get("neovimClean", false);
     const logPath = settings.get("logPath", "");
     const logLevel = settings.get("logLevel", "none");
     const outputToConsole = settings.get("logOutputToConsole", false);
-    const textDecorationsAtTop = settings.get("textDecorationsAtTop", false);
 
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
     vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
@@ -36,6 +36,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     try {
         const plugin = new MainController({
             customInitFile: customInit,
+            clean: clean,
             extensionPath: context.extensionPath.replace(/\\/g, "\\\\"),
             highlightsConfiguration: {
                 highlights: highlightConfHighlights,
@@ -45,11 +46,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             } as any,
             mouseSelection: mouseVisualSelection,
             neovimPath: neovimPath,
-            neovimViewportHeight: 201,
             useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
             neovimViewportWidth: neovimWidth,
-            textDecorationsAtTop: textDecorationsAtTop,
-            revealCursorScrollLine: revealCursorScrollLine,
+            neovimViewportHeightExtend: neovimViewportHeightExtend,
             logConf: {
                 logPath,
                 outputToConsole,
@@ -59,7 +58,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         context.subscriptions.push(plugin);
         await plugin.init();
     } catch (e) {
-        vscode.window.showErrorMessage(`Unable to init vscode-neovim: ${e.message}`);
+        vscode.window.showErrorMessage(`Unable to init vscode-neovim: ${(e as Error).message}`);
     }
 }
 

@@ -446,7 +446,7 @@ describe("Insert mode and buffer syncronization", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("ea");
+        await sendVSCodeKeys("0ea");
         await sendVSCodeKeys("aaa");
 
         await Promise.all([sendEscapeKey(1000), sendVSCodeKeys("$")]);
@@ -494,7 +494,7 @@ describe("Insert mode and buffer syncronization", () => {
         await sendVSCodeKeys("a3");
         await sendEscapeKey(1000);
         await sendVSCodeKeys("a");
-        vscode.commands.executeCommand("vscode-neovim.ctrl-a-insert");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
         await wait();
 
         await sendEscapeKey(1000);
@@ -502,6 +502,48 @@ describe("Insert mode and buffer syncronization", () => {
         await assertContent(
             {
                 content: ["1233"],
+            },
+            client,
+        );
+    });
+
+    it("Handles repeating last inserted text in middle of text", async () => {
+        const doc = await vscode.workspace.openTextDocument({ content: ["blah1 blah3"].join("\n") });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("ea blah2");
+        await sendEscapeKey(1000);
+        await sendVSCodeKeys("A");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
+        await wait();
+
+        await sendEscapeKey(1000);
+
+        await assertContent(
+            {
+                content: ["blah1 blah2 blah3 blah2"],
+            },
+            client,
+        );
+    });
+
+    it("Handles repeating last inserted text with newline", async () => {
+        const doc = await vscode.workspace.openTextDocument({ content: "blah1 blah3" });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("wiblah2\n");
+        await sendEscapeKey(1000);
+        await sendVSCodeKeys("A");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-a>");
+        await wait();
+
+        await sendEscapeKey(1000);
+
+        await assertContent(
+            {
+                content: ["blah1 blah2", "blah3blah2", ""],
             },
             client,
         );

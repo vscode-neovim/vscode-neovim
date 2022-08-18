@@ -13,7 +13,6 @@ set nobackup
 set nowb
 set noswapfile
 set noautoread
-set scrolloff=100
 set conceallevel=0
 set nocursorline
 
@@ -49,6 +48,7 @@ set modelines=0
 
 " Turn off auto-folding
 set nofoldenable
+set foldcolumn=0
 set foldmethod=manual
 
 " Turn on auto-indenting
@@ -58,10 +58,15 @@ set smartindent
 " split/nosplit doesn't work currently, see https://github.com/asvetliakov/vscode-neovim/issues/329
 set inccommand=
 
+" lazyredraw breaks the movement
+set nolazyredraw
+
+" make cursor visible for plugins what use fake cursor
+hi Cursor gui=reverse
+
 function s:forceLocalOptions()
     setlocal nowrap
     setlocal conceallevel=0
-    setlocal scrolloff=100
     setlocal hidden
     setlocal bufhidden=hide
     setlocal noautowrite
@@ -73,7 +78,9 @@ function s:forceLocalOptions()
         setlocal syntax=off
     endif
     setlocal nofoldenable
+    setlocal foldcolumn=0
     setlocal foldmethod=manual
+    setlocal nolazyredraw
 endfunction
 
 augroup VscodeForceOptions

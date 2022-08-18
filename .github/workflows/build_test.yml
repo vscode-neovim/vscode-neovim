@@ -1,25 +1,21 @@
 name: Code Check & Test
 
-on:
-    pull_request:
-        branches:
-            - master
+on: [pull_request, push]
 
 jobs:
     build:
         name: Build & Test
         strategy:
+            fail-fast: false
             matrix:
-                # os: [macos-latest, ubuntu-latest, windows-latest]
-                # CI windows have some issues, i'm not sure why
-                os: [macos-latest, ubuntu-20.04]
+                os: [macos-latest, ubuntu-latest, windows-latest]
         runs-on: ${{ matrix.os }}
         steps:
             - uses: actions/checkout@v2
             - name: Setup Node
               uses: actions/setup-node@v1
               with:
-                  node-version: "12"
+                  node-version: "14"
             - name: Install Neovim
               uses: rhysd/action-setup-vim@v1
               id: vim
@@ -41,6 +37,7 @@ jobs:
                   NEOVIM_DEBUG: 1
                   NEOVIM_DEBUG_HOST: 127.0.0.1
                   NEOVIM_DEBUG_PORT: 4000
+                  DBUS_SESSION_BUS_ADDRESS:
               with:
                   run: yarn run test
     create:
@@ -51,7 +48,7 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v1
               with:
-                  node-version: "12"
+                  node-version: "14"
             - name: Yarn install
               run: yarn --silent --frozen-lockfile
             - name: Install VSCE
