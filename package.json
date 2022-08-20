@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.69.0"
+        "vscode": "^1.70.0"
     },
     "keywords": [
         "keybindings",
@@ -552,13 +552,8 @@
             },
             {
                 "key": "/",
-                "command": "list.toggleKeyboardNavigation",
-                "when": "listFocus && !inputFocus && listSupportsKeyboardNavigation"
-            },
-            {
-                "key": "escape",
-                "command": "list.toggleKeyboardNavigation",
-                "when": "listFocus && inputFocus && listSupportsKeyboardNavigation && !notebookCellListFocused"
+                "command": "list.find",
+                "when": "listFocus && listSupportsFind && !inputFocus"
             },
             {
                 "key": "r",
@@ -1232,7 +1227,7 @@
         "@types/mocha": "^9.1.1",
         "@types/msgpack-lite": "^0.1.7",
         "@types/node": "^18.0.6",
-        "@types/vscode": "^1.69.0",
+        "@types/vscode": "^1.70.0",
         "@typescript-eslint/eslint-plugin": "^5.30.7",
         "@typescript-eslint/parser": "^5.30.7",
         "@vscode/test-electron": "^2.1.5",
