@@ -106,7 +106,7 @@ Plug 'easymotion/vim-easymotion', Cond(!exists('g:vscode'))
 Plug 'asvetliakov/vim-easymotion', Cond(exists('g:vscode'), { 'as': 'vsc-easymotion' })
 ```
 
-See [plugins](Plugins) in the wiki for tips on configuring VIM plugins.
+See [[Plugins|plugins]] in the wiki for tips on configuring VIM plugins.
 
 ### VSCode configuration
 
