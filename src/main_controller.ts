@@ -130,11 +130,11 @@ export class MainController implements vscode.Disposable {
                 `${process.env.NEOVIM_DEBUG_HOST || "127.0.0.1"}:${process.env.NEOVIM_DEBUG_PORT || 4000}`,
             );
         }
-        if (settings.customInitFile) {
-            args.push("-u", settings.customInitFile);
-        }
         if (settings.clean) {
             args.push("--clean");
+        }
+        if (settings.customInitFile) {
+            args.push("-u", settings.customInitFile);
         }
         this.logger.debug(
             `${LOG_PREFIX}: Spawning nvim, path: ${settings.neovimPath}, useWsl: ${
