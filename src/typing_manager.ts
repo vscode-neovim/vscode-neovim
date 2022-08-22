@@ -136,6 +136,7 @@ export class TypingManager implements Disposable {
                 });
             } else {
                 this.disposeType();
+                this.disposeReplacePrevChar();
             }
         } else if (!this.modeManager.isInsertMode) {
             this.isEnteringInsertMode = false;
@@ -157,6 +158,7 @@ export class TypingManager implements Disposable {
                 this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
             } else {
                 this.disposeType();
+                this.disposeReplacePrevChar();
                 commands.executeCommand("default:type", { text: type.text });
             }
         } else {
