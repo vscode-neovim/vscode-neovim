@@ -15,6 +15,10 @@ export class TypingManager implements Disposable {
      */
     private typeHandlerDisposable?: Disposable;
     /**
+     * Separate "replacePrevChar" command disposable since we init/dispose it often
+     */
+    private replacePrevCharHandlerDisposable?: Disposable;
+    /**
      * Flag indicating that we're going to exit insert mode and sync buffers into neovim
      */
     private isExitingInsertMode = false;
@@ -34,6 +38,14 @@ export class TypingManager implements Disposable {
      * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
      */
     private compositeEscapeFirstPressTimestamp?: number;
+    /**
+     * Composing flag
+     */
+    private isInComposition = false;
+    /**
+     * The text that we need to send to nvim after composition
+     */
+    private composingText = "";
 
     public constructor(
         private logger: Logger,
@@ -42,6 +54,7 @@ export class TypingManager implements Disposable {
         private changeManager: DocumentChangeManager,
     ) {
         this.registerType();
+        this.registerReplacePrevChar();
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
@@ -55,11 +68,14 @@ export class TypingManager implements Disposable {
                 this.handleCompositeEscapeSecondKey(key),
             ),
         );
+        this.disposables.push(commands.registerCommand("compositionStart", this.onCompositionStart));
+        this.disposables.push(commands.registerCommand("compositionEnd", this.onCompositionEnd));
         this.modeManager.onModeChange(this.onModeChange);
     }
 
     public dispose(): void {
         this.typeHandlerDisposable?.dispose();
+        this.replacePrevCharHandlerDisposable?.dispose();
         this.disposables.forEach((d) => d.dispose());
     }
 
@@ -78,6 +94,24 @@ export class TypingManager implements Disposable {
         }
     }
 
+    public registerReplacePrevChar(): void {
+        if (!this.replacePrevCharHandlerDisposable) {
+            this.logger.debug(`${LOG_PREFIX}: Enabling replacePrevChar handler`);
+            this.replacePrevCharHandlerDisposable = commands.registerCommand(
+                "replacePreviousChar",
+                this.onReplacePreviousChar,
+            );
+        }
+    }
+
+    public disposeReplacePrevChar(): void {
+        if (this.replacePrevCharHandlerDisposable) {
+            this.logger.debug(`${LOG_PREFIX}: Disabling replacePrevChar handler`);
+            this.replacePrevCharHandlerDisposable.dispose();
+            this.replacePrevCharHandlerDisposable = undefined;
+        }
+    }
+
     private onModeChange = (): void => {
         if (this.modeManager.isInsertMode && this.typeHandlerDisposable && !this.modeManager.isRecordingInInsertMode) {
             this.pendingKeysAfterEnter = "";
@@ -89,7 +123,10 @@ export class TypingManager implements Disposable {
                 );
                 this.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
                     this.isEnteringInsertMode = false;
-                    if (this.modeManager.isInsertMode) this.disposeType();
+                    if (this.modeManager.isInsertMode) {
+                        this.disposeType();
+                        this.disposeReplacePrevChar();
+                    }
                     if (this.pendingKeysAfterEnter) {
                         commands.executeCommand(this.modeManager.isInsertMode ? "default:type" : "type", {
                             text: this.pendingKeysAfterEnter,
@@ -99,11 +136,13 @@ export class TypingManager implements Disposable {
                 });
             } else {
                 this.disposeType();
+                this.disposeReplacePrevChar();
             }
         } else if (!this.modeManager.isInsertMode) {
             this.isEnteringInsertMode = false;
             this.isExitingInsertMode = false;
             this.registerType();
+            this.registerReplacePrevChar();
         }
     };
 
@@ -112,11 +151,14 @@ export class TypingManager implements Disposable {
             this.pendingKeysAfterEnter += type.text;
         } else if (this.isExitingInsertMode) {
             this.pendingKeysAfterExit += type.text;
+        } else if (this.isInComposition) {
+            this.composingText += type.text;
         } else if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode) {
             if ((await this.client.mode).blocking) {
                 this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
             } else {
                 this.disposeType();
+                this.disposeReplacePrevChar();
                 commands.executeCommand("default:type", { text: type.text });
             }
         } else {
@@ -142,6 +184,7 @@ export class TypingManager implements Disposable {
 
     private onSendBlockingCommand = async (key: string): Promise<void> => {
         this.registerType();
+        this.registerReplacePrevChar();
         await this.onSendCommand(key);
     };
 
@@ -173,5 +216,24 @@ export class TypingManager implements Disposable {
         } else {
             await commands.executeCommand("type", { text: key });
         }
+    };
+
+    private onReplacePreviousChar = (type: { text: string; replaceCharCnt: number }): void => {
+        if (this.isInComposition)
+            this.composingText =
+                this.composingText.substring(0, this.composingText.length - type.replaceCharCnt) + type.text;
+    };
+
+    private onCompositionStart = (): void => {
+        this.isInComposition = true;
+    };
+
+    private onCompositionEnd = (): void => {
+        this.isInComposition = false;
+
+        if (!this.modeManager.isInsertMode)
+            this.client.input(normalizeInputString(this.composingText, !this.modeManager.isRecordingInInsertMode));
+
+        this.composingText = "";
     };
 }
