@@ -369,9 +369,6 @@ These are the default commands and bindings available for file/scroll/window/tab
 | <kbd>C-u</kbd> / <kbd>C-d</kbd>    | `list.focusPageUp/Down`         |
 | <kbd> / </kbd> / <kbd>Escape</kbd> | `list.toggleKeyboardNavigation` |
 
-> 💡 To enable explorer list navigation, add `"workbench.list.automaticKeyboardNavigation": false` to your
-> `settings.json`.
-
 #### Explorer file manipulation
 
 | Key          | VSCode Command        |
