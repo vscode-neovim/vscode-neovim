@@ -195,6 +195,7 @@ export class HighlightProvider {
         ) {
             this.ignoredGroupIds.add(id);
         }
+        if (this.highlighGroupToDecorator.has(name)) this.highlighGroupToDecorator.get(name)?.dispose();
         this.highlightIdToGroupName.set(id, name);
         const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
         const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
