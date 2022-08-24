@@ -556,6 +556,11 @@
                 "when": "listFocus && listSupportsFind && !inputFocus"
             },
             {
+                "key": "enter",
+                "command": "list.closeFind",
+                "when": "listFocus && treeFindOpen && inputFocus"
+            },
+            {
                 "key": "r",
                 "command": "renameFile",
                 "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
