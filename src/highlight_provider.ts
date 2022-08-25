@@ -195,15 +195,11 @@ export class HighlightProvider {
         ) {
             this.ignoredGroupIds.add(id);
         }
+        if (this.highlighGroupToDecorator.has(name)) this.highlighGroupToDecorator.get(name)?.dispose();
         this.highlightIdToGroupName.set(id, name);
-        if (this.highlighGroupToDecorator.has(name)) {
-            // we have already precreated decorator
-            return;
-        } else {
-            const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
-            const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
-            this.createDecoratorForHighlightGroup(name, conf);
-        }
+        const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
+        const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
+        this.createDecoratorForHighlightGroup(name, conf);
     }
 
     public getHighlightGroupName(id: number, force = false): string | undefined {
