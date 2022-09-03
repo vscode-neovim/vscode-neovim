@@ -261,31 +261,32 @@ See gif in action:
 
 ![multicursors](/images/multicursor.gif)
 
-### Keyboard Quickfix
+### Code Action Menu Shortcut
 
-By default, the quickfix menu can be opened using <kbd>z=</kbd> or <kbd>C-.</kbd>. However, it is currently
-[not possible](https://github.com/microsoft/vscode/issues/55111) to add mappings to the quickfix menu, so it can only be
-navigated with arrow keys. A
-[workaround vscode extension](https://marketplace.visualstudio.com/items?itemName=pascalsenn.keyboard-quickfix) has been
-made to use the quick open menu, which can be navigated with custom bindings.
+If you are using vscode 1.71 or higher, you can modify the shortcuts as follows:
 
-To use, install the
-[keyboard-quickfix](https://marketplace.visualstudio.com/items?itemName=pascalsenn.keyboard-quickfix) extension, and add
-to your keybindings.json:
+Add to your keybindings.json:
 
 ```jsonc
 {
-    "key": "ctrl+.",
-    "command": "keyboard-quickfix.openQuickFix",
-    "when": "editorHasCodeActionsProvider && editorTextFocus && !editorReadonly"
+    "key": "ctrl+n",
+    "command": "selectNextCodeAction",
+    "when": "codeActionMenuVisible"
+},
+{
+    "key": "ctrl+p",
+    "command": "selectPrevCodeAction",
+    "when": "codeActionMenuVisible"
 },
 ```
 
 and add to your init.vim:
 
 ```vim
-nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
+nnoremap z= <Cmd>call VSCodeNotify('editor.action.quickFix')<CR>
 ```
+
+You can now use <kbd>z=</kbd> to open the code action menu, and <kbd>C-n</kbd> and <kbd>C-p</kbd> to navigate it.
 
 ### Invoking VSCode actions from neovim
 
