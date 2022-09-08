@@ -656,6 +656,16 @@
                 "when": "inQuickOpen"
             },
             {
+                "key": "ctrl+n",
+                "command": "selectNextCodeAction",
+                "when": "codeActionMenuVisible"
+            },
+            {
+                "key": "ctrl+p",
+                "command": "selectPrevCodeAction",
+                "when": "codeActionMenuVisible"
+            },
+            {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+a",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
@@ -1213,16 +1223,6 @@
                 "command": "vscode-neovim.complete-selection-cmdline",
                 "key": "tab",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace"
-            },
-            {
-                "key": "ctrl+n",
-                "command": "selectNextCodeAction",
-                "when": "codeActionMenuVisible"
-            },
-            {
-                "key": "ctrl+p",
-                "command": "selectPrevCodeAction",
-                "when": "codeActionMenuVisible"
             }
         ]
     },
