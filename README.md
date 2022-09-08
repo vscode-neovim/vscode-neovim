@@ -31,7 +31,6 @@ editor commands, making the best use of both editors.
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
-    -   [Keyboard quickfix](#keyboard-quickfix)
     -   [Invoking VSCode actions from Neovim](#invoking-vscode-actions-from-neovim)
         -   [Examples](#examples)
 -   [⌨️ Bindings](#️-bindings)
@@ -260,32 +259,6 @@ To spawn multiple cursors from visual line/block modes type <kbd>ma</kbd>/<kbd>m
 See gif in action:
 
 ![multicursors](/images/multicursor.gif)
-
-### Keyboard Quickfix
-
-By default, the quickfix menu can be opened using <kbd>z=</kbd> or <kbd>C-.</kbd>. However, it is currently
-[not possible](https://github.com/microsoft/vscode/issues/55111) to add mappings to the quickfix menu, so it can only be
-navigated with arrow keys. A
-[workaround vscode extension](https://marketplace.visualstudio.com/items?itemName=pascalsenn.keyboard-quickfix) has been
-made to use the quick open menu, which can be navigated with custom bindings.
-
-To use, install the
-[keyboard-quickfix](https://marketplace.visualstudio.com/items?itemName=pascalsenn.keyboard-quickfix) extension, and add
-to your keybindings.json:
-
-```jsonc
-{
-    "key": "ctrl+.",
-    "command": "keyboard-quickfix.openQuickFix",
-    "when": "editorHasCodeActionsProvider && editorTextFocus && !editorReadonly"
-},
-```
-
-and add to your init.vim:
-
-```vim
-nnoremap z= <Cmd>call VSCodeNotify('keyboard-quickfix.openQuickFix')<CR>
-```
 
 ### Invoking VSCode actions from neovim
 
