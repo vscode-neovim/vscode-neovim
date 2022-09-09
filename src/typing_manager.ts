@@ -170,42 +170,6 @@ export class TypingManager implements Disposable {
         }
     };
 
-    private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
-        // console.log("ESCAPE Pressed");
-    if(this.modeManager.neovimToggle){
-        this.logger.debug(`${LOG_PREFIX}: Escape key`);
-        if (this.modeManager.isInsertMode) {
-            this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim`);
-            this.isExitingInsertMode = true;
-            await this.onSendBlockingCommand(key);
-            // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
-            // see https://github.com/asvetliakov/vscode-neovim/issues/324
-            if (!this.typeHandlerDisposable) {
-                this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
-            }
-            // this.leaveMultipleCursorsForVisualMode = false;
-            await this.changeManager.syncDocumentsWithNeovim();
-            await this.changeManager.syncDotRepeatWithNeovim();
-        }
-        const keys = normalizeInputString(this.pendingKeysAfterExit);
-        this.logger.debug(`${LOG_PREFIX}: Pending keys sent with <Esc>: ${keys}`);
-        this.pendingKeysAfterExit = "";
-        await this.client.input(`<Esc>${keys}`);
-        // const buf = await this.client.buffer;
-        // const lines = await buf.lines;
-        // console.log("====LINES====");
-        // console.log(lines.length);
-        // console.log(lines.join("\n"));
-        // console.log("====END====");
-    }}
-    // Fix Non-English input method can replace previous chars
-    // see https://github.com/vscode-neovim/vscode-neovim/issues/560
-    private onVSCodeReplacePreviousChar = (type: { text: string; replaceCharCnt: number }): void => {
-        if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode && !this.isEnteringInsertMode) {
-            commands.executeCommand("default:replacePreviousChar", type);
-        }
-    };
-
     private onSendCommand = async (key: string): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: Send for: ${key}`);
         if (this.modeManager.isInsertMode && !(await this.client.mode).blocking) {
@@ -228,12 +192,14 @@ export class TypingManager implements Disposable {
         await this.onSendCommand(key);
     };
 
-    // private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
-    //     // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
-    //     // see https://github.com/asvetliakov/vscode-neovim/issues/324
-    //     this.isExitingInsertMode = true;
-    //     await this.onSendBlockingCommand(key);
-    // };
+    private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
+        // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
+        // see https://github.com/asvetliakov/vscode-neovim/issues/324
+        if(this.modeManager.neovimToggle){
+        this.isExitingInsertMode = true;
+        await this.onSendBlockingCommand(key);
+        }
+    };
 
     private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {
         const now = new Date().getTime();
