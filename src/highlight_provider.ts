@@ -89,8 +89,11 @@ function vimHighlightToVSCodeOptions(uiAttrs: VimHighlightUIAttributes): Themabl
     return options;
 }
 
-function isEditorThemeColor(s: string | ThemeColor | undefined): s is string {
-    return typeof s === "string" && s.startsWith("theme.");
+function normalizeThemeColor(color: string | ThemeColor | undefined): string | ThemeColor | undefined {
+    if (typeof color === "string" && color.startsWith("theme.")) {
+        color = new ThemeColor(color.slice(6));
+    }
+    return color;
 }
 
 function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): ThemableDecorationRenderOptions {
@@ -99,42 +102,20 @@ function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): The
         after: config.after ? { ...config.after } : undefined,
         before: config.before ? { ...config.before } : undefined,
     };
-    if (isEditorThemeColor(newConfig.backgroundColor)) {
-        newConfig.backgroundColor = new ThemeColor(newConfig.backgroundColor.slice(6));
-    }
-    if (isEditorThemeColor(newConfig.borderColor)) {
-        newConfig.borderColor = new ThemeColor(newConfig.borderColor.slice(6));
-    }
-    if (isEditorThemeColor(newConfig.color)) {
-        newConfig.borderColor = new ThemeColor(newConfig.color.slice(6));
-    }
-    if (isEditorThemeColor(newConfig.outlineColor)) {
-        newConfig.outlineColor = new ThemeColor(newConfig.outlineColor.slice(6));
-    }
-    if (isEditorThemeColor(newConfig.overviewRulerColor)) {
-        newConfig.overviewRulerColor = new ThemeColor(newConfig.overviewRulerColor.slice(6));
-    }
+    newConfig.backgroundColor = normalizeThemeColor(newConfig.backgroundColor);
+    newConfig.borderColor = normalizeThemeColor(newConfig.borderColor);
+    newConfig.color = normalizeThemeColor(newConfig.color);
+    newConfig.outlineColor = normalizeThemeColor(newConfig.outlineColor);
+    newConfig.overviewRulerColor = normalizeThemeColor(newConfig.overviewRulerColor);
     if (newConfig.after) {
-        if (isEditorThemeColor(newConfig.after.backgroundColor)) {
-            newConfig.after.backgroundColor = new ThemeColor(newConfig.after.backgroundColor.slice(6));
-        }
-        if (isEditorThemeColor(newConfig.after.borderColor)) {
-            newConfig.after.borderColor = new ThemeColor(newConfig.after.borderColor.slice(6));
-        }
-        if (isEditorThemeColor(newConfig.after.color)) {
-            newConfig.after.color = new ThemeColor(newConfig.after.color.slice(6));
-        }
+        newConfig.after.backgroundColor = normalizeThemeColor(newConfig.after.backgroundColor);
+        newConfig.after.borderColor = normalizeThemeColor(newConfig.after.borderColor);
+        newConfig.after.color = normalizeThemeColor(newConfig.after.color);
     }
     if (newConfig.before) {
-        if (isEditorThemeColor(newConfig.before.backgroundColor)) {
-            newConfig.before.backgroundColor = new ThemeColor(newConfig.before.backgroundColor.slice(6));
-        }
-        if (isEditorThemeColor(newConfig.before.borderColor)) {
-            newConfig.before.borderColor = new ThemeColor(newConfig.before.borderColor.slice(6));
-        }
-        if (isEditorThemeColor(newConfig.before.color)) {
-            newConfig.before.color = new ThemeColor(newConfig.before.color.slice(6));
-        }
+        newConfig.before.backgroundColor = normalizeThemeColor(newConfig.before.backgroundColor);
+        newConfig.before.borderColor = normalizeThemeColor(newConfig.before.borderColor);
+        newConfig.before.color = normalizeThemeColor(newConfig.before.color);
     }
     return newConfig;
 }
@@ -214,15 +195,11 @@ export class HighlightProvider {
         ) {
             this.ignoredGroupIds.add(id);
         }
+        if (this.highlighGroupToDecorator.has(name)) this.highlighGroupToDecorator.get(name)?.dispose();
         this.highlightIdToGroupName.set(id, name);
-        if (this.highlighGroupToDecorator.has(name)) {
-            // we have already precreated decorator
-            return;
-        } else {
-            const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
-            const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
-            this.createDecoratorForHighlightGroup(name, conf);
-        }
+        const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
+        const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
+        this.createDecoratorForHighlightGroup(name, conf);
     }
 
     public getHighlightGroupName(id: number, force = false): string | undefined {
