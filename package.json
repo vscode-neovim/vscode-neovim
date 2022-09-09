@@ -120,11 +120,6 @@
                     "default": false,
                     "description": "Mouse selection starts visual mode"
                 },
-                "vscode-neovim.mouseSelectionStartInstertMode": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Mouse selection starts insert mode (only if visual mode inactive)"
-                },
                 "vscode-neovim.useWSL": {
                     "type": "boolean",
                     "default": false,
