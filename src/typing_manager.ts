@@ -63,8 +63,6 @@ export class TypingManager implements Disposable {
                 this.modeManager.neovimToggle2 = !this.modeManager.neovimToggle2;
             }),
         );
-        this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
-        // this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlCommand));
         this.registerType();
         this.registerReplacePrevChar();
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
