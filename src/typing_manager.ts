@@ -53,10 +53,16 @@ export class TypingManager implements Disposable {
         private modeManager: ModeManager,
         private changeManager: DocumentChangeManager,
     ) {
-        this.disposables.push(commands.registerCommand("vscode-neovim.toggle", () => {
-                                this.modeManager.neovimToggle =! this.modeManager.neovimToggle}));
-        this.disposables.push(commands.registerCommand("vscode-neovim.toggle2", () => {
-                                this.modeManager.neovimToggle2 =! this.modeManager.neovimToggle2}));
+        this.disposables.push(
+            commands.registerCommand("vscode-neovim.toggle", () => {
+                this.modeManager.neovimToggle = !this.modeManager.neovimToggle;
+            }),
+        );
+        this.disposables.push(
+            commands.registerCommand("vscode-neovim.toggle2", () => {
+                this.modeManager.neovimToggle2 = !this.modeManager.neovimToggle2;
+            }),
+        );
         this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
         // this.disposables.push(commands.registerCommand("vscode-neovim.ctrl-o-insert", this.onInsertCtrlCommand));
         this.registerType();

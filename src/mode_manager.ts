@@ -86,6 +86,6 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
             if (this.isInsertMode && this.neovimToggle2) {
                 commands.executeCommand("vscode-neovim.escape");
             }
-        } 
+        }
     };
 }
