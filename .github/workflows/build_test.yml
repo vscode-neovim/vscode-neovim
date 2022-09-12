@@ -22,14 +22,14 @@ jobs:
               with:
                   neovim: true
                   version: nightly
-            - name: Yarn install
-              run: yarn --silent --frozen-lockfile
+            - name: npm install
+              run: npm ci --silent
             - name: Build
-              run: yarn run test-compile
+              run: npm run test-compile
             - name: Webpack
-              run: yarn run webpack
+              run: npm run webpack
             - name: Lint
-              run: yarn run lint
+              run: npm run lint
             - name: Test
               uses: GabrielBB/xvfb-action@v1
               env:
@@ -39,7 +39,7 @@ jobs:
                   NEOVIM_DEBUG_PORT: 4000
                   DBUS_SESSION_BUS_ADDRESS:
               with:
-                  run: yarn run test
+                  run: npm run test
     create:
         name: Create extension
         runs-on: ubuntu-latest
@@ -49,12 +49,10 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: "14"
-            - name: Yarn install
-              run: yarn --silent --frozen-lockfile
-            - name: Install VSCE
-              run: yarn add vsce
+            - name: npm install
+              run: npm ci --silent
             - name: Create extension
-              run: yarn run vsce package -o vscode-neovim-${{github.sha}}.vsix
+              run: npx vsce package -o vscode-neovim-${{github.sha}}.vsix
             - name: Upload extension
               if: runner.os == 'Linux'
               uses: actions/upload-artifact@3

@@ -1230,7 +1230,7 @@
         "lint": "eslint --ext .ts src",
         "format": "prettier --ignore-path .gitignore --write .",
         "test": "node ./out/test/runTest.js",
-        "pretest": "yarn run test-compile",
+        "pretest": "npm run test-compile",
         "vscode:prepublish": "webpack --mode production",
         "webpack": "webpack --mode development",
         "webpack-dev": "webpack --mode development --watch",
@@ -1258,8 +1258,7 @@
         "typescript": "^4.2.3",
         "vsce": "^2.9.3",
         "webpack": "^5.26.1",
-        "webpack-cli": "^4.5.0",
-        "yarn": "^1.22.18"
+        "webpack-cli": "^4.5.0"
     },
     "dependencies": {
         "fast-diff": "^1.2.0",
