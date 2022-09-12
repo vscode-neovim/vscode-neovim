@@ -11,9 +11,9 @@ jobs:
                 os: [macos-latest, ubuntu-latest, windows-latest]
         runs-on: ${{ matrix.os }}
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Setup Node
-              uses: actions/setup-node@v1
+              uses: actions/setup-node@v3
               with:
                   node-version: "14"
             - name: Install Neovim
@@ -31,7 +31,7 @@ jobs:
             - name: Lint
               run: yarn run lint
             - name: Test
-              uses: GabrielBB/xvfb-action@v1.4
+              uses: GabrielBB/xvfb-action@v1
               env:
                   NEOVIM_PATH: ${{ steps.vim.outputs.executable }}
                   NEOVIM_DEBUG: 1
@@ -44,9 +44,9 @@ jobs:
         name: Create extension
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Setup Node
-              uses: actions/setup-node@v1
+              uses: actions/setup-node@v3
               with:
                   node-version: "14"
             - name: Yarn install
@@ -57,7 +57,7 @@ jobs:
               run: yarn run vsce package -o vscode-neovim-${{github.sha}}.vsix
             - name: Upload extension
               if: runner.os == 'Linux'
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@3
               with:
                   name: vscode-neovim
                   path: vscode-neovim-${{github.sha}}.vsix
