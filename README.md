@@ -515,13 +515,13 @@ How to build (and install) from source:
 2. Install the dependencies.
 
     ```
-    yarn install
+    npm install
     ```
 
 3. Build the VSIX package:
 
     ```
-    ./node_modules/.bin/yarn run vsce package -o vscode-neovim.vsix
+    npx vsce package -o vscode-neovim.vsix
     ```
 
 4. From VSCode, use the `Extensions: Install from VSIX` command to install the package.

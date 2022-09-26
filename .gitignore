@@ -1,7 +1,6 @@
 out
 dist
 node_modules
-yarn-error.log
 .vscode-test/
 .DS_Store
 *.vsix
