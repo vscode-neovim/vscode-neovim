@@ -328,6 +328,7 @@ export class CursorManager
             const winId = this.bufferManager.getWinIdForTextEditor(textEditor);
             const cursor = textEditor.selection.active;
             const selections = textEditor.selections;
+            const selection = textEditor.selection;
 
             this.logger.debug(
                 `${LOG_PREFIX}: Applying changed selection, kind: ${kind}, WinId: ${winId}, cursor: [${cursor.line}, ${
@@ -347,13 +348,12 @@ export class CursorManager
             let cursorPos = getNeovimCursorPosFromEditor(textEditor);
             if (
                 selections.length > 1 ||
-                (kind === TextEditorSelectionChangeKind.Mouse && !selections[0].active.isEqual(selections[0].anchor)) ||
-                this.modeManager.isVisualMode
+                (kind === TextEditorSelectionChangeKind.Mouse && !selection.active.isEqual(selection.anchor))
             ) {
-                if (kind === TextEditorSelectionChangeKind.Mouse && this.settings.mouseSelectionEnabled) {
-                    const grid = this.bufferManager.getGridIdForWinId(winId);
-                    this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
-                    if (!this.modeManager.isVisualMode && grid) {
+                const grid = this.bufferManager.getGridIdForWinId(winId);
+                this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
+                if (kind === TextEditorSelectionChangeKind.Mouse) {
+                    if (!this.modeManager.isVisualMode && this.settings.mouseSelectionEnabled) {
                         // need to start visual mode from anchor char
                         const firstPos = selections[0].anchor;
                         const mouseClickPos = editorPositionToNeovimPosition(textEditor, firstPos);
@@ -364,10 +364,10 @@ export class CursorManager
                         requests.push(["nvim_feedkeys", ["v", "nx", false]]);
                     }
                     const lastSelection = selections.slice(-1)[0];
-                    if (!lastSelection) {
-                        return;
-                    }
+                    if (!lastSelection) return;
                     cursorPos = editorPositionToNeovimPosition(textEditor, lastSelection.active);
+                } else {
+                    return;
                 }
             }
             this.logger.debug(
