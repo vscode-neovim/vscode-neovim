@@ -47,19 +47,19 @@
                 },
                 "vscode-neovim.neovimExecutablePaths.win32": {
                     "type": "string",
-                    "default": "",
+                    "default": "nvim",
                     "title": "Neovim executable path on Windows",
                     "markdownDescription": "Full path to Neovim executable that should be used by the extension if running VS Code on Windows.  \nExample:  \nC:\\tools\\neovim\\Neovim\\bin\\nvim.exe (if you installed using Chocolatey)  \nIf you want to use Windows Subsystem for Linux, enable the `useWSL` setting and set `neovimExecutablePaths.linux` instead"
                 },
                 "vscode-neovim.neovimExecutablePaths.darwin": {
                     "type": "string",
-                    "default": "",
+                    "default": "nvim",
                     "title": "Neovim executable path on OSX",
                     "description": "Full path to Neovim executable that should be used by the extension if running VS Code on OSX."
                 },
                 "vscode-neovim.neovimExecutablePaths.linux": {
                     "type": "string",
-                    "default": "",
+                    "default": "nvim",
                     "title": "Neovim executable path on Linux (and in WSL)",
                     "markdownDescription": "Full path to Neovim executable that should be used by the extension if running VS Code on Linux or WSL. If `useWSL` setting is checked, vscode-neovim will look for this path in WSL  \nExample:  \n/usr/bin/nvim"
                 },
