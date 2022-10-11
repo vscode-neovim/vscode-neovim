@@ -82,9 +82,6 @@ export class MainController implements vscode.Disposable {
 
     public constructor(settings: ControllerSettings) {
         this.settings = settings;
-        if (!settings.neovimPath) {
-            throw new Error("Neovim path is not defined");
-        }
         this.logger = new Logger(
             LogLevel[settings.logConf.level],
             settings.logConf.logPath,
@@ -146,7 +143,8 @@ export class MainController implements vscode.Disposable {
             this.logger.error(`${LOG_PREFIX}: Neovim exited with code: ${code}`);
         });
         this.nvimProc.on("error", (err) => {
-            this.logger.error(`${LOG_PREFIX}: Neovim spawn error: ${err.message}`);
+            this.logger.error(`${LOG_PREFIX}: Neovim spawn error: ${err.message}. Check if the path is correct.`);
+            vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
         });
         this.logger.debug(`${LOG_PREFIX}: Attaching to neovim`);
         this.client = attach({
