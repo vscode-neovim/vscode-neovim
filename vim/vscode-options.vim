@@ -13,6 +13,7 @@ set nobackup
 set nowb
 set noswapfile
 set noautoread
+set scrolloff=100
 set conceallevel=0
 set nocursorline
 
@@ -67,6 +68,7 @@ hi Cursor gui=reverse
 function s:forceLocalOptions()
     setlocal nowrap
     setlocal conceallevel=0
+    setlocal scrolloff=100
     setlocal hidden
     setlocal bufhidden=hide
     setlocal noautowrite
