@@ -16,7 +16,7 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: "14"
-                  cache: 'npm'
+                  cache: "npm"
             - name: Install Neovim
               uses: rhysd/action-setup-vim@v1
               id: vim
@@ -50,7 +50,7 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: "14"
-                  cache: 'npm'
+                  cache: "npm"
             - name: npm install
               run: npm ci --silent
             - name: Create extension

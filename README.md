@@ -7,9 +7,9 @@
 <a href="https://gitter.im/vscode-neovim/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge"><img src="https://badges.gitter.im/vscode-neovim/community.svg"></a>
 </p>
 
-[Neovim](https://neovim.io/) is a fork of VIM to allow greater extensibility and integration. This extension uses a fully
-embedded Neovim instance, no more half-complete VIM emulation! VSCode's native functionality is used for insert mode and
-editor commands, making the best use of both editors.
+[Neovim](https://neovim.io/) is a fork of VIM to allow greater extensibility and integration. This extension uses a
+fully embedded Neovim instance, no more half-complete VIM emulation! VSCode's native functionality is used for insert
+mode and editor commands, making the best use of both editors.
 
 -   🎉 Almost fully feature-complete VIM integration by utilizing Neovim as a backend.
 -   🔧 Supports custom `init.vim` and many VIM plugins.
@@ -105,7 +105,8 @@ Plug 'easymotion/vim-easymotion', Cond(!exists('g:vscode'))
 Plug 'asvetliakov/vim-easymotion', Cond(exists('g:vscode'), { 'as': 'vsc-easymotion' })
 ```
 
-See [plugins](https://github.com/vscode-neovim/vscode-neovim/wiki/Plugins) in the wiki for tips on configuring VIM plugins.
+See [plugins](https://github.com/vscode-neovim/vscode-neovim/wiki/Plugins) in the wiki for tips on configuring VIM
+plugins.
 
 ### VSCode configuration
 

@@ -89,7 +89,7 @@ export class MainController implements vscode.Disposable {
         this.settings = settings;
         this.NEOVIM_WIN_HEIGHT = settings.neovimViewportHeight;
         this.NEOVIM_WIN_WIDTH = settings.neovimViewportWidth;
-        
+
         this.logger = new Logger(
             LogLevel[settings.logConf.level],
             settings.logConf.logPath,
