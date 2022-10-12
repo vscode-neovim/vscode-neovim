@@ -1,11 +1,9 @@
 import { DecorationOptions, Disposable, window } from "vscode";
 
-import { BufferManager } from "./buffer_manager";
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
-import { Logger } from "./logger";
+import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { calculateEditorColFromVimScreenCol, convertByteNumToCharNum, GridLineEvent } from "./utils";
-import { ViewportManager } from "./viewport_manager";
 
 export interface HighlightManagerSettings {
     highlight: HighlightConfiguration;
@@ -21,12 +19,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private commandsDisposables: Disposable[] = [];
 
-    public constructor(
-        private logger: Logger,
-        private bufferManager: BufferManager,
-        private viewportManager: ViewportManager,
-        private settings: HighlightManagerSettings,
-    ) {
+    public constructor(private main: MainController, private settings: HighlightManagerSettings) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
 
         // this.commandsDisposables.push(
@@ -101,12 +94,12 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         if (row > this.lastViewportRow) {
                             continue;
                         }
-                        const gridOffset = this.viewportManager.getGridOffset(grid);
+                        const gridOffset = this.main.viewportManager.getGridOffset(grid);
                         if (!gridOffset) {
                             continue;
                         }
 
-                        const editor = this.bufferManager.getEditorFromGridId(grid);
+                        const editor = this.main.bufferManager.getEditorFromGridId(grid);
                         if (!editor) {
                             continue;
                         }
@@ -125,7 +118,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         const colStart = col + gridOffset.leftCol;
                         const tabSize = editor.options.tabSize as number;
                         const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
-                        const isExternal = this.bufferManager.isExternalTextDocument(editor.document);
+                        const isExternal = this.main.bufferManager.isExternalTextDocument(editor.document);
                         const update = this.highlightProvider.processHLCellsEvent(
                             grid,
                             row,
@@ -164,8 +157,8 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private applyHLGridUpdates = (updates: Set<number>): void => {
         for (const grid of updates) {
-            const gridOffset = this.viewportManager.getGridOffset(grid);
-            const editor = this.bufferManager.getEditorFromGridId(grid);
+            const gridOffset = this.main.viewportManager.getGridOffset(grid);
+            const editor = this.main.bufferManager.getEditorFromGridId(grid);
             if (!editor || !gridOffset) {
                 continue;
             }

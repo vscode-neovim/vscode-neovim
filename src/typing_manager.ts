@@ -1,10 +1,9 @@
 import { NeovimClient } from "neovim";
 import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode";
 
-import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
-import { ModeManager } from "./mode_manager";
 import { normalizeInputString } from "./utils";
+import { MainController } from "./main_controller";
 
 const LOG_PREFIX = "TypingManager";
 
@@ -47,12 +46,7 @@ export class TypingManager implements Disposable {
      */
     private composingText = "";
 
-    public constructor(
-        private logger: Logger,
-        private client: NeovimClient,
-        private modeManager: ModeManager,
-        private changeManager: DocumentChangeManager,
-    ) {
+    public constructor(private logger: Logger, private client: NeovimClient, private main: MainController) {
         this.registerType();
         this.registerReplacePrevChar();
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
@@ -70,7 +64,7 @@ export class TypingManager implements Disposable {
         );
         this.disposables.push(commands.registerCommand("compositionStart", this.onCompositionStart));
         this.disposables.push(commands.registerCommand("compositionEnd", this.onCompositionEnd));
-        this.modeManager.onModeChange(this.onModeChange);
+        this.main.modeManager.onModeChange(this.onModeChange);
     }
 
     public dispose(): void {
@@ -113,22 +107,26 @@ export class TypingManager implements Disposable {
     }
 
     private onModeChange = (): void => {
-        if (this.modeManager.isInsertMode && this.typeHandlerDisposable && !this.modeManager.isRecordingInInsertMode) {
+        if (
+            this.main.modeManager.isInsertMode &&
+            this.typeHandlerDisposable &&
+            !this.main.modeManager.isRecordingInInsertMode
+        ) {
             this.pendingKeysAfterEnter = "";
             const editor = window.activeTextEditor;
-            if (editor && this.changeManager.hasDocumentChangeCompletionLock(editor.document)) {
+            if (editor && this.main.changeManager.hasDocumentChangeCompletionLock(editor.document)) {
                 this.isEnteringInsertMode = true;
                 this.logger.debug(
                     `${LOG_PREFIX}: Waiting for document completion operation before disposing type handler`,
                 );
-                this.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
+                this.main.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
                     this.isEnteringInsertMode = false;
-                    if (this.modeManager.isInsertMode) {
+                    if (this.main.modeManager.isInsertMode) {
                         this.disposeType();
                         this.disposeReplacePrevChar();
                     }
                     if (this.pendingKeysAfterEnter) {
-                        commands.executeCommand(this.modeManager.isInsertMode ? "default:type" : "type", {
+                        commands.executeCommand(this.main.modeManager.isInsertMode ? "default:type" : "type", {
                             text: this.pendingKeysAfterEnter,
                         });
                         this.pendingKeysAfterEnter = "";
@@ -138,7 +136,7 @@ export class TypingManager implements Disposable {
                 this.disposeType();
                 this.disposeReplacePrevChar();
             }
-        } else if (!this.modeManager.isInsertMode) {
+        } else if (!this.main.modeManager.isInsertMode) {
             this.isEnteringInsertMode = false;
             this.isExitingInsertMode = false;
             this.registerType();
@@ -153,25 +151,25 @@ export class TypingManager implements Disposable {
             this.pendingKeysAfterExit += type.text;
         } else if (this.isInComposition) {
             this.composingText += type.text;
-        } else if (this.modeManager.isInsertMode && !this.modeManager.isRecordingInInsertMode) {
+        } else if (this.main.modeManager.isInsertMode && !this.main.modeManager.isRecordingInInsertMode) {
             if ((await this.client.mode).blocking) {
-                this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
+                this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
             } else {
                 this.disposeType();
                 this.disposeReplacePrevChar();
                 commands.executeCommand("default:type", { text: type.text });
             }
         } else {
-            this.client.input(normalizeInputString(type.text, !this.modeManager.isRecordingInInsertMode));
+            this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
         }
     };
 
     private onSendCommand = async (key: string): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: Send for: ${key}`);
-        if (this.modeManager.isInsertMode && !(await this.client.mode).blocking) {
+        if (this.main.modeManager.isInsertMode && !(await this.client.mode).blocking) {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
-            await this.changeManager.syncDocumentsWithNeovim();
-            await this.changeManager.syncDotRepeatWithNeovim();
+            await this.main.changeManager.syncDocumentsWithNeovim();
+            await this.main.changeManager.syncDotRepeatWithNeovim();
             const keys = normalizeInputString(this.pendingKeysAfterExit);
             this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);
             this.pendingKeysAfterExit = "";
@@ -231,8 +229,8 @@ export class TypingManager implements Disposable {
     private onCompositionEnd = (): void => {
         this.isInComposition = false;
 
-        if (!this.modeManager.isInsertMode)
-            this.client.input(normalizeInputString(this.composingText, !this.modeManager.isRecordingInInsertMode));
+        if (!this.main.modeManager.isInsertMode)
+            this.client.input(normalizeInputString(this.composingText, !this.main.modeManager.isRecordingInInsertMode));
 
         this.composingText = "";
     };

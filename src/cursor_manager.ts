@@ -12,10 +12,8 @@ import {
     window,
 } from "vscode";
 
-import { BufferManager } from "./buffer_manager";
-import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
-import { ModeManager } from "./mode_manager";
+import { MainController } from "./main_controller";
 import {
     NeovimExtensionRequestProcessable,
     NeovimRangeCommandProcessable,
@@ -27,7 +25,6 @@ import {
     editorPositionToNeovimPosition,
     getNeovimCursorPosFromEditor,
 } from "./utils";
-import { ViewportManager } from "./viewport_manager";
 
 const LOG_PREFIX = "CursorManager";
 
@@ -67,15 +64,12 @@ export class CursorManager
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
-        private modeManager: ModeManager,
-        private bufferManager: BufferManager,
-        private changeManager: DocumentChangeManager,
-        private viewportManager: ViewportManager,
+        private main: MainController,
         private settings: CursorManagerSettings,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
-        this.modeManager.onModeChange(this.onModeChange);
+        this.main.modeManager.onModeChange(this.onModeChange);
     }
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -99,7 +93,7 @@ export class CursorManager
             case "window-scroll": {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const [winId] = args as [number, any];
-                const gridId = this.bufferManager.getGridIdForWinId(winId);
+                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (gridId) {
                     this.gridCursorUpdates.add(gridId);
                 }
@@ -157,19 +151,19 @@ export class CursorManager
         }
         for (const gridId of this.gridCursorUpdates) {
             this.logger.debug(`${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}`);
-            const editor = this.bufferManager.getEditorFromGridId(gridId);
+            const editor = this.main.bufferManager.getEditorFromGridId(gridId);
             if (!editor) {
                 this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
                 continue;
             }
-            const cursorPos = this.viewportManager.getCursorFromViewport(gridId);
+            const cursorPos = this.main.viewportManager.getCursorFromViewport(gridId);
             if (!cursorPos) {
                 this.logger.warn(`${LOG_PREFIX}: No cursor for gridId from viewport: ${gridId}`);
                 continue;
             }
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-            const docPromises = this.changeManager.getDocumentChangeCompletionLock(editor.document);
+            const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
             if (docPromises) {
                 this.logger.debug(
                     `${LOG_PREFIX}: Waiting for document change completion before setting the cursor, gridId: ${gridId}`,
@@ -282,11 +276,11 @@ export class CursorManager
     }
 
     private onDidChangeVisibleTextEditors = (): void => {
-        this.updateCursorStyle(this.modeManager.currentMode);
+        this.updateCursorStyle(this.main.modeManager.currentMode);
     };
 
     private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
-        if (this.modeManager.isInsertMode) {
+        if (this.main.modeManager.isInsertMode) {
             return;
         }
         if (this.ignoreSelectionEvents) {
@@ -303,13 +297,13 @@ export class CursorManager
 
         // wait for possible layout updates first
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
-        await this.bufferManager.waitForLayoutSync();
+        await this.main.bufferManager.waitForLayoutSync();
         // wait for possible change document events
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
-        await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
+        await this.main.changeManager.getDocumentChangeCompletionLock(textEditor.document);
         this.logger.debug(`${LOG_PREFIX}: Waiting done`);
 
-        const documentChange = this.changeManager.eatDocumentCursorAfterChange(textEditor.document);
+        const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(textEditor.document);
         const cursor = textEditor.selection.active;
         if (documentChange && documentChange.line === cursor.line && documentChange.character === cursor.character) {
             this.logger.debug(
@@ -325,7 +319,7 @@ export class CursorManager
     // ! and cursor may go out-of-sync and produce a jitter
     private applySelectionChanged = debounce(
         async (textEditor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
-            const winId = this.bufferManager.getWinIdForTextEditor(textEditor);
+            const winId = this.main.bufferManager.getWinIdForTextEditor(textEditor);
             const cursor = textEditor.selection.active;
             const selections = textEditor.selections;
             const selection = textEditor.selection;
@@ -350,10 +344,10 @@ export class CursorManager
                 selections.length > 1 ||
                 (kind === TextEditorSelectionChangeKind.Mouse && !selection.active.isEqual(selection.anchor))
             ) {
-                const grid = this.bufferManager.getGridIdForWinId(winId);
+                const grid = this.main.bufferManager.getGridIdForWinId(winId);
                 this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
                 if (kind === TextEditorSelectionChangeKind.Mouse) {
-                    if (!this.modeManager.isVisualMode && this.settings.mouseSelectionEnabled) {
+                    if (!this.main.modeManager.isVisualMode && this.settings.mouseSelectionEnabled) {
                         // need to start visual mode from anchor char
                         const firstPos = selections[0].anchor;
                         const mouseClickPos = editorPositionToNeovimPosition(textEditor, firstPos);
