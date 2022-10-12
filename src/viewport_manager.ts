@@ -1,8 +1,8 @@
 import { NeovimClient } from "neovim";
 import { Disposable } from "vscode";
 
-import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
+import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 
 const LOG_PREFIX = "ViewportManager";
@@ -26,7 +26,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      */
     private gridViewport: Map<number, WinView> = new Map();
 
-    public constructor(private logger: Logger, private client: NeovimClient, private bufferManager: BufferManager) {}
+    public constructor(private logger: Logger, private client: NeovimClient, private main: MainController) {}
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -60,7 +60,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         switch (name) {
             case "window-scroll": {
                 const [winId, view] = args as [number, WinView];
-                const gridId = this.bufferManager.getGridIdForWinId(winId);
+                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (!gridId) {
                     this.logger.warn(`${LOG_PREFIX}: Unable to update scrolled view. No gird for winId: ${winId}`);
                     break;

@@ -1,6 +1,5 @@
 import { EventEmitter } from "events";
 
-import { NeovimClient } from "neovim";
 import { commands, Disposable, window } from "vscode";
 
 import { Logger } from "./logger";
@@ -22,7 +21,7 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
 
     private eventEmitter = new EventEmitter();
 
-    public constructor(private logger: Logger, private client: NeovimClient) {
+    public constructor(private logger: Logger) {
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
     }
 

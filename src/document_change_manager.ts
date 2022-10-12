@@ -15,7 +15,6 @@ import {
 
 import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
-import { ModeManager } from "./mode_manager";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
     accumulateDotRepeatChange,
@@ -31,6 +30,7 @@ import {
     normalizeDotRepeatChange,
     prepareEditRangesFromDiff,
 } from "./utils";
+import { MainController } from "./main_controller";
 
 const LOG_PREFIX = "DocumentChangeManager";
 
@@ -90,14 +90,9 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      */
     private applyingEdits = false;
 
-    public constructor(
-        private logger: Logger,
-        private client: NeovimClient,
-        private bufferManager: BufferManager,
-        private modeManager: ModeManager,
-    ) {
-        this.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
-        this.bufferManager.onBufferInit = this.onBufferInit;
+    public constructor(private logger: Logger, private client: NeovimClient, private main: MainController) {
+        this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
+        this.main.bufferManager.onBufferInit = this.onBufferInit;
         this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));
     }
 
@@ -152,7 +147,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                 continue;
             }
 
-            const bufId = this.bufferManager.getBufferIdForTextDocument(doc);
+            const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
             if (!bufId) {
                 this.logger.warn(`${LOG_PREFIX}: No neovim buffer for ${doc.uri.toString()}`);
                 continue;
@@ -308,7 +303,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         more,
     ) => {
         this.logger.debug(`${LOG_PREFIX}: Received neovim buffer changed event for bufId: ${bufId}, tick: ${tick}`);
-        const doc = this.bufferManager.getTextDocumentForBufferId(bufId);
+        const doc = this.main.bufferManager.getTextDocumentForBufferId(bufId);
         if (!doc) {
             this.logger.debug(`${LOG_PREFIX}: No text document for buffer: ${bufId}`);
             return;
@@ -363,7 +358,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             while (edit) {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const [bufId, _tick, firstLine, lastLine, data, _more] = edit;
-                const doc = this.bufferManager.getTextDocumentForBufferId(bufId);
+                const doc = this.main.bufferManager.getTextDocumentForBufferId(bufId);
                 if (!doc) {
                     this.logger.warn(`${LOG_PREFIX}: No document for ${bufId}, skip`);
                     continue;
@@ -574,7 +569,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         const activeEditor = window.activeTextEditor;
 
         // Store dot repeat
-        if (activeEditor && activeEditor.document === document && this.modeManager.isInsertMode) {
+        if (activeEditor && activeEditor.document === document && this.main.modeManager.isInsertMode) {
             this.dotRepeatStartModeInsertHint = undefined;
             const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
             const cursor = activeEditor.selection.active;
@@ -589,7 +584,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             }
         }
         this.changedDocuments.add(document);
-        if (!this.modeManager.isInsertMode) {
+        if (!this.main.modeManager.isInsertMode) {
             this.syncDocumentsWithNeovim();
         }
     };

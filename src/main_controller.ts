@@ -72,18 +72,19 @@ export class MainController implements vscode.Disposable {
 
     private logger!: Logger;
     private settings: ControllerSettings;
-    private modeManager!: ModeManager;
-    private bufferManager!: BufferManager;
-    private changeManager!: DocumentChangeManager;
-    private typingManager!: TypingManager;
-    private cursorManager!: CursorManager;
-    private commandsController!: CommandsController;
-    private commandLineManager!: CommandLineManager;
-    private statusLineManager!: StatusLineManager;
-    private highlightManager!: HighlightManager;
-    private customCommandsManager!: CustomCommandsManager;
-    private multilineMessagesManager!: MutlilineMessagesManager;
-    private viewportManager!: ViewportManager;
+
+    public modeManager!: ModeManager;
+    public bufferManager!: BufferManager;
+    public changeManager!: DocumentChangeManager;
+    public typingManager!: TypingManager;
+    public cursorManager!: CursorManager;
+    public commandsController!: CommandsController;
+    public commandLineManager!: CommandLineManager;
+    public statusLineManager!: StatusLineManager;
+    public highlightManager!: HighlightManager;
+    public customCommandsManager!: CustomCommandsManager;
+    public multilineMessagesManager!: MutlilineMessagesManager;
+    public viewportManager!: ViewportManager;
 
     public constructor(settings: ControllerSettings) {
         this.settings = settings;
@@ -185,7 +186,7 @@ export class MainController implements vscode.Disposable {
         this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
         this.disposables.push(this.commandsController);
 
-        this.modeManager = new ModeManager(this.logger, this.client);
+        this.modeManager = new ModeManager(this.logger);
         this.disposables.push(this.modeManager);
 
         this.bufferManager = new BufferManager(this.logger, this.client, {
@@ -194,32 +195,24 @@ export class MainController implements vscode.Disposable {
         });
         this.disposables.push(this.bufferManager);
 
-        this.viewportManager = new ViewportManager(this.logger, this.client, this.bufferManager);
+        this.viewportManager = new ViewportManager(this.logger, this.client, this);
         this.disposables.push(this.viewportManager);
 
-        this.highlightManager = new HighlightManager(this.logger, this.bufferManager, this.viewportManager, {
+        this.highlightManager = new HighlightManager(this, {
             highlight: this.settings.highlightsConfiguration,
             viewportHeight: this.settings.neovimViewportHeight,
         });
         this.disposables.push(this.highlightManager);
 
-        this.changeManager = new DocumentChangeManager(this.logger, this.client, this.bufferManager, this.modeManager);
+        this.changeManager = new DocumentChangeManager(this.logger, this.client, this);
         this.disposables.push(this.changeManager);
 
-        this.cursorManager = new CursorManager(
-            this.logger,
-            this.client,
-            this.modeManager,
-            this.bufferManager,
-            this.changeManager,
-            this.viewportManager,
-            {
-                mouseSelectionEnabled: this.settings.mouseSelection,
-            },
-        );
+        this.cursorManager = new CursorManager(this.logger, this.client, this, {
+            mouseSelectionEnabled: this.settings.mouseSelection,
+        });
         this.disposables.push(this.cursorManager);
 
-        this.typingManager = new TypingManager(this.logger, this.client, this.modeManager, this.changeManager);
+        this.typingManager = new TypingManager(this.logger, this.client, this);
         this.disposables.push(this.typingManager);
 
         this.commandLineManager = new CommandLineManager(this.logger, this.client);
