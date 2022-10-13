@@ -63,6 +63,14 @@ mode and editor commands, making the best use of both editors.
 -   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify Linux path to nvim binary.
     `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available through
     `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
+-   Add to your `settings.json`:
+
+```json
+"extensions.experimental.affinity": {
+    "vscodevim.vim": 1,
+    "asvetliakov.vscode-neovim": 1
+},
+```
 
 ### Neovim configuration
 
@@ -178,6 +186,8 @@ register the `type` command (like [VSCodeVim](https://marketplace.visualstudio.c
 [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 
 #### Performance problems
+
+Make sure you have the extension running in its own thread using affinity (see [installation](#installation)).
 
 If you have any performance problems (cursor jitter usually) make sure you're not using these kinds of extensions:
 
