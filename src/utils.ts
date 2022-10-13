@@ -532,6 +532,16 @@ export async function callAtomic(
     }
 }
 
+export function isLineWithinFold(visibleRanges: readonly Range[], line: number): boolean {
+    if (visibleRanges.find((r) => r.contains(new Position(line, 0)))) {
+        return false;
+    }
+    // if between 2 visible ranges then it's folded line
+    // Is this always true? Seems so
+    return !!visibleRanges.find(
+        (r, idx) => line > r.end.line && visibleRanges[idx + 1] && line < visibleRanges[idx + 1].start.line,
+    )
+}
 type EditorDiffOperation = { op: -1 | 0 | 1; range: [number, number]; chars: string | null };
 
 export function computeEditorOperationsFromDiff(diffs: diff.Diff[]): EditorDiffOperation[] {
