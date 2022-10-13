@@ -3,11 +3,9 @@ import { NeovimClient } from "neovim";
 import {
     commands,
     Disposable,
-    Position,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
-    TextEditorRevealType,
     TextEditorSelectionChangeEvent,
     TextEditorSelectionChangeKind,
     window,
@@ -46,12 +44,6 @@ export class CursorManager
      */
     private cursorModes: Map<string, CursorInfo> = new Map();
     /**
-     * Cursor positions per editor in neovim
-     * ! Note: we should track this because setting cursor as consequence of neovim event will trigger onDidChangeTextEditorSelection with Command kind
-     * ! And we should skip it and don't try to send cursor update into neovim again, otherwise few things may break, especially jumplist
-     */
-    private neovimCursorPosition: WeakMap<TextEditor, Position> = new WeakMap();
-    /**
      * Special workaround flag to ignore editor selection events
      */
     private ignoreSelectionEvents = false;
@@ -76,7 +68,6 @@ export class CursorManager
         private main: MainController,
         private settings: CursorManagerSettings,
     ) {
-        this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
         this.main.modeManager.onModeChange(this.onModeChange);
     }
@@ -187,7 +178,6 @@ export class CursorManager
                             cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                             cursorPos.isByteCol,
                         );
-                        this.neovimCursorPosition.set(editor, new Position(cursorPos.line, finalCol));
                         // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
                         // !To not mess the cursor, try to debounce the update
                         this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
@@ -205,7 +195,6 @@ export class CursorManager
                         cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                         cursorPos.isByteCol,
                     );
-                    this.neovimCursorPosition.set(editor, new Position(cursorPos.line, finalCol));
                     this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
                 } catch (e) {
                     this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
@@ -288,32 +277,20 @@ export class CursorManager
         this.updateCursorStyle(this.main.modeManager.currentMode);
     };
 
-    private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
-        if (this.main.modeManager.isInsertMode) {
-            return;
-        }
+    public applySelectionChanged = async ({
+        textEditor: editor,
+        kind,
+    }: TextEditorSelectionChangeEvent): Promise<Promise<Promise<void>>> => {
+        const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
+        const cursor = editor.selection.active;
+        const selections = editor.selections;
+        const selection = editor.selection;
+
         if (this.ignoreSelectionEvents) {
             return;
         }
-        const { textEditor, kind } = e;
-        this.logger.debug(`${LOG_PREFIX}: SelectionChanged`);
 
-        // ! Note: Unfortunately navigating from outline is Command kind, so we can't skip it :(
-        // if (kind === TextEditorSelectionChangeKind.Command) {
-        //     this.logger.debug(`${LOG_PREFIX}: Skipping command kind`);
-        //     return;
-        // }
-
-        // wait for possible layout updates first
-        this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
-        await this.main.bufferManager.waitForLayoutSync();
-        // wait for possible change document events
-        this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
-        await this.main.changeManager.getDocumentChangeCompletionLock(textEditor.document);
-        this.logger.debug(`${LOG_PREFIX}: Waiting done`);
-
-        const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(textEditor.document);
-        const cursor = textEditor.selection.active;
+        const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(editor.document);
         if (documentChange && documentChange.line === cursor.line && documentChange.character === cursor.character) {
             this.logger.debug(
                 `${LOG_PREFIX}: Skipping onSelectionChanged event since it was selection produced by doc change`,
@@ -321,63 +298,56 @@ export class CursorManager
             return;
         }
 
-        this.applySelectionChanged(textEditor, kind);
-    };
+        this.logger.debug(
+            `${LOG_PREFIX}: Applying changed selection, kind: ${kind}, WinId: ${winId}, cursor: [${cursor.line}, ${
+                cursor.character
+            }], isMultiSelection: ${editor.selections.length > 1}`,
+        );
+        if (!winId) {
+            return;
+        }
+        const gridId = this.main.bufferManager.getGridIdForWinId(winId);
+        const neovimCursorPos = gridId ? this.main.viewportManager.getCursorFromViewport(gridId) : null;
+        if (neovimCursorPos && neovimCursorPos.col === cursor.character && neovimCursorPos.line === cursor.line) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
+            return;
+        }
 
-    // ! Need to debounce requests because setting cursor by consequence of neovim event will trigger this method
-    // ! and cursor may go out-of-sync and produce a jitter
-    private applySelectionChanged = debounce(
-        async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
-            const cursor = editor.selection.active;
-            const selections = editor.selections;
-            const selection = editor.selection;
-
-            this.logger.debug(
-                `${LOG_PREFIX}: Applying changed selection, kind: ${kind},  cursor: [${cursor.line}, ${
-                    cursor.character
-                }], isMultiSelection: ${selections.length > 1}`,
-            );
-            const neovimCursorPos = this.neovimCursorPosition.get(editor);
-            if (neovimCursorPos && neovimCursorPos.isEqual(cursor)) {
-                this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
+        let cursorPos;
+        if (
+            selections.length > 1 ||
+            (kind === TextEditorSelectionChangeKind.Mouse && !selection.active.isEqual(selection.anchor))
+        ) {
+            this.logger.debug(`${LOG_PREFIX}: Processing multi-selection`);
+            if (kind === TextEditorSelectionChangeKind.Mouse) {
+                if (!this.main.modeManager.isVisualMode && this.settings.mouseSelectionEnabled) {
+                    // need to start visual mode from anchor char
+                    const firstPos = selections[0].anchor;
+                    const mouseClickPos = editorPositionToNeovimPosition(editor, firstPos);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
+                    );
+                    await this.updateNeovimCursorPosition(editor, mouseClickPos);
+                    await this.client.feedKeys("v", "nx", false);
+                }
+                const lastSelection = selections.slice(-1)[0];
+                if (!lastSelection) return;
+                cursorPos = editorPositionToNeovimPosition(editor, lastSelection.active);
+            } else {
                 return;
             }
-
-            let cursorPos;
-            if (
-                selections.length > 1 ||
-                (kind === TextEditorSelectionChangeKind.Mouse && !selection.active.isEqual(selection.anchor))
-            ) {
-                this.logger.debug(`${LOG_PREFIX}: Processing multi-selection`);
-                if (kind === TextEditorSelectionChangeKind.Mouse) {
-                    if (!this.main.modeManager.isVisualMode && this.settings.mouseSelectionEnabled) {
-                        // need to start visual mode from anchor char
-                        const firstPos = selections[0].anchor;
-                        const mouseClickPos = editorPositionToNeovimPosition(editor, firstPos);
-                        this.logger.debug(
-                            `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
-                        );
-                        await this.updateNeovimCursorPosition(editor, mouseClickPos);
-                        await this.client.feedKeys("v", "nx", false);
-                    }
-                    const lastSelection = selections.slice(-1)[0];
-                    if (!lastSelection) return;
-                    cursorPos = editorPositionToNeovimPosition(editor, lastSelection.active);
-                } else {
-                    return;
-                }
-            }
-            await this.updateNeovimCursorPosition(editor, cursorPos);
-        },
-        20,
-        { leading: false, trailing: true },
-    );
+        }
+        await this.updateNeovimCursorPosition(editor, cursorPos);
+    };
 
     /**
      * Set cursor position in neovim. Coords are [1, 0] based. If no position provided, will use
      *  editor cursor position.
      */
-    public async updateNeovimCursorPosition(editor: TextEditor, pos: [number, number] | undefined): Promise<void> {
+    public async updateNeovimCursorPosition(
+        editor: TextEditor,
+        pos: [number, number] | undefined = undefined,
+    ): Promise<void> {
         const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
         if (!winId) return;
         if (!pos) pos = getNeovimCursorPosFromEditor(editor);
@@ -401,27 +371,11 @@ export class CursorManager
         }
         const editorName = `${editor.document.uri.toString()}, viewColumn: ${editor.viewColumn}`;
         this.logger.debug(`${LOG_PREFIX}: Updating cursor in editor: ${editorName}, pos: [${newLine}, ${newCol}]`);
-        const currCursor = editor.selection.active;
-        const deltaLine = newLine - currCursor.line;
         const newPos = new Selection(newLine, newCol, newLine, newCol);
         if (!editor.selection.isEqual(newPos)) {
             editor.selections = [newPos];
-            const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
-            const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
-            const type =
-                deltaLine > 0
-                    ? newLine > bottomVisibleLine + 10
-                        ? TextEditorRevealType.InCenterIfOutsideViewport
-                        : TextEditorRevealType.Default
-                    : deltaLine < 0
-                    ? newLine < topVisibleLine - 10
-                        ? TextEditorRevealType.InCenterIfOutsideViewport
-                        : TextEditorRevealType.Default
-                    : TextEditorRevealType.Default;
-            editor.revealRange(newPos, type);
             commands.executeCommand("editor.action.wordHighlight.trigger");
         }
-        this.main.viewportManager.scrollNeovim(editor);
     };
 
     private getDebouncedUpdateCursorPos = (editor: TextEditor): CursorManager["updateCursorPosInEditor"] => {

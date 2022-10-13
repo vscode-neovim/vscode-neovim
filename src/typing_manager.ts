@@ -171,7 +171,7 @@ export class TypingManager implements Disposable {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
             await this.main.changeManager.documentChangeLock.waitForUnlock();
             if (window.activeTextEditor)
-                await this.main.cursorManager.updateNeovimCursorPosition(window.activeTextEditor, undefined);
+                await this.main.cursorManager.updateNeovimCursorPosition(window.activeTextEditor);
             await this.main.changeManager.syncDotRepeatWithNeovim();
             const keys = normalizeInputString(this.pendingKeysAfterExit);
             this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);

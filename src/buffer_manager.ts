@@ -21,8 +21,14 @@ import {
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromEditor } from "./utils";
+import {
+    calculateEditorColFromVimScreenCol,
+    callAtomic,
+    getNeovimCursorPosFromEditor,
+    getNeovimViewportPosFromEditor,
+} from "./utils";
 import { MainController } from "./main_controller";
+import { SMOOTH_SCROLLING_TIME } from "./viewport_manager";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -379,11 +385,22 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     winId = await this.createNeovimWindow(editorBufferId);
                     this.logger.debug(`${LOG_PREFIX}: Created new window: ${winId}`);
                     this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
+                    const requests: [string, unknown[]][] = [];
                     const cursor = getNeovimCursorPosFromEditor(visibleEditor);
+                    requests.push(["nvim_win_set_cursor", [winId, cursor]]);
+
+                    const viewport = getNeovimViewportPosFromEditor(visibleEditor);
+                    let viewportMsg = "no available viewport";
+                    if (viewport) {
+                        requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
+                        viewportMsg = `[${viewport[0] - 1}, ${viewport[1] - 1}]`;
+                    }
+
                     this.logger.debug(
-                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
+                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}], viewport: ${viewportMsg}`,
                     );
-                    await this.client.request("nvim_win_set_cursor", [winId, cursor]);
+                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+
                     this.textEditorToWinId.set(visibleEditor, winId);
                     this.winIdToEditor.set(winId, visibleEditor);
                 }
@@ -474,11 +491,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
-        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, undefined);
+        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor);
         await this.client.request("nvim_set_current_win", [winId]);
     };
 
-    private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 100, { leading: false, trailing: true });
+    private syncActiveEditorDebounced = debounce(this.syncActiveEditor, SMOOTH_SCROLLING_TIME + 10, {
+        leading: false,
+        trailing: true,
+    });
 
     private onDidChangeEditorOptions = (e: TextEditorOptionsChangeEvent): void => {
         this.logger.debug(`${LOG_PREFIX}: Received onDidChangeEditorOptions`);
