@@ -189,7 +189,7 @@ export class MainController implements vscode.Disposable {
         this.modeManager = new ModeManager(this.logger);
         this.disposables.push(this.modeManager);
 
-        this.bufferManager = new BufferManager(this.logger, this.client, {
+        this.bufferManager = new BufferManager(this.logger, this.client, this, {
             neovimViewportHeight: 201,
             neovimViewportWidth: 1000,
         });
