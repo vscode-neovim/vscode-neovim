@@ -1,7 +1,6 @@
 import { EventEmitter } from "events";
 
-import { NeovimClient } from "neovim";
-import { commands, Disposable, window } from "vscode";
+import { commands, Disposable } from "vscode";
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
@@ -22,9 +21,7 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
 
     private eventEmitter = new EventEmitter();
 
-    public constructor(private logger: Logger, private client: NeovimClient) {
-        this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
-    }
+    public constructor(private logger: Logger) {}
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -79,10 +76,4 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
             commands.executeCommand("setContext", "neovim.recording", true);
         }
     }
-
-    private onDidChangeActiveTextEditor = (): void => {
-        if (!this.isNormalMode) {
-            commands.executeCommand("vscode-neovim.escape");
-        }
-    };
 }

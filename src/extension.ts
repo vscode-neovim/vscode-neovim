@@ -9,10 +9,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const ext = vscode.extensions.getExtension(EXT_ID)!;
     const settings = vscode.workspace.getConfiguration(EXT_NAME);
     const neovimPath = getNeovimPath();
-    if (!neovimPath) {
-        vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
-        return;
-    }
     const isWindows = process.platform == "win32";
 
     const highlightConfIgnore = settings.get("highlightGroups.ignoreHighlights");

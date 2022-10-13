@@ -1,5 +1,28 @@
 # Change Log
 
+## [0.0.91]
+
+-   allow vscode sync viewport with neovim (#919)
+-   this makes lightspeed/leap work better. May cause some issues with jumping around. Will eventually be fixed by
+    (#993)
+
+## [0.0.91]
+
+-   don't exit insert mode when switching tabs (#1050)
+-   replay insert-mode edits in realtime using `nvim_buf_set_text` (#992)
+-   when vscode reports changed document, changes get sent immediately to nvim
+-   in insert mode, changes get sent immediately, instead of on exit
+
+## [0.0.90]
+
+-   Fix non-english input method issues (#1009)
+-   list.toggleKeyboardNavigation => list.find (#1015)
+-   Fix highlights not updating by :hi (#1010)
+-   Add shortcut to navigate code action menu (#1029)
+-   switch from yarn to npm (#1035)
+-   specify default nvim binary path (#1047)
+-   fix mouse selection starts visual mode (#1045)
+
 ## [0.0.89]
 
 -   silence "No viewport for gridId" warning (#978)

@@ -9,10 +9,8 @@ import vscode, {
     TextEditorRevealType,
 } from "vscode";
 
-import { BufferManager } from "./buffer_manager";
-import { DocumentChangeManager } from "./document_change_manager";
 import { Logger } from "./logger";
-import { ModeManager } from "./mode_manager";
+import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { callAtomic, getNeovimViewportPosFromEditor } from "./utils";
 
@@ -61,39 +59,17 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     private triggeredViewportEvents: Map<TextEditor, Map<VSCodeSynchronizableEvent, unknown>> = new Map();
 
     /**
-     * Handlers for `DidChangeTextEditorSelection`
-     */
-    private selectionHandlers: ((e: TextEditorSelectionChangeEvent, requests: [string, unknown[]][]) => void)[] = [];
-
-    /**
      * Set of desynced viewport
      */
     private desyncedViewport: WeakSet<TextEditor> = new WeakSet();
 
-    public constructor(
-        private logger: Logger,
-        private client: NeovimClient,
-        private bufferManager: BufferManager,
-        private modeManager: ModeManager,
-        private changeManager: DocumentChangeManager,
-    ) {
+    public constructor(private logger: Logger, private client: NeovimClient, private main: MainController) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onDidChangeTextEditorSelection));
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeTextEditorVisibleRanges));
     }
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
-    }
-
-    /**
-     * Registers a handler on `DidChangeTextEditorSelection` event. Fires when
-     * viewport-related pending events are resolved
-     * @param f handler for selection event
-     */
-    public registerSelectionHandler(
-        f: (e: TextEditorSelectionChangeEvent, requests: [string, unknown[]][]) => void,
-    ): void {
-        this.selectionHandlers.push(f);
     }
 
     /**
@@ -124,7 +100,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         switch (name) {
             case "window-scroll": {
                 const [winId, view] = args as [number, WinView];
-                const gridId = this.bufferManager.getGridIdForWinId(winId);
+                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (!gridId) {
                     this.logger.warn(`${LOG_PREFIX}: Unable to update scrolled view. No gird for winId: ${winId}`);
                     break;
@@ -149,7 +125,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         eventType: VSCodeSynchronizableEvent,
         e: unknown,
     ): void {
-        if (this.modeManager.isInsertMode) {
+        if (this.main.modeManager.isInsertMode) {
             return;
         }
         const triggeredEvents = this.triggeredViewportEvents.get(textEditor);
@@ -165,10 +141,10 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     private async syncViewportWithNeovim(textEditor: TextEditor): Promise<void> {
         // wait for possible layout updates first
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
-        await this.bufferManager.waitForLayoutSync();
+        await this.main.bufferManager.waitForLayoutSync();
         // wait for possible change document events
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
-        await this.changeManager.getDocumentChangeCompletionLock(textEditor.document);
+        await this.main.changeManager.getDocumentChangeCompletionLock(textEditor.document);
 
         this.logger.debug(
             `${LOG_PREFIX}: Waiting ${SELECTION_CHANGED_WAIT_TIME} ms for combining possible multiple operations`,
@@ -201,9 +177,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
             switch (eventType) {
                 case VSCodeSynchronizableEvent.TextEditorSelectionChangeEvent: {
                     this.logger.debug(`${LOG_PREFIX}: Scrolling neovim cursor`);
-                    for (const handler of this.selectionHandlers) {
-                        handler(<TextEditorSelectionChangeEvent>e, requests);
-                    }
+                    await this.main.cursorManager.applySelectionChanged(e as TextEditorSelectionChangeEvent);
                     selectionChanged = true;
                     break;
                 }
@@ -226,7 +200,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     }
 
     private scrollNeovim(editor: TextEditor | null, requests: [string, unknown[]][]): void {
-        if (editor == null || this.modeManager.isInsertMode) {
+        if (editor == null || this.main.modeManager.isInsertMode) {
             return;
         }
         const ranges = editor.visibleRanges;
@@ -236,8 +210,8 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
         // (1, 0)-indexed viewport tuple
         const viewport = getNeovimViewportPosFromEditor(editor);
-        const gridId = this.bufferManager.getGridIdFromEditor(editor);
-        const winId = this.bufferManager.getWinIdForTextEditor(editor);
+        const gridId = this.main.bufferManager.getGridIdFromEditor(editor);
+        const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
         if (winId == null || gridId == null || !viewport) {
             return;
         }
@@ -317,7 +291,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         for (const [gridId, view] of this.scrolledGrids) {
-            const editor = this.bufferManager.getEditorFromGridId(gridId);
+            const editor = this.main.bufferManager.getEditorFromGridId(gridId);
             const ranges = editor?.visibleRanges;
             if (!ranges || ranges.length == 0 || ranges[ranges.length - 1].end.line - ranges[0].start.line <= 1) {
                 break;

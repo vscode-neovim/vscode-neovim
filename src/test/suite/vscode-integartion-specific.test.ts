@@ -184,10 +184,13 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two);
         await wait();
 
+        await client.command("au BufEnter * stopinsert");
+        await wait();
+
         await vscode.commands.executeCommand("workbench.action.focusSecondEditorGroup");
         await wait();
 
-        await sendVSCodeKeys("i");
+        await sendVSCodeKeys("I");
         await assertContent(
             {
                 content: ["blah2"],
@@ -227,7 +230,7 @@ describe("VSCode integration specific stuff", () => {
             {
                 content: ["testblah2"],
                 cursorStyle: "block",
-                mode: "n",
+                mode: "V",
             },
             client,
         );
@@ -245,7 +248,10 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("i");
+        await client.command("au BufEnter * stopinsert");
+        await wait();
+
+        await sendVSCodeKeys("I");
         await assertContent(
             {
                 content: ["blah2"],
