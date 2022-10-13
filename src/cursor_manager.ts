@@ -3,6 +3,7 @@ import { NeovimClient } from "neovim";
 import {
     commands,
     Disposable,
+    Position,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
@@ -49,11 +50,19 @@ export class CursorManager
      * ! Note: we should track this because setting cursor as consequence of neovim event will trigger onDidChangeTextEditorSelection with Command kind
      * ! And we should skip it and don't try to send cursor update into neovim again, otherwise few things may break, especially jumplist
      */
-    private neovimCursorPosition: WeakMap<TextEditor, { line: number; col: number }> = new WeakMap();
+    private neovimCursorPosition: WeakMap<TextEditor, Position> = new WeakMap();
     /**
      * Special workaround flag to ignore editor selection events
      */
     private ignoreSelectionEvents = false;
+    /**
+     * In insert mode, cursor updates can be sent due to document changes. We should ignore them to
+     * avoid interfering with vscode typing. However, they are important for various actions, such as
+     * cursor updates while entering insert mode and insert mode commands. Thus, when those events occur,
+     * this flag is used to disable ignoring the update. This is set to true when entering insert
+     * mode or running insert mode command, and set to false before document updates in insert mode.
+     */
+    public wantInsertCursorUpdate = true;
     /**
      * Set of grid that needs to undergo cursor update
      */
@@ -166,7 +175,7 @@ export class CursorManager
             const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
             if (docPromises) {
                 this.logger.debug(
-                    `${LOG_PREFIX}: Waiting for document change completion before setting the cursor, gridId: ${gridId}`,
+                    `${LOG_PREFIX}: Waiting for document change completion before setting the cursor, gridId: ${gridId}, pos: [${cursorPos.line}, ${cursorPos.col}]`,
                 );
                 docPromises.then(() => {
                     try {
@@ -178,7 +187,7 @@ export class CursorManager
                             cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                             cursorPos.isByteCol,
                         );
-                        this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
+                        this.neovimCursorPosition.set(editor, new Position(cursorPos.line, finalCol));
                         // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
                         // !To not mess the cursor, try to debounce the update
                         this.getDebouncedUpdateCursorPos(editor)(editor, cursorPos.line, finalCol);
@@ -196,7 +205,7 @@ export class CursorManager
                         cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                         cursorPos.isByteCol,
                     );
-                    this.neovimCursorPosition.set(editor, { line: cursorPos.line, col: finalCol });
+                    this.neovimCursorPosition.set(editor, new Position(cursorPos.line, finalCol));
                     this.updateCursorPosInEditor(editor, cursorPos.line, finalCol);
                 } catch (e) {
                     this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
@@ -318,84 +327,82 @@ export class CursorManager
     // ! Need to debounce requests because setting cursor by consequence of neovim event will trigger this method
     // ! and cursor may go out-of-sync and produce a jitter
     private applySelectionChanged = debounce(
-        async (textEditor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
-            const winId = this.main.bufferManager.getWinIdForTextEditor(textEditor);
-            const cursor = textEditor.selection.active;
-            const selections = textEditor.selections;
-            const selection = textEditor.selection;
+        async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
+            const cursor = editor.selection.active;
+            const selections = editor.selections;
+            const selection = editor.selection;
 
             this.logger.debug(
-                `${LOG_PREFIX}: Applying changed selection, kind: ${kind}, WinId: ${winId}, cursor: [${cursor.line}, ${
+                `${LOG_PREFIX}: Applying changed selection, kind: ${kind},  cursor: [${cursor.line}, ${
                     cursor.character
                 }], isMultiSelection: ${selections.length > 1}`,
             );
-            if (!winId) {
-                return;
-            }
-            const neovimCursorPos = this.neovimCursorPosition.get(textEditor);
-            if (neovimCursorPos && neovimCursorPos.col === cursor.character && neovimCursorPos.line === cursor.line) {
+            const neovimCursorPos = this.neovimCursorPosition.get(editor);
+            if (neovimCursorPos && neovimCursorPos.isEqual(cursor)) {
                 this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
                 return;
             }
 
-            const requests: [string, unknown[]][] = [];
-            let cursorPos = getNeovimCursorPosFromEditor(textEditor);
+            let cursorPos;
             if (
                 selections.length > 1 ||
                 (kind === TextEditorSelectionChangeKind.Mouse && !selection.active.isEqual(selection.anchor))
             ) {
-                const grid = this.main.bufferManager.getGridIdForWinId(winId);
-                this.logger.debug(`${LOG_PREFIX}: Processing multi-selection, gridId: ${grid}`);
+                this.logger.debug(`${LOG_PREFIX}: Processing multi-selection`);
                 if (kind === TextEditorSelectionChangeKind.Mouse) {
                     if (!this.main.modeManager.isVisualMode && this.settings.mouseSelectionEnabled) {
                         // need to start visual mode from anchor char
                         const firstPos = selections[0].anchor;
-                        const mouseClickPos = editorPositionToNeovimPosition(textEditor, firstPos);
+                        const mouseClickPos = editorPositionToNeovimPosition(editor, firstPos);
                         this.logger.debug(
                             `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
                         );
-                        requests.push(["nvim_win_set_cursor", [winId, mouseClickPos]]);
-                        requests.push(["nvim_feedkeys", ["v", "nx", false]]);
+                        await this.updateNeovimCursorPosition(editor, mouseClickPos);
+                        await this.client.feedKeys("v", "nx", false);
                     }
                     const lastSelection = selections.slice(-1)[0];
                     if (!lastSelection) return;
-                    cursorPos = editorPositionToNeovimPosition(textEditor, lastSelection.active);
+                    cursorPos = editorPositionToNeovimPosition(editor, lastSelection.active);
                 } else {
                     return;
                 }
             }
-            this.logger.debug(
-                `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${cursorPos[0]}, ${cursorPos[1]}]`,
-            );
-            requests.push(["nvim_win_set_cursor", [winId, cursorPos]]);
-            await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+            await this.updateNeovimCursorPosition(editor, cursorPos);
         },
         20,
         { leading: false, trailing: true },
     );
 
     /**
+     * Set cursor position in neovim. Coords are [1, 0] based. If no position provided, will use
+     *  editor cursor position.
+     */
+    public async updateNeovimCursorPosition(editor: TextEditor, pos: [number, number] | undefined): Promise<void> {
+        const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
+        if (!winId) return;
+        if (!pos) pos = getNeovimCursorPosFromEditor(editor);
+        this.logger.debug(`${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${pos[0]}, ${pos[1]}]`);
+        const request: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, pos]]];
+        await callAtomic(this.client, request, this.logger, LOG_PREFIX);
+    }
+
+    /**
      * Update cursor in active editor. Coords are zero based
      */
     private updateCursorPosInEditor = (editor: TextEditor, newLine: number, newCol: number): void => {
-        if (this.ignoreSelectionEvents) {
+        if (
+            this.ignoreSelectionEvents ||
+            (this.main.modeManager.isInsertMode &&
+                !this.wantInsertCursorUpdate &&
+                !this.main.modeManager.isRecordingInInsertMode)
+        ) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping cursor update in editor`);
             return;
         }
         const editorName = `${editor.document.uri.toString()}, viewColumn: ${editor.viewColumn}`;
         this.logger.debug(`${LOG_PREFIX}: Updating cursor in editor: ${editorName}, pos: [${newLine}, ${newCol}]`);
-        if (editor !== window.activeTextEditor) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Editor: ${editorName} is not active text editor, setting cursor directly`,
-            );
-            const newPos = new Selection(newLine, newCol, newLine, newCol);
-            if (!editor.selection.isEqual(newPos)) {
-                editor.selections = [newPos];
-            }
-            return;
-        }
         const currCursor = editor.selection.active;
         const deltaLine = newLine - currCursor.line;
-        this.logger.debug(`${LOG_PREFIX}: Editor: ${editorName} setting cursor directly`);
         const newPos = new Selection(newLine, newCol, newLine, newCol);
         if (!editor.selection.isEqual(newPos)) {
             editor.selections = [newPos];
@@ -479,6 +486,8 @@ export class CursorManager
     }
 
     private onModeChange = (newMode: string): void => {
+        if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
+
         if (newMode === "normal" && window.activeTextEditor && window.activeTextEditor.selections.length > 1) {
             window.activeTextEditor.selections = [
                 new Selection(window.activeTextEditor.selection.active, window.activeTextEditor.selection.active),
