@@ -349,8 +349,8 @@ export class CursorManager
                 (kind === TextEditorSelectionChangeKind.Mouse && !selection.active.isEqual(selection.anchor))
             ) {
                 this.logger.debug(`${LOG_PREFIX}: Processing multi-selection`);
-                if (kind === TextEditorSelectionChangeKind.Mouse) {
-                    if (!this.main.modeManager.isVisualMode && this.settings.mouseSelectionEnabled) {
+                if (kind === TextEditorSelectionChangeKind.Mouse && this.settings.mouseSelectionEnabled) {
+                    if (!this.main.modeManager.isVisualMode) {
                         // need to start visual mode from anchor char
                         const firstPos = selections[0].anchor;
                         const mouseClickPos = editorPositionToNeovimPosition(editor, firstPos);
