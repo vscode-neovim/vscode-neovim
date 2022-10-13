@@ -20,6 +20,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useWsl = isWindows && settings.get("useWSL", false);
     const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
+    const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 1);
     const customInit = getNeovimInitPath() ?? "";
     const clean = settings.get("neovimClean", false);
     const logPath = settings.get("logPath", "");
@@ -42,9 +43,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             } as any,
             mouseSelection: mouseVisualSelection,
             neovimPath: neovimPath,
-            neovimViewportHeight: 201,
             useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
             neovimViewportWidth: neovimWidth,
+            neovimViewportHeightExtend: neovimViewportHeightExtend,
             revealCursorScrollLine: revealCursorScrollLine,
             logConf: {
                 logPath,

@@ -543,3 +543,18 @@ export function applyEditorDiffOperations(
         }
     });
 }
+
+export function getCurrentViewPortHeight(
+    editor: TextEditor | undefined,
+    viewPortExtend: number,
+    defaultValue = 100,
+): number {
+    if (!editor || editor.visibleRanges.length === 0) {
+        return defaultValue;
+    }
+    return (
+        editor.visibleRanges[editor.visibleRanges.length - 1].end.line -
+        editor.visibleRanges[0].start.line +
+        viewPortExtend * 2
+    );
+}

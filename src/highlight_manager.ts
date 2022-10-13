@@ -7,7 +7,6 @@ import { calculateEditorColFromVimScreenCol, convertByteNumToCharNum, GridLineEv
 
 export interface HighlightManagerSettings {
     highlight: HighlightConfiguration;
-    viewportHeight: number;
 }
 
 // const LOG_PREFIX = "HighlightManager";
@@ -91,9 +90,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
                     // eslint-disable-next-line prefer-const
                     for (let [grid, row, col, cells] of gridEvents) {
-                        if (row > this.lastViewportRow) {
-                            continue;
-                        }
                         const gridOffset = this.main.viewportManager.getGridOffset(grid);
                         if (!gridOffset) {
                             continue;
@@ -149,10 +145,6 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                 break;
             }
         }
-    }
-
-    private get lastViewportRow(): number {
-        return this.settings.viewportHeight - 1;
     }
 
     private applyHLGridUpdates = (updates: Set<number>): void => {
