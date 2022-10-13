@@ -52,8 +52,6 @@ export interface ControllerSettings {
 const LOG_PREFIX = "MainController";
 
 export class MainController implements vscode.Disposable {
-    private NEOVIM_WIN_WIDTH = 1000;
-
     private nvimProc: ChildProcess;
     private client: NeovimClient;
 
