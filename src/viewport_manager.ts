@@ -78,7 +78,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     }
 
     public scrollNeovim(editor: TextEditor | null): void {
-        if (editor == null || this.modeManager.isInsertMode) {
+        if (editor == null || this.main.modeManager.isInsertMode) {
             return;
         }
         const ranges = editor.visibleRanges;
@@ -90,7 +90,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
         const currentLine = editor.selection.active.line;
 
-        const gridId = this.bufferManager.getGridIdFromEditor(editor);
+        const gridId = this.main.bufferManager.getGridIdFromEditor(editor);
         if (gridId == null) {
             return;
         }
