@@ -1285,6 +1285,7 @@
     },
     "dependencies": {
         "fast-diff": "^1.2.0",
+        "async-mutex": "^0.3.2",
         "lodash-es": "^4.17.21",
         "neovim": "^4.9.0",
         "ts-wcwidth": "^2.0.3"

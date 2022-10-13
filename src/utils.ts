@@ -25,16 +25,6 @@ export interface EditRange {
     type: "changed" | "removed" | "added";
 }
 
-export interface GridConf {
-    winId: number;
-    cursorLine: number;
-    cursorPos: number;
-    screenLine: number;
-    screenPos: number;
-    topScreenLineStr: string;
-    bottomScreenLineStr: string;
-}
-
 export type GridLineEvent = [number, number, number, [string, number, number][]];
 
 /**
@@ -61,43 +51,6 @@ export interface DotRepeatChange {
      * Text eol
      */
     eol: string;
-}
-
-export function processLineNumberStringFromEvent(
-    event: GridLineEvent,
-    lineNumberHlId: number,
-    prevString: string,
-): string {
-    const [, , colStart, cells] = event;
-    if (!cells.length || cells[0][1] !== lineNumberHlId) {
-        return prevString;
-    }
-
-    let lineNumStr = "";
-    for (const [text, hlId, repeat] of cells) {
-        if (hlId != null && hlId !== lineNumberHlId) {
-            break;
-        }
-        for (let i = 0; i < (repeat || 1); i++) {
-            lineNumStr += text;
-        }
-    }
-    const newStr = prevString.slice(0, colStart) + lineNumStr + prevString.slice(colStart + lineNumStr.length);
-    return newStr;
-}
-
-export function getLineFromLineNumberString(lineStr: string): number {
-    const num = parseInt(lineStr.trim(), 10);
-    return isNaN(num) ? 0 : num - 1;
-}
-
-export function convertLineNumberToString(line: number): string {
-    let lineNumStr = line.toString(10);
-    // prepend " " for empty lines
-    for (let i = lineNumStr.length; i < 7; i++) {
-        lineNumStr = " " + lineNumStr;
-    }
-    return lineNumStr + " ";
 }
 
 // Copied from https://github.com/google/diff-match-patch/blob/master/javascript/diff_match_patch_uncompressed.js
@@ -315,24 +268,6 @@ export function calculateEditorColFromVimScreenCol(
         }
     }
     return currentCharIdx;
-}
-
-export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: number; col: number } {
-    const topScreenLine = getLineFromLineNumberString(conf.topScreenLineStr);
-    const cursorLine = topScreenLine + conf.screenLine;
-    if (cursorLine >= editor.document.lineCount) {
-        // rarely happens, but could, usually for external help files when text is not available now (due to async edit or so)
-        return {
-            col: conf.screenPos,
-            line: cursorLine,
-        };
-    }
-    const line = editor.document.lineAt(cursorLine).text;
-    const col = calculateEditorColFromVimScreenCol(line, conf.screenPos);
-    return {
-        line: cursorLine,
-        col,
-    };
 }
 
 export function isChangeSubsequentToChange(
