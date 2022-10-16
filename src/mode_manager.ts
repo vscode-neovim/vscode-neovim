@@ -77,13 +77,4 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
             commands.executeCommand("setContext", "neovim.recording", true);
         }
     }
-<<<<<<< HEAD
-
-    private onDidChangeActiveTextEditor = (): void => {
-        if (!this.isNormalMode && this.neovimToggle) {
-                commands.executeCommand("vscode-neovim.escape");
-        }
-    };
-=======
->>>>>>> 2e74a3ea40bee16938eb8f6e81a566bf1cbf54d6
 }
