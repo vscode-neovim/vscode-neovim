@@ -46,26 +46,27 @@ export class TypingManager implements Disposable {
      */
     private composingText = "";
 
-<<<<<<< HEAD
-    public constructor(
-        private logger: Logger,
-        private client: NeovimClient,
-        private modeManager: ModeManager,
-        private changeManager: DocumentChangeManager,
-    ) {
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.toggle", () => {
-                this.modeManager.neovimToggle = !this.modeManager.neovimToggle;
-            }),
-        );
-=======
     public constructor(private logger: Logger, private client: NeovimClient, private main: MainController) {
->>>>>>> 2e74a3ea40bee16938eb8f6e81a566bf1cbf54d6
         this.registerType();
         this.registerReplacePrevChar();
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
+        this.disposables.push(
+            commands.registerCommand("vscode-neovim.toggle", () => {
+                this.main.modeManager.neovimToggle = !this.main.modeManager.neovimToggle;
+                    let batch: [string, ...unknown[]][];
+                if(!this.main.modeManager.neovimToggle){
+                    this.logger.debug(`${LOG_PREFIX}: Disable Vscode-neovim`);
+                    batch = [["mode_change",["insert"]]]
+                } else {
+                    this.logger.debug(`${LOG_PREFIX}: Enable Vscode-neovim`);
+                    batch = [["mode_change",["normal"]]]
+                }
+                this.main.modeManager.handleRedrawBatch(batch);
+                this.main.cursorManager.handleRedrawBatch(batch);
+            }),
+        );
         this.disposables.push(
             commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
                 this.handleCompositeEscapeFirstKey(key),
@@ -206,7 +207,7 @@ export class TypingManager implements Disposable {
     private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
         // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
         // see https://github.com/asvetliakov/vscode-neovim/issues/324
-        if (this.modeManager.neovimToggle) {
+        if (this.main.modeManager.neovimToggle) {
             this.isExitingInsertMode = true;
             await this.onSendBlockingCommand(key);
         }
