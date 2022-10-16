@@ -52,8 +52,6 @@ export interface ControllerSettings {
 const LOG_PREFIX = "MainController";
 
 export class MainController implements vscode.Disposable {
-    private NEOVIM_WIN_WIDTH = 1000;
-
     private nvimProc: ChildProcess;
     private client: NeovimClient;
 
@@ -67,24 +65,22 @@ export class MainController implements vscode.Disposable {
 
     private logger!: Logger;
     private settings: ControllerSettings;
-    private modeManager!: ModeManager;
-    private bufferManager!: BufferManager;
-    private changeManager!: DocumentChangeManager;
-    private typingManager!: TypingManager;
-    private cursorManager!: CursorManager;
-    private commandsController!: CommandsController;
-    private commandLineManager!: CommandLineManager;
-    private statusLineManager!: StatusLineManager;
-    private highlightManager!: HighlightManager;
-    private customCommandsManager!: CustomCommandsManager;
-    private multilineMessagesManager!: MutlilineMessagesManager;
-    private viewportManager!: ViewportManager;
+
+    public modeManager!: ModeManager;
+    public bufferManager!: BufferManager;
+    public changeManager!: DocumentChangeManager;
+    public typingManager!: TypingManager;
+    public cursorManager!: CursorManager;
+    public commandsController!: CommandsController;
+    public commandLineManager!: CommandLineManager;
+    public statusLineManager!: StatusLineManager;
+    public highlightManager!: HighlightManager;
+    public customCommandsManager!: CustomCommandsManager;
+    public multilineMessagesManager!: MutlilineMessagesManager;
+    public viewportManager!: ViewportManager;
 
     public constructor(settings: ControllerSettings) {
         this.settings = settings;
-        if (!settings.neovimPath) {
-            throw new Error("Neovim path is not defined");
-        }
         this.logger = new Logger(
             LogLevel[settings.logConf.level],
             settings.logConf.logPath,
@@ -146,7 +142,8 @@ export class MainController implements vscode.Disposable {
             this.logger.error(`${LOG_PREFIX}: Neovim exited with code: ${code}`);
         });
         this.nvimProc.on("error", (err) => {
-            this.logger.error(`${LOG_PREFIX}: Neovim spawn error: ${err.message}`);
+            this.logger.error(`${LOG_PREFIX}: Neovim spawn error: ${err.message}. Check if the path is correct.`);
+            vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
         });
         this.logger.debug(`${LOG_PREFIX}: Attaching to neovim`);
         this.client = attach({
@@ -177,10 +174,10 @@ export class MainController implements vscode.Disposable {
         this.commandsController = new CommandsController(this.client);
         this.disposables.push(this.commandsController);
 
-        this.modeManager = new ModeManager(this.logger, this.client);
+        this.modeManager = new ModeManager(this.logger);
         this.disposables.push(this.modeManager);
 
-        this.bufferManager = new BufferManager(this.logger, this.client, {
+        this.bufferManager = new BufferManager(this.logger, this.client, this, {
             neovimViewportWidth: this.settings.neovimViewportWidth,
         });
         this.disposables.push(this.bufferManager);
@@ -188,34 +185,25 @@ export class MainController implements vscode.Disposable {
         this.viewportManager = new ViewportManager(
             this.logger,
             this.client,
-            this.bufferManager,
-            this.modeManager,
+            this,
             this.settings.neovimViewportHeightExtend,
         );
         this.disposables.push(this.viewportManager);
 
-        this.highlightManager = new HighlightManager(this.logger, this.bufferManager, this.viewportManager, {
+        this.highlightManager = new HighlightManager(this, {
             highlight: this.settings.highlightsConfiguration,
         });
         this.disposables.push(this.highlightManager);
 
-        this.changeManager = new DocumentChangeManager(this.logger, this.client, this.bufferManager, this.modeManager);
+        this.changeManager = new DocumentChangeManager(this.logger, this.client, this);
         this.disposables.push(this.changeManager);
 
-        this.cursorManager = new CursorManager(
-            this.logger,
-            this.client,
-            this.modeManager,
-            this.bufferManager,
-            this.changeManager,
-            this.viewportManager,
-            {
-                mouseSelectionEnabled: this.settings.mouseSelection,
-            },
-        );
+        this.cursorManager = new CursorManager(this.logger, this.client, this, {
+            mouseSelectionEnabled: this.settings.mouseSelection,
+        });
         this.disposables.push(this.cursorManager);
 
-        this.typingManager = new TypingManager(this.logger, this.client, this.modeManager, this.changeManager);
+        this.typingManager = new TypingManager(this.logger, this.client, this);
         this.disposables.push(this.typingManager);
 
         this.commandLineManager = new CommandLineManager(this.logger, this.client);

@@ -1,9 +1,8 @@
 import { NeovimClient } from "neovim";
 import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent } from "vscode";
 
-import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
-import { ModeManager } from "./mode_manager";
+import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 
 const LOG_PREFIX = "ViewportManager";
@@ -30,8 +29,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
-        private bufferManager: BufferManager,
-        private modeManager: ModeManager,
+        private main: MainController,
         private neovimViewportHeightExtend: number,
     ) {
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
@@ -69,7 +67,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         switch (name) {
             case "window-scroll": {
                 const [winId, view] = args as [number, WinView];
-                const gridId = this.bufferManager.getGridIdForWinId(winId);
+                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (!gridId) {
                     this.logger.warn(`${LOG_PREFIX}: Unable to update scrolled view. No gird for winId: ${winId}`);
                     break;
@@ -80,7 +78,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     }
 
     public scrollNeovim(editor: TextEditor | null): void {
-        if (editor == null || this.modeManager.isInsertMode) {
+        if (editor == null || this.main.modeManager.isInsertMode) {
             return;
         }
         const ranges = editor.visibleRanges;
@@ -92,7 +90,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
         const currentLine = editor.selection.active.line;
 
-        const gridId = this.bufferManager.getGridIdFromEditor(editor);
+        const gridId = this.main.bufferManager.getGridIdFromEditor(editor);
         if (gridId == null) {
             return;
         }

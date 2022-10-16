@@ -22,6 +22,7 @@ import {
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromEditor } from "./utils";
+import { MainController } from "./main_controller";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -91,7 +92,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public onBufferInit?: (bufferId: number, textDocument: TextDocument) => void;
 
-    public constructor(private logger: Logger, private client: NeovimClient, private settings: BufferManagerSettings) {
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private main: MainController,
+        private settings: BufferManagerSettings,
+    ) {
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
         this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
@@ -468,6 +474,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
+        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, undefined);
         await this.client.request("nvim_set_current_win", [winId]);
     };
 
