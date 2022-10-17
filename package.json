@@ -110,11 +110,6 @@
                     "default": true,
                     "description": "Use Ctrl keys in normal/visual/etc...(except insert) modes"
                 },
-                "vscode-neovim.stayInInsertModeOnBufferChange": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Stay in Insertmode on BufferChange"
-                },
                 "vscode-neovim.useCtrlKeysForInsertMode": {
                     "type": "boolean",
                     "default": true,
