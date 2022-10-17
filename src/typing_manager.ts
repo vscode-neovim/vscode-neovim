@@ -55,13 +55,13 @@ export class TypingManager implements Disposable {
         this.disposables.push(
             commands.registerCommand("vscode-neovim.toggle", () => {
                 this.main.modeManager.neovimToggle = !this.main.modeManager.neovimToggle;
-                    let batch: [string, ...unknown[]][];
-                if(!this.main.modeManager.neovimToggle){
+                let batch: [string, ...unknown[]][];
+                if (!this.main.modeManager.neovimToggle) {
                     this.logger.debug(`${LOG_PREFIX}: Disable Vscode-neovim`);
-                    batch = [["mode_change",["insert"]]]
+                    batch = [["mode_change", ["insert"]]];
                 } else {
                     this.logger.debug(`${LOG_PREFIX}: Enable Vscode-neovim`);
-                    batch = [["mode_change",["normal"]]]
+                    batch = [["mode_change", ["normal"]]];
                 }
                 this.main.modeManager.handleRedrawBatch(batch);
                 this.main.cursorManager.handleRedrawBatch(batch);

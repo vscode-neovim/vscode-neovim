@@ -19,7 +19,6 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
      */
     private isRecording = false;
     public neovimToggle = true;
- 
     private eventEmitter = new EventEmitter();
 
     public constructor(private logger: Logger) {}
