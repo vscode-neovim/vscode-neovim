@@ -56,7 +56,7 @@ mode and editor commands, making the best use of both editors.
 
 -   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim)
     extension.
--   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.5.0** or greater.
+-   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.8.0** or greater.
     -   Set the Neovim path in the extension settings. You must specify full path to Neovim, like
         "`C:\Neovim\bin\nvim.exe"` or "`/usr/local/bin/nvim`".
     -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
