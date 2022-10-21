@@ -31,7 +31,7 @@ mode and editor commands, making the best use of both editors.
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
-    -   [Invoking VSCode actions from Neovim](#invoking-vscode-actions-from-neovim)
+    -   [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
         -   [Examples](#examples)
 -   [⌨️ Bindings](#️-bindings)
     -   [VSCode specific bindings](#vscode-specific-bindings)
@@ -45,7 +45,7 @@ mode and editor commands, making the best use of both editors.
     -   [Normal mode control keys](#normal-mode-control-keys)
     -   [Cmdline special keys](#cmdline-special-keys)
 -   [🔧 Build](#-build)
--   [📑 How It Works](#-how-it-works)
+-   [📑 How it works](#-how-it-works)
 -   [❤️ Credits & External Resources](#️-credits--external-resources)
 
 </details>
@@ -67,7 +67,6 @@ mode and editor commands, making the best use of both editors.
 
 ```json
 "extensions.experimental.affinity": {
-    "vscodevim.vim": 1,
     "asvetliakov.vscode-neovim": 1
 },
 ```

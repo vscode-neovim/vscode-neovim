@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.92]
+
+-   fix mouse selection while not starting visual mode (#1055)
+
 ## [0.0.91]
 
 -   allow vscode sync viewport with neovim (#919)
