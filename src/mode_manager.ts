@@ -18,7 +18,6 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
      * True when macro recording in insert mode
      */
     private isRecording = false;
-    public neovimToggle = true;
     private eventEmitter = new EventEmitter();
 
     public constructor(private logger: Logger) {}

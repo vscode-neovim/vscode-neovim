@@ -22,6 +22,10 @@ export class TypingManager implements Disposable {
      */
     private isExitingInsertMode = false;
     /**
+     * Flag indicating if vscode-neovim is enabled or disabled
+     */
+    private neovimToggle = true;
+    /**
      * Flag indicating that we're going to enter insert mode and there are pending document changes
      */
     private isEnteringInsertMode = false;
@@ -191,8 +195,8 @@ export class TypingManager implements Disposable {
     };
 
     public onToggleCommand = (): void => {
-        this.main.modeManager.neovimToggle = !this.main.modeManager.neovimToggle;
-        if (!this.main.modeManager.neovimToggle) {
+        this.neovimToggle = !this.neovimToggle;
+        if (!this.neovimToggle) {
             this.client.command("startinsert");
         } else {
             this.client.command("stopinsert");
@@ -202,7 +206,7 @@ export class TypingManager implements Disposable {
     private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
         // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
         // see https://github.com/asvetliakov/vscode-neovim/issues/324
-        if (this.main.modeManager.neovimToggle || key !== "<Esc>") {
+        if (this.neovimToggle || key !== "<Esc>") {
             this.isExitingInsertMode = true;
             await this.onSendBlockingCommand(key);
         }
