@@ -42,6 +42,7 @@ export interface HighlightConfiguration {
 export interface HightlightExtMark {
     hlId: number;
     /**
+     * :h nvim_buf_set_extmark()
      * mapping with virt_text_pos on ext_mark in neovim
      * currently support overylay option
      */
@@ -131,6 +132,10 @@ export class HighlightProvider {
      */
     private highlightIdToGroupName: Map<number, string> = new Map();
     /**
+     * Maps highlight id can be overlay with extmark
+     */
+    private highlightIdToOverlay: Map<number, boolean> = new Map();
+    /**
      * HL group name to text decorator
      * Not all HL groups are supported now
      */
@@ -199,6 +204,10 @@ export class HighlightProvider {
         this.highlightIdToGroupName.set(id, name);
         const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
         const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
+        // when it have blend option, it can be overlayed with extmark
+        if (vimUiAttrs.blend && !this.ignoredGroupIds.has(id) && !name.endsWith("Search")) {
+            this.highlightIdToOverlay.set(id, true);
+        }
         this.createDecoratorForHighlightGroup(name, conf);
     }
 
@@ -265,6 +274,7 @@ export class HighlightProvider {
                 cellHlId = hlId;
             }
             const groupName = this.getHighlightGroupName(cellHlId, external);
+            const canOverLay = this.highlightIdToOverlay.get(cellHlId);
 
             const listCharsTab = "❥";
 
@@ -280,12 +290,14 @@ export class HighlightProvider {
                     const hlDeco: HightlightExtMark = {
                         hlId: cellHlId,
                     };
-                    const curChar = lineText.slice(cellIdx, cellIdx + text.length);
-                    // text is not same as the cell text on buffer
-                    if (curChar != text && text != " " && text != "" && text != listCharsTab) {
-                        hlDeco.virtText = text;
-                        hlDeco.virtTextPos = "overlay";
-                        hlDeco.overlayPos = lineText.length > 0 ? cellIdx : 1;
+                    if (canOverLay) {
+                        const curChar = lineText.slice(cellIdx, cellIdx + text.length);
+                        // text is not same as the cell text on buffer
+                        if (curChar != text && text != " " && text != "" && text != listCharsTab) {
+                            hlDeco.virtText = text;
+                            hlDeco.virtTextPos = "overlay";
+                            hlDeco.overlayPos = lineText.length > 0 ? cellIdx : 1;
+                        }
                     }
                     gridHl[row][cellIdx] = hlDeco;
                 } else if (gridHl[row][cellIdx]) {

@@ -50,7 +50,7 @@ describe("Test ext mark", () => {
             createTextEditorDecorationType: window.createTextEditorDecorationType,
         } as any;
 
-        await client.command("hi ExtMarkRed guifg=#ff0000 guibg=#000000");
+        await client.command("hi ExtMarkRed guifg=#ff0000 guibg=#000000 blend=100");
         await client.call("nvim_win_set_cursor", [0, [1, 1]]);
         const ns_id = await client.call("nvim_create_namespace", ["test"]);
         await wait(2000);
@@ -70,6 +70,7 @@ describe("Test ext mark", () => {
         assert(stubTextEditor.decorationOptionsList.length > 0);
         const decoration = stubTextEditor.decorationOptionsList[0][0] as DecorationOptions;
 
+        assert.ok(decoration.renderOptions); // it should have overlay decoration
         assert.ok(decoration.renderOptions?.after?.contentText == "j");
         assert.ok(decoration.renderOptions?.after?.color == "#ff0000");
     });
