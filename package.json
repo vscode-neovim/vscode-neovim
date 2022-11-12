@@ -125,6 +125,11 @@
                     "default": false,
                     "markdownDescription": "Use neovim installed in WSL. If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting"
                 },
+                "vscode-neovim.revealCursorScrollLine": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "If 'true' reveals the cursor when scrolling by line and if it is outside view port"
+                },
                 "vscode-neovim.logPath": {
                     "type": "string",
                     "default": "",
@@ -292,12 +297,40 @@
                 "title": "Neovim: Send key in cmdline"
             },
             {
+                "command": "vscode-neovim.ctrl-b",
+                "title": "Neovim: ctrl-b"
+            },
+            {
+                "command": "vscode-neovim.ctrl-d",
+                "title": "Neovim: ctrl-d"
+            },
+            {
                 "command": "vscode-neovim.ctrl-e",
                 "title": "Neovim: ctrl-e"
             },
             {
+                "command": "vscode-neovim.ctrl-f",
+                "title": "Neovim: ctrl-f"
+            },
+            {
+                "command": "vscode-neovim.ctrl-u",
+                "title": "Neovim: ctrl-u"
+            },
+            {
                 "command": "vscode-neovim.ctrl-y",
                 "title": "Neovim: ctrl-y"
+            },
+            {
+                "command": "vscode-neovim.shift-m",
+                "title": "Neovim: shift-m"
+            },
+            {
+                "command": "vscode-neovim.shift-l",
+                "title": "Neovim: shift-l"
+            },
+            {
+                "command": "vscode-neovim:shift-h",
+                "title": "Neovim: shift-h"
             }
         ],
         "keybindings": [
@@ -672,16 +705,14 @@
                 "args": "<C-a>"
             },
             {
-                "command": "vscode-neovim.send",
+                "command": "vscode-neovim.ctrl-b",
                 "key": "ctrl+b",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
-                "args": "<C-b>"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
             },
             {
-                "command": "vscode-neovim.send",
+                "command": "vscode-neovim.ctrl-d",
                 "key": "ctrl+d",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
-                "args": "<C-d>"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
             },
             {
                 "command": "vscode-neovim.ctrl-e",
@@ -689,10 +720,9 @@
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
             },
             {
-                "command": "vscode-neovim.send",
+                "command": "vscode-neovim.ctrl-f",
                 "key": "ctrl+f",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
-                "args": "<C-f>"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
             },
             {
                 "command": "vscode-neovim.send",
@@ -713,10 +743,9 @@
                 "args": "<C-r>"
             },
             {
-                "command": "vscode-neovim.send",
+                "command": "vscode-neovim.ctrl-u",
                 "key": "ctrl+u",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
-                "args": "<C-u>"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
             },
             {
                 "command": "vscode-neovim.send",

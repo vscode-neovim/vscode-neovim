@@ -42,6 +42,7 @@ export interface ControllerSettings {
     clean: boolean;
     neovimViewportWidth: number;
     neovimViewportHeightExtend: number;
+    revealCursorScrollLine: boolean;
     logConf: {
         level: "none" | "error" | "warn" | "debug";
         logPath: string;
@@ -171,7 +172,7 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.commandsController = new CommandsController(this.client);
+        this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
         this.disposables.push(this.commandsController);
 
         this.modeManager = new ModeManager(this.logger);

@@ -100,7 +100,7 @@ describe("VSCode integration specific stuff", () => {
         );
         const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait(1000);
-        await sendVSCodeKeys("<C-f>", 0);
+        await vscode.commands.executeCommand("vscode-neovim.ctrl-f");
         await wait(1500);
 
         let visibleRange = editor.visibleRanges[0];
