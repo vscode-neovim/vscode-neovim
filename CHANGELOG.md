@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.93]
+
+-   revert accidentally-released scrolling PR (#885). This caused C-u/C-d to stop working as expected.
+
 ## [0.0.92]
 
 -   fix mouse selection while not starting visual mode (#1055)
