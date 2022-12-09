@@ -222,7 +222,7 @@ export function convertCharNumToByteNum(line: string, col: number): number {
         // but for setting cursor we must use original byte length
         const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
         totalBytes += bytes;
-        currCharNum++;
+        currCharNum += bytes === 4 ? 2 : 1;
         if (currCharNum >= line.length) {
             return totalBytes;
         }
@@ -237,8 +237,9 @@ export function convertByteNumToCharNum(line: string, col: number): number {
         if (currCharNum >= line.length) {
             return currCharNum + (col - totalBytes);
         }
-        totalBytes += getBytesFromCodePoint(line.codePointAt(currCharNum));
-        currCharNum++;
+        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        totalBytes += bytes;
+        currCharNum += bytes === 4 ? 2 : 1;
     }
     return currCharNum;
 }
@@ -255,14 +256,16 @@ export function calculateEditorColFromVimScreenCol(
     let currentCharIdx = 0;
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
-        currentVimCol +=
+        const bytes =
             line[currentCharIdx] === "\t"
                 ? tabSize - (currentVimCol % tabSize)
                 : useBytes
                 ? getBytesFromCodePoint(line.codePointAt(currentCharIdx))
                 : wcwidth(line[currentCharIdx]);
 
-        currentCharIdx++;
+        currentVimCol += bytes;
+        currentCharIdx += bytes === 4 ? 2 : 1;
+
         if (currentCharIdx >= line.length) {
             return currentCharIdx;
         }
