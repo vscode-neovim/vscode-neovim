@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.0.94]
+
+-   fix navigation on lines with emojis (#1083)
+-   fix random characters shown as an extmark overlay (#1075)
+
 ## [0.0.93]
 
 -   revert accidentally-released scrolling PR (#885). This caused C-u/C-d to stop working as expected.
