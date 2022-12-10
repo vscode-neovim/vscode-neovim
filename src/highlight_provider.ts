@@ -204,8 +204,8 @@ export class HighlightProvider {
         this.highlightIdToGroupName.set(id, name);
         const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
         const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
-        // when it have blend option, it can be overlayed with extmark
-        if (vimUiAttrs.blend && !this.ignoredGroupIds.has(id) && !name.endsWith("Search")) {
+        // Search highlight creates https://github.com/vscode-neovim/vscode-neovim/issues/968
+        if (!this.ignoredGroupIds.has(id) && !name.endsWith("Search")) {
             this.highlightIdToOverlay.set(id, true);
         }
         this.createDecoratorForHighlightGroup(name, conf);
