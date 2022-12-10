@@ -50,7 +50,7 @@ describe("Test ext mark", () => {
             createTextEditorDecorationType: window.createTextEditorDecorationType,
         } as any;
 
-        await client.command("hi ExtMarkRed guifg=#ff0000 guibg=#000000 blend=100");
+        await client.command("hi ExtMarkRed guifg=#ff0000 guibg=#000000");
         await client.call("nvim_win_set_cursor", [0, [1, 1]]);
         const ns_id = await client.call("nvim_create_namespace", ["test"]);
         await wait(2000);

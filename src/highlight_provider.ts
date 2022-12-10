@@ -204,6 +204,7 @@ export class HighlightProvider {
         this.highlightIdToGroupName.set(id, name);
         const options = this.configuration.highlights[name] || this.configuration.unknownHighlight;
         const conf = options === "vim" ? vimHighlightToVSCodeOptions(vimUiAttrs) : options;
+        // Search highlight creates https://github.com/vscode-neovim/vscode-neovim/issues/968
         if (!this.ignoredGroupIds.has(id) && !name.endsWith("Search")) {
             this.highlightIdToOverlay.set(id, true);
         }
