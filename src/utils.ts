@@ -259,15 +259,13 @@ export function calculateEditorColFromVimScreenCol(
         if (line[currentCharIdx] === "\t") {
             currentVimCol += tabSize - (currentVimCol % tabSize);
             currentCharIdx++;
-        }
-        else if (useBytes) {
+        } else if (useBytes) {
             const bytes = getBytesFromCodePoint(line.codePointAt(currentCharIdx));
             currentVimCol += bytes;
             // Characters which take 4 bytes also take 2 string indices.
             // (Only relevant here since wcwidth returns half of the value to each part)
             currentCharIdx += bytes === 4 ? 2 : 1;
-        }
-        else {
+        } else {
             currentVimCol += wcwidth(line[currentCharIdx]);
             currentCharIdx++;
         }
