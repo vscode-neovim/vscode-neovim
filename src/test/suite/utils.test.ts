@@ -4,7 +4,11 @@ import vscode, { EndOfLine, TextEditor } from "vscode";
 import diff from "fast-diff";
 
 import { closeAllActiveEditors } from "../utils";
-import { applyEditorDiffOperations, calculateEditorColFromVimScreenCol, computeEditorOperationsFromDiff } from "../../utils";
+import {
+    applyEditorDiffOperations,
+    calculateEditorColFromVimScreenCol,
+    computeEditorOperationsFromDiff,
+} from "../../utils";
 
 describe("utils", () => {
     afterEach(async () => {
@@ -72,7 +76,7 @@ describe("utils", () => {
         const eol = editor.document.eol === EndOfLine.CRLF ? "\r\n" : "\n";
         return text.split(eol);
     }
-    
+
     describe("calculateEditorColFromVimScreenCol", function () {
         it("always counts normal characters correctly", () => {
             for (let line of ["abcde", "?xy!", "a1b2c3"]) {
@@ -82,10 +86,10 @@ describe("utils", () => {
                 }
             }
         });
-        
+
         it("handles starting tabs correctly", () => {
             for (let tabs = 1; tabs <= 5; tabs++) {
-                for(let tabSize = 1; tabSize <= 8; tabSize++) {
+                for (let tabSize = 1; tabSize <= 8; tabSize++) {
                     const line = `${"\t".repeat(tabs)}abc`;
                     assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 1, tabSize), tabs + 1);
                     assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 2, tabSize), tabs + 2);
@@ -96,5 +100,5 @@ describe("utils", () => {
                 }
             }
         });
-    })
+    });
 });
