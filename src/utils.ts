@@ -452,21 +452,23 @@ export async function callAtomic(
     logger: Logger,
     prefix = "",
 ): Promise<void> {
-    const res = await client.callAtomic(requests);
-    const errors: string[] = [];
-    if (res && Array.isArray(res) && Array.isArray(res[0])) {
-        res[0].forEach((res, idx) => {
-            if (res) {
-                const call = requests[idx];
-                const requestName = call?.[0];
-                if (requestName !== "nvim_input") {
-                    errors.push(`${call?.[0] || "Unknown"}: ${res}`);
-                }
-            }
-        });
+    // The type annotation in the Neovim node client seems to be wrong
+    // (see https://neovim.io/doc/user/api.html for the correct type for nvim_call_atomic)
+    const res = (await client.callAtomic(requests)) as unknown as [unknown[], [number, unknown, string] | null];
+    // Should never reach here if neovim is behaving correctly
+    if (!(res && Array.isArray(res) && Array.isArray(res[0]))) {
+        logger.error(`${prefix}: Unexpected result from nvim_call_atomic`);
+        return;
     }
-    if (errors.length) {
-        logger.error(`${prefix}:\n${errors.join("\n")}`);
+    const returned_errors = res[1];
+    if (returned_errors) {
+        const [failing_call_idx, err_type, err_msg] = returned_errors;
+        const call = requests[failing_call_idx];
+        const requestName = call[0];
+        // TODO: Determine cause for errors for both of these requests
+        if (requestName !== "nvim_input" && requestName !== "nvim_win_close") {
+            logger.error(`${prefix}:\n${requestName}: ${err_msg} (Error type: ${err_type})`);
+        }
     }
 }
 
