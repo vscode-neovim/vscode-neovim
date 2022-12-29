@@ -79,7 +79,7 @@ describe("utils", () => {
 
     describe("calculateEditorColFromVimScreenCol", function () {
         it("always counts normal characters correctly", () => {
-            for (let line of ["abcde", "?xy!", "a1b2c3"]) {
+            for (const line of ["abcde", "?xy!", "a1b2c3"]) {
                 for (let i = 1; i < line.length + 1; i++) {
                     assert.equal(calculateEditorColFromVimScreenCol(line, i, 1, true), i);
                     assert.equal(calculateEditorColFromVimScreenCol(line, i, 1, false), i);
