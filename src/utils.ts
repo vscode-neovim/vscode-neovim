@@ -201,7 +201,7 @@ function getBytesFromCodePoint(point?: number): number {
         return 2;
     }
     if (point >= 0xd800 && point <= 0xdfff) {
-        // Surrogate pair: These take 4 bytes in UTF-8 and 2 chars in UCS-2
+        // Surrogate pair: These take 4 bytes in UTF-8/UTF-16 and 2 chars in UTF-16 (JS strings)
         return 4;
     }
     if (point < 0xffff) {
@@ -256,15 +256,19 @@ export function calculateEditorColFromVimScreenCol(
     let currentCharIdx = 0;
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
-        const bytes =
-            line[currentCharIdx] === "\t"
-                ? tabSize - (currentVimCol % tabSize)
-                : useBytes
-                ? getBytesFromCodePoint(line.codePointAt(currentCharIdx))
-                : wcwidth(line[currentCharIdx]);
-
-        currentVimCol += bytes;
-        currentCharIdx += bytes === 4 ? 2 : 1;
+        if (line[currentCharIdx] === "\t") {
+            currentVimCol += tabSize - (currentVimCol % tabSize);
+            currentCharIdx++;
+        } else if (useBytes) {
+            const bytes = getBytesFromCodePoint(line.codePointAt(currentCharIdx));
+            currentVimCol += bytes;
+            // Characters which take 4 bytes also take 2 string indices.
+            // (Only relevant here since wcwidth returns half of the value to each part)
+            currentCharIdx += bytes === 4 ? 2 : 1;
+        } else {
+            currentVimCol += wcwidth(line[currentCharIdx]);
+            currentCharIdx++;
+        }
 
         if (currentCharIdx >= line.length) {
             return currentCharIdx;
