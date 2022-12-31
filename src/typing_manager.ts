@@ -57,6 +57,8 @@ export class TypingManager implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.toggle", this.onToggleCommand));
+        this.disposables.push(commands.registerCommand("vscode-neovim.enabled", this.onToggleCommand));
+        this.disposables.push(commands.registerCommand("vscode-neovim.disabled", this.onToggleCommand));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
                 this.handleCompositeEscapeFirstKey(key),
@@ -192,6 +194,15 @@ export class TypingManager implements Disposable {
         this.registerType();
         this.registerReplacePrevChar();
         await this.onSendCommand(key);
+    };
+    public onDisableCommand = (): void => {
+        this.neovimToggle = true;
+        this.client.command("stopinsert");
+    };
+
+    public onEnableCommand = (): void => {
+        this.neovimToggle = false;
+        this.client.command("startinsert");
     };
 
     public onToggleCommand = (): void => {

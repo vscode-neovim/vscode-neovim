@@ -265,6 +265,14 @@
         },
         "commands": [
             {
+                "command": "vscode-neovim.disabled",
+                "title": "Neovim: Disable vscode-neovim extension"
+            },
+            {
+                "command": "vscode-neovim.enabled",
+                "title": "Neovim: Enable vscode-neovim extension"
+            },
+            {
                 "command": "vscode-neovim.toggle",
                 "title": "Neovim: Turn on/off vscode-neovim extension"
             },
