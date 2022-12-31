@@ -1,10 +1,23 @@
 # Change Log
 
-## [0.0.92]
+## [0.0.96]
+
+-   fix issues with tabs creating visual glitches (#1099)
+
+## [0.0.95]
+
+-   fix navigation on lines with emojis (#1083)
+-   fix random characters shown as an extmark overlay (#1075)
+
+## [0.0.94]
+
+-   revert accidentally-released scrolling PR (#885). This caused C-u/C-d to stop working as expected.
+
+## [0.0.93]
 
 -   fix mouse selection while not starting visual mode (#1055)
 
-## [0.0.91]
+## [0.0.92]
 
 -   allow vscode sync viewport with neovim (#919)
 -   this makes lightspeed/leap work better. May cause some issues with jumping around. Will eventually be fixed by

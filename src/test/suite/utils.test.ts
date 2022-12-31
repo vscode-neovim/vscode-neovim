@@ -4,7 +4,11 @@ import vscode, { EndOfLine, TextEditor } from "vscode";
 import diff from "fast-diff";
 
 import { closeAllActiveEditors } from "../utils";
-import { applyEditorDiffOperations, computeEditorOperationsFromDiff } from "../../utils";
+import {
+    applyEditorDiffOperations,
+    calculateEditorColFromVimScreenCol,
+    computeEditorOperationsFromDiff,
+} from "../../utils";
 
 describe("utils", () => {
     afterEach(async () => {
@@ -72,4 +76,29 @@ describe("utils", () => {
         const eol = editor.document.eol === EndOfLine.CRLF ? "\r\n" : "\n";
         return text.split(eol);
     }
+
+    describe("calculateEditorColFromVimScreenCol", function () {
+        it("always counts normal characters correctly", () => {
+            for (const line of ["abcde", "?xy!", "a1b2c3"]) {
+                for (let i = 1; i < line.length + 1; i++) {
+                    assert.equal(calculateEditorColFromVimScreenCol(line, i, 1, true), i);
+                    assert.equal(calculateEditorColFromVimScreenCol(line, i, 1, false), i);
+                }
+            }
+        });
+
+        it("handles starting tabs correctly", () => {
+            for (let tabs = 1; tabs <= 5; tabs++) {
+                for (let tabSize = 1; tabSize <= 8; tabSize++) {
+                    const line = `${"\t".repeat(tabs)}abc`;
+                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 1, tabSize), tabs + 1);
+                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 2, tabSize), tabs + 2);
+                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 3, tabSize), tabs + 3);
+                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 1, tabSize, true), tabs + 1);
+                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 2, tabSize, true), tabs + 2);
+                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 3, tabSize, true), tabs + 3);
+                }
+            }
+        });
+    });
 });

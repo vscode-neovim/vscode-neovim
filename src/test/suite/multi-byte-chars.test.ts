@@ -288,4 +288,45 @@ describe("Multi-width characters", () => {
         await sendVSCodeKeys("ci(");
         await assertContent({ vsCodeCursor: [0, 26], content: ["ŷaŷbŷcŷd = functionŷ()"] }, client);
     });
+
+    it("Works - Emoji chars", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: ["🚀🕵️💡🤣", "", "🕵️🕵️🕵️🕵️"].join("\n"),
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait();
+
+        await assertContent(
+            {
+                content: ["🚀🕵️💡🤣", "", "🕵️🕵️🕵️🕵️"],
+                cursor: [0, 0],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("ll");
+        await assertContent(
+            {
+                vsCodeCursor: [0, 5],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("x");
+        await assertContent(
+            {
+                content: ["🚀🕵️🤣", "", "🕵️🕵️🕵️🕵️"],
+                vsCodeCursor: [0, 5],
+            },
+            client,
+        );
+        await sendVSCodeKeys("jjdw");
+        await assertContent(
+            {
+                content: ["🚀🕵️🤣", "", "🕵️🕵️"],
+                vsCodeCursor: [2, 3],
+            },
+            client,
+        );
+    });
 });

@@ -473,4 +473,23 @@ describe("Basic editing and navigation", () => {
             client,
         );
     });
+
+    it("Insert mode changes seen by neovim", async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: "",
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait();
+
+        await sendVSCodeKeys("iaaaaa");
+        await sendEscapeKey();
+        await sendVSCodeKeys("0A");
+        await assertContent(
+            {
+                content: ["aaaaa"],
+                cursor: [0, 5],
+            },
+            client,
+        );
+    });
 });

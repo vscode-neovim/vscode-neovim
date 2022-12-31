@@ -42,6 +42,7 @@ export interface ControllerSettings {
     clean: boolean;
     neovimViewportWidth: number;
     neovimViewportHeightExtend: number;
+    revealCursorScrollLine: boolean;
     logConf: {
         level: "none" | "error" | "warn" | "debug";
         logPath: string;
@@ -171,7 +172,7 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.commandsController = new CommandsController(this.client);
+        this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
         this.disposables.push(this.commandsController);
 
         this.modeManager = new ModeManager(this.logger);
@@ -408,10 +409,10 @@ export class MainController implements vscode.Disposable {
     private async checkNeovimVersion(): Promise<void> {
         const [, info] = await this.client.apiInfo;
         if (
-            (info.version.major === 0 && info.version.minor < 5) ||
+            (info.version.major === 0 && info.version.minor < 8) ||
             !info.ui_events.find((e) => e.name === "win_viewport")
         ) {
-            vscode.window.showErrorMessage("The extension requires neovim 0.5 nightly or greater");
+            vscode.window.showErrorMessage("The extension requires neovim 0.8 or greater");
             return;
         }
     }
