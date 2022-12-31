@@ -56,9 +56,9 @@ export class TypingManager implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.toggle", this.onToggleCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.enabled", this.onToggleCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.disabled", this.onToggleCommand));
+        this.disposables.push(commands.registerCommand("vscode-neovim.toggle", ()=>this.onEnableCommand("toggle")));
+        this.disposables.push(commands.registerCommand("vscode-neovim.enabled", ()=>this.onEnableCommand("enable")));
+        this.disposables.push(commands.registerCommand("vscode-neovim.disabled", ()=>this.onEnableCommand("disable")));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
                 this.handleCompositeEscapeFirstKey(key),
@@ -195,23 +195,29 @@ export class TypingManager implements Disposable {
         this.registerReplacePrevChar();
         await this.onSendCommand(key);
     };
-    public onDisableCommand = (): void => {
-        this.neovimToggle = true;
-        this.client.command("stopinsert");
-    };
 
-    public onEnableCommand = (): void => {
-        this.neovimToggle = false;
-        this.client.command("startinsert");
-    };
-
-    public onToggleCommand = (): void => {
-        this.neovimToggle = !this.neovimToggle;
-        if (!this.neovimToggle) {
-            this.client.command("startinsert");
-        } else {
-            this.client.command("stopinsert");
-        }
+    public onEnableCommand = (enable: "enable" | "disable" | "toggle") => {
+        switch(enable) { 
+           case "enable": { 
+              this.neovimToggle = true;
+              this.client.command("stopinsert");
+              break; 
+           } 
+           case "disable": { 
+              this.neovimToggle = false;
+              this.client.command("startinsert");
+              break; 
+           } 
+           case "toggle": { 
+              this.neovimToggle = !this.neovimToggle;
+              if (!this.neovimToggle) {
+                  this.client.command("startinsert");
+              } else {
+                  this.client.command("stopinsert");
+              }
+              break; 
+           } 
+        } 
     };
 
     private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
