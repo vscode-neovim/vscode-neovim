@@ -108,8 +108,8 @@ xnoremap <C-w><Right> <Cmd>call VSCodeNotify('workbench.action.focusRightGroup')
 
 nnoremap <C-w><C-j> <Cmd>call VSCodeNotify('workbench.action.moveEditorToBelowGroup')<CR>
 xnoremap <C-w><C-j> <Cmd>call VSCodeNotify('workbench.action.moveEditorToBelowGroup')<CR>
-nnoremap <C-w><C-i> <Cmd>call VSCodeNotify('workbench.action.moveEditorToAboveGroup')<CR>
-xnoremap <C-w><C-i> <Cmd>call VSCodeNotify('workbench.action.moveEditorToAboveGroup')<CR>
+nnoremap <C-w><C-k> <Cmd>call VSCodeNotify('workbench.action.moveEditorToAboveGroup')<CR>
+xnoremap <C-w><C-k> <Cmd>call VSCodeNotify('workbench.action.moveEditorToAboveGroup')<CR>
 nnoremap <C-w><C-h> <Cmd>call VSCodeNotify('workbench.action.moveEditorToLeftGroup')<CR>
 xnoremap <C-w><C-h> <Cmd>call VSCodeNotify('workbench.action.moveEditorToLeftGroup')<CR>
 nnoremap <C-w><C-l> <Cmd>call VSCodeNotify('workbench.action.moveEditorToRightGroup')<CR>
