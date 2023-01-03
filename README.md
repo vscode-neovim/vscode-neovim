@@ -58,7 +58,7 @@ mode and editor commands, making the best use of both editors.
     extension.
 -   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.8.0** or greater.
     -   Set the Neovim path in the extension settings. You must specify full path to Neovim, like
-        "`C:\Neovim\bin\nvim.exe"` or "`/usr/local/bin/nvim`".
+        "`C:\Neovim\bin\nvim.exe`" or "`/usr/local/bin/nvim`".
     -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
 -   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify Linux path to nvim binary.
     `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available through
