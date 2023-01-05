@@ -265,6 +265,18 @@
         },
         "commands": [
             {
+                "command": "vscode-neovim.enable",
+                "title": "Neovim: Enable vscode-neovim extension"
+            },
+            {
+                "command": "vscode-neovim.disable",
+                "title": "Neovim: Disable vscode-neovim extension"
+            },
+            {
+                "command": "vscode-neovim.toggle",
+                "title": "Neovim: Turn on/off vscode-neovim extension"
+            },
+            {
                 "command": "vscode-neovim.send",
                 "title": "Neovim: send key to neovim, syncing if in insert mode"
             },
