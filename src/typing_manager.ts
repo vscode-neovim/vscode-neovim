@@ -56,9 +56,9 @@ export class TypingManager implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
         this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle")));
         this.disposables.push(commands.registerCommand("vscode-neovim.enable", () => this.onEnableCommand("enable")));
         this.disposables.push(commands.registerCommand("vscode-neovim.disable", () => this.onEnableCommand("disable")));
+        this.disposables.push(commands.registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle")));
         this.disposables.push(
             commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
                 this.handleCompositeEscapeFirstKey(key),
