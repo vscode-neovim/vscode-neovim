@@ -239,7 +239,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     }
                     await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
                 } else if (name) {
-                    const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substr(18) : name;
+                    const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substring(18) : name;
                     this.logger.debug(`${LOG_PREFIX}: Buffer request for ${normalizedName}, bufId: ${idStr}`);
                     try {
                         let doc = this.findDocFromUri(normalizedName);

@@ -196,7 +196,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         // use a single text decoration but modify it when a
                         // new decoration would be pushed on top of it.
                         const ogText = drawnAt.get(mapKey).renderOptions.after.contentText;
-                        drawnAt.get(mapKey).renderOptions.after.contentText = (text[0] + ogText).substr(
+                        drawnAt.get(mapKey).renderOptions.after.contentText = (text[0] + ogText).substring(
                             0,
                             ogText.length,
                         );
