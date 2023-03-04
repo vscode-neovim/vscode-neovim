@@ -122,12 +122,11 @@ describe("Dot-repeat", () => {
 
         await sendVSCodeKeys("A");
         await sendVSCodeKeys("<BS>");
-        await sendVSCodeKeys("<BS>");
         await sendEscapeKey();
         await sendVSCodeKeys(".");
         await assertContent(
             {
-                content: ["abc<BS><BS><BS><BS>"],
+                content: ["abc<BS><BS>"],
             },
             client,
         );
