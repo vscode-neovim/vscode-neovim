@@ -113,6 +113,25 @@ describe("Dot-repeat", () => {
             client,
         );
     });
+    it('Adding special "<BS>" characters', async () => {
+        const doc = await vscode.workspace.openTextDocument({
+            content: "abc",
+        });
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        await wait(1000);
+
+        await sendVSCodeKeys("A");
+        await sendVSCodeKeys("<BS>");
+        await sendVSCodeKeys("<BS>");
+        await sendEscapeKey();
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: ["abc<BS><BS><BS><BS>"],
+            },
+            client,
+        );
+    });
 
     it("Deleting", async () => {
         const doc = await vscode.workspace.openTextDocument({
