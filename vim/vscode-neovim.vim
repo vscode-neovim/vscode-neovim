@@ -58,7 +58,13 @@ function! VSCodeCallVisual(cmd, leaveSelection, ...) abort
     elseif mode ==# 'v' || mode ==# "\<C-v>"
         let startPos = getpos('v')
         let endPos = getpos('.')
-        call VSCodeCallRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, a:leaveSelection, a:000)
+        "  Check if the cursor is at the beginning of the visual selection
+        if (startPos[1] == endPos[1] && startPos[2] > endPos[2]) || startPos[1] > endPos[1]
+            let startPos[2] = startPos[2] + 1
+        else
+            let endPos[2] = endPos[2] + 1
+        endif
+        call VSCodeCallRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2], a:leaveSelection, a:000)
     else
         call VSCodeCall(a:cmd, a:000)
     endif
@@ -73,7 +79,13 @@ function! VSCodeNotifyVisual(cmd, leaveSelection, ...)
     elseif mode ==# 'v' || mode ==# "\<C-v>"
         let startPos = getpos('v')
         let endPos = getpos('.')
-        call VSCodeNotifyRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, a:leaveSelection, a:000)
+        "  Check if the cursor is at the beginning of the visual selection
+        if (startPos[1] == endPos[1] && startPos[2] > endPos[2]) || startPos[1] > endPos[1]
+            let startPos[2] = startPos[2] + 1
+        else
+            let endPos[2] = endPos[2] + 1
+        endif
+        call VSCodeNotifyRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2], a:leaveSelection, a:000)
     else
         call VSCodeNotify(a:cmd, a:000)
     endif
