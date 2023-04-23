@@ -402,7 +402,7 @@ describe("VSCode integration specific stuff", () => {
         );
     });
 
-    it("Spawning command line from visual mode produces vscode selection", async () => {
+    it("Spawning command line from visual line mode produces vscode selection", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["a1", "b1", "c1"].join("\n"),
         });
@@ -426,6 +426,37 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 vsCodeSelections: [new vscode.Selection(2, 2, 1, 0)],
+            },
+            client,
+        );
+        await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
+    });
+
+    it(`Spawning command line from visual mode produces vscode selection`, async () => {
+        const documentContent = "Hello World!";
+        const doc = await vscode.workspace.openTextDocument({
+            content: documentContent,
+        });
+        await vscode.window.showTextDocument(doc);
+        await wait(1000);
+        await sendVSCodeKeys("v$");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await wait();
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(0, 0, 0, documentContent.length)],
+            },
+            client,
+        );
+        await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
+        await sendEscapeKey();
+
+        await sendVSCodeKeys("gvo");
+        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await wait();
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(0, documentContent.length, 0, 0)],
             },
             client,
         );
