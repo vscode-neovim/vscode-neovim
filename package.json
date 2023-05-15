@@ -93,6 +93,11 @@
                     "default": false,
                     "markdownDescription": "Equivalent to the startup option `--clean`."
                 },
+                "vscode-neovim.NVIM_APPNAME": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "See `:h NVIM_APPNAME`."
+                },
                 "vscode-neovim.neovimWidth": {
                     "type": "number",
                     "default": 1000,
