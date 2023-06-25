@@ -1,5 +1,9 @@
 # Change Log
 
+## Future Release
+
+-   change default binding for moving editor to above group (from <C-w><C-i> to <C-w><C-k>) (#1119)
+
 ## [0.0.96]
 
 -   fix issues with tabs creating visual glitches (#1099)
