@@ -40,6 +40,7 @@ export interface ControllerSettings {
     useWsl: boolean;
     customInitFile: string;
     clean: boolean;
+    NVIM_APPNAME: string;
     neovimViewportWidth: number;
     neovimViewportHeightExtend: number;
     revealCursorScrollLine: boolean;
@@ -138,6 +139,9 @@ export class MainController implements vscode.Disposable {
                 settings.useWsl
             }, args: ${JSON.stringify(args)}`,
         );
+        if (settings.NVIM_APPNAME) {
+            process.env.NVIM_APPNAME = settings.NVIM_APPNAME;
+        }
         this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
         this.nvimProc.on("close", (code) => {
             this.logger.error(`${LOG_PREFIX}: Neovim exited with code: ${code}`);
