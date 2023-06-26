@@ -128,7 +128,7 @@
                 "vscode-neovim.useWSL": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Use neovim installed in default WSL distro, more [info](https://learn.microsoft.com/en-us/windows/wsl/basic-commands#run-a-specific-linux-distribution-from-powershell-or-cmd). If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting. "
+                    "markdownDescription": "Use neovim installed in [default WSL distro](https://learn.microsoft.com/en-us/windows/wsl/basic-commands#run-a-specific-linux-distribution-from-powershell-or-cmd). If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting. "
                 },
                 "vscode-neovim.revealCursorScrollLine": {
                     "type": "boolean",
