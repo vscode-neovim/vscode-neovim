@@ -6,8 +6,7 @@ body:
     - type: markdown
       attributes:
           value: |
-              **Before** reporting an issue, make sure to read the [documentation](https://github.com/vscode-neovim/vscode-neovim/) and search [existing issues](https://github.com/vscode-neovim/vscode-neovim/issues). Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/vscode-neovim/vscode-neovim/discussions) and will be closed.
-              Additionally, please be aware of the following:
+              **Before** reporting an issue, make sure to read the [documentation](https://github.com/vscode-neovim/vscode-neovim/) and search [existing issues](https://github.com/vscode-neovim/vscode-neovim/issues). Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/vscode-neovim/vscode-neovim/discussions) and will be closed. Additionally, please be aware of the following:
                 - plugins that provide their own UI, or work during insert mode, will never be supported
                 - neovim can only interact with one window at a time
                 - highlights are best-effort
