@@ -1269,6 +1269,85 @@
                 "command": "vscode-neovim.complete-selection-cmdline",
                 "key": "tab",
                 "when": "neovim.mode == cmdline_normal || neovim.mode == cmdline_insert || neovim.mode == cmdline_replace"
+            },
+            {
+                "key": "ctrl+w",
+                "command": "-workbench.action.switchWindow"
+            },
+            {
+                "key": "ctrl+w ctrl+w",
+                "command": "workbench.action.focusNextGroup",
+                "when": "!editorTextFocus"
+            },
+            {
+                "key": "ctrl+w ctrl+w",
+                "command": "workbench.action.focusFirstEditorGroup",
+                "when": "filesExplorerFocus || searchViewletFocus"
+            },
+            {
+                "key": "ctrl+w up",
+                "command": "workbench.action.focusAboveGroup",
+                "when": "!editorTextFocus"
+            },
+            {
+                "key": "ctrl+w k",
+                "command": "workbench.action.focusAboveGroup",
+                "when": "!editorTextFocus"
+            },
+            {
+                "key": "ctrl+w down",
+                "command": "workbench.action.navigateDown",
+                "when": "!editorTextFocus"
+            },
+            {
+                "key": "ctrl+w j",
+                "command": "workbench.action.navigateDown",
+                "when": "!editorTextFocus"
+            },
+            {
+                "key": "ctrl+w left",
+                "command": "workbench.action.navigateLeft",
+                "when": "!editorTextFocus"
+            },
+            {
+                "key": "ctrl+w h",
+                "command": "workbench.action.navigateLeft",
+                "when": "!editorTextFocus"
+            },
+            {
+                "key": "ctrl+w left",
+                "command": "workbench.action.focusFirstEditorGroup",
+                "when": "filesExplorerFocus || searchViewletFocus"
+            },
+            {
+                "key": "ctrl+w h",
+                "command": "workbench.action.focusFirstEditorGroup",
+                "when": "filesExplorerFocus || searchViewletFocus"
+            },
+            {
+                "key": "ctrl+w right",
+                "command": "workbench.action.focusFirstEditorGroup",
+                "when": "filesExplorerFocus || searchViewletFocus"
+            },
+            {
+                "key": "ctrl+w l",
+                "command": "workbench.action.focusFirstEditorGroup",
+                "when": "filesExplorerFocus || searchViewletFocus"
+            },
+            {
+                "key": "ctrl+w right",
+                "command": "workbench.action.focusRightGroup",
+                "when": "!editorTextFocus && !filesExplorerFocus && !searchViewletFocus"
+            },
+            {
+                "key": "ctrl+w l",
+                "command": "workbench.action.focusRightGroup",
+                "when": "!editorTextFocus && !filesExplorerFocus && !searchViewletFocus"
+            },
+            {
+                "key": "ctrl+w q",
+                "command": "workbench.action.closeActiveEditor",
+                "when": "!editorTextFocus && !filesExplorerFocus && !searchViewletFocus"
             }
         ]
     },
