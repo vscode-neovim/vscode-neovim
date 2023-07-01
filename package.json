@@ -651,6 +651,16 @@
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
+                "key": "c",
+                "command": "filesExplorer.copy",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
+            },
+            {
+                "key": "shift+w",
+                "command": "workbench.files.action.collapseExplorerFolders",
+                "when": "filesExplorerFocus"
+            },
+            {
                 "key": "tab",
                 "command": "togglePeekWidgetFocus",
                 "when": "inReferenceSearchEditor && neovim.mode == normal || referenceSearchVisible"
