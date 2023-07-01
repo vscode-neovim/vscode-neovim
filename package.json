@@ -1277,7 +1277,7 @@
             {
                 "key": "ctrl+w ctrl+w",
                 "command": "workbench.action.focusNextGroup",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !filesExplorerFocus && !searchViewletFocus"
             },
             {
                 "key": "ctrl+w ctrl+w",
@@ -1296,12 +1296,12 @@
             },
             {
                 "key": "ctrl+w down",
-                "command": "workbench.action.navigateDown",
+                "command": "workbench.action.focusBelowGroup",
                 "when": "!editorTextFocus"
             },
             {
                 "key": "ctrl+w j",
-                "command": "workbench.action.navigateDown",
+                "command": "workbench.action.focusBelowGroup",
                 "when": "!editorTextFocus"
             },
             {
@@ -1315,34 +1315,14 @@
                 "when": "!editorTextFocus"
             },
             {
-                "key": "ctrl+w left",
-                "command": "workbench.action.focusFirstEditorGroup",
-                "when": "filesExplorerFocus || searchViewletFocus"
-            },
-            {
-                "key": "ctrl+w h",
-                "command": "workbench.action.focusFirstEditorGroup",
-                "when": "filesExplorerFocus || searchViewletFocus"
-            },
-            {
                 "key": "ctrl+w right",
-                "command": "workbench.action.focusFirstEditorGroup",
-                "when": "filesExplorerFocus || searchViewletFocus"
+                "command": "workbench.action.navigateRight",
+                "when": "!editorTextFocus"
             },
             {
                 "key": "ctrl+w l",
-                "command": "workbench.action.focusFirstEditorGroup",
-                "when": "filesExplorerFocus || searchViewletFocus"
-            },
-            {
-                "key": "ctrl+w right",
-                "command": "workbench.action.focusRightGroup",
-                "when": "!editorTextFocus && !filesExplorerFocus && !searchViewletFocus"
-            },
-            {
-                "key": "ctrl+w l",
-                "command": "workbench.action.focusRightGroup",
-                "when": "!editorTextFocus && !filesExplorerFocus && !searchViewletFocus"
+                "command": "workbench.action.navigateRight",
+                "when": "!editorTextFocus"
             },
             {
                 "key": "ctrl+w q",
