@@ -1286,22 +1286,22 @@
             },
             {
                 "key": "ctrl+w up",
-                "command": "workbench.action.focusAboveGroup",
+                "command": "workbench.action.navigateUp",
                 "when": "!editorTextFocus"
             },
             {
                 "key": "ctrl+w k",
-                "command": "workbench.action.focusAboveGroup",
+                "command": "workbench.action.navigateUp",
                 "when": "!editorTextFocus"
             },
             {
                 "key": "ctrl+w down",
-                "command": "workbench.action.focusBelowGroup",
+                "command": "workbench.action.navigateDown",
                 "when": "!editorTextFocus"
             },
             {
                 "key": "ctrl+w j",
-                "command": "workbench.action.focusBelowGroup",
+                "command": "workbench.action.navigateDown",
                 "when": "!editorTextFocus"
             },
             {
