@@ -651,12 +651,7 @@
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
-                "key": "c",
-                "command": "filesExplorer.copy",
-                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
-            },
-            {
-                "key": "shift+w",
+                "key": "z shift+m",
                 "command": "workbench.files.action.collapseExplorerFolders",
                 "when": "filesExplorerFocus"
             },
