@@ -1282,7 +1282,7 @@
             {
                 "key": "ctrl+w ctrl+w",
                 "command": "workbench.action.focusFirstEditorGroup",
-                "when": "filesExplorerFocus || searchViewletFocus"
+                "when": "!editorTextFocus && (filesExplorerFocus || inSearchEditor || searchViewletFocus)"
             },
             {
                 "key": "ctrl+w up",
