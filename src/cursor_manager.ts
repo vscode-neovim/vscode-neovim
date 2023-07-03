@@ -285,7 +285,7 @@ export class CursorManager
     }
 
     private onDidChangeVisibleTextEditors = (): void => {
-        this.updateCursorStyle(this.main.modeManager.currentMode);
+        this.updateCursorStyle(this.main.modeManager.currentMode.full);
     };
 
     private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
@@ -486,10 +486,14 @@ export class CursorManager
         window.activeTextEditor.selections = newSelections;
     }
 
-    private onModeChange = (newMode: string): void => {
+    private onModeChange = (): void => {
         if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
 
-        if (newMode === "normal" && window.activeTextEditor && window.activeTextEditor.selections.length > 1) {
+        if (
+            this.main.modeManager.isNormalMode &&
+            window.activeTextEditor &&
+            window.activeTextEditor.selections.length > 1
+        ) {
             window.activeTextEditor.selections = [
                 new Selection(window.activeTextEditor.selection.active, window.activeTextEditor.selection.active),
             ];
