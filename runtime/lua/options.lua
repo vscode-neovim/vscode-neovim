@@ -4,6 +4,7 @@ vim.opt.shortmess = "filnxtToOFI"
 vim.opt.cmdheight = 1
 vim.opt.wildmode = "list"
 vim.cmd([[set wildchar=<C-e>]])
+vim.opt.mouse = "a"
 
 vim.opt.backup = false
 vim.opt.wb = false
@@ -27,6 +28,9 @@ vim.opt.smartindent = true
 
 --- split/nosplit doesn't work currently, see https://github.com/asvetliakov/vscode-neovim/issues/329
 vim.opt.inccommand = ""
+
+--- Allow to use vim HL for external buffers, vscode buffers explicitly disable it
+vim.cmd [[syntax on]]
 
 -- make cursor visible for plugins what use fake cursor
 vim.api.nvim_set_hl(0, 'Cursor', { reverse = true })
