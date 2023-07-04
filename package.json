@@ -1277,12 +1277,12 @@
             {
                 "key": "ctrl+w ctrl+w",
                 "command": "workbench.action.focusNextGroup",
-                "when": "!editorTextFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus)"
+                "when": "!editorTextFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
             },
             {
                 "key": "ctrl+w ctrl+w",
                 "command": "workbench.action.focusFirstEditorGroup",
-                "when": "!editorTextFocus && (filesExplorerFocus || inSearchEditor || searchViewletFocus)"
+                "when": "!editorTextFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
             },
             {
                 "key": "ctrl+w up",
