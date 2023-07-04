@@ -1277,7 +1277,7 @@
             {
                 "key": "ctrl+w ctrl+w",
                 "command": "workbench.action.focusNextGroup",
-                "when": "!editorTextFocus && !filesExplorerFocus && !searchViewletFocus"
+                "when": "!editorTextFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus)"
             },
             {
                 "key": "ctrl+w ctrl+w",
