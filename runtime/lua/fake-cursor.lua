@@ -4,7 +4,7 @@ util = require("util")
 vim.api.nvim_set_hl(0, 'Cursor', { reverse = true })
 
 -- in visual mode, decorate a fake cursor so that vscode can use the primary cursor for selection
-local ns = vim.api.nvim_create_namespace("fake_visual_cursor")
+local ns = vim.api.nvim_create_namespace("vscode-fake-visual-cursor")
 local cursor = nil
 
 local function highlight_cursor()
