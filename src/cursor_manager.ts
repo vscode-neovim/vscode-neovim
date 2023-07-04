@@ -266,7 +266,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
             if (
                 this.main.modeManager.isVisualMode &&
-                (await this.updateVisualSelection(editor))[0].isEqual(selections[0])
+                (await this.createVisualSelection(editor))[0].isEqual(selections[0])
             ) {
                 this.logger.debug(`${LOG_PREFIX}: Skipping visual event since neovim has same selection`);
                 return;
@@ -341,7 +341,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         let newSelections: Selection[] = [];
 
         if (this.main.modeManager.isVisualMode) {
-            newSelections = await this.updateVisualSelection(editor);
+            newSelections = await this.createVisualSelection(editor);
         } else {
             newSelections = [new Selection(newPos, newPos)];
         }
@@ -408,7 +408,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             );
     };
 
-    private updateVisualSelection = async (editor: TextEditor): Promise<Selection[]> => {
+    private createVisualSelection = async (editor: TextEditor): Promise<Selection[]> => {
         const visualStartNvim = await this.client.callFunction("getpos", ["v"]);
         const visualEndNvim = await this.client.callFunction("getpos", ["."]);
         const begin = new Position(visualStartNvim[1] - 1, visualStartNvim[2] - 1);
