@@ -338,29 +338,34 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             `${LOG_PREFIX}: Updating cursor in editor: ${editorName}, pos: [${newPos.line}, ${newPos.character}]`,
         );
 
+        let newSelections: Selection[] = [];
+
         if (this.main.modeManager.isVisualMode) {
-            editor.selections = await this.updateVisualSelection(editor);
+            newSelections = await this.updateVisualSelection(editor);
         } else {
-            editor.selection = new Selection(newPos, newPos);
+            newSelections = [new Selection(newPos, newPos)];
         }
 
-        commands.executeCommand("editor.action.wordHighlight.trigger");
+        if (!newSelections[0].isEqual(editor.selection)) {
+            editor.selections = newSelections;
+            commands.executeCommand("editor.action.wordHighlight.trigger");
 
-        const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
-        const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
-        const deltaLine = newPos.line - editor.selection.active.line;
-        const type =
-            deltaLine > 0
-                ? newPos.line > bottomVisibleLine + 10
-                    ? TextEditorRevealType.InCenterIfOutsideViewport
-                    : TextEditorRevealType.Default
-                : deltaLine < 0
-                ? newPos.line < topVisibleLine - 10
-                    ? TextEditorRevealType.InCenterIfOutsideViewport
-                    : TextEditorRevealType.Default
-                : TextEditorRevealType.Default;
-        editor.revealRange(new Selection(newPos, newPos), type);
-        this.main.viewportManager.scrollNeovim(editor);
+            const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
+            const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
+            const deltaLine = newPos.line - editor.selection.active.line;
+            const type =
+                deltaLine > 0
+                    ? newPos.line > bottomVisibleLine + 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : deltaLine < 0
+                    ? newPos.line < topVisibleLine - 10
+                        ? TextEditorRevealType.InCenterIfOutsideViewport
+                        : TextEditorRevealType.Default
+                    : TextEditorRevealType.Default;
+            editor.revealRange(new Selection(newPos, newPos), type);
+            this.main.viewportManager.scrollNeovim(editor);
+        }
     };
 
     private getDebouncedUpdateCursorPos = (
