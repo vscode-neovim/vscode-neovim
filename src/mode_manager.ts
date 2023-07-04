@@ -7,13 +7,13 @@ import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 const LOG_PREFIX = "ModeManager";
 
-// a representation of the current mode. can be read in different ways using accessors. underlying type is raw name as returned by `:help mode()`
+// a representation of the current mode. can be read in different ways using accessors. underlying type is shortname name as returned by `:help mode()`
 class Mode {
-    public constructor(public raw: string = "") {}
+    public constructor(public shortname: string = "") {}
     // mode 1-char code: n, v, V, i, s, ...
     // converts ^v into v
     public get char(): string {
-        return this.raw.charCodeAt(0) == 22 ? "v" : this.raw.charAt(0);
+        return this.shortname.charCodeAt(0) == 22 ? "v" : this.shortname.charAt(0);
     }
     // mode long name
     public get name(): "insert" | "visual" | "normal" {
@@ -29,7 +29,7 @@ class Mode {
     }
     // visual mode name
     public get visual(): "char" | "line" | "block" {
-        return this.char === "V" ? "line" : this.raw.charAt(0) === "v" ? "char" : "block";
+        return this.char === "V" ? "line" : this.shortname.charAt(0) === "v" ? "char" : "block";
     }
 }
 export class ModeManager implements Disposable, NeovimExtensionRequestProcessable {
