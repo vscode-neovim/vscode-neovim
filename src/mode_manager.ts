@@ -28,8 +28,8 @@ class Mode {
         }
     }
     // visual mode name
-    public get visual(): "single" | "line" | "block" {
-        return this.char === "V" ? "line" : this.raw.charAt(0) === "v" ? "single" : "block";
+    public get visual(): "char" | "line" | "block" {
+        return this.char === "V" ? "line" : this.raw.charAt(0) === "v" ? "char" : "block";
     }
 }
 export class ModeManager implements Disposable, NeovimExtensionRequestProcessable {
