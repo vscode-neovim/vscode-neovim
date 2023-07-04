@@ -158,7 +158,6 @@ augroup VscodeGeneral
     " autocmd WinNew,WinEnter * :set nowrap
     autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
     autocmd ModeChanged * call VSCodeExtensionNotify('mode-changed', v:event.old_mode, v:event.new_mode)
-    autocmd BufEnter * call VSCodeExtensionNotify('mode-changed', mode(), mode())
 augroup END
 
 

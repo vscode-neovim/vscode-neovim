@@ -7,15 +7,15 @@ import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 const LOG_PREFIX = "ModeManager";
 
-// a representation of the current mode. can be read in different ways using accessors. underlying type is full name as returned by `:help mode()`
+// a representation of the current mode. can be read in different ways using accessors. underlying type is raw name as returned by `:help mode()`
 class Mode {
-    public constructor(public full: string = "") {}
+    public constructor(public raw: string = "") {}
     // mode 1-char code: n, v, V, i, s, ...
     // converts ^v into v
     public get char(): string {
-        return this.full.charCodeAt(0) == 22 ? "v" : this.full.charAt(0);
+        return this.raw.charCodeAt(0) == 22 ? "v" : this.raw.charAt(0);
     }
-    // mode full name
+    // mode raw name
     public get long(): "insert" | "visual" | "normal" {
         switch (this.char.toLowerCase()) {
             case "i":
@@ -29,7 +29,7 @@ class Mode {
     }
     // visual mode name
     public get visual(): "single" | "line" | "block" {
-        return this.char === "V" ? "line" : this.full.charAt(0) === "v" ? "single" : "block";
+        return this.char === "V" ? "line" : this.raw.charAt(0) === "v" ? "single" : "block";
     }
 }
 export class ModeManager implements Disposable, NeovimExtensionRequestProcessable {
@@ -93,7 +93,7 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
                     this.isRecording = false;
                     commands.executeCommand("setContext", "neovim.recording", false);
                 }
-                commands.executeCommand("setContext", "neovim.mode", this.mode.full);
+                commands.executeCommand("setContext", "neovim.mode", this.mode.long);
                 this.eventEmitter.emit("neovimModeChanged");
                 break;
             }

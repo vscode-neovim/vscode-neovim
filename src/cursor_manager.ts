@@ -285,7 +285,7 @@ export class CursorManager
     }
 
     private onDidChangeVisibleTextEditors = (): void => {
-        this.updateCursorStyle(this.main.modeManager.currentMode.full);
+        this.updateCursorStyle(this.main.modeManager.currentMode.long);
     };
 
     private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
