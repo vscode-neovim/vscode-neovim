@@ -15,8 +15,8 @@ class Mode {
     public get char(): string {
         return this.raw.charCodeAt(0) == 22 ? "v" : this.raw.charAt(0);
     }
-    // mode raw name
-    public get long(): "insert" | "visual" | "normal" {
+    // mode long name
+    public get name(): "insert" | "visual" | "normal" {
         switch (this.char.toLowerCase()) {
             case "i":
                 return "insert";
@@ -63,15 +63,15 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
     }
 
     public get isInsertMode(): boolean {
-        return this.mode.long === "insert";
+        return this.mode.name === "insert";
     }
 
     public get isVisualMode(): boolean {
-        return this.mode.long === "visual";
+        return this.mode.name === "visual";
     }
 
     public get isNormalMode(): boolean {
-        return this.mode.long === "normal";
+        return this.mode.name === "normal";
     }
 
     public get isRecordingInInsertMode(): boolean {
@@ -93,7 +93,7 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
                     this.isRecording = false;
                     commands.executeCommand("setContext", "neovim.recording", false);
                 }
-                commands.executeCommand("setContext", "neovim.mode", this.mode.long);
+                commands.executeCommand("setContext", "neovim.mode", this.mode.name);
                 this.eventEmitter.emit("neovimModeChanged");
                 break;
             }
