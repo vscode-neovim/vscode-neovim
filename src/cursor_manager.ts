@@ -418,7 +418,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         // to make a full selection, the end of the selection needs to be moved forward by one character
         // we hide the real cursor and use a highlight decorator for the fake cursor
         switch (this.main.modeManager.currentMode.visual) {
-            case "single":
+            case "char":
                 if (begin.isBefore(end)) return [new Selection(begin, new Position(end.line, end.character + 1))];
                 else return [new Selection(new Position(begin.line, begin.character + 1), end)];
             case "line":
