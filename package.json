@@ -1353,7 +1353,7 @@
         "@vscode/test-electron": "^2.1.5",
         "eslint": "^8.20.0",
         "eslint-config-prettier": "^8.8.0",
-        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-import": "^2.27.5",
         "eslint-plugin-prettier": "^4.2.1",
         "glob": "^8.0.3",
         "mocha": "^10.0.0",
