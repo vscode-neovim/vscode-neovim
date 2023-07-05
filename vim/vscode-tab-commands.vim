@@ -8,7 +8,7 @@ endfunction
 
 function! s:gotoEditor(...) abort
     let count = a:1
-    call VSCodeCall(count ? printf('workbench.action.openEditorAtIndex%d',count) : 'workbench.action.nextEditorInGroup')
+    call VSCodeCall(count ? 'workbench.action.openEditorAtIndex' . count : 'workbench.action.nextEditorInGroup')
 endfunction
 
 command! -complete=file -nargs=? Tabedit if empty(<q-args>) | call VSCodeNotify('workbench.action.quickOpen') | else | call VSCodeExtensionNotify('open-file', expand(<q-args>), 0) | endif
