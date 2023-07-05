@@ -294,7 +294,7 @@ export class HighlightProvider {
                     if (canOverLay) {
                         const curChar = lineText.slice(cellIdx, cellIdx + text.length);
                         // text is not same as the cell text on buffer
-                        if (curChar != text && text != " " && text != "" && text != listCharsTab) {
+                        if (curChar != text && text != "" && text != listCharsTab) {
                             hlDeco.virtText = text;
                             hlDeco.virtTextPos = "overlay";
                             hlDeco.overlayPos = lineText.length > 0 ? cellIdx : 1;
@@ -448,8 +448,19 @@ export class HighlightProvider {
                 const pastEnd = r.colE >= lineLength;
                 if (r.hl || pastEnd) {
                     const conf = this.getDecoratorOptions(decorator);
+                    let text;
+                    // if we are past end, or text is " ", we need to add something to make sure it gets rendered
+                    if (r.hl) {
+                        if (r.hl.virtText == " ") {
+                            text = "\u200D";
+                        } else {
+                            text = r.hl.virtText!;
+                        }
+                    } else {
+                        text = "\u200D";
+                    }
                     return this.createVirtTextDecorationOption(
-                        r.hl ? r.hl.virtText! : "\u200D", // if we are past end, we need to add something to make sure it gets rendered
+                        text,
                         { ...conf, backgroundColor: conf.backgroundColor || new ThemeColor("editor.background") }, // overwrite text underneath
                         topLine + r.lineS,
                         r.colS + 1,
