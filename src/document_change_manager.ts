@@ -175,7 +175,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                 dotRepeatChange.text = dotRepeatChange.text.slice(dotRepeatChange.eol.length);
             }
         }
-        editStr += dotRepeatChange.text.split(dotRepeatChange.eol).join("\n");
+        editStr += dotRepeatChange.text;
         edits.push(["nvim_feedkeys", [editStr, "i", false]]);
         if (dotRepeatChange.rangeLength) {
             const backspaceEdits = [...new Array(dotRepeatChange.rangeLength).keys()].map(() => "<BS>").join("");
