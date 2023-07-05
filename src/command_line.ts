@@ -33,7 +33,11 @@ export class CommandLineController implements Disposable {
 
     private updatedFromNvim = false; // whether to replace nvim cmdline with new content
 
-    public constructor(private logger: Logger, private client: NeovimClient, private callbacks: CommandLineCallbacks) {
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private callbacks: CommandLineCallbacks,
+    ) {
         this.callbacks = callbacks;
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;

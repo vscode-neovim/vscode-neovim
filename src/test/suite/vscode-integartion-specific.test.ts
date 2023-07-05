@@ -432,7 +432,7 @@ describe("VSCode integration specific stuff", () => {
         await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
     });
 
-    it(`Spawning command line from visual mode produces vscode selection`, async () => {
+    it("Spawning command line from visual mode produces vscode selection", async () => {
         const documentContent = "Hello World!";
         const doc = await vscode.workspace.openTextDocument({
             content: documentContent,

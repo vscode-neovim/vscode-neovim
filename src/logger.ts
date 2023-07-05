@@ -14,7 +14,11 @@ export class Logger implements Disposable {
 
     private fd = 0;
 
-    public constructor(private logLevel: LogLevel, filePath: string, private outputToConsole = false) {
+    public constructor(
+        private logLevel: LogLevel,
+        filePath: string,
+        private outputToConsole = false,
+    ) {
         if (logLevel !== LogLevel.none) {
             try {
                 this.fd = fs.openSync(filePath, "w");
