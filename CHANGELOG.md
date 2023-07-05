@@ -1,12 +1,5 @@
 # Change Log
 
-## Future Release
-
--   change default binding for moving editor to above group (from <C-w><C-i> to <C-w><C-k>) (#1119)
-
-## [0.2.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.1.0...v0.2.0) (2023-07-05)
-
-
 ### Features
 
 * **bindings:** global window navigations ([#1248](https://github.com/vscode-neovim/vscode-neovim/issues/1248)) ([88103a8](https://github.com/vscode-neovim/vscode-neovim/commit/88103a83010f57a24acf506610d4a89c7019aa20))
