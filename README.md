@@ -341,21 +341,21 @@ These are the default commands and bindings available for file/scroll/window/tab
 
 #### Explorer/list navigation
 
-| Key                                                    | VSCode Command                  |
-| ------------------------------------------------------ | ------------------------------- |
-| <kbd>j</kbd> / <kbd>k</kbd>                            | `list.focusDown/Up`             |
-| <kbd>h</kbd> / <kbd>l</kbd>                            | `list.collapse/select`          |
-| <kbd>Enter</kbd>                                       | `list.select`                   |
-| <kbd>gg</kbd>                                          | `list.focusFirst`               |
-| <kbd>G</kbd>                                           | `list.focusLast`                |
-| <kbd>o</kbd>                                           | `list.toggleExpand`             |
-| <kbd>C-u</kbd> / <kbd>C-d</kbd>                        | `list.focusPageUp/Down`         |
-| <kbd>z</kbd> <kbd>o</kbd> / <kbd>z</kbd> <kbd>O</kbd>  | `list.expand`                   |
-| <kbd>z</kbd> <kbd>c</kbd>                              | `list.collapse`                 |
-| <kbd>z</kbd> <kbd>C</kbd>                              | `list.collapseAllToFocus`       |
-| <kbd>z</kbd> <kbd>a</kbd> / <kbd>z</kbd> <kbd>A</kbd>  | `list.toggleExpand`             |
-| <kbd>z</kbd> <kbd>m</kbd> / <kbd>z</kbd> <kbd>M</kbd>  | `list.collapseAll`              |
-| <kbd> / </kbd> / <kbd>Escape</kbd>                     | `list.toggleKeyboardNavigation` |
+| Key                                                   | VSCode Command                  |
+| ----------------------------------------------------- | ------------------------------- |
+| <kbd>j</kbd> / <kbd>k</kbd>                           | `list.focusDown/Up`             |
+| <kbd>h</kbd> / <kbd>l</kbd>                           | `list.collapse/select`          |
+| <kbd>Enter</kbd>                                      | `list.select`                   |
+| <kbd>gg</kbd>                                         | `list.focusFirst`               |
+| <kbd>G</kbd>                                          | `list.focusLast`                |
+| <kbd>o</kbd>                                          | `list.toggleExpand`             |
+| <kbd>C-u</kbd> / <kbd>C-d</kbd>                       | `list.focusPageUp/Down`         |
+| <kbd>z</kbd> <kbd>o</kbd> / <kbd>z</kbd> <kbd>O</kbd> | `list.expand`                   |
+| <kbd>z</kbd> <kbd>c</kbd>                             | `list.collapse`                 |
+| <kbd>z</kbd> <kbd>C</kbd>                             | `list.collapseAllToFocus`       |
+| <kbd>z</kbd> <kbd>a</kbd> / <kbd>z</kbd> <kbd>A</kbd> | `list.toggleExpand`             |
+| <kbd>z</kbd> <kbd>m</kbd> / <kbd>z</kbd> <kbd>M</kbd> | `list.collapseAll`              |
+| <kbd> / </kbd> / <kbd>Escape</kbd>                    | `list.toggleKeyboardNavigation` |
 
 #### Explorer file manipulation
 
