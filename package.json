@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.71.0"
+        "vscode": "^1.79.0"
     },
     "keywords": [
         "keybindings",
@@ -1387,7 +1387,7 @@
         "@types/mocha": "^10.0.1",
         "@types/msgpack-lite": "^0.1.7",
         "@types/node": "^20.3.3",
-        "@types/vscode": "^1.71.0",
+        "@types/vscode": "^1.79.1",
         "@typescript-eslint/eslint-plugin": "^5.30.7",
         "@typescript-eslint/parser": "^5.30.7",
         "@vscode/test-electron": "^2.3.3",
