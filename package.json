@@ -651,6 +651,46 @@
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
+                "key": "z o",
+                "command": "list.expand",
+                "when": "!editorTextFocus && !inputFocus"
+            },
+            {
+                "key": "z shift+o",
+                "command": "list.expand",
+                "when": "!editorTextFocus && !inputFocus"
+            },
+            {
+                "key": "z c",
+                "command": "list.collapse",
+                "when": "!editorTextFocus && !inputFocus"
+            },
+            {
+                "key": "z shift+c",
+                "command": "list.collapseAllToFocus",
+                "when": "!editorTextFocus && !inputFocus"
+            },
+            {
+                "key": "z a",
+                "command": "list.toggleExpand",
+                "when": "!editorTextFocus && !inputFocus"
+            },
+            {
+                "key": "z shift+a",
+                "command": "list.toggleExpand",
+                "when": "!editorTextFocus && !inputFocus"
+            },
+            {
+                "key": "z m",
+                "command": "list.collapseAll",
+                "when": "!editorTextFocus && !inputFocus"
+            },
+            {
+                "key": "z shift+m",
+                "command": "list.collapseAll",
+                "when": "!editorTextFocus && !inputFocus"
+            },
+            {
                 "key": "tab",
                 "command": "togglePeekWidgetFocus",
                 "when": "inReferenceSearchEditor && neovim.mode == normal || referenceSearchVisible"
