@@ -256,7 +256,6 @@ export class MainController implements vscode.Disposable {
     private onNeovimNotification = (method: string, events: [string, ...any[]]): void => {
         // order matters here, modeManager should be processed first
         const redrawManagers: NeovimRedrawProcessable[] = [
-            this.modeManager,
             this.bufferManager,
             this.viewportManager,
             this.cursorManager,

@@ -3,17 +3,45 @@ import { EventEmitter } from "events";
 import { commands, Disposable } from "vscode";
 
 import { Logger } from "./logger";
-import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { findLastEvent } from "./utils";
+import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 const LOG_PREFIX = "ModeManager";
 
-export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
+// a representation of the current mode. can be read in different ways using accessors. underlying type is shortname name as returned by `:help mode()`
+class Mode {
+    public constructor(public shortname: string = "") {}
+    // mode 1-char code: n, v, V, i, s, ...
+    // converts ^v into v
+    public get char(): string {
+        return this.shortname.charCodeAt(0) == 22 ? "v" : this.shortname.charAt(0);
+    }
+    // mode long name
+    public get name(): "insert" | "visual" | "normal" {
+        switch (this.char.toLowerCase()) {
+            case "i":
+                return "insert";
+            case "v":
+                return "visual";
+            case "n":
+            default:
+                return "normal";
+        }
+    }
+    // visual mode name
+    public get visual(): "char" | "line" | "block" {
+        return this.char === "V" ? "line" : this.shortname.charAt(0) === "v" ? "char" : "block";
+    }
+}
+export class ModeManager implements Disposable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
     /**
      * Current neovim mode
      */
-    private mode = "";
+    private mode: Mode = new Mode();
+    /**
+     * Last neovim mode
+     */
+    private last: Mode = new Mode();
     /**
      * True when macro recording in insert mode
      */
@@ -26,53 +54,55 @@ export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimE
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public get currentMode(): string {
+    public get currentMode(): Mode {
         return this.mode;
     }
 
+    public get lastMode(): Mode {
+        return this.last;
+    }
+
     public get isInsertMode(): boolean {
-        return this.mode === "insert";
+        return this.mode.name === "insert";
     }
 
     public get isVisualMode(): boolean {
-        return this.mode === "visual";
+        return this.mode.name === "visual";
     }
 
     public get isNormalMode(): boolean {
-        return this.mode === "normal";
+        return this.mode.name === "normal";
     }
 
     public get isRecordingInInsertMode(): boolean {
         return this.isRecording;
     }
 
-    public onModeChange(callback: (newMode: string) => void): void {
+    public onModeChange(callback: () => void): void {
         this.eventEmitter.on("neovimModeChanged", callback);
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        const lastModeChange = findLastEvent("mode_change", batch);
-        if (lastModeChange) {
-            const modeArg = lastModeChange[1] as [string, never] | undefined;
-            if (modeArg && modeArg[0] && modeArg[0] !== this.mode) {
-                const modeName = modeArg[0];
-                this.logger.debug(`${LOG_PREFIX}: Changing mode to ${modeName}`);
-                this.mode = modeName;
+    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
+        switch (name) {
+            case "mode-changed": {
+                const [oldMode, newMode] = args as [string, string];
+                this.logger.debug(`${LOG_PREFIX}: Changing mode from ${oldMode} to ${newMode}`);
+                this.mode = new Mode(newMode);
+                this.last = new Mode(oldMode);
                 if (!this.isInsertMode && this.isRecording) {
                     this.isRecording = false;
                     commands.executeCommand("setContext", "neovim.recording", false);
                 }
-                commands.executeCommand("setContext", "neovim.mode", this.mode);
-                this.eventEmitter.emit("neovimModeChanged", modeName);
+                commands.executeCommand("setContext", "neovim.mode", this.mode.name);
+                this.eventEmitter.emit("neovimModeChanged");
+                break;
             }
-        }
-    }
-
-    public async handleExtensionRequest(name: string): Promise<void> {
-        if (name === "notify-recording") {
-            this.logger.debug(`${LOG_PREFIX}: setting recording flag`);
-            this.isRecording = true;
-            commands.executeCommand("setContext", "neovim.recording", true);
+            case "notify-recording": {
+                this.logger.debug(`${LOG_PREFIX}: setting recording flag`);
+                this.isRecording = true;
+                commands.executeCommand("setContext", "neovim.recording", true);
+                break;
+            }
         }
     }
 }
