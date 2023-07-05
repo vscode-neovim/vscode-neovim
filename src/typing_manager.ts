@@ -50,7 +50,11 @@ export class TypingManager implements Disposable {
      */
     private composingText = "";
 
-    public constructor(private logger: Logger, private client: NeovimClient, private main: MainController) {
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private main: MainController,
+    ) {
         this.registerType();
         this.registerReplacePrevChar();
         this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));

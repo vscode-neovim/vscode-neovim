@@ -17,7 +17,10 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
      */
     private cmdlineTimer?: NodeJS.Timeout;
 
-    public constructor(private logger: Logger, private client: NeovimClient) {}
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+    ) {}
 
     public dispose(): void {
         if (this.commandLine) {

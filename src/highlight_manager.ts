@@ -18,7 +18,10 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
 
     private commandsDisposables: Disposable[] = [];
 
-    public constructor(private main: MainController, private settings: HighlightManagerSettings) {
+    public constructor(
+        private main: MainController,
+        private settings: HighlightManagerSettings,
+    ) {
         this.highlightProvider = new HighlightProvider(settings.highlight);
 
         // this.commandsDisposables.push(
