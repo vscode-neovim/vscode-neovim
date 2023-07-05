@@ -1386,7 +1386,7 @@
         "@types/lodash-es": "^4.17.7",
         "@types/mocha": "^10.0.1",
         "@types/msgpack-lite": "^0.1.7",
-        "@types/node": "^18.0.6",
+        "@types/node": "^20.3.3",
         "@types/vscode": "^1.71.0",
         "@typescript-eslint/eslint-plugin": "^5.30.7",
         "@typescript-eslint/parser": "^5.30.7",
