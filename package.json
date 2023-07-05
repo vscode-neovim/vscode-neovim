@@ -1397,7 +1397,7 @@
         "eslint-plugin-prettier": "^4.2.1",
         "glob": "^8.0.3",
         "mocha": "^10.2.0",
-        "prettier": "^2.2.1",
+        "prettier": "^3.0.0",
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.4.4",
         "typescript": "^5.1.6",
