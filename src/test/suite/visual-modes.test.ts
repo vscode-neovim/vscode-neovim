@@ -101,8 +101,7 @@ describe("Visual modes test", () => {
         );
     });
 
-    // visual modes don't produce selections right now
-    it.skip("vi-va", async () => {
+    it("vi-va", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["first", "{", "a", "b", "c", "}", "last"].join("\n"),
         });
@@ -123,8 +122,8 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("va{");
         await assertContent(
             {
-                cursor: [5, 0],
-                vsCodeSelections: [new vscode.Selection(1, 0, 5, 0), new vscode.Selection(5, 1, 5, 0)],
+                vsCodeCursor: [5, 1],
+                vsCodeSelections: [new vscode.Selection(1, 0, 5, 1)],
             },
             client,
         );
@@ -134,15 +133,14 @@ describe("Visual modes test", () => {
         // no newline, so 0
         await assertContent(
             {
-                cursor: [5, 0],
-                vsCodeSelections: [new vscode.Selection(1, 0, 5, 0), new vscode.Selection(5, 1, 5, 0)],
+                vsCodeCursor: [5, 1],
+                vsCodeSelections: [new vscode.Selection(1, 0, 5, 1)],
             },
             client,
         );
     });
 
-    // see https://github.com/asvetliakov/vscode-neovim/issues/105
-    // visual modes don't produce selections right now
+    // see https://github.com/vscode-neovim/vscode-neovim/pull/1258
     it.skip("viw on last symbol", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["test"].join("\n"),
@@ -154,14 +152,13 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("viw");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(0, 0, 0, 3), new vscode.Selection(0, 4, 0, 3)],
+                vsCodeSelections: [new vscode.Selection(0, 0, 0, 4)],
             },
             client,
         );
     });
 
-    // visual modes don't produce selections right now
-    it.skip("Visual line mode", async () => {
+    it("Visual line mode", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["abc1 abc2 abc3", "abc1 abc2 abc3", "abc1 abc2 abc3"].join("\n"),
         });
@@ -179,23 +176,23 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("V", 1000);
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 0, 1, 5), new vscode.Selection(1, 14, 1, 5)],
+                vsCodeSelections: [new vscode.Selection(1, 0, 1, 14)],
             },
             client,
         );
 
-        // moves cursor while in visule mode
+        // moves cursor while in visual mode
         await sendVSCodeKeys("w");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 0, 1, 10), new vscode.Selection(1, 14, 1, 10)],
+                vsCodeSelections: [new vscode.Selection(1, 0, 1, 14)],
             },
             client,
         );
         await sendVSCodeKeys("ww");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 0, 2, 5), new vscode.Selection(2, 14, 2, 5)],
+                vsCodeSelections: [new vscode.Selection(1, 0, 2, 14)],
             },
             client,
         );
@@ -203,7 +200,7 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("kk");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(0, 0, 0, 5), new vscode.Selection(1, 14, 0, 5)],
+                vsCodeSelections: [new vscode.Selection(1, 14, 0, 0)],
             },
             client,
         );
