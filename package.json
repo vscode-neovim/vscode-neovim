@@ -841,6 +841,12 @@
             },
             {
                 "command": "vscode-neovim.send",
+                "key": "ctrl+t",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-t>"
+            },
+            {
+                "command": "vscode-neovim.send",
                 "key": "ctrl+j",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
                 "args": "<C-j>"
