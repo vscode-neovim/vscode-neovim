@@ -401,11 +401,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     private onModeChange = (): void => {
         if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
-        else
-            this.updateCursorPosInEditor(
-                window.activeTextEditor!,
-                this.neovimCursorPosition.get(window.activeTextEditor!)!,
-            );
+        else {
+            const editor = window.activeTextEditor;
+            if (!editor) return;
+            const pos = this.neovimCursorPosition.get(editor);
+            if (pos) this.updateCursorPosInEditor(editor, pos);
+        }
     };
 
     private createVisualSelection = async (editor: TextEditor): Promise<Selection[]> => {
@@ -419,12 +420,13 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         // we hide the real cursor and use a highlight decorator for the fake cursor
         switch (this.main.modeManager.currentMode.visual) {
             case "char":
-                if (begin.isBefore(end)) return [new Selection(begin, new Position(end.line, end.character + 1))];
+                if (begin.isBeforeOrEqual(end))
+                    return [new Selection(begin, new Position(end.line, end.character + 1))];
                 else return [new Selection(new Position(begin.line, begin.character + 1), end)];
             case "line":
-                if (begin.isBefore(end))
+                if (begin.isBeforeOrEqual(end))
                     return [new Selection(begin.line, 0, end.line, doc.lineAt(end.line).text.length)];
-                else return [new Selection(end.line, 0, begin.line, doc.lineAt(begin.line).text.length)];
+                else return [new Selection(begin.line, doc.lineAt(begin.line).text.length, end.line, 0)];
             case "block": {
                 const selections: Selection[] = [];
                 // we want the first selection to be on the cursor line, so that a single-line selection will properly trigger word highlight

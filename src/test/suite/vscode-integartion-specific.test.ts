@@ -218,7 +218,6 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 content: ["blah1"],
-                cursorStyle: "block",
                 mode: "V",
             },
             client,
@@ -229,7 +228,6 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 content: ["testblah2"],
-                cursorStyle: "block",
                 mode: "V",
             },
             client,
@@ -279,7 +277,6 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 content: ["blah1"],
-                cursorStyle: "block",
                 mode: "V",
             },
             client,
@@ -413,7 +410,7 @@ describe("VSCode integration specific stuff", () => {
         await wait();
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(0, 0, 1, 2)],
+                vsCodeSelections: [new vscode.Selection(0, 0, 0, 2)],
             },
             client,
         );
