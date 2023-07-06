@@ -153,11 +153,6 @@ The VSCode keybindings editor provides a good way to delete keybindings.
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
--   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat.
-    sequence. In Neovim, if you type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here
-    the repeat sequence would be `1`. However in VSCode it would be `a1bc`. Another difference is that when you delete
-    some text in insert mode, dot repeat only works from right-to-left, meaning it will treat <kbd>Del</kbd> key as
-    <kbd>BS</kbd> keys when running dot repeat.
 
 ### Troubleshooting
 

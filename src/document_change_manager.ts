@@ -16,19 +16,13 @@ import { Mutex } from "async-mutex";
 
 import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
-import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
-    accumulateDotRepeatChange,
     applyEditorDiffOperations,
     callAtomic,
     computeEditorOperationsFromDiff,
     diffLineToChars,
     convertCharNumToByteNum,
-    DotRepeatChange,
     getDocumentLineArray,
-    isChangeSubsequentToChange,
-    isCursorChange,
-    normalizeDotRepeatChange,
     prepareEditRangesFromDiff,
     ManualPromise,
 } from "./utils";
@@ -36,7 +30,7 @@ import { MainController } from "./main_controller";
 
 const LOG_PREFIX = "DocumentChangeManager";
 
-export class DocumentChangeManager implements Disposable, NeovimExtensionRequestProcessable {
+export class DocumentChangeManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Array of pending events to apply in batch
@@ -72,14 +66,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      * ! It's possible to just fetch content from neovim and check instead of tracking here, but this will add unnecessary lag
      */
     private documentContentInNeovim: WeakMap<TextDocument, string> = new WeakMap();
-    /**
-     * Dot repeat workaround
-     */
-    private dotRepeatChange: DotRepeatChange | undefined;
-    /**
-     * A hint for dot-repeat indicating of how the insert mode was started
-     */
-    private dotRepeatStartModeInsertHint?: "o" | "O";
     /**
      * True when we're currently applying edits, so incoming changes will go into pending events queue
      */
@@ -119,76 +105,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
 
     public hasDocumentChangeCompletionLock(doc: TextDocument): boolean {
         return (this.textDocumentChangePromise.get(doc)?.length || 0) > 0;
-    }
-
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        if (name === "insert-line") {
-            const [type] = args as ["before" | "after"];
-            this.dotRepeatStartModeInsertHint = type === "before" ? "O" : "o";
-            this.logger.debug(`${LOG_PREFIX}: Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
-        }
-    }
-
-    public async syncDotRepeatWithNeovim(): Promise<void> {
-        // dot-repeat executes last change across all buffers. So we'll create a temporary buffer & window,
-        // replay last changes here to trick neovim and destroy it after
-        if (!this.dotRepeatChange) {
-            return;
-        }
-        this.logger.debug(`${LOG_PREFIX}: Syncing dot repeat`);
-        const dotRepeatChange = { ...this.dotRepeatChange };
-        this.dotRepeatChange = undefined;
-
-        const currWin = await this.client.window;
-
-        // temporary buffer to replay the changes
-        const buf = await this.client.createBuffer(false, true);
-        if (typeof buf === "number") {
-            return;
-        }
-        // create temporary win
-        await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
-        const win = await this.client.openWindow(buf, true, {
-            external: true,
-            width: 100,
-            height: 100,
-        });
-        await this.client.setOption("eventignore", "");
-        if (typeof win === "number") {
-            return;
-        }
-        const edits: [string, unknown[]][] = [];
-
-        // for delete changes we need an actual text, so let's prefill with something
-        // accumulate all possible lengths of deleted text to be safe
-        const delRangeLength = dotRepeatChange.rangeLength;
-        if (delRangeLength) {
-            const stub = new Array(delRangeLength).fill("x").join("");
-            edits.push(
-                ["nvim_buf_set_lines", [buf.id, 0, 0, false, [stub]]],
-                ["nvim_win_set_cursor", [win.id, [1, delRangeLength]]],
-            );
-        }
-        let editStr = "";
-        if (dotRepeatChange.startMode) {
-            editStr += `<Esc>${dotRepeatChange.startMode}`;
-            // remove EOL from first change
-            if (dotRepeatChange.text.startsWith(dotRepeatChange.eol)) {
-                dotRepeatChange.text = dotRepeatChange.text.slice(dotRepeatChange.eol.length);
-            }
-        }
-        if (dotRepeatChange.rangeLength) {
-            editStr += [...new Array(dotRepeatChange.rangeLength).keys()].map(() => "<BS>").join("");
-        }
-        editStr += dotRepeatChange.text.split(dotRepeatChange.eol).join("\n").replace("<", "<LT>");
-        edits.push(["nvim_input", [editStr]]);
-        // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
-        await callAtomic(this.client, edits, this.logger, LOG_PREFIX);
-
-        const cleanEdits: [string, unknown[]][] = [];
-        cleanEdits.push(["nvim_set_current_win", [currWin.id]]);
-        cleanEdits.push(["nvim_win_close", [win.id, true]]);
-        await callAtomic(this.client, cleanEdits, this.logger, LOG_PREFIX);
     }
 
     private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {
@@ -475,23 +391,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         }
 
         const eol = doc.eol === EndOfLine.LF ? "\n" : "\r\n";
-        const startModeHint = this.dotRepeatStartModeInsertHint;
-        const activeEditor = window.activeTextEditor;
-
-        // Store dot repeat
-        if (activeEditor && activeEditor.document === doc && this.main.modeManager.isInsertMode) {
-            this.dotRepeatStartModeInsertHint = undefined;
-            const cursor = activeEditor.selection.active;
-            for (const change of contentChanges) {
-                if (isCursorChange(change, cursor, eol)) {
-                    if (this.dotRepeatChange && isChangeSubsequentToChange(change, this.dotRepeatChange)) {
-                        this.dotRepeatChange = accumulateDotRepeatChange(change, this.dotRepeatChange);
-                    } else {
-                        this.dotRepeatChange = normalizeDotRepeatChange(change, eol, startModeHint);
-                    }
-                }
-            }
-        }
 
         const requests: [string, unknown[]][] = [];
 
