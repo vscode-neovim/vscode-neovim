@@ -1,5 +1,19 @@
 # Change Log
 
+## [0.3.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.2.0...v0.3.0) (2023-07-06)
+
+
+### Features
+
+* **bindings:** support &lt;c-t&gt; as navigateBack ([#827](https://github.com/vscode-neovim/vscode-neovim/issues/827)) ([1cd8afb](https://github.com/vscode-neovim/vscode-neovim/commit/1cd8afb8401ee13d398ec836d990a97bee3ec7bc))
+* **bindings:** z fold bindings for lists (incl. files explorer) ([#1250](https://github.com/vscode-neovim/vscode-neovim/issues/1250)) ([a86bd36](https://github.com/vscode-neovim/vscode-neovim/commit/a86bd36a062184be2a8739d88d50053cb53763f4))
+
+
+### Bug Fixes
+
+* **bindings:** {count}gt command not jumping to correct tab [#670](https://github.com/vscode-neovim/vscode-neovim/issues/670) ([a2c9b03](https://github.com/vscode-neovim/vscode-neovim/commit/a2c9b03bd995f941b16278a4f9ea402e8b9c063d))
+* **mode:** cmdline mode bindings [#1298](https://github.com/vscode-neovim/vscode-neovim/issues/1298) ([#1299](https://github.com/vscode-neovim/vscode-neovim/issues/1299)) ([6f4b9a0](https://github.com/vscode-neovim/vscode-neovim/commit/6f4b9a0ecb5a5d53a239c8c398eb41c066e9e44c))
+
 ## [0.2.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.1.0...v0.2.0) (2023-07-05)
 
 
