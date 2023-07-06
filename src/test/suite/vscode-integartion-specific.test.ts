@@ -406,11 +406,11 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc);
         await wait(1000);
         await sendVSCodeKeys("Vj");
-        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await vscode.commands.executeCommand("workbench.action.quickOpen");
         await wait();
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(0, 0, 0, 2)],
+                vsCodeSelections: [new vscode.Selection(0, 0, 1, 2)],
             },
             client,
         );
@@ -418,7 +418,7 @@ describe("VSCode integration specific stuff", () => {
         await sendEscapeKey();
 
         await sendVSCodeKeys("GVk");
-        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await vscode.commands.executeCommand("workbench.action.quickOpen");
         await wait();
         await assertContent(
             {
@@ -437,7 +437,7 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc);
         await wait(1000);
         await sendVSCodeKeys("v$");
-        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await vscode.commands.executeCommand("workbench.action.quickOpen");
         await wait();
         await assertContent(
             {

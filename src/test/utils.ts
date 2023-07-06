@@ -294,7 +294,7 @@ export async function setSelection(
     await wait(waitTimeout);
 }
 
-export async function setCursor(line: number, char: number, waitTimeout = 100, editor?: TextEditor): Promise<void> {
+export async function setCursor(line: number, char: number, waitTimeout = 200, editor?: TextEditor): Promise<void> {
     await setSelection([{ anchorPos: [line, char], cursorPos: [line, char] }], waitTimeout, editor);
 }
 export async function copyVSCodeSelection(): Promise<void> {

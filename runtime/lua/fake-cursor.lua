@@ -45,13 +45,13 @@ vim.api.nvim_create_autocmd({ "CursorMoved" }, {
 })
 
 vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-  pattern = "[vV\x16]*:*",
+  pattern = "[vV\x16]*:[^vv\x16]*",
   callback =
       send_visual_changed
 })
 
 vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-  pattern = "*:[vV\x16]*",
+  pattern = "[vV\x16]*:[vV\x16]*",
   callback =
       send_visual_changed
 })

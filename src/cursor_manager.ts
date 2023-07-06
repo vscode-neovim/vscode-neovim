@@ -341,7 +341,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             }
             await this.updateNeovimCursorPosition(editor, cursorPos);
         },
-        200,
+        100,
         { leading: false, trailing: true },
     );
 
@@ -403,11 +403,15 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             return;
         }
         if (mode.isVisual) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${active.line}, ${active.character}]`,
+            );
             const selections = this.createVisualSelection(editor, mode, anchor, active);
             this.vscodeVisualPosition.set(editor, selections[0].active);
             editor.selections = selections;
             this.triggerMovementFunctions(editor, active);
         } else {
+            this.logger.debug(`${LOG_PREFIX}: Exiting visual mode, triggering cursor update`);
             this.vscodeVisualPosition.delete(editor);
             this.updateCursorPosInEditor(editor, active);
         }
