@@ -32,9 +32,6 @@ vim.opt.inccommand = ""
 --- Allow to use vim HL for external buffers, vscode buffers explicitly disable it
 vim.cmd [[syntax on]]
 
--- make cursor visible for plugins what use fake cursor
-vim.api.nvim_set_hl(0, 'Cursor', { reverse = true })
-
 -- these are applied to global options and forced on local options
 local function forceoptions(opt)
     opt.wrap = false

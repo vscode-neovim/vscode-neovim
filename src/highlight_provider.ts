@@ -1,6 +1,7 @@
 import {
     DecorationOptions,
     Range,
+    TextEditor,
     TextEditorDecorationType,
     ThemableDecorationRenderOptions,
     ThemeColor,
@@ -352,7 +353,11 @@ export class HighlightProvider {
         }
     }
 
-    public getGridHighlights(grid: number, topLine: number): [TextEditorDecorationType, DecorationOptions[]][] {
+    public getGridHighlights(
+        editor: TextEditor,
+        grid: number,
+        topLine: number,
+    ): [TextEditorDecorationType, DecorationOptions[]][] {
         const result: [TextEditorDecorationType, DecorationOptions[]][] = [];
         const hlRanges: Map<
             string,
@@ -438,14 +443,17 @@ export class HighlightProvider {
                 continue;
             }
             const decoratorRanges = ranges.map((r) => {
-                if (r.hl) {
+                const lineLength = editor.document.lineAt(Math.min(topLine + r.lineS, editor.document.lineCount - 1))
+                    .text.length;
+                const pastEnd = r.colE >= lineLength;
+                if (r.hl || pastEnd) {
                     const conf = this.getDecoratorOptions(decorator);
                     return this.createVirtTextDecorationOption(
-                        r.hl.virtText!,
-                        { ...conf, backgroundColor: conf.backgroundColor || new ThemeColor("editor.background") },
+                        r.hl ? r.hl.virtText! : "\u200D", // if we are past end, we need to add something to make sure it gets rendered
+                        { ...conf, backgroundColor: conf.backgroundColor || new ThemeColor("editor.background") }, // overwrite text underneath
                         topLine + r.lineS,
                         r.colS + 1,
-                        r.colE,
+                        lineLength,
                     );
                 }
                 return {
@@ -517,10 +525,10 @@ export class HighlightProvider {
                     // end of the screen, VSCode will place
                     // the text in a column we weren't
                     // expecting. This code accounts for that.
-                    margin: `0 0 0 -${Math.min(text.length - (col + text.length - 1 - lineLength), text.length)}ch`,
+                    margin: `0 0 0 -${Math.min(lineLength - col + 1, text.length)}ch`,
                     ...conf,
                     ...conf.before,
-                    width: `${text.length}ch; position:absoulute; z-index:99;`,
+                    width: `${text.length}ch; position:absolute; z-index:99;`,
                     contentText: text,
                 },
             },

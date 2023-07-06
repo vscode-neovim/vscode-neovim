@@ -157,7 +157,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
             if (!editor || !gridOffset) {
                 continue;
             }
-            const hls = this.highlightProvider.getGridHighlights(grid, gridOffset.topLine);
+            const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.topLine);
             for (const [decorator, ranges] of hls) {
                 editor.setDecorations(decorator, ranges);
             }

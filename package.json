@@ -378,48 +378,6 @@
             },
             {
                 "command": "vscode-neovim.send",
-                "key": "ctrl+p",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "cmd+p",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+shift+p",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "shift+cmd+p",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "F1",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+shift+f",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-F>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "shift+cmd+f",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-F>"
-            },
-            {
-                "command": "vscode-neovim.send",
                 "key": "backspace",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert || neovim.recording",
                 "args": "<BS>"
@@ -868,12 +826,6 @@
                 "key": "ctrl+h",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
                 "args": "<C-h>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+/",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
-                "args": "<C-/>"
             },
             {
                 "command": "vscode-neovim.escape",

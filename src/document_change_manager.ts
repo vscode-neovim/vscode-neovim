@@ -105,7 +105,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public eatDocumentCursorAfterChange(doc: TextDocument): { line: number; character: number } | undefined {
+    public eatDocumentCursorAfterChange(doc: TextDocument): Position | undefined {
         const cursor = this.cursorAfterTextDocumentChange.get(doc);
         this.cursorAfterTextDocumentChange.delete(doc);
         return cursor;
