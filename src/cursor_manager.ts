@@ -46,10 +46,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      */
     private neovimCursorPosition: WeakMap<TextEditor, Position> = new WeakMap();
     /**
-     * Special workaround flag to ignore editor selection events
-     */
-    private ignoreSelectionEvents = false;
-    /**
      * In insert mode, cursor updates can be sent due to document changes. We should ignore them to
      * avoid interfering with vscode typing. However, they are important for various actions, such as
      * cursor updates while entering insert mode and insert mode commands. Thus, when those events occur,
@@ -217,17 +213,13 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     };
 
     private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
-        if (this.main.modeManager.isInsertMode || this.ignoreSelectionEvents) {
-            return;
-        }
-        const { textEditor, kind } = e;
-        this.logger.debug(`${LOG_PREFIX}: SelectionChanged`);
+        if (this.main.modeManager.isInsertMode) return;
 
+        const { textEditor, kind } = e;
         // ! Note: Unfortunately navigating from outline is Command kind, so we can't skip it :(
-        // if (kind === TextEditorSelectionChangeKind.Command) {
-        //     this.logger.debug(`${LOG_PREFIX}: Skipping command kind`);
-        //     return;
-        // }
+        this.logger.debug(
+            `${LOG_PREFIX}: onSelectionChanged, kind: ${kind}, editor: ${textEditor.document.uri.fsPath}`,
+        );
 
         // wait for possible layout updates first
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
@@ -254,26 +246,24 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     // ! and cursor may go out-of-sync and produce a jitter
     private applySelectionChanged = debounce(
         async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
-            const cursor = editor.selection.active;
             const selections = editor.selections;
             const selection = editor.selection;
+            const cursor = selection.active;
 
             this.logger.debug(
                 `${LOG_PREFIX}: Applying changed selection, kind: ${kind},  cursor: [${cursor.line}, ${
                     cursor.character
                 }], isMultiSelection: ${selections.length > 1}`,
             );
-
-            if (
-                this.main.modeManager.isVisualMode &&
-                (await this.createVisualSelection(editor))[0].isEqual(selections[0])
-            ) {
-                this.logger.debug(`${LOG_PREFIX}: Skipping visual event since neovim has same selection`);
-                return;
-            }
             const neovimCursorPos = this.neovimCursorPosition.get(editor);
             if (neovimCursorPos && neovimCursorPos.isEqual(cursor)) {
                 this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
+                return;
+            } else if (
+                this.main.modeManager.isVisualMode &&
+                (await this.createVisualSelection(editor))[0].isEqual(selection)
+            ) {
+                this.logger.debug(`${LOG_PREFIX}: Skipping visual event since neovim has same selection`);
                 return;
             }
 
@@ -286,7 +276,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 if (kind === TextEditorSelectionChangeKind.Mouse && this.settings.mouseSelectionEnabled) {
                     if (!this.main.modeManager.isVisualMode) {
                         // need to start visual mode from anchor char
-                        const firstPos = selections[0].anchor;
+                        const firstPos = selection.anchor;
                         const mouseClickPos = editorPositionToNeovimPosition(editor, firstPos);
                         this.logger.debug(
                             `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
@@ -325,29 +315,28 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      */
     private updateCursorPosInEditor = async (editor: TextEditor, newPos: Position): Promise<void> => {
         if (
-            this.ignoreSelectionEvents ||
-            (this.main.modeManager.isInsertMode &&
-                !this.wantInsertCursorUpdate &&
-                !this.main.modeManager.isRecordingInInsertMode)
+            this.main.modeManager.isInsertMode &&
+            !this.wantInsertCursorUpdate &&
+            !this.main.modeManager.isRecordingInInsertMode
         ) {
             this.logger.debug(`${LOG_PREFIX}: Skipping cursor update in editor`);
             return;
         }
-        const editorName = `${editor.document.uri.toString()}, viewColumn: ${editor.viewColumn}`;
-        this.logger.debug(
-            `${LOG_PREFIX}: Updating cursor in editor: ${editorName}, pos: [${newPos.line}, ${newPos.character}]`,
-        );
 
-        let newSelections: Selection[] = [];
+        let selections: Selection[] = [];
 
         if (this.main.modeManager.isVisualMode) {
-            newSelections = await this.createVisualSelection(editor);
+            selections = await this.createVisualSelection(editor);
         } else {
-            newSelections = [new Selection(newPos, newPos)];
+            selections = [new Selection(newPos, newPos)];
         }
 
-        if (!newSelections[0].isEqual(editor.selection)) {
-            editor.selections = newSelections;
+        this.logger.debug(
+            `${LOG_PREFIX}: Updating cursor in editor pos: [${selections[0].active.line}, ${selections[0].active.character}]`,
+        );
+
+        if (!selections[0].isEqual(editor.selection)) {
+            editor.selections = selections;
             commands.executeCommand("editor.action.wordHighlight.trigger");
 
             const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
@@ -466,7 +455,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         );
         const currentCursorPos = window.activeTextEditor.selection.active;
         const startCol = currentCursorPos.character;
-        const newSelections: Selection[] = [];
+        const selections: Selection[] = [];
         const doc = window.activeTextEditor.document;
         for (let line = startLine; line <= endLine; line++) {
             const lineDef = doc.lineAt(line);
@@ -481,8 +470,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 char = append ? endCol : startCol;
             }
             this.logger.debug(`${LOG_PREFIX}: Multiple cursor at: [${line}, ${char}]`);
-            newSelections.push(new Selection(line, char, line, char));
+            selections.push(new Selection(line, char, line, char));
         }
-        window.activeTextEditor.selections = newSelections;
+        window.activeTextEditor.selections = selections;
     }
 }
