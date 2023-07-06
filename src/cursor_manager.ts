@@ -22,6 +22,7 @@ import {
     editorPositionToNeovimPosition,
     getNeovimCursorPosFromEditor,
 } from "./utils";
+import { Mode } from "./mode_manager";
 
 const LOG_PREFIX = "CursorManager";
 
@@ -45,6 +46,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * ! And we should skip it and don't try to send cursor update into neovim again, otherwise few things may break, especially jumplist
      */
     private neovimCursorPosition: WeakMap<TextEditor, Position> = new WeakMap();
+    /**
+     * Keep track of visual selection active position to avoid sending it back to nvim
+     */
+    private vscodeVisualPosition: WeakMap<TextEditor, Position> = new WeakMap();
     /**
      * In insert mode, cursor updates can be sent due to document changes. We should ignore them to
      * avoid interfering with vscode typing. However, they are important for various actions, such as
@@ -77,6 +82,35 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
         switch (name) {
+            case "window-scroll": {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [winId] = args as [number, any];
+                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
+                if (gridId) {
+                    this.gridCursorUpdates.add(gridId);
+                }
+                break;
+            }
+            case "visual-changed": {
+                const [winId, mode, anchorLine, anchorCol, activeLine, activeCol] = args as [
+                    number,
+                    string,
+                    number,
+                    number,
+                    number,
+                    number,
+                ];
+                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
+                if (gridId) {
+                    this.updateVisualSelection(
+                        gridId,
+                        new Mode(mode),
+                        new Position(anchorLine, anchorCol),
+                        new Position(activeLine, activeCol),
+                    );
+                }
+                break;
+            }
             case "visual-edit": {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const [append, visualMode, startLine1Based, endLine1Based, endCol0based, skipEmpty] = args as any;
@@ -89,14 +123,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     !!skipEmpty,
                 );
                 break;
-            }
-            case "window-scroll": {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [winId] = args as [number, any];
-                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
-                if (gridId) {
-                    this.gridCursorUpdates.add(gridId);
-                }
             }
         }
     }
@@ -208,6 +234,29 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.gridCursorUpdates.clear();
     }
 
+    private updateCursorStyle(modeName: string): void {
+        const modeConf = this.cursorModes.get(modeName);
+        if (!modeConf) {
+            return;
+        }
+        for (const editor of window.visibleTextEditors) {
+            if (modeName == "visual") {
+                // in visual mode, we try to hide the cursor because we only use it for selections
+                editor.options.cursorStyle = TextEditorCursorStyle.LineThin;
+            } else if (modeConf.cursorShape === "block") {
+                editor.options.cursorStyle = TextEditorCursorStyle.Block;
+            } else if (modeConf.cursorShape === "horizontal") {
+                editor.options.cursorStyle = TextEditorCursorStyle.Underline;
+            } else {
+                editor.options.cursorStyle = TextEditorCursorStyle.Line;
+            }
+        }
+    }
+
+    private onModeChange = (): void => {
+        if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
+    };
+
     private onDidChangeVisibleTextEditors = (): void => {
         this.updateCursorStyle(this.main.modeManager.currentMode.name);
     };
@@ -255,14 +304,13 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     cursor.character
                 }], isMultiSelection: ${selections.length > 1}`,
             );
+
             const neovimCursorPos = this.neovimCursorPosition.get(editor);
+            const vscodeVisualPos = this.vscodeVisualPosition.get(editor);
             if (neovimCursorPos && neovimCursorPos.isEqual(cursor)) {
                 this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
                 return;
-            } else if (
-                this.main.modeManager.isVisualMode &&
-                (await this.createVisualSelection(editor))[0].isEqual(selection)
-            ) {
+            } else if (this.main.modeManager.isVisualMode && vscodeVisualPos && vscodeVisualPos.isEqual(cursor)) {
                 this.logger.debug(`${LOG_PREFIX}: Skipping visual event since neovim has same selection`);
                 return;
             }
@@ -313,47 +361,25 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Update cursor in active editor. Coords are zero based
      */
-    private updateCursorPosInEditor = async (editor: TextEditor, newPos: Position): Promise<void> => {
+    private updateCursorPosInEditor = (editor: TextEditor, newPos: Position): void => {
         if (
-            this.main.modeManager.isInsertMode &&
-            !this.wantInsertCursorUpdate &&
-            !this.main.modeManager.isRecordingInInsertMode
+            (this.main.modeManager.isInsertMode &&
+                !this.wantInsertCursorUpdate &&
+                !this.main.modeManager.isRecordingInInsertMode) ||
+            this.main.modeManager.isVisualMode
         ) {
             this.logger.debug(`${LOG_PREFIX}: Skipping cursor update in editor`);
             return;
         }
 
-        let selections: Selection[] = [];
-
-        if (this.main.modeManager.isVisualMode) {
-            selections = await this.createVisualSelection(editor);
-        } else {
-            selections = [new Selection(newPos, newPos)];
-        }
-
-        this.logger.debug(
-            `${LOG_PREFIX}: Updating cursor in editor pos: [${selections[0].active.line}, ${selections[0].active.character}]`,
-        );
-
-        if (!selections[0].isEqual(editor.selection)) {
-            editor.selections = selections;
-            commands.executeCommand("editor.action.wordHighlight.trigger");
-
-            const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
-            const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
-            const deltaLine = newPos.line - editor.selection.active.line;
-            const type =
-                deltaLine > 0
-                    ? newPos.line > bottomVisibleLine + 10
-                        ? TextEditorRevealType.InCenterIfOutsideViewport
-                        : TextEditorRevealType.Default
-                    : deltaLine < 0
-                    ? newPos.line < topVisibleLine - 10
-                        ? TextEditorRevealType.InCenterIfOutsideViewport
-                        : TextEditorRevealType.Default
-                    : TextEditorRevealType.Default;
-            editor.revealRange(new Selection(newPos, newPos), type);
-            this.main.viewportManager.scrollNeovim(editor);
+        const selection = new Selection(newPos, newPos);
+        const editorSelection = editor.selection;
+        editor.selections = [selection];
+        if (!selection.isEqual(editorSelection)) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Updating cursor in editor pos: [${selection.active.line}, ${selection.active.character}]`,
+            );
+            this.triggerMovementFunctions(editor, newPos);
         }
     };
 
@@ -369,67 +395,62 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         return func;
     };
 
-    private updateCursorStyle(modeName: string): void {
-        const modeConf = this.cursorModes.get(modeName);
-        if (!modeConf) {
+    private updateVisualSelection = (gridId: number, mode: Mode, anchor: Position, active: Position): void => {
+        this.logger.debug(`${LOG_PREFIX}: Received visual update from neovim, gridId: ${gridId}`);
+        const editor = this.main.bufferManager.getEditorFromGridId(gridId);
+        if (!editor) {
+            this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
             return;
         }
-        for (const editor of window.visibleTextEditors) {
-            if (modeName == "visual") {
-                // in visual mode, we try to hide the cursor because we only use it for selections
-                editor.options.cursorStyle = TextEditorCursorStyle.LineThin;
-            } else if (modeConf.cursorShape === "block") {
-                editor.options.cursorStyle = TextEditorCursorStyle.Block;
-            } else if (modeConf.cursorShape === "horizontal") {
-                editor.options.cursorStyle = TextEditorCursorStyle.Underline;
-            } else {
-                editor.options.cursorStyle = TextEditorCursorStyle.Line;
-            }
-        }
-    }
-
-    private onModeChange = (): void => {
-        if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
-        else {
-            const editor = window.activeTextEditor;
-            if (!editor) return;
-            const pos = this.neovimCursorPosition.get(editor);
-            if (pos) this.updateCursorPosInEditor(editor, pos);
+        if (mode.isVisual) {
+            const selections = this.createVisualSelection(editor, mode, anchor, active);
+            this.vscodeVisualPosition.set(editor, selections[0].active);
+            editor.selections = selections;
+            this.triggerMovementFunctions(editor, active);
+        } else {
+            this.vscodeVisualPosition.delete(editor);
+            this.updateCursorPosInEditor(editor, active);
         }
     };
 
-    private createVisualSelection = async (editor: TextEditor): Promise<Selection[]> => {
-        const visualStartNvim = await this.client.callFunction("getpos", ["v"]);
-        const visualEndNvim = await this.client.callFunction("getpos", ["."]);
-        const begin = new Position(visualStartNvim[1] - 1, visualStartNvim[2] - 1);
-        const end = new Position(visualEndNvim[1] - 1, visualEndNvim[2] - 1);
+    // given a neovim visual selection range (and the current mode), create a vscode selection
+    private createVisualSelection = (
+        editor: TextEditor,
+        mode: Mode,
+        anchor: Position,
+        active: Position,
+    ): Selection[] => {
         const doc = editor.document;
 
         // to make a full selection, the end of the selection needs to be moved forward by one character
         // we hide the real cursor and use a highlight decorator for the fake cursor
-        switch (this.main.modeManager.currentMode.visual) {
+        switch (mode.visual) {
             case "char":
-                if (begin.isBeforeOrEqual(end))
-                    return [new Selection(begin, new Position(end.line, end.character + 1))];
-                else return [new Selection(new Position(begin.line, begin.character + 1), end)];
+                if (anchor.isBeforeOrEqual(active))
+                    return [new Selection(anchor, new Position(active.line, active.character + 1))];
+                else return [new Selection(new Position(anchor.line, anchor.character + 1), active)];
             case "line":
-                if (begin.isBeforeOrEqual(end))
-                    return [new Selection(begin.line, 0, end.line, doc.lineAt(end.line).text.length)];
-                else return [new Selection(begin.line, doc.lineAt(begin.line).text.length, end.line, 0)];
+                if (anchor.line <= active.line)
+                    return [new Selection(anchor.line, 0, active.line, doc.lineAt(active.line).text.length)];
+                else return [new Selection(anchor.line, doc.lineAt(anchor.line).text.length, active.line, 0)];
             case "block": {
                 const selections: Selection[] = [];
                 // we want the first selection to be on the cursor line, so that a single-line selection will properly trigger word highlight
-                const before = begin.line < end.line;
-                for (let line = end.line; before ? line >= begin.line : line <= begin.line; before ? line-- : line++) {
+                const before = anchor.line < active.line;
+                for (
+                    let line = active.line;
+                    before ? line >= anchor.line : line <= anchor.line;
+                    before ? line-- : line++
+                ) {
                     // skip lines that don't contain the block selection
                     const docLine = doc.lineAt(line);
-                    if (docLine.range.end.character >= Math.min(begin.character, end.character)) {
+                    if (docLine.range.end.character >= Math.min(anchor.character, active.character)) {
                         selections.push(
                             new Selection(
                                 line,
-                                Math.min(begin.character, end.character),
+                                Math.min(anchor.character, active.character),
                                 line,
-                                Math.max(begin.character, end.character) + 1,
+                                Math.max(anchor.character, active.character) + 1,
                             ),
                         );
                     }
@@ -437,6 +458,26 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 return selections;
             }
         }
+    };
+
+    private triggerMovementFunctions = (editor: TextEditor, pos: Position): void => {
+        commands.executeCommand("editor.action.wordHighlight.trigger");
+
+        const topVisibleLine = Math.min(...editor.visibleRanges.map((r) => r.start.line));
+        const bottomVisibleLine = Math.max(...editor.visibleRanges.map((r) => r.end.line));
+        const deltaLine = pos.line - editor.selection.active.line;
+        const type =
+            deltaLine > 0
+                ? pos.line > bottomVisibleLine + 10
+                    ? TextEditorRevealType.InCenterIfOutsideViewport
+                    : TextEditorRevealType.Default
+                : deltaLine < 0
+                ? pos.line < topVisibleLine - 10
+                    ? TextEditorRevealType.InCenterIfOutsideViewport
+                    : TextEditorRevealType.Default
+                : TextEditorRevealType.Default;
+        editor.revealRange(new Selection(pos, pos), type);
+        this.main.viewportManager.scrollNeovim(editor);
     };
 
     private multipleCursorFromVisualMode(
