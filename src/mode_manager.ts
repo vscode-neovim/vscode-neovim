@@ -8,20 +8,22 @@ import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 const LOG_PREFIX = "ModeManager";
 
 // a representation of the current mode. can be read in different ways using accessors. underlying type is shortname name as returned by `:help mode()`
-class Mode {
+export class Mode {
     public constructor(public shortname: string = "") {}
     // mode 1-char code: n, v, V, i, s, ...
     // converts ^v into v
     public get char(): string {
-        return this.shortname.charCodeAt(0) == 22 ? "v" : this.shortname.charAt(0);
+        return this.shortname.charAt(0).replace("\x16", "v");
     }
     // mode long name
-    public get name(): "insert" | "visual" | "normal" {
+    public get name(): "insert" | "visual" | "cmdline" | "normal" {
         switch (this.char.toLowerCase()) {
             case "i":
                 return "insert";
             case "v":
                 return "visual";
+            case "c":
+                return "cmdline";
             case "n":
             default:
                 return "normal";
@@ -30,6 +32,15 @@ class Mode {
     // visual mode name
     public get visual(): "char" | "line" | "block" {
         return this.char === "V" ? "line" : this.shortname.charAt(0) === "v" ? "char" : "block";
+    }
+    public get isVisual(): boolean {
+        return this.name === "visual";
+    }
+    public get isInsert(): boolean {
+        return this.name === "insert";
+    }
+    public get isNormal(): boolean {
+        return this.name === "normal";
     }
 }
 export class ModeManager implements Disposable, NeovimExtensionRequestProcessable {
@@ -63,15 +74,15 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
     }
 
     public get isInsertMode(): boolean {
-        return this.mode.name === "insert";
+        return this.mode.isInsert;
     }
 
     public get isVisualMode(): boolean {
-        return this.mode.name === "visual";
+        return this.mode.isVisual;
     }
 
     public get isNormalMode(): boolean {
-        return this.mode.name === "normal";
+        return this.mode.isNormal;
     }
 
     public get isRecordingInInsertMode(): boolean {
