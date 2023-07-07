@@ -1,8 +1,5 @@
 util = require("util")
 
--- make cursor visible for plugins what use fake cursor
-vim.api.nvim_set_hl(0, 'Cursor', { reverse = true })
-
 -- in visual mode, decorate a fake cursor so that vscode can use the primary cursor for selection
 local ns = vim.api.nvim_create_namespace("vscode-fake-visual-cursor")
 local cursor = nil
@@ -24,34 +21,59 @@ vim.api.nvim_create_autocmd({ "ModeChanged", "CursorMoved" }, {
   callback = highlight_cursor
 })
 
--- simulate VisualChanged event (hopefully will be added soon)
-local function send_visual_changed()
-  local anchor = vim.fn.getpos("v")
-  local anchor_line = anchor[2] - 1
-  local anchor_col = anchor[3] - 1
-  local active = vim.fn.getpos(".")
-  local active_line = active[2] - 1
-  local active_col = active[3] - 1
-  vim.fn.VSCodeExtensionNotify('visual-changed', vim.fn.win_getid(), vim.fn.mode(), anchor_line, anchor_col,
-    active_line, active_col)
+local function process_cursor_event(event, is_visual_mode_update)
+  local mode = vim.api.nvim_get_mode()
+
+  if event == "ModeChanged" then
+    vim.fn.VSCodeExtensionNotify('mode-changed', mode)
+  end
+
+  if event == "CursorMoved" or ((event == "ModeChanged" or event == "TextChanged" or event == "CursorHold") and is_visual_mode_update) then
+    local anchor = vim.fn.getpos("v")
+    local anchor_line = anchor[2] - 1
+    local anchor_col = anchor[3] - 1
+    local active = vim.fn.getpos(".")
+    local active_line = active[2] - 1
+    local active_col = active[3] - 1
+    vim.fn.VSCodeExtensionNotify('cursor-moved', vim.api.nvim_get_current_win(), anchor_line, anchor_col,
+      active_line, active_col)
+  end
 end
 
 vim.api.nvim_create_autocmd({ "CursorMoved", "CursorHold", "TextChanged" }, {
-  callback = function()
-    if util.is_visual_mode() then
-      send_visual_changed()
-    end
+  callback = function(ev)
+    process_cursor_event(ev.event)
   end
 })
 
 vim.api.nvim_create_autocmd({ "ModeChanged" }, {
   pattern = "[vV\x16]*:[^vv\x16]*",
   callback =
-      send_visual_changed
+      function(ev)
+        process_cursor_event(ev.event, true)
+      end
 })
 
 vim.api.nvim_create_autocmd({ "ModeChanged" }, {
   pattern = "[^vV\x16]*:[vV\x16]*",
   callback =
-      send_visual_changed
+      function(ev)
+        process_cursor_event(ev.event, true)
+      end
+})
+
+vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+  pattern = "[vV\x16]*:[vV\x16]*",
+  callback =
+      function(ev)
+        process_cursor_event(ev.event, true)
+      end
+})
+
+vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+  pattern = "[^vV\x16]*:[^vV\x16]*",
+  callback =
+      function(ev)
+        process_cursor_event(ev.event, false)
+      end
 })

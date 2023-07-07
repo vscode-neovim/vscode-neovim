@@ -9,7 +9,10 @@ const LOG_PREFIX = "ModeManager";
 
 // a representation of the current mode. can be read in different ways using accessors. underlying type is shortname name as returned by `:help mode()`
 export class Mode {
-    public constructor(public shortname: string = "") {}
+    public constructor(
+        public shortname: string = "",
+        public blocking = false,
+    ) {}
     // mode 1-char code: n, v, V, i, s, ...
     // converts ^v into v
     public get char(): string {
@@ -50,10 +53,6 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
      */
     private mode: Mode = new Mode();
     /**
-     * Last neovim mode
-     */
-    private last: Mode = new Mode();
-    /**
      * True when macro recording in insert mode
      */
     private isRecording = false;
@@ -67,10 +66,6 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
 
     public get currentMode(): Mode {
         return this.mode;
-    }
-
-    public get lastMode(): Mode {
-        return this.last;
     }
 
     public get isInsertMode(): boolean {
@@ -96,10 +91,9 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
         switch (name) {
             case "mode-changed": {
-                const [oldMode, newMode] = args as [string, string];
-                this.logger.debug(`${LOG_PREFIX}: Changing mode from ${oldMode} to ${newMode}`);
-                this.mode = new Mode(newMode);
-                this.last = new Mode(oldMode);
+                const [{ mode, blocking }] = args as [{ mode: string; blocking: boolean }];
+                this.logger.debug(`${LOG_PREFIX}: Changing mode to ${mode}`);
+                this.mode = new Mode(mode, blocking);
                 if (!this.isInsertMode && this.isRecording) {
                     this.isRecording = false;
                     commands.executeCommand("setContext", "neovim.recording", false);
