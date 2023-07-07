@@ -267,7 +267,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         const { textEditor, kind } = e;
         // ! Note: Unfortunately navigating from outline is Command kind, so we can't skip it :(
         this.logger.debug(
-            `${LOG_PREFIX}: onSelectionChanged, kind: ${kind}, editor: ${textEditor.document.uri.fsPath}`,
+            `${LOG_PREFIX}: onSelectionChanged, kind: ${kind}, editor: ${textEditor.document.uri.fsPath}, active: [${textEditor.selection.active.line}, ${textEditor.selection.active.character}]`,
         );
 
         // wait for possible layout updates first
@@ -278,7 +278,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         await this.main.changeManager.getDocumentChangeCompletionLock(textEditor.document);
         this.logger.debug(`${LOG_PREFIX}: Waiting done`);
 
-        const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(textEditor.document);
+        const documentChange = this.main.changeManager.getDocumentCursorAfterChange(textEditor.document);
         const cursor = textEditor.selection.active;
         if (documentChange && documentChange.isEqual(cursor)) {
             this.logger.debug(
@@ -295,6 +295,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     // ! and cursor may go out-of-sync and produce a jitter
     private applySelectionChanged = debounce(
         async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
+            this.main.changeManager.clearDocumentCursorAfterChange(editor.document);
             const selections = editor.selections;
             const selection = editor.selection;
             const cursor = selection.active;
