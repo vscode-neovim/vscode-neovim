@@ -116,7 +116,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 const [append, visualMode, startLine1Based, endLine1Based, endCol0based, skipEmpty] = args as any;
                 this.multipleCursorFromVisualMode(
                     !!append,
-                    visualMode,
+                    new Mode(visualMode),
                     startLine1Based - 1,
                     endLine1Based - 1,
                     endCol0based,
@@ -269,12 +269,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: onSelectionChanged, kind: ${kind}, editor: ${textEditor.document.uri.fsPath}, active: [${textEditor.selection.active.line}, ${textEditor.selection.active.character}]`,
         );
-
-        // undefined kind means that selection change is from document edit
-        if (kind === undefined) {
-            this.logger.debug(`${LOG_PREFIX}: onSelectionChanged kind is undefined, skipping`);
-            return;
-        }
 
         // wait for possible layout updates first
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
@@ -453,15 +447,19 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     before ? line >= anchor.line : line <= anchor.line;
                     before ? line-- : line++
                 ) {
-                    // skip lines that don't contain the block selection
+                    // skip lines that don't contain the block selection, except if it contains the cursor
                     const docLine = doc.lineAt(line);
-                    if (docLine.range.end.character >= Math.min(anchor.character, active.character)) {
+                    if (
+                        docLine.range.end.character > Math.min(anchor.character, active.character) ||
+                        line === active.line
+                    ) {
+                        // selections go left to right for simplicity, and don't go past the end of the line
                         selections.push(
                             new Selection(
                                 line,
                                 Math.min(anchor.character, active.character),
                                 line,
-                                Math.max(anchor.character, active.character) + 1,
+                                Math.min(Math.max(anchor.character, active.character) + 1, docLine.text.length),
                             ),
                         );
                     }
@@ -493,30 +491,27 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     private multipleCursorFromVisualMode(
         append: boolean,
-        visualMode: string,
+        mode: Mode,
         startLine: number,
         endLine: number,
         endCol: number,
         skipEmpty: boolean,
     ): void {
-        if (!window.activeTextEditor) {
-            return;
-        }
+        if (!window.activeTextEditor) return;
+
         this.logger.debug(
-            `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], endCol: ${endCol} mode: ${visualMode}, append: ${append}, skipEmpty: ${skipEmpty}`,
+            `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], endCol: ${endCol} mode: ${mode.visual}, append: ${append}, skipEmpty: ${skipEmpty}`,
         );
-        const currentCursorPos = window.activeTextEditor.selection.active;
+        const currentCursorPos = this.neovimCursorPosition.get(window.activeTextEditor)!;
         const startCol = currentCursorPos.character;
         const selections: Selection[] = [];
         const doc = window.activeTextEditor.document;
         for (let line = startLine; line <= endLine; line++) {
             const lineDef = doc.lineAt(line);
             // always skip empty lines for visual block mode
-            if (lineDef.text.trim() === "" && (skipEmpty || visualMode !== "V")) {
-                continue;
-            }
+            if (lineDef.text.trim() === "" && (skipEmpty || mode.visual === "block")) continue;
             let char = 0;
-            if (visualMode === "V") {
+            if (mode.visual === "line") {
                 char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
             } else {
                 char = append ? endCol : startCol;

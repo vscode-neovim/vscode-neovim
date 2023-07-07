@@ -36,7 +36,7 @@ local function send_visual_changed()
     active_line, active_col)
 end
 
-vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+vim.api.nvim_create_autocmd({ "CursorMoved", "CursorHold", "TextChanged" }, {
   callback = function()
     if util.is_visual_mode() then
       send_visual_changed()
