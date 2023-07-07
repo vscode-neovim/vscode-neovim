@@ -1374,6 +1374,11 @@
                 "key": "ctrl+w q",
                 "command": "workbench.action.closeActiveEditor",
                 "when": "!editorTextFocus && !terminalFocus && !filesExplorerFocus && !searchViewletFocus"
+            },
+            {
+                "key": "ctrl+Escape",
+                "command": "workbench.action.focusActiveEditorGroup",
+                "when": "terminalFocus"
             }
         ]
     },
