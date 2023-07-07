@@ -9,10 +9,7 @@ const LOG_PREFIX = "ModeManager";
 
 // a representation of the current mode. can be read in different ways using accessors. underlying type is shortname name as returned by `:help mode()`
 export class Mode {
-    public constructor(
-        public shortname: string = "",
-        public blocking = false,
-    ) {}
+    public constructor(public shortname: string = "") {}
     // mode 1-char code: n, v, V, i, s, ...
     // converts ^v into v
     public get char(): string {
@@ -91,9 +88,9 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
         switch (name) {
             case "mode-changed": {
-                const [{ mode, blocking }] = args as [{ mode: string; blocking: boolean }];
+                const [mode] = args as [string];
                 this.logger.debug(`${LOG_PREFIX}: Changing mode to ${mode}`);
-                this.mode = new Mode(mode, blocking);
+                this.mode = new Mode(mode);
                 if (!this.isInsertMode && this.isRecording) {
                     this.isRecording = false;
                     commands.executeCommand("setContext", "neovim.recording", false);

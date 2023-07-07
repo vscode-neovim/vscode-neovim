@@ -5,7 +5,7 @@ local ns = vim.api.nvim_create_namespace("vscode-fake-visual-cursor")
 local cursor = nil
 
 local function process_cursor_event(event, is_visual_mode_update)
-  local mode = vim.api.nvim_get_mode()
+  local mode = vim.api.nvim_get_mode().mode
 
   if event == "ModeChanged" then
     vim.fn.VSCodeExtensionNotify('mode-changed', mode)
