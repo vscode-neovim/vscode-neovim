@@ -187,51 +187,41 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 this.logger.warn(`${LOG_PREFIX}: No cursor for gridId from viewport: ${gridId}`);
                 continue;
             }
-            // !For text changes neovim sends first buf_lines_event followed by redraw event
-            // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-            const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
-            if (docPromises) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Waiting for document change completion before setting the cursor, gridId: ${gridId}, pos: [${cursorPos.line}, ${cursorPos.col}]`,
-                );
-                docPromises.then(() => {
-                    try {
-                        this.logger.debug(`${LOG_PREFIX}: Waiting document change completion done, gridId: ${gridId}`);
-                        const finalCol = calculateEditorColFromVimScreenCol(
-                            editor.document.lineAt(cursorPos.line).text,
-                            cursorPos.col,
-                            // !For cursor updates tab is always counted as 1 col
-                            cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
-                            cursorPos.isByteCol,
-                        );
-                        const newPos = new Position(cursorPos.line, finalCol);
-                        this.neovimCursorPosition.set(editor, newPos);
-                        // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
-                        // !To not mess the cursor, try to debounce the update
-                        this.getDebouncedUpdateCursorPos(editor)(editor, newPos);
-                    } catch (e) {
-                        this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
-                    }
-                });
-            } else {
-                // !Sync call helps with most common operations latency
-                this.logger.debug(`${LOG_PREFIX}: No pending document changes, gridId: ${gridId}`);
+            this.scheduleEditorUpdate(editor, () => {
                 try {
+                    this.logger.debug(`${LOG_PREFIX}: Waiting document change completion done, gridId: ${gridId}`);
                     const finalCol = calculateEditorColFromVimScreenCol(
                         editor.document.lineAt(cursorPos.line).text,
                         cursorPos.col,
+                        // !For cursor updates tab is always counted as 1 col
                         cursorPos.isByteCol ? 1 : (editor.options.tabSize as number),
                         cursorPos.isByteCol,
                     );
                     const newPos = new Position(cursorPos.line, finalCol);
                     this.neovimCursorPosition.set(editor, newPos);
-                    this.updateCursorPosInEditor(editor, newPos);
+                    // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
+                    // !To not mess the cursor, try to debounce the update
+                    this.getDebouncedUpdateCursorPos(editor)(editor, newPos);
                 } catch (e) {
                     this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
                 }
-            }
+            });
         }
         this.gridCursorUpdates.clear();
+    }
+
+    // !For text changes neovim sends first buf_lines_event followed by redraw event
+    // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
+    private scheduleEditorUpdate(editor: TextEditor, update: () => void): void {
+        const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+        if (docPromises) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor]`,
+            );
+            docPromises.then(update);
+        } else {
+            update();
+        }
     }
 
     private updateCursorStyle(modeName: string): void {
@@ -391,31 +381,35 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (existing) {
             return existing;
         }
-        const func = debounce(this.updateCursorPosInEditor, 10, { leading: false, trailing: true, maxWait: 100 });
+        const func = debounce(this.updateCursorPosInEditor, 2, { leading: false, trailing: true, maxWait: 100 });
         this.debouncedCursorUpdates.set(editor, func);
         return func;
     };
 
     private updateVisualSelection = (gridId: number, mode: Mode, anchor: Position, active: Position): void => {
-        this.logger.debug(`${LOG_PREFIX}: Received visual update from neovim, gridId: ${gridId}`);
+        this.logger.debug(
+            `${LOG_PREFIX}: Received visual update from neovim, gridId: ${gridId}, active: [${active.line}, ${active.character}]`,
+        );
         const editor = this.main.bufferManager.getEditorFromGridId(gridId);
         if (!editor) {
             this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
             return;
         }
-        if (mode.isVisual) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${active.line}, ${active.character}]`,
-            );
-            const selections = this.createVisualSelection(editor, mode, anchor, active);
-            this.vscodeVisualPosition.set(editor, selections[0].active);
-            editor.selections = selections;
-            this.triggerMovementFunctions(editor, active);
-        } else {
-            this.logger.debug(`${LOG_PREFIX}: Exiting visual mode, triggering cursor update`);
-            this.vscodeVisualPosition.delete(editor);
-            this.updateCursorPosInEditor(editor, active);
-        }
+        this.scheduleEditorUpdate(editor, () => {
+            if (mode.isVisual) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${active.line}, ${active.character}]`,
+                );
+                const selections = this.createVisualSelection(editor, mode, anchor, active);
+                this.vscodeVisualPosition.set(editor, selections[0].active);
+                editor.selections = selections;
+                this.triggerMovementFunctions(editor, active);
+            } else {
+                this.logger.debug(`${LOG_PREFIX}: Exiting visual mode, triggering cursor update`);
+                this.vscodeVisualPosition.delete(editor);
+                this.getDebouncedUpdateCursorPos(editor)(editor, active);
+            }
+        });
     };
 
     // given a neovim visual selection range (and the current mode), create a vscode selection
