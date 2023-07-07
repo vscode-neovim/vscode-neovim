@@ -278,7 +278,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
 
         this.applySelectionChanged(textEditor, kind);
-        if (kind !== TextEditorSelectionChangeKind.Command) this.applySelectionChanged.flush();
+        if (kind === TextEditorSelectionChangeKind.Mouse) this.applySelectionChanged.flush();
     };
 
     // ! Need to debounce requests because setting cursor by consequence of neovim event will trigger this method

@@ -11,7 +11,7 @@ local function process_cursor_event(event, is_visual_mode_update)
     vim.fn.VSCodeExtensionNotify('mode-changed', mode)
   end
 
-  if event == "CursorMoved" or event == "ModeChanged" or ((event == "TextChanged" or event == "CursorHold") and is_visual_mode_update) then
+  if event == "CursorMoved" or event == "CursorMovedI" or event == "ModeChanged" or event == "WinScrolled" or ((event == "TextChanged" or event == "CursorHold") and is_visual_mode_update) then
     local anchor = vim.fn.getpos("v")
     local anchor_line = anchor[2] - 1
     local anchor_col = anchor[3] - 1
@@ -32,7 +32,7 @@ local function process_cursor_event(event, is_visual_mode_update)
   end
 end
 
-vim.api.nvim_create_autocmd({ "CursorMoved", "CursorHold", "TextChanged" }, {
+vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "WinScrolled", "CursorHold", "TextChanged" }, {
   callback = function(ev)
     process_cursor_event(ev.event, util.is_visual_mode())
   end
