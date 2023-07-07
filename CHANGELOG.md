@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.3.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.0...v0.3.1) (2023-07-07)
+
+
+### Bug Fixes
+
+* colliding ctrl+w bindings in terminal ([#1300](https://github.com/vscode-neovim/vscode-neovim/issues/1300)) ([f5a25f9](https://github.com/vscode-neovim/vscode-neovim/commit/f5a25f9d73649883af78b1331c8052cecb8e46d4))
+
 ## [0.3.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.2.0...v0.3.0) (2023-07-06)
 
 
