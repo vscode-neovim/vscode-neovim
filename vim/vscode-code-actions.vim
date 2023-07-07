@@ -1,11 +1,9 @@
-function! s:vscodeFormat(...) abort
-    call VSCodeCall('editor.action.formatSelection')
-endfunction
-
-" Bind format to vscode format selection
-xnoremap <expr> = <SID>vscodeFormat()
-nnoremap <expr> = <SID>vscodeFormat()
-nnoremap <expr> == <SID>vscodeFormat() . '_'
+" Bind format and comment to vscode format/comment command
+xnoremap = <Cmd>call VSCodeCall('editor.action.formatSelection')<CR>
+nnoremap = <Cmd>call VSCodeCall('editor.action.formatSelection')<CR><Esc>
+nnoremap == <Cmd>call VSCodeCall('editor.action.formatSelection')<CR>
+xnoremap <C-/> <Cmd>call VSCodeCall('editor.action.commentLine')<CR><Esc>
+nnoremap <C-/> <Cmd>call VSCodeCall('editor.action.commentLine')<CR>
 
 function! s:vscodeGoToDefinition(str)
     if exists('b:vscode_controlled') && b:vscode_controlled

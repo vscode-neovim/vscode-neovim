@@ -474,6 +474,7 @@ Refer to VIM's manual for their use.
 -   <kbd>C-k</kbd>
 -   <kbd>C-l</kbd>
 -   <kbd>C-h</kbd>
+-   <kbd>C-/</kbd>
 
 ### Cmdline special keys
 
