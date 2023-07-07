@@ -698,12 +698,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     const finalLine = neovimCursor[0] - 1;
                     let finalCol = neovimCursor[1];
                     try {
-                        finalCol = calculateEditorColFromVimScreenCol(
-                            doc.lineAt(finalLine).text,
-                            neovimCursor[1],
-                            1,
-                            true,
-                        );
+                        finalCol = calculateEditorColFromVimScreenCol(doc.lineAt(finalLine).text, neovimCursor[1], 1);
                         this.logger.debug(`${LOG_PREFIX}: Adjusted cursor: [${finalLine}, ${finalCol}]`);
                     } catch (e) {
                         this.logger.warn(`${LOG_PREFIX}: Unable to get cursor pos for external buffer: ${id}`);
