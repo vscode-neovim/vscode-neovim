@@ -1,3 +1,5 @@
+require("cursor")
+
 local M = {}
 
 ---call from vscode to sync viewport with neovim

@@ -1,7 +1,7 @@
 local M = {}
 
 M.is_visual_mode = function()
-    mode = vim.fn.mode()
+    mode = vim.api.nvim_get_mode()
     return mode == "v" or mode == "V" or mode == '\x16'
 end
 
