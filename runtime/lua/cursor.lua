@@ -11,7 +11,7 @@ local function process_cursor_event(event, is_visual_mode_update)
     vim.fn.VSCodeExtensionNotify('mode-changed', mode)
   end
 
-  if event == "CursorMoved" or ((event == "ModeChanged" or event == "TextChanged" or event == "CursorHold") and is_visual_mode_update) then
+  if event == "CursorMoved" or event == "ModeChanged" or ((event == "TextChanged" or event == "CursorHold") and is_visual_mode_update) then
     local anchor = vim.fn.getpos("v")
     local anchor_line = anchor[2] - 1
     local anchor_col = anchor[3] - 1
