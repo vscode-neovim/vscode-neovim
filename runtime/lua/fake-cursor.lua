@@ -51,7 +51,7 @@ vim.api.nvim_create_autocmd({ "ModeChanged" }, {
 })
 
 vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-  pattern = "[vV\x16]*:[vV\x16]*",
+  pattern = "[^vV\x16]*:[vV\x16]*",
   callback =
       send_visual_changed
 })

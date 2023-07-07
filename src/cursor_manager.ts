@@ -270,6 +270,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             `${LOG_PREFIX}: onSelectionChanged, kind: ${kind}, editor: ${textEditor.document.uri.fsPath}, active: [${textEditor.selection.active.line}, ${textEditor.selection.active.character}]`,
         );
 
+        // undefined kind means that selection change is from document edit
+        if (kind === undefined) {
+            this.logger.debug(`${LOG_PREFIX}: onSelectionChanged kind is undefined, skipping`);
+            return;
+        }
+
         // wait for possible layout updates first
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
         await this.main.bufferManager.waitForLayoutSync();
