@@ -17,10 +17,11 @@ import { Logger } from "./logger";
 import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import {
-    calculateEditorColFromVimScreenCol,
     callAtomic,
+    convertVimPositionToEditorPosition,
     editorPositionToNeovimPosition,
     getNeovimCursorPosFromEditor,
+    ManualPromise,
 } from "./utils";
 import { Mode } from "./mode_manager";
 
@@ -46,6 +47,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * ! And we should skip it and don't try to send cursor update into neovim again, otherwise few things may break, especially jumplist
      */
     private neovimCursorPosition: WeakMap<TextEditor, Position> = new WeakMap();
+    /**
+     * Pending cursor update promise.
+     * When switching modes with a cursor update (like entering insert mode with o), vim will send the mode change before it sends the cursor.
+     * This promise is used by typing_manager to know when to unbind type handler. We are guaranteed to get a cursor update on `ModeChanged`.
+     */
+    public modeChangeCursorUpdatePromise: Map<TextEditor, ManualPromise> = new Map();
     /**
      * In insert mode, cursor updates can be sent due to document changes. We should ignore them to
      * avoid interfering with vscode typing. However, they are important for various actions, such as
@@ -134,96 +141,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
     }
 
-    // !For text changes neovim sends first buf_lines_event followed by redraw event
-    // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-    private scheduleEditorUpdate(editor: TextEditor, update: () => void): void {
-        const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
-        if (docPromises) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor]`,
-            );
-            docPromises.then(update);
-        } else {
-            update();
-        }
-    }
-
-    private processCursorMoved(gridId: number, anchor: Position, active: Position): void {
-        this.logger.debug(`${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}`);
-        const editor = this.main.bufferManager.getEditorFromGridId(gridId);
-        if (!editor) {
-            this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
-            return;
-        }
-        this.scheduleEditorUpdate(editor, () => {
-            this.logger.debug(`${LOG_PREFIX}: Waiting document change completion done, gridId: ${gridId}`);
-            if (this.main.modeManager.isVisualMode) {
-                const mode = this.main.modeManager.currentMode;
-                this.logger.debug(
-                    `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${active.line}, ${active.character}]`,
-                );
-                const selections = this.createVisualSelection(editor, mode, anchor, active);
-                this.neovimCursorPosition.set(editor, selections[0].active);
-                editor.selections = selections;
-                this.triggerMovementFunctions(editor, active);
-            } else {
-                try {
-                    // !For cursor updates tab is always counted as 1 col
-                    const finalCol = calculateEditorColFromVimScreenCol(
-                        editor.document.lineAt(active.line).text,
-                        active.character,
-                        1,
-                        true,
-                    );
-                    const newPos = new Position(active.line, finalCol);
-                    this.neovimCursorPosition.set(editor, newPos);
-                    // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
-                    // !To not mess the cursor, try to debounce the update
-                    this.getDebouncedUpdateCursorPos(editor)(editor, newPos);
-                } catch (e) {
-                    this.logger.warn(`${LOG_PREFIX}: ${(e as Error).message}`);
-                }
-            }
-        });
-    }
-
-    private getDebouncedUpdateCursorPos = (
-        editor: TextEditor,
-    ): DebouncedFunc<CursorManager["updateCursorPosInEditor"]> => {
-        const existing = this.debouncedCursorUpdates.get(editor);
-        if (existing) {
-            return existing;
-        }
-        const func = debounce(this.updateCursorPosInEditor, 5, { leading: false, trailing: true, maxWait: 50 });
-        this.debouncedCursorUpdates.set(editor, func);
-        return func;
-    };
-
-    /**
-     * Update cursor in active editor. Coords are zero based
-     */
-    private updateCursorPosInEditor = (editor: TextEditor, newPos: Position): void => {
-        if (
-            (this.main.modeManager.isInsertMode &&
-                !this.wantInsertCursorUpdate &&
-                !this.main.modeManager.isRecordingInInsertMode) ||
-            this.main.modeManager.isVisualMode
-        ) {
-            this.logger.debug(`${LOG_PREFIX}: Skipping cursor update in editor`);
-            return;
-        }
-
-        const selection = new Selection(newPos, newPos);
-        const editorSelection = editor.selection;
-        editor.selections = [selection];
-        if (!selection.isEqual(editorSelection)) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Updating cursor in editor pos: [${selection.active.line}, ${selection.active.character}]`,
-            );
-            this.triggerMovementFunctions(editor, newPos);
-        }
-    };
-
     private updateCursorStyle(modeName: string): void {
         const modeConf = this.cursorModes.get(modeName);
         if (!modeConf) {
@@ -245,10 +162,94 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     private onModeChange = (): void => {
         if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
+        this.modeChangeCursorUpdatePromise.get(window.activeTextEditor!)?.reject();
+        this.modeChangeCursorUpdatePromise.set(window.activeTextEditor!, new ManualPromise());
     };
 
     private onDidChangeVisibleTextEditors = (): void => {
         this.updateCursorStyle(this.main.modeManager.currentMode.name);
+    };
+
+    /**
+     * Called when cursor update received. Waits for document changes to complete and then updates cursor position in editor.
+     */
+    private processCursorMoved(gridId: number, anchor: Position, active: Position): void {
+        this.logger.debug(
+            `${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}, position: [${active.line}, ${active.character}]`,
+        );
+        const editor = this.main.bufferManager.getEditorFromGridId(gridId);
+        if (!editor) {
+            this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
+            return;
+        }
+        // !For text changes neovim sends first buf_lines_event followed by redraw event
+        // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
+        const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+        if (docPromises) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor]`,
+            );
+            docPromises.then(() => {
+                this.getDebouncedUpdateCursorPos(editor)(editor, anchor, active);
+            });
+        } else {
+            this.getDebouncedUpdateCursorPos(editor).cancel();
+            this.updateCursorPosInEditor(editor, anchor, active);
+        }
+    }
+
+    // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
+    // !To not mess the cursor, try to debounce the update
+    private getDebouncedUpdateCursorPos = (
+        editor: TextEditor,
+    ): DebouncedFunc<CursorManager["updateCursorPosInEditor"]> => {
+        const existing = this.debouncedCursorUpdates.get(editor);
+        if (existing) return existing;
+        const func = debounce(this.updateCursorPosInEditor, 10, { leading: false, trailing: true, maxWait: 50 });
+        this.debouncedCursorUpdates.set(editor, func);
+        return func;
+    };
+
+    /**
+     * Update cursor in active editor. Creates visual selections if appropriate.
+     */
+    private updateCursorPosInEditor = (editor: TextEditor, anchor: Position, active: Position): void => {
+        if (
+            this.main.modeManager.isInsertMode &&
+            !this.wantInsertCursorUpdate &&
+            !this.main.modeManager.isRecordingInInsertMode
+        ) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping insert cursor update in editor`);
+            return;
+        }
+
+        // !For cursor updates tab is always counted as 1 col
+        const editorAnchor = convertVimPositionToEditorPosition(editor, anchor);
+        const editorActive = convertVimPositionToEditorPosition(editor, active);
+
+        const prevActive = editor.selection.active;
+        let selections;
+
+        const mode = this.main.modeManager.currentMode;
+        if (mode.isVisual) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${editorActive.line}, ${editorActive.character}]`,
+            );
+            selections = this.createVisualSelection(editor, mode, editorAnchor, editorActive);
+        } else {
+            this.logger.debug(
+                `${LOG_PREFIX}: Updating cursor in editor pos: [${editorActive.line}, ${editorActive.character}]`,
+            );
+            selections = [new Selection(editorActive, editorActive)];
+        }
+
+        this.neovimCursorPosition.set(editor, selections[0].active);
+        editor.selections = selections; // always update to clear visual selections
+        if (!selections[0].active.isEqual(prevActive)) {
+            this.triggerMovementFunctions(editor, editorActive);
+        }
+
+        this.modeChangeCursorUpdatePromise.get(window.activeTextEditor!)?.resolve();
     };
 
     private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {

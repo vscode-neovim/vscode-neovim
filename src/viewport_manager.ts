@@ -1,5 +1,5 @@
 import { NeovimClient } from "neovim";
-import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent } from "vscode";
+import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent, Position } from "vscode";
 
 import { Logger } from "./logger";
 import { MainController } from "./main_controller";
@@ -43,12 +43,12 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      * @param gridId: grid id
      * @returns (0, 0)-indexed cursor position and flag indicating byte col
      */
-    public getCursorFromViewport(gridId: number): { line: number; col: number; isByteCol: boolean } | undefined {
+    public getCursorFromViewport(gridId: number): Position | undefined {
         const view = this.gridViewport.get(gridId);
         if (!view) {
             return;
         }
-        return { line: view.lnum - 1, col: view.col, isByteCol: true };
+        return new Position(view.lnum - 1, view.col);
     }
 
     /**

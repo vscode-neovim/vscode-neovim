@@ -9,7 +9,6 @@ import {
     TextEditorEdit,
 } from "vscode";
 import diff, { Diff } from "fast-diff";
-import wcwidth from "ts-wcwidth";
 import { NeovimClient } from "neovim";
 
 import { Logger } from "./logger";
@@ -244,12 +243,7 @@ export function convertByteNumToCharNum(line: string, col: number): number {
     return currCharNum;
 }
 
-export function calculateEditorColFromVimScreenCol(
-    line: string,
-    screenCol: number,
-    tabSize = 1,
-    useBytes = false,
-): number {
+export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
     if (screenCol === 0 || !line) {
         return 0;
     }
@@ -259,15 +253,12 @@ export function calculateEditorColFromVimScreenCol(
         if (line[currentCharIdx] === "\t") {
             currentVimCol += tabSize - (currentVimCol % tabSize);
             currentCharIdx++;
-        } else if (useBytes) {
+        } else {
             const bytes = getBytesFromCodePoint(line.codePointAt(currentCharIdx));
             currentVimCol += bytes;
             // Characters which take 4 bytes also take 2 string indices.
             // (Only relevant here since wcwidth returns half of the value to each part)
             currentCharIdx += bytes === 4 ? 2 : 1;
-        } else {
-            currentVimCol += wcwidth(line[currentCharIdx]);
-            currentCharIdx++;
         }
 
         if (currentCharIdx >= line.length) {
@@ -275,6 +266,12 @@ export function calculateEditorColFromVimScreenCol(
         }
     }
     return currentCharIdx;
+}
+
+export function convertVimPositionToEditorPosition(editor: TextEditor, vimPos: Position): Position {
+    const line = editor.document.lineAt(vimPos.line).text;
+    const character = calculateEditorColFromVimScreenCol(line, vimPos.character);
+    return new Position(vimPos.line, character);
 }
 
 export function isChangeSubsequentToChange(
@@ -549,4 +546,24 @@ export function applyEditorDiffOperations(
                 break;
         }
     });
+}
+
+export class ManualPromise {
+    public promise: Promise<void>;
+    public resolve: () => void = () => {
+        // noop
+    };
+    public reject: () => void = () => {
+        // noop
+    };
+
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+        this.promise.catch((_err) => {
+            // noop
+        });
+    }
 }
