@@ -142,7 +142,9 @@ export class MainController implements vscode.Disposable {
         if (settings.NVIM_APPNAME) {
             process.env.NVIM_APPNAME = settings.NVIM_APPNAME;
         }
-        this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
+        this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {
+            env: process.env,
+        });
         this.nvimProc.on("close", (code) => {
             this.logger.error(`${LOG_PREFIX}: Neovim exited with code: ${code}`);
         });
