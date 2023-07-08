@@ -61,6 +61,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * mode or running insert mode command, and set to false before document updates in insert mode.
      */
     public wantInsertCursorUpdate = true;
+    /**
+     * Set of grid that needs to undergo cursor update
+     */
+    private gridCursorUpdates: Set<number> = new Set();
 
     private debouncedCursorUpdates: WeakMap<TextEditor, DebouncedFunc<CursorManager["updateCursorPosInEditor"]>> =
         new WeakMap();
@@ -81,22 +85,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
         switch (name) {
-            case "cursor-moved": {
-                const [winId, anchorLine, anchorCol, activeLine, activeCol] = args as [
-                    number,
-                    number,
-                    number,
-                    number,
-                    number,
-                ];
+            case "visual-changed": {
+                const [winId] = args as [number];
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
-                if (gridId) {
-                    this.processCursorMoved(
-                        gridId,
-                        new Position(anchorLine, anchorCol),
-                        new Position(activeLine, activeCol),
-                    );
-                }
+                if (gridId) this.gridCursorUpdates.add(gridId);
                 break;
             }
             case "visual-edit": {
@@ -119,6 +111,30 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         for (const [name, ...args] of batch) {
             const firstArg = args[0] || [];
             switch (name) {
+                case "grid_cursor_goto": {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    for (const [grid, row, col] of args as [number, number, number][]) {
+                        this.gridCursorUpdates.add(grid);
+                    }
+                    break;
+                }
+                // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
+                // If we received it we must shift current cursor position by given rows
+                case "grid_scroll": {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    for (const [grid, top, bot, left, right, rows, cols] of args as [
+                        number,
+                        number,
+                        number,
+                        null,
+                        number,
+                        number,
+                        number,
+                    ][]) {
+                        this.gridCursorUpdates.add(grid);
+                    }
+                    break;
+                }
                 case "mode_info_set": {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const [, modes] = firstArg as [string, any[]];
@@ -139,6 +155,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
             }
         }
+        this.processCursorMoved();
     }
 
     private updateCursorStyle(modeName: string): void {
@@ -173,29 +190,41 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Called when cursor update received. Waits for document changes to complete and then updates cursor position in editor.
      */
-    private processCursorMoved(gridId: number, anchor: Position, active: Position): void {
-        this.logger.debug(
-            `${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}, position: [${active.line}, ${active.character}]`,
-        );
-        const editor = this.main.bufferManager.getEditorFromGridId(gridId);
-        if (!editor) {
-            this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
-            return;
-        }
-        // !For text changes neovim sends first buf_lines_event followed by redraw event
-        // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-        const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
-        if (docPromises) {
+    private processCursorMoved(): void {
+        for (const gridId of this.gridCursorUpdates) {
+            const editor = this.main.bufferManager.getEditorFromGridId(gridId);
+            if (!editor) {
+                this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
+                continue;
+            }
+            const cursor = this.main.viewportManager.getCursorFromViewport(gridId);
+            if (!cursor) {
+                this.logger.warn(`${LOG_PREFIX}: No cursor for gridId from viewport: ${gridId}`);
+                continue;
+            }
+
+            // !For cursor updates tab is always counted as 1 col
+            // Todo: investigate if needed with win_viewport
+            const newPos = convertVimPositionToEditorPosition(editor, cursor);
             this.logger.debug(
-                `${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor]`,
+                `${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}, position: [${newPos.line}, ${newPos.character}]`,
             );
-            docPromises.then(() => {
-                this.getDebouncedUpdateCursorPos(editor)(editor, anchor, active);
-            });
-        } else {
-            this.getDebouncedUpdateCursorPos(editor).cancel();
-            this.updateCursorPosInEditor(editor, anchor, active);
+            // !For text changes neovim sends first buf_lines_event followed by redraw event
+            // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
+            const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+            if (docPromises) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor]`,
+                );
+                docPromises.then(() => {
+                    this.getDebouncedUpdateCursorPos(editor)(editor, newPos);
+                });
+            } else {
+                this.getDebouncedUpdateCursorPos(editor).cancel();
+                this.updateCursorPosInEditor(editor, newPos);
+            }
         }
+        this.gridCursorUpdates.clear();
     }
 
     // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
@@ -213,7 +242,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Update cursor in active editor. Creates visual selections if appropriate.
      */
-    private updateCursorPosInEditor = (editor: TextEditor, anchor: Position, active: Position): void => {
+    private updateCursorPosInEditor = async (editor: TextEditor, active: Position): Promise<void> => {
         if (
             this.main.modeManager.isInsertMode &&
             !this.wantInsertCursorUpdate &&
@@ -223,30 +252,24 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             return;
         }
 
-        // !For cursor updates tab is always counted as 1 col
-        const editorAnchor = convertVimPositionToEditorPosition(editor, anchor);
-        const editorActive = convertVimPositionToEditorPosition(editor, active);
-
         const prevActive = editor.selection.active;
         let selections;
 
         const mode = this.main.modeManager.currentMode;
         if (mode.isVisual) {
             this.logger.debug(
-                `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${editorActive.line}, ${editorActive.character}]`,
+                `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${active.line}, ${active.character}]`,
             );
-            selections = this.createVisualSelection(editor, mode, editorAnchor, editorActive);
+            selections = await this.createVisualSelection(editor, mode, active);
         } else {
-            this.logger.debug(
-                `${LOG_PREFIX}: Updating cursor in editor pos: [${editorActive.line}, ${editorActive.character}]`,
-            );
-            selections = [new Selection(editorActive, editorActive)];
+            this.logger.debug(`${LOG_PREFIX}: Updating cursor in editor pos: [${active.line}, ${active.character}]`);
+            selections = [new Selection(active, active)];
         }
 
         this.neovimCursorPosition.set(editor, selections[0].active);
         editor.selections = selections; // always update to clear visual selections
         if (!selections[0].active.isEqual(prevActive)) {
-            this.triggerMovementFunctions(editor, editorActive);
+            this.triggerMovementFunctions(editor, active);
         }
 
         this.modeChangeCursorUpdatePromise.get(window.activeTextEditor!)?.resolve();
@@ -347,13 +370,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     // given a neovim visual selection range (and the current mode), create a vscode selection
-    private createVisualSelection = (
-        editor: TextEditor,
-        mode: Mode,
-        anchor: Position,
-        active: Position,
-    ): Selection[] => {
+    private createVisualSelection = async (editor: TextEditor, mode: Mode, active: Position): Promise<Selection[]> => {
         const doc = editor.document;
+
+        const anchorNvim = await this.client.callFunction("getpos", ["v"]);
+        const anchor = new Position(anchorNvim[1] - 1, anchorNvim[2] - 1);
 
         // to make a full selection, the end of the selection needs to be moved forward by one character
         // we hide the real cursor and use a highlight decorator for the fake cursor
