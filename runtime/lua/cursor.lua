@@ -21,33 +21,21 @@ vim.api.nvim_create_autocmd({ "ModeChanged", "CursorMoved" }, {
   callback = highlight_cursor
 })
 
--- simulate VisualChanged event (hopefully will be added soon)
-local function send_visual_changed()
-  vim.fn.VSCodeExtensionNotify('visual-changed', vim.fn.win_getid())
+-- trigger a cursor update
+local function update_cursor()
+  vim.fn.VSCodeExtensionNotify('update-cursor', vim.fn.win_getid())
 end
 
+-- simulate VisualChanged event
 vim.api.nvim_create_autocmd({ "CursorHold", "TextChanged" }, {
   callback = function()
     if util.is_visual_mode() then
-      send_visual_changed()
+      update_cursor()
     end
   end
 })
 
+-- always update the cursor on modechange
 vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-  pattern = "[vV\x16]*:[vV\x16]*",
-  callback =
-      send_visual_changed
-})
-
-vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-  pattern = "[vV\x16]*:[^vv\x16]*",
-  callback =
-      send_visual_changed
-})
-
-vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-  pattern = "[^vV\x16]*:[vV\x16]*",
-  callback =
-      send_visual_changed
+  callback = update_cursor
 })
