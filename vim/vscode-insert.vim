@@ -15,7 +15,9 @@ endfunction
 function! s:vscodeNotifyMultipleCursors()
     if exists('b:notifyMultipleCursors') && b:notifyMultipleCursors
         let b:notifyMultipleCursors = 0
-        call VSCodeExtensionNotify('visual-edit', b:multipleCursorsAppend, b:multipleCursorsVisualMode, line("'<"), line("'>"), col("'>"), b:multipleCursorsSkipEmpty)
+        let startPos = getcharpos("'<")
+        let endPos = getcharpos("'>")
+        call VSCodeExtensionNotify('visual-edit', b:multipleCursorsAppend, b:multipleCursorsVisualMode, startPos[1], endPos[1], startPos[2], endPos[2], b:multipleCursorsSkipEmpty)
     endif
 endfunction
 

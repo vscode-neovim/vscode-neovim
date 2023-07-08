@@ -18,9 +18,8 @@ import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import {
     callAtomic,
+    convertEditorPositionToVimPosition,
     convertVimPositionToEditorPosition,
-    editorPositionToNeovimPosition,
-    getNeovimCursorPosFromEditor,
     ManualPromise,
 } from "./utils";
 import { Mode } from "./mode_manager";
@@ -93,13 +92,14 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             }
             case "visual-edit": {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [append, visualMode, startLine1Based, endLine1Based, endCol0based, skipEmpty] = args as any;
+                const [append, visualMode, startLine, endLine, startCol, endCol, skipEmpty] = args as any;
                 this.multipleCursorFromVisualMode(
                     !!append,
                     new Mode(visualMode),
-                    startLine1Based - 1,
-                    endLine1Based - 1,
-                    endCol0based,
+                    startLine - 1,
+                    endLine - 1,
+                    startCol,
+                    endCol,
                     !!skipEmpty,
                 );
                 break;
@@ -336,16 +336,16 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     if (!this.main.modeManager.isVisualMode) {
                         // need to start visual mode from anchor char
                         const firstPos = selection.anchor;
-                        const mouseClickPos = editorPositionToNeovimPosition(editor, firstPos);
+                        const mouseClickPos = convertEditorPositionToVimPosition(editor, firstPos);
                         this.logger.debug(
-                            `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos[0]}, ${mouseClickPos[1]}]`,
+                            `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos.line}, ${mouseClickPos.character}]`,
                         );
                         await this.updateNeovimCursorPosition(editor, mouseClickPos);
                         await this.client.feedKeys("v", "nx", false);
                     }
                     const lastSelection = selections.slice(-1)[0];
                     if (!lastSelection) return;
-                    cursorPos = editorPositionToNeovimPosition(editor, lastSelection.active);
+                    cursorPos = convertEditorPositionToVimPosition(editor, lastSelection.active);
                 } else {
                     return;
                 }
@@ -357,15 +357,18 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     );
 
     /**
-     * Set cursor position in neovim. Coords are [1, 0] based. If no position provided, will use
+     * Set cursor position in neovim. Coords are [0, 0] based. If no position provided, will use
      *  editor cursor position.
      */
-    public async updateNeovimCursorPosition(editor: TextEditor, pos: [number, number] | undefined): Promise<void> {
+    public async updateNeovimCursorPosition(editor: TextEditor, pos: Position | undefined): Promise<void> {
         const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
         if (!winId) return;
-        if (!pos) pos = getNeovimCursorPosFromEditor(editor);
-        this.logger.debug(`${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${pos[0]}, ${pos[1]}]`);
-        const request: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, pos]]];
+        if (!pos) pos = await convertEditorPositionToVimPosition(editor, editor.selection.active);
+        this.logger.debug(
+            `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${pos.line}, ${pos.character}]`,
+        );
+        const vimPos = [pos.line + 1, pos.character]; // nvim_win_set_cursor is [1, 0] based
+        const request: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, vimPos]]];
         await callAtomic(this.client, request, this.logger, LOG_PREFIX);
     }
 
@@ -373,7 +376,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     private createVisualSelection = async (editor: TextEditor, mode: Mode, active: Position): Promise<Selection[]> => {
         const doc = editor.document;
 
-        const anchorNvim = await this.client.callFunction("getpos", ["v"]);
+        const anchorNvim = await this.client.callFunction("getcharpos", ["v"]);
         const anchor = new Position(anchorNvim[1] - 1, anchorNvim[2] - 1);
 
         // to make a full selection, the end of the selection needs to be moved forward by one character
@@ -443,16 +446,15 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         mode: Mode,
         startLine: number,
         endLine: number,
+        startCol: number,
         endCol: number,
         skipEmpty: boolean,
     ): void {
         if (!window.activeTextEditor) return;
 
         this.logger.debug(
-            `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], endCol: ${endCol} mode: ${mode.visual}, append: ${append}, skipEmpty: ${skipEmpty}`,
+            `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], col: [${startCol}, ${endCol}], mode: ${mode.visual}, append: ${append}, skipEmpty: ${skipEmpty}`,
         );
-        const currentCursorPos = this.neovimCursorPosition.get(window.activeTextEditor)!;
-        const startCol = currentCursorPos.character;
         const selections: Selection[] = [];
         const doc = window.activeTextEditor.document;
         for (let line = startLine; line <= endLine; line++) {
