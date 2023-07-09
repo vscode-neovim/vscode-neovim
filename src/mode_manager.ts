@@ -16,7 +16,7 @@ export class Mode {
         return this.shortname.charAt(0).replace("\x16", "v");
     }
     // mode long name
-    public get name(): "insert" | "visual" | "cmdline" | "normal" {
+    public get name(): "insert" | "visual" | "cmdline" | "normal" | "replace" {
         switch (this.char.toLowerCase()) {
             case "i":
                 return "insert";
@@ -24,6 +24,8 @@ export class Mode {
                 return "visual";
             case "c":
                 return "cmdline";
+            case "r":
+                return "replace";
             case "n":
             default:
                 return "normal";
@@ -41,6 +43,9 @@ export class Mode {
     }
     public get isNormal(): boolean {
         return this.name === "normal";
+    }
+    public get isReplace(): boolean {
+        return this.name === "replace";
     }
 }
 export class ModeManager implements Disposable, NeovimExtensionRequestProcessable {
@@ -87,6 +92,10 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
 
     public get isRecordingInInsertMode(): boolean {
         return this.isRecording;
+    }
+
+    public get isReplaceMode(): boolean {
+        return this.mode.isReplace;
     }
 
     public onModeChange(callback: () => void): void {
