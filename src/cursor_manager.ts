@@ -198,7 +198,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Called when cursor update received. Waits for document changes to complete and then updates cursor position in editor.
      */
-    public processCursorMoved(): void {
+    private processCursorMoved(): void {
         for (const gridId of this.gridCursorUpdates) {
             this.logger.debug(`${LOG_PREFIX}: Received cursor update from neovim, gridId: ${gridId}`);
             const editor = this.main.bufferManager.getEditorFromGridId(gridId);
@@ -206,12 +206,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
                 continue;
             }
-            const cursor = this.main.viewportManager.getCursorFromViewport(gridId);
-            if (!cursor) {
-                this.logger.warn(`${LOG_PREFIX}: No cursor for gridId from viewport: ${gridId}`);
-                continue;
-            }
-
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
             const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
@@ -220,13 +214,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     `${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor`,
                 );
                 docPromises.then(() => {
-                    const newPos = convertVimPositionToEditorPosition(editor, cursor);
-                    this.getDebouncedUpdateCursorPos(editor)(editor, newPos);
+                    this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
                 });
             } else {
-                const newPos = convertVimPositionToEditorPosition(editor, cursor);
                 this.getDebouncedUpdateCursorPos(editor).cancel();
-                this.updateCursorPosInEditor(editor, newPos);
+                this.updateCursorPosInEditor(editor, gridId);
             }
         }
         this.gridCursorUpdates.clear();
@@ -239,7 +231,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     ): DebouncedFunc<CursorManager["updateCursorPosInEditor"]> => {
         const existing = this.debouncedCursorUpdates.get(editor);
         if (existing) return existing;
-        const func = debounce(this.updateCursorPosInEditor, 10, { leading: false, trailing: true, maxWait: 50 });
+        const func = debounce(this.updateCursorPosInEditor, 5, { leading: false, trailing: true, maxWait: 50 });
         this.debouncedCursorUpdates.set(editor, func);
         return func;
     };
@@ -247,7 +239,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Update cursor in active editor. Creates visual selections if appropriate.
      */
-    private updateCursorPosInEditor = async (editor: TextEditor, active: Position): Promise<void> => {
+    public updateCursorPosInEditor = async (editor: TextEditor, gridId: number): Promise<void> => {
         this.modeChangeCursorUpdatePromise.get(window.activeTextEditor!)?.resolve();
         this.modeChangeCursorUpdatePromise.delete(window.activeTextEditor!);
         if (
@@ -258,6 +250,13 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.logger.debug(`${LOG_PREFIX}: Skipping insert cursor update in editor`);
             return;
         }
+
+        const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
+        if (!bytePos) {
+            this.logger.warn(`${LOG_PREFIX}: No cursor for gridId from viewport: ${gridId}`);
+            return;
+        }
+        const active = convertVimPositionToEditorPosition(editor, bytePos);
 
         const prevActive = editor.selection.active;
         let selections;
