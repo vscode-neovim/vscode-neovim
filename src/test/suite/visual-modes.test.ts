@@ -524,6 +524,7 @@ describe("Visual modes test", () => {
 
         await sendVSCodeKeys(">");
         await wait(1000);
+        await sendEscapeKey();
         await assertContent(
             {
                 content: ["    test", "    test"],
@@ -531,7 +532,7 @@ describe("Visual modes test", () => {
             },
             client,
         );
-        await sendVSCodeKeys("d");
+        await sendVSCodeKeys("gvd");
         await assertContent(
             {
                 content: [""],
