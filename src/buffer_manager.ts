@@ -685,7 +685,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             // !Another hack is to retrieve cursor with delay - when we receive an external buffer the cursor pos is not immediately available
             setTimeout(
                 () => this.main.cursorManager.updateCursorPosInEditor(editor, this.getGridIdForWinId(closeWinId)!),
-                500,
+                1000,
             );
 
             // ! must delay to get a time to switch buffer to other window, otherwise it will be closed
