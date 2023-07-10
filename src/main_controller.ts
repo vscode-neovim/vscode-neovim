@@ -120,6 +120,13 @@ export class MainController implements vscode.Disposable {
         if (settings.useWsl) {
             args.unshift(settings.neovimPath);
         }
+        if (settings.NVIM_APPNAME) {
+            if (settings.useWsl) {
+                args.unshift(`NVIM_APPNAME=${settings.NVIM_APPNAME}`);
+            } else {
+                process.env.NVIM_APPNAME = settings.NVIM_APPNAME;
+            }
+        }
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
                 "-u",
@@ -139,9 +146,6 @@ export class MainController implements vscode.Disposable {
                 settings.useWsl
             }, args: ${JSON.stringify(args)}`,
         );
-        if (settings.NVIM_APPNAME) {
-            process.env.NVIM_APPNAME = settings.NVIM_APPNAME;
-        }
         this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {
             env: process.env,
         });
