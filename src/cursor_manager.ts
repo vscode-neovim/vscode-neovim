@@ -478,7 +478,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             if (mode.visual === "line") {
                 char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
             } else {
-                char = append ? endCol : startCol;
+                char = append ? Math.max(startCol, endCol) : Math.min(startCol, endCol) - 1;
             }
             this.logger.debug(`${LOG_PREFIX}: Multiple cursor at: [${line}, ${char}]`);
             selections.push(new Selection(line, char, line, char));
