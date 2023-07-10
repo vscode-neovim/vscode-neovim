@@ -3,7 +3,7 @@
 vim.opt.shortmess = "filnxtToOFI"
 vim.opt.cmdheight = 1
 vim.opt.wildmode = "list"
-vim.cmd([[set wildchar=<C-e>]])
+vim.cmd [[set wildchar=<C-e>]]
 vim.opt.mouse = "a"
 
 vim.opt.backup = false

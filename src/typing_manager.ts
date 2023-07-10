@@ -125,13 +125,13 @@ export class TypingManager implements Disposable {
         ) {
             this.pendingKeysAfterEnter = "";
             const editor = window.activeTextEditor;
-            const cursorPromise = editor && this.main.cursorManager.modeChangeCursorUpdatePromise.get(editor);
+            const cursorPromise = editor && this.main.cursorManager.waitForModeChangeUpdate(editor);
             if (cursorPromise) {
                 this.isEnteringInsertMode = true;
                 this.logger.debug(
                     `${LOG_PREFIX}: Waiting for cursor completion operation before disposing type handler`,
                 );
-                cursorPromise.promise.then(() => {
+                cursorPromise.then(() => {
                     this.isEnteringInsertMode = false;
                     if (this.main.modeManager.isInsertMode) {
                         this.disposeType();

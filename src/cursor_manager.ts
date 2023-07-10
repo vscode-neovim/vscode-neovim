@@ -51,7 +51,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * When switching modes with a cursor update (like entering insert mode with o), vim will send the mode change before it sends the cursor.
      * This promise is used by typing_manager to know when to unbind type handler. We are guaranteed to get a cursor update on `ModeChanged`.
      */
-    public modeChangeCursorUpdatePromise: Map<TextEditor, ManualPromise> = new Map();
+    private modeChangeCursorUpdatePromise: Map<TextEditor, ManualPromise> = new Map();
     /**
      * In insert mode, cursor updates can be sent due to document changes. We should ignore them to
      * avoid interfering with vscode typing. However, they are important for various actions, such as
@@ -165,6 +165,13 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             }
         }
         this.processCursorMoved();
+    }
+
+    public waitForModeChangeUpdate(editor: TextEditor): Promise<void> | undefined {
+        const promise = this.modeChangeCursorUpdatePromise.get(editor);
+        if (promise) {
+            return promise.promise;
+        }
     }
 
     private onModeChange = (): void => {
@@ -445,7 +452,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.main.viewportManager.scrollNeovim(editor);
     };
 
-    private multipleCursorFromVisualMode(
+    private async multipleCursorFromVisualMode(
         append: boolean,
         mode: Mode,
         startLine: number,
@@ -453,8 +460,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         startCol: number,
         endCol: number,
         skipEmpty: boolean,
-    ): void {
+    ): Promise<void> {
         if (!window.activeTextEditor) return;
+        await this.waitForModeChangeUpdate(window.activeTextEditor);
+        this.wantInsertCursorUpdate = false;
 
         this.logger.debug(
             `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], col: [${startCol}, ${endCol}], mode: ${mode.visual}, append: ${append}, skipEmpty: ${skipEmpty}`,
