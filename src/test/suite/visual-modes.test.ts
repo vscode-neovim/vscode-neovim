@@ -417,7 +417,7 @@ describe("Visual modes test", () => {
         await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         await wait();
 
-        await sendVSCodeKeys("jw");
+        await sendVSCodeKeys("jwl");
         await sendNeovimKeys(client, "<C-v>");
         await wait(1000);
         await sendVSCodeKeys("lk");
