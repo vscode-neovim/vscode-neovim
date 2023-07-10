@@ -9,6 +9,7 @@ import {
     commands,
     Disposable,
     EndOfLine,
+    Selection,
     TextDocument,
     TextEditor,
     TextEditorOptionsChangeEvent,
@@ -20,7 +21,7 @@ import {
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { callAtomic } from "./utils";
+import { callAtomic, convertByteNumToCharNum } from "./utils";
 import { MainController } from "./main_controller";
 
 // !Note: document and editors in vscode events and namespace are reference stable
@@ -683,10 +684,24 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         if (closeWinId) {
             // !Another hack is to retrieve cursor with delay - when we receive an external buffer the cursor pos is not immediately available
-            setTimeout(
-                () => this.main.cursorManager.updateCursorPosInEditor(editor, this.getGridIdForWinId(closeWinId)!),
-                1000,
-            );
+            // [1, 0]
+            setTimeout(async () => {
+                const neovimCursor: [number, number] = await this.client.request("nvim_win_get_cursor", [closeWinId]);
+                if (neovimCursor) {
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Adjusting cursor pos for external buffer: ${id}, originalPos: [${neovimCursor[0]}, ${neovimCursor[1]}]`,
+                    );
+                    const finalLine = neovimCursor[0] - 1;
+                    let finalCol = neovimCursor[1];
+                    try {
+                        finalCol = convertByteNumToCharNum(doc.lineAt(finalLine).text, neovimCursor[1]);
+                        this.logger.debug(`${LOG_PREFIX}: Adjusted cursor: [${finalLine}, ${finalCol}]`);
+                    } catch (e) {
+                        this.logger.warn(`${LOG_PREFIX}: Unable to get cursor pos for external buffer: ${id}`);
+                    }
+                    editor.selections = [new Selection(finalLine, finalCol, finalLine, finalCol)];
+                }
+            }, 1000);
 
             // ! must delay to get a time to switch buffer to other window, otherwise it will be closed
             // TODO: Hacky, but seems external buffers won't be much often used
