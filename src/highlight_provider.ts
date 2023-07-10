@@ -228,7 +228,7 @@ export class HighlightProvider {
         // replace MatchParenVisual with Visual, for example
         for (const ignore of this.configuration.ignoreHighlights) {
             if (ignore.startsWith("^") || ignore.endsWith("$")) {
-                name = name.replace(new RegExp(ignore), "");
+                name = name.replace(ignore.startsWith("^") ? ignore.slice(1) : ignore.slice(0, -1), "");
             } else {
                 name = name.replace(ignore, "");
             }

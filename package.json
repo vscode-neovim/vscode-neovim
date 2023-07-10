@@ -179,7 +179,7 @@
                         "MsgSeparator",
                         "MsgArea",
                         "^RedrawDebug",
-                        "^.*MatchParen.*",
+                        "^MatchParen",
                         "^Nvim",
                         "Operator",
                         "Delimiter",
