@@ -194,7 +194,7 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.viewportManager);
 
-        this.highlightManager = new HighlightManager(this, {
+        this.highlightManager = new HighlightManager(this.logger, this, {
             highlight: this.settings.highlightsConfiguration,
         });
         this.disposables.push(this.highlightManager);
