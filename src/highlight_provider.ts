@@ -225,6 +225,14 @@ export class HighlightProvider {
 
     public getDecoratorForHighlightGroup(name: string): TextEditorDecorationType | undefined {
         let dec = this.highlighGroupToDecorator.get(name);
+        // replace MatchParenVisual with Visual, for example
+        for (const ignore of this.configuration.ignoreHighlights) {
+            if (ignore.startsWith("^") || ignore.endsWith("$")) {
+                name = name.replace(new RegExp(ignore), "");
+            } else {
+                name = name.replace(ignore, "");
+            }
+        }
         if (!dec && name.endsWith("Default")) {
             dec = this.highlighGroupToDecorator.get(name.slice(0, -7));
         }
