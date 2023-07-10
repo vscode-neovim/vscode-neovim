@@ -97,7 +97,6 @@ augroup VscodeGeneral
     " Looks like external windows are coming with "set wrap" set automatically, disable them
     " autocmd WinNew,WinEnter * :set nowrap
     autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
-    autocmd ModeChanged * call VSCodeExtensionNotify('mode-changed', v:event.new_mode)
     " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.
     autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:luaPath
 augroup END

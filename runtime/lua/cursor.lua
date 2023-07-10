@@ -45,8 +45,12 @@ local function update_cursor()
 end
 
 -- always update the cursor on modechange, to resolve mode change cursor update promise
+-- ensure that modemanager is updated first
 vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-  callback = update_cursor
+  callback = function()
+    vim.fn.VSCodeExtensionNotify('mode-changed', vim.v.event.new_mode)
+    update_cursor()
+  end
 })
 
 -- simulate VisualChanged event to update visual selection
