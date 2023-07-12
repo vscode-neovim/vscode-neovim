@@ -16,7 +16,7 @@ export class Mode {
         return this.shortname.charAt(0).replace("\x16", "v");
     }
     // mode long name
-    public get name(): "insert" | "visual" | "cmdline" | "normal" {
+    public get name(): "insert" | "visual" | "cmdline" | "replace" | "normal" {
         switch (this.char.toLowerCase()) {
             case "i":
                 return "insert";
@@ -24,6 +24,8 @@ export class Mode {
                 return "visual";
             case "c":
                 return "cmdline";
+            case "r":
+                return "replace";
             case "n":
             default:
                 return "normal";
@@ -105,6 +107,7 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
                     commands.executeCommand("setContext", "neovim.recording", false);
                 }
                 commands.executeCommand("setContext", "neovim.mode", this.mode.name);
+                this.logger.debug(`${LOG_PREFIX}: Setting mode context to ${this.mode.name}`);
                 this.eventEmitter.emit("neovimModeChanged");
                 break;
             }
