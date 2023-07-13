@@ -55,12 +55,12 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      * @param gridId: grid id
      * @returns (0, 0)-indexed grid offset
      */
-    public getGridOffset(gridId: number): { topLine: number; leftCol: number } | undefined {
+    public getGridOffset(gridId: number): Position | undefined {
         const view = this.gridViewport.get(gridId);
         if (!view) {
             return;
         }
-        return { topLine: view.topline - 1, leftCol: view.leftcol };
+        return new Position(view.topline - 1, view.leftcol);
     }
 
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {

@@ -106,7 +106,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         }
 
                         // const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
-                        const topScreenLine = gridOffset.topLine;
+                        const topScreenLine = gridOffset.line;
                         const highlightLine = topScreenLine + row;
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             if (highlightLine > 0) {
@@ -116,7 +116,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             continue;
                         }
                         const line = editor.document.lineAt(highlightLine).text;
-                        const colStart = col + gridOffset.leftCol;
+                        const colStart = col + gridOffset.character;
                         const tabSize = editor.options.tabSize as number;
                         const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
                         const isExternal = this.main.bufferManager.isExternalTextDocument(editor.document);
@@ -165,13 +165,13 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
             if (docPromises) {
                 this.logger.debug(`${LOG_PREFIX}: Waiting for document change completion before updating highlights`);
                 docPromises.then(() => {
-                    const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.topLine);
+                    const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.line);
                     for (const [decorator, ranges] of hls) {
                         editor.setDecorations(decorator, ranges);
                     }
                 });
             } else {
-                const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.topLine);
+                const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.line);
                 for (const [decorator, ranges] of hls) {
                     editor.setDecorations(decorator, ranges);
                 }

@@ -313,7 +313,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
 
         this.applySelectionChanged(textEditor, kind);
-        if (kind === TextEditorSelectionChangeKind.Mouse) this.applySelectionChanged.flush();
+        // when dragging mouse, pre-emptively hide cursor to show fake
+        if (kind === TextEditorSelectionChangeKind.Mouse && !textEditor.selection.isEmpty) {
+            this.updateCursorStyle("visual");
+        }
     };
 
     // ! Need to debounce requests because setting cursor by consequence of neovim event will trigger this method
@@ -337,31 +340,37 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 return;
             }
 
-            let cursorPos;
-            if (
-                (selections.length > 1 && !this.main.modeManager.isVisualMode) ||
-                (kind === TextEditorSelectionChangeKind.Mouse && !selection.active.isEqual(selection.anchor))
-            ) {
-                this.logger.debug(`${LOG_PREFIX}: Processing multi-selection`);
-                if (kind === TextEditorSelectionChangeKind.Mouse && this.settings.mouseSelectionEnabled) {
-                    if (!this.main.modeManager.isVisualMode) {
-                        // need to start visual mode from anchor char
-                        const firstPos = selection.anchor;
-                        const mouseClickPos = convertEditorPositionToVimPosition(editor, firstPos);
-                        this.logger.debug(
-                            `${LOG_PREFIX}: Starting visual mode from: [${mouseClickPos.line}, ${mouseClickPos.character}]`,
-                        );
-                        await this.updateNeovimCursorPosition(editor, mouseClickPos);
-                        await this.client.feedKeys("v", "nx", false);
-                    }
-                    const lastSelection = selections.slice(-1)[0];
-                    if (!lastSelection) return;
-                    cursorPos = convertEditorPositionToVimPosition(editor, lastSelection.active);
-                } else {
-                    return;
+            if (!selection.isEmpty) {
+                if (kind !== TextEditorSelectionChangeKind.Mouse || this.settings.mouseSelectionEnabled) {
+                    const grid = this.main.bufferManager.getGridIdForWinId(
+                        this.main.bufferManager.getWinIdForTextEditor(editor)!,
+                    )!;
+                    const offset = this.main.viewportManager.getGridOffset(grid)!;
+                    const anchor = convertEditorPositionToVimPosition(editor, selection.anchor);
+                    const active = convertEditorPositionToVimPosition(editor, selection.active);
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
+                    );
+                    await this.client.call("nvim_input_mouse", [
+                        "left",
+                        "press",
+                        "",
+                        grid,
+                        anchor.line - offset.line,
+                        anchor.character - offset.character - (anchor.isAfter(active) ? 1 : 0),
+                    ]);
+                    await this.client.call("nvim_input_mouse", [
+                        "left",
+                        "release",
+                        "",
+                        grid,
+                        active.line - offset.line,
+                        active.character - offset.character - (anchor.isBeforeOrEqual(active) ? 1 : 0),
+                    ]);
                 }
+            } else {
+                await this.updateNeovimCursorPosition(editor, undefined);
             }
-            await this.updateNeovimCursorPosition(editor, cursorPos);
         },
         100,
         { leading: false, trailing: true },
