@@ -321,12 +321,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }], isMultiSelection: ${selections.length > 1}`,
             );
 
-            const neovimCursorPos = this.neovimCursorPosition.get(editor);
-            if (neovimCursorPos && neovimCursorPos.isEqual(cursor)) {
-                this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
-                return;
-            }
-
             if (!selection.isEmpty) {
                 this.updateNeovimVisualSelection(editor, selection);
             } else {
@@ -348,6 +342,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${pos.line}, ${pos.character}]`,
         );
+        const neovimCursorPos = this.neovimCursorPosition.get(editor);
+        if (neovimCursorPos && neovimCursorPos.isEqual(pos)) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
+            return;
+        }
         const vimPos = [pos.line + 1, pos.character]; // nvim_win_set_cursor is [1, 0] based
         const request: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, vimPos]]];
         await callAtomic(this.client, request, this.logger, LOG_PREFIX);
@@ -362,6 +361,15 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
+
+        const anchorNvimRaw = await this.client.callFunction("getcharpos", ["v"]);
+        const anchorNvim = new Position(anchorNvimRaw[1] - 1, anchorNvimRaw[2] - 1);
+        const neovimCursorPos = this.neovimCursorPosition.get(editor);
+        if (neovimCursorPos && neovimCursorPos.isEqual(selection.active) && anchorNvim.isEqual(anchor)) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same visual pos`);
+            return;
+        }
+
         if (
             Math.min(anchor.line, active.line) >= viewport.topline &&
             Math.max(anchor.line, active.line) < viewport.botline
