@@ -357,13 +357,16 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         const grid = this.main.bufferManager.getGridIdForWinId(this.main.bufferManager.getWinIdForTextEditor(editor)!)!;
         const anchor = convertEditorPositionToVimPosition(editor, selection.anchor);
         const active = convertEditorPositionToVimPosition(editor, selection.active);
-        const visibleRanges = editor.visibleRanges;
+        const offset = this.main.viewportManager.getGridOffset(grid);
+        const viewport = this.main.viewportManager.getViewport(grid);
         this.logger.debug(
             `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
-        if (visibleRanges.every((range) => range.contains(selection.anchor) && range.contains(selection.active))) {
+        if (
+            Math.min(anchor.line, active.line) >= viewport.topline &&
+            Math.max(anchor.line, active.line) < viewport.botline
+        ) {
             this.logger.debug(`${LOG_PREFIX}: Using mouse input to start visual mode`);
-            const offset = this.main.viewportManager.getGridOffset(grid)!;
             await this.client.call("nvim_input_mouse", [
                 "left",
                 "press",
