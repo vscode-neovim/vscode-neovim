@@ -26,10 +26,6 @@ import { Mode } from "./mode_manager";
 
 const LOG_PREFIX = "CursorManager";
 
-export interface CursorManagerSettings {
-    mouseSelectionEnabled: boolean;
-}
-
 interface CursorInfo {
     cursorShape: "block" | "horizontal" | "vertical";
 }
@@ -72,7 +68,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         private logger: Logger,
         private client: NeovimClient,
         private main: MainController,
-        private settings: CursorManagerSettings,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
@@ -341,38 +336,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             }
 
             if (!selection.isEmpty) {
-                if (kind !== TextEditorSelectionChangeKind.Mouse || this.settings.mouseSelectionEnabled) {
-                    const grid = this.main.bufferManager.getGridIdForWinId(
-                        this.main.bufferManager.getWinIdForTextEditor(editor)!,
-                    )!;
-                    const offset = this.main.viewportManager.getGridOffset(grid)!;
-                    const anchor = convertEditorPositionToVimPosition(editor, selection.anchor);
-                    const active = convertEditorPositionToVimPosition(editor, selection.active);
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
-                    );
-                    await this.client.call("nvim_input_mouse", [
-                        "left",
-                        "press",
-                        "",
-                        grid,
-                        anchor.line - offset.line,
-                        anchor.character - offset.character - (anchor.isAfter(active) ? 1 : 0),
-                    ]);
-                    await this.client.call("nvim_input_mouse", [
-                        "left",
-                        "release",
-                        "",
-                        grid,
-                        active.line - offset.line,
-                        active.character - offset.character - (anchor.isBeforeOrEqual(active) ? 1 : 0),
-                    ]);
-                }
+                this.updateNeovimVisualSelection(editor, selection);
             } else {
                 await this.updateNeovimCursorPosition(editor, undefined);
             }
         },
-        100,
+        200,
         { leading: false, trailing: true },
     );
 
@@ -390,6 +359,42 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         const vimPos = [pos.line + 1, pos.character]; // nvim_win_set_cursor is [1, 0] based
         const request: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, vimPos]]];
         await callAtomic(this.client, request, this.logger, LOG_PREFIX);
+    }
+
+    private async updateNeovimVisualSelection(editor: TextEditor, selection: Selection): Promise<void> {
+        const grid = this.main.bufferManager.getGridIdForWinId(this.main.bufferManager.getWinIdForTextEditor(editor)!)!;
+        const anchor = convertEditorPositionToVimPosition(editor, selection.anchor);
+        const active = convertEditorPositionToVimPosition(editor, selection.active);
+        const visibleRanges = editor.visibleRanges;
+        this.logger.debug(
+            `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
+        );
+        if (visibleRanges.every((range) => range.contains(selection.anchor) && range.contains(selection.active))) {
+            this.logger.debug(`${LOG_PREFIX}: Using mouse input to start visual mode`);
+            const offset = this.main.viewportManager.getGridOffset(grid)!;
+            await this.client.call("nvim_input_mouse", [
+                "left",
+                "press",
+                "",
+                grid,
+                anchor.line - offset.line,
+                anchor.character - offset.character - (anchor.isAfter(active) ? 1 : 0),
+            ]);
+            await this.client.call("nvim_input_mouse", [
+                "left",
+                "release",
+                "",
+                grid,
+                active.line - offset.line,
+                active.character - offset.character - (anchor.isBeforeOrEqual(active) ? 1 : 0),
+            ]);
+        } else {
+            // this allows visual selection outside of buffer, but does not handle active before anchor
+            this.logger.debug(`${LOG_PREFIX}: Using visual markers to start visual mode`);
+            await this.client.call("setcharpos", ["'<", [0, anchor.line + 1, anchor.character + 1, 0]]);
+            await this.client.call("setcharpos", ["'>", [0, active.line + 1, active.character, 0]]);
+            await this.client.input("gv");
+        }
     }
 
     // given a neovim visual selection range (and the current mode), create a vscode selection
