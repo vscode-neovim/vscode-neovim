@@ -117,31 +117,35 @@ export class TypingManager implements Disposable {
         }
     }
 
-    private onModeChange = (): void => {
+    private onModeChange = async (): Promise<void> => {
         if (
             this.main.modeManager.isInsertMode &&
             this.typeHandlerDisposable &&
             !this.main.modeManager.isRecordingInInsertMode
         ) {
             this.pendingKeysAfterEnter = "";
+            this.isEnteringInsertMode = true;
             const editor = window.activeTextEditor;
-            const cursorPromise = editor && this.main.cursorManager.waitForModeChangeUpdate(editor);
+            await this.client.call("getpos", ["."]); // hack to wait for cursor update
+            const cursorPromise = editor && this.main.cursorManager.waitForCursorUpdate(editor);
             if (cursorPromise) {
-                this.isEnteringInsertMode = true;
                 this.logger.debug(
                     `${LOG_PREFIX}: Waiting for cursor completion operation before disposing type handler`,
                 );
-                cursorPromise.then(() => {
-                    this.isEnteringInsertMode = false;
+                cursorPromise.then(async () => {
                     if (this.main.modeManager.isInsertMode) {
                         this.disposeType();
                         this.disposeReplacePrevChar();
                     }
                     if (this.pendingKeysAfterEnter) {
-                        commands.executeCommand(this.main.modeManager.isInsertMode ? "default:type" : "type", {
+                        this.logger.debug(
+                            `${LOG_PREFIX}: Replaying pending keys after entering insert mode: ${this.pendingKeysAfterEnter}`,
+                        );
+                        await commands.executeCommand(this.main.modeManager.isInsertMode ? "default:type" : "type", {
                             text: this.pendingKeysAfterEnter,
                         });
                         this.pendingKeysAfterEnter = "";
+                        this.isEnteringInsertMode = false;
                     }
                 });
             } else {

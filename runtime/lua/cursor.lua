@@ -20,6 +20,9 @@ local function prepare_multi_cursor(append, skip_empty)
 end
 
 local function notify_multi_cursor()
+  if not should_notify_multi_cursor then
+    return
+  end
   should_notify_multi_cursor = nil
   local startPos = vim.fn.getcharpos("'<")
   local endPos = vim.fn.getcharpos("'>")
@@ -27,37 +30,41 @@ local function notify_multi_cursor()
     startPos[3], endPos[3], multi_cursor_skip_empty)
 end
 
+vim.api.nvim_create_autocmd({ "InsertEnter" }, {
+  callback = notify_multi_cursor
+})
+
 -- Multiple cursors support for visual line/block modes
 vim.keymap.set('x', 'ma', function() prepare_multi_cursor(true, true) end)
 vim.keymap.set('x', 'mi', function() prepare_multi_cursor(false, true) end)
 vim.keymap.set('x', 'mA', function() prepare_multi_cursor(true, false) end)
 vim.keymap.set('x', 'mI', function() prepare_multi_cursor(false, false) end)
 
--- ----------------------- forced cursor updates ----------------------- --
--- on certain events, we want to trigger a cursor update
-local function update_cursor()
-  vim.fn.VSCodeExtensionNotify('update-cursor', vim.fn.win_getid())
-
-  -- notify a multi cursor only after the cursor is updated
-  if should_notify_multi_cursor and vim.fn.mode() == 'i' then
-    notify_multi_cursor()
-  end
+-- ----------------------- forced visual cursor updates ----------------------- --
+local function visual_changed()
+  vim.fn.VSCodeExtensionNotify('visual-changed', vim.fn.win_getid())
 end
 
--- always update the cursor on modechange, to resolve mode change cursor update promise
--- ensure that modemanager is updated first
+-- simulate VisualChanged event to update visual selection
 vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-  callback = function()
-    vim.fn.VSCodeExtensionNotify('mode-changed', vim.v.event.new_mode)
-    update_cursor()
-  end
+  pattern = "[vV\x16]*:[vV\x16]*",
+  callback = visual_changed
 })
 
--- simulate VisualChanged event to update visual selection
+vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+  pattern = "[vV\x16]*:[^vv\x16]*",
+  callback = visual_changed
+})
+
+vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+  pattern = "[^vV\x16]*:[vV\x16]*",
+  callback = visual_changed
+})
+
 vim.api.nvim_create_autocmd({ "CursorHold", "TextChanged" }, {
   callback = function()
     if util.is_visual_mode() then
-      update_cursor()
+      visual_changed()
     end
   end
 })

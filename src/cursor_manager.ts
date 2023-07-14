@@ -44,10 +44,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     private neovimCursorPosition: WeakMap<TextEditor, Position> = new WeakMap();
     /**
      * Pending cursor update promise.
-     * When switching modes with a cursor update (like entering insert mode with o), vim will send the mode change before it sends the cursor.
-     * This promise is used by typing_manager to know when to unbind type handler. We are guaranteed to get a cursor update on `ModeChanged`.
+     * This promise is used by typing_manager to know when to unbind type handler.
      */
-    private modeChangeCursorUpdatePromise: Map<TextEditor, ManualPromise> = new Map();
+    private cursorUpdatePromise: Map<TextEditor, ManualPromise> = new Map();
     /**
      * In insert mode, cursor updates can be sent due to document changes. We should ignore them to
      * avoid interfering with vscode typing. However, they are important for various actions, such as
@@ -71,7 +70,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
-        this.main.modeManager.onModeChange(this.onModeChange);
     }
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -79,13 +77,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
         switch (name) {
-            case "update-cursor": {
-                const [winId] = args as [number];
-                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
-                if (gridId) this.gridCursorUpdates.add(gridId);
-                break;
-            }
-            case "window-scroll": {
+            case "window-scroll":
+            case "visual-changed": {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const [winId] = args as [number, any];
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
@@ -154,6 +147,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
                 case "mode_change": {
                     const [newModeName] = firstArg as [string, never];
+                    if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
                     this.updateCursorStyle(newModeName);
                     break;
                 }
@@ -162,17 +156,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.processCursorMoved();
     }
 
-    public waitForModeChangeUpdate(editor: TextEditor): Promise<void> | undefined {
-        const promise = this.modeChangeCursorUpdatePromise.get(editor);
+    public waitForCursorUpdate(editor: TextEditor): Promise<void> | undefined {
+        const promise = this.cursorUpdatePromise.get(editor);
         if (promise) {
             return promise.promise;
         }
     }
-
-    private onModeChange = (): void => {
-        if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
-        this.modeChangeCursorUpdatePromise.set(window.activeTextEditor!, new ManualPromise());
-    };
 
     private onDidChangeVisibleTextEditors = (): void => {
         this.updateCursorStyle(this.main.modeManager.currentMode.name);
@@ -208,6 +197,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 this.logger.warn(`${LOG_PREFIX}: No editor for gridId: ${gridId}`);
                 continue;
             }
+            // lock typing in editor until cursor update is complete
+            this.cursorUpdatePromise.set(editor, new ManualPromise());
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
             const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
@@ -242,8 +233,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Update cursor in active editor. Creates visual selections if appropriate.
      */
     public updateCursorPosInEditor = async (editor: TextEditor, gridId: number): Promise<void> => {
-        this.modeChangeCursorUpdatePromise.get(window.activeTextEditor!)?.resolve();
-        this.modeChangeCursorUpdatePromise.delete(window.activeTextEditor!);
         if (
             this.main.modeManager.isInsertMode &&
             !this.wantInsertCursorUpdate &&
@@ -279,6 +268,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!selections[0].active.isEqual(prevActive)) {
             this.triggerMovementFunctions(editor, active);
         }
+
+        this.cursorUpdatePromise.get(window.activeTextEditor!)?.resolve();
+        this.cursorUpdatePromise.delete(window.activeTextEditor!);
     };
 
     private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
@@ -476,7 +468,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         skipEmpty: boolean,
     ): Promise<void> {
         if (!window.activeTextEditor) return;
-        await this.waitForModeChangeUpdate(window.activeTextEditor);
+        await this.waitForCursorUpdate(window.activeTextEditor);
         this.wantInsertCursorUpdate = false;
 
         this.logger.debug(
