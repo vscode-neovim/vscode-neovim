@@ -381,7 +381,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
                     this.textEditorToWinId.set(visibleEditor, winId);
                     this.winIdToEditor.set(winId, visibleEditor);
-                    this.main.cursorManager.updateNeovimCursorPosition(visibleEditor, undefined);
+                    this.main.cursorManager.updateNeovimCursorPosition(visibleEditor, visibleEditor.selection.active);
                 }
             } catch (e) {
                 this.logger.error(`${LOG_PREFIX}: ${(e as Error).message}`);
@@ -470,7 +470,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
-        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, undefined);
+        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
         await this.client.request("nvim_set_current_win", [winId]);
     };
 

@@ -326,7 +326,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             );
 
             if (selection.isEmpty) {
-                await this.updateNeovimCursorPosition(editor, undefined);
+                await this.updateNeovimCursorPosition(editor, selection.active);
             } else {
                 await this.updateNeovimVisualSelection(editor, selection);
             }
@@ -336,18 +336,17 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     );
 
     /**
-     * Set cursor position in neovim. Coords are [0, 0] based. If no position provided, will use
-     *  editor cursor position.
-     */
-    public async updateNeovimCursorPosition(editor: TextEditor, pos: Position | undefined): Promise<void> {
+     * Set cursor position in neovim. Coords are [0, 0] based.
+     **/
+    public async updateNeovimCursorPosition(editor: TextEditor, active: Position): Promise<void> {
         const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
         if (!winId) return;
-        if (!pos) pos = convertEditorPositionToVimPosition(editor, editor.selection.active);
         const neovimCursorPos = this.neovimCursorPosition.get(editor);
-        if (neovimCursorPos && neovimCursorPos.active.isEqual(pos)) {
+        if (neovimCursorPos && neovimCursorPos.active.isEqual(active)) {
             this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
             return;
         }
+        const pos = convertEditorPositionToVimPosition(editor, editor.selection.active);
         this.logger.debug(
             `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${pos.line}, ${pos.character}]`,
         );
@@ -359,48 +358,29 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     private async updateNeovimVisualSelection(editor: TextEditor, selection: Selection): Promise<void> {
         const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
         if (!winId) return;
-        const grid = this.main.bufferManager.getGridIdForWinId(winId);
-        if (!grid) return;
+        const bufId = this.main.bufferManager.getBufferIdForTextDocument(editor.document);
+        if (!bufId) return;
         const neovimCursorPos = this.neovimCursorPosition.get(editor);
         if (neovimCursorPos && neovimCursorPos.isEqual(selection)) {
             this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same visual pos`);
             return;
         }
-        const anchor = convertEditorPositionToVimPosition(editor, selection.anchor);
-        const active = convertEditorPositionToVimPosition(editor, selection.active);
-        const offset = this.main.viewportManager.getGridOffset(grid);
-        const viewport = this.main.viewportManager.getViewport(grid);
+        let anchor = selection.anchor;
+        let active = selection.active;
+        // compensate for vscode selection containing last character
+        if (anchor.isBeforeOrEqual(active)) {
+            active = new Position(active.line, Math.max(active.character - 1, 0));
+        } else {
+            anchor = new Position(anchor.line, Math.max(anchor.character - 1, 0));
+        }
         this.logger.debug(
             `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
-        if (
-            Math.min(anchor.line, active.line) >= viewport.topline &&
-            Math.max(anchor.line, active.line) < viewport.botline
-        ) {
-            this.logger.debug(`${LOG_PREFIX}: Using mouse input to start visual mode`);
-            await this.client.call("nvim_input_mouse", [
-                "left",
-                "press",
-                "",
-                grid,
-                anchor.line - offset.line,
-                anchor.character - offset.character - (anchor.isAfter(active) ? 1 : 0),
-            ]);
-            await this.client.call("nvim_input_mouse", [
-                "left",
-                "release",
-                "",
-                grid,
-                active.line - offset.line,
-                active.character - offset.character - (anchor.isBeforeOrEqual(active) ? 1 : 0),
-            ]);
-        } else {
-            // this allows visual selection outside of buffer, but does not handle the active selection before anchor
-            this.logger.debug(`${LOG_PREFIX}: Using visual markers to start visual mode`);
-            await this.client.call("setcharpos", ["'<", [0, anchor.line + 1, anchor.character + 1, 0]]);
-            await this.client.call("setcharpos", ["'>", [0, active.line + 1, active.character, 0]]);
-            await this.client.input("gv");
-        }
+        // await this.client.input("<Esc>v<Esc>"); // set to charwise mode, but we don't want cursor updates
+        await this.client.call("winrestview", [{ curswant: active.character }]);
+        await this.client.call("setcharpos", ["'<", [bufId, anchor.line + 1, anchor.character + 1]]);
+        await this.client.call("setcharpos", ["'>", [bufId, active.line + 1, active.character + 1]]);
+        await this.client.input("gv");
     }
 
     // given a neovim visual selection range (and the current mode), create a vscode selection
@@ -410,6 +390,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         const anchorNvim = await this.client.callFunction("getcharpos", ["v"]);
         const anchor = new Position(anchorNvim[1] - 1, anchorNvim[2] - 1);
 
+        const activeLineLength = doc.lineAt(active.line).range.end.character;
+        const anchorLineLength = doc.lineAt(anchor.line).range.end.character;
+
         // to make a full selection, the end of the selection needs to be moved forward by one character
         // we hide the real cursor and use a highlight decorator for the fake cursor
         switch (mode.visual) {
@@ -418,26 +401,19 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     return [
                         new Selection(
                             anchor,
-                            new Position(
-                                active.line,
-                                Math.min(active.character + 1, doc.lineAt(active.line).range.end.character),
-                            ),
+                            new Position(active.line, Math.min(active.character + 1, activeLineLength)),
                         ),
                     ];
                 else
                     return [
                         new Selection(
-                            new Position(
-                                anchor.line,
-                                Math.min(anchor.character + 1, doc.lineAt(anchor.line).range.end.character),
-                            ),
+                            new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
                             active,
                         ),
                     ];
             case "line":
-                if (anchor.line <= active.line)
-                    return [new Selection(anchor.line, 0, active.line, doc.lineAt(active.line).text.length)];
-                else return [new Selection(anchor.line, doc.lineAt(anchor.line).text.length, active.line, 0)];
+                if (anchor.line <= active.line) return [new Selection(anchor.line, 0, active.line, activeLineLength)];
+                else return [new Selection(anchor.line, anchorLineLength, active.line, 0)];
             case "block": {
                 const selections: Selection[] = [];
                 // we want the first selection to be on the cursor line, so that a single-line selection will properly trigger word highlight
