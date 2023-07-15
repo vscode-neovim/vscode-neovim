@@ -291,7 +291,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: Waiting done`);
 
         const documentChange = this.main.changeManager.getDocumentCursorAfterChange(textEditor.document);
-        const cursor = selections[0].active;
+        const cursor = selections.slice(-1)[0].active;
         if (documentChange && documentChange.isEqual(cursor)) {
             this.logger.debug(
                 `${LOG_PREFIX}: Skipping onSelectionChanged event since it was selection produced by doc change`,
@@ -299,7 +299,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             return;
         }
 
-        this.applySelectionChanged(textEditor, selections, kind);
+        this.applySelectionChanged(textEditor, selections.slice(-1)[0], kind);
         // when dragging mouse, pre-emptively hide cursor to not clash with fake cursor
         if (kind === TextEditorSelectionChangeKind.Mouse && !textEditor.selection.isEmpty) {
             this.updateCursorStyle("visual");
@@ -309,15 +309,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     // ! Need to debounce requests because setting cursor by consequence of neovim event will trigger this method
     // ! and cursor may go out-of-sync and produce a jitter
     private applySelectionChanged = debounce(
-        async (
-            editor: TextEditor,
-            selections: readonly Selection[],
-            kind: TextEditorSelectionChangeKind | undefined,
-        ) => {
+        async (editor: TextEditor, selection: Selection, kind: TextEditorSelectionChangeKind | undefined) => {
             // reset cursor style if needed
             this.updateCursorStyle(this.main.modeManager.currentMode.name);
             this.main.changeManager.clearDocumentCursorAfterChange(editor.document);
-            const selection = selections[0];
 
             this.logger.debug(
                 `${LOG_PREFIX}: Applying changed selection, kind: ${kind},  cursor: [${selection.active.line}, ${
@@ -377,10 +372,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
         // await this.client.input("<Esc>v<Esc>"); // set to charwise mode, but we don't want cursor updates
-        await this.client.call("winrestview", [{ curswant: active.character }]);
         await this.client.call("setcharpos", ["'<", [bufId, anchor.line + 1, anchor.character + 1]]);
         await this.client.call("setcharpos", ["'>", [bufId, active.line + 1, active.character + 1]]);
         await this.client.input("gv");
+        await this.client.call("winrestview", [{ curswant: active.character }]);
     }
 
     // given a neovim visual selection range (and the current mode), create a vscode selection
