@@ -123,8 +123,6 @@ export class TypingManager implements Disposable {
             this.typeHandlerDisposable &&
             !this.main.modeManager.isRecordingInInsertMode
         ) {
-            this.pendingKeysAfterEnter = "";
-            this.isEnteringInsertMode = true;
             const editor = window.activeTextEditor;
             await this.client.call("getpos", ["."]); // hack to wait for cursor update
             const cursorPromise = editor && this.main.cursorManager.waitForCursorUpdate(editor);
@@ -132,6 +130,8 @@ export class TypingManager implements Disposable {
                 this.logger.debug(
                     `${LOG_PREFIX}: Waiting for cursor completion operation before disposing type handler`,
                 );
+                this.pendingKeysAfterEnter = "";
+                this.isEnteringInsertMode = true;
                 cursorPromise.then(async () => {
                     if (this.main.modeManager.isInsertMode) {
                         this.disposeType();
@@ -145,8 +145,8 @@ export class TypingManager implements Disposable {
                             text: this.pendingKeysAfterEnter,
                         });
                         this.pendingKeysAfterEnter = "";
-                        this.isEnteringInsertMode = false;
                     }
+                    this.isEnteringInsertMode = false;
                 });
             } else {
                 this.disposeType();
