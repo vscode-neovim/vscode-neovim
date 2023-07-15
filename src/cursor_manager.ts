@@ -291,7 +291,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: Waiting done`);
 
         const documentChange = this.main.changeManager.getDocumentCursorAfterChange(textEditor.document);
-        const cursor = selections.slice(-1)[0].active;
+        const cursor = selections[0].active;
         if (documentChange && documentChange.isEqual(cursor)) {
             this.logger.debug(
                 `${LOG_PREFIX}: Skipping onSelectionChanged event since it was selection produced by doc change`,
@@ -299,7 +299,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             return;
         }
 
-        this.applySelectionChanged(textEditor, selections.slice(-1)[0], kind);
+        this.applySelectionChanged(textEditor, selections[0], kind);
         // when dragging mouse, pre-emptively hide cursor to not clash with fake cursor
         if (kind === TextEditorSelectionChangeKind.Mouse && !textEditor.selection.isEmpty) {
             this.updateCursorStyle("visual");
