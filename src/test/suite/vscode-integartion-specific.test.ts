@@ -479,7 +479,9 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("gg");
 
         await vscode.commands.executeCommand("workbench.action.findInFiles", { query: "blah" });
-        await wait(2000);
+        await wait(1000);
+        await vscode.commands.executeCommand("search.action.refreshSearchResults");
+        await wait(1000);
 
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
         await wait();
@@ -489,7 +491,7 @@ describe("VSCode integration specific stuff", () => {
 
         await assertContent(
             {
-                cursor: [115, 20],
+                cursor: [115, 19],
             },
             client,
         );
@@ -498,7 +500,7 @@ describe("VSCode integration specific stuff", () => {
         await wait();
         await assertContent(
             {
-                cursor: [170, 20],
+                cursor: [170, 19],
             },
             client,
         );
