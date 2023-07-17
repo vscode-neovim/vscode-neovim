@@ -88,6 +88,9 @@ nnoremap <C-w><C-o> <Cmd>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
 xnoremap <C-w><C-o> <Cmd>call VSCodeNotify('workbench.action.joinAllGroups')<CR>
 
 " window navigation
+nnoremap <C-w>p <Cmd>call VSCodeNotify('workbench.action.navigateLast')<CR>
+xnoremap <C-w>p <Cmd>call VSCodeNotify('workbench.action.navigateLast')<CR>
+
 nnoremap <C-w>j <Cmd>call VSCodeNotify('workbench.action.navigateDown')<CR>
 xnoremap <C-w>j <Cmd>call VSCodeNotify('workbench.action.navigateDown')<CR>
 nnoremap <C-w>k <Cmd>call VSCodeNotify('workbench.action.navigateUp')<CR>
@@ -148,8 +151,6 @@ nnoremap <C-w><C-w> <Cmd>call VSCodeNotify('workbench.action.focusNextGroup')<CR
 xnoremap <C-w><C-w> <Cmd>call VSCodeNotify('workbench.action.focusNextGroup')<CR>
 nnoremap <C-w>W <Cmd>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
 xnoremap <C-w>W <Cmd>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
-nnoremap <C-w>p <Cmd>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
-xnoremap <C-w>p <Cmd>call VSCodeNotify('workbench.action.focusPreviousGroup')<CR>
 
 nnoremap <C-w>t <Cmd>call VSCodeNotify('workbench.action.focusFirstEditorGroup')<CR>
 xnoremap <C-w>t <Cmd>call VSCodeNotify('workbench.action.focusFirstEditorGroup')<CR>
