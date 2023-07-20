@@ -43,6 +43,7 @@ describe("Yanking and pasting", () => {
             client,
         );
 
+        await wait(200);
         await setCursor(1, 1);
         await sendVSCodeKeys("P");
         await assertContent(
