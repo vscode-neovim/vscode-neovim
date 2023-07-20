@@ -273,28 +273,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
         if (this.main.modeManager.isInsertMode) return;
 
-        const { textEditor, selections, kind } = e;
+        const { textEditor, kind } = e;
         // ! Note: Unfortunately navigating from outline is Command kind, so we can't skip it :(
         this.logger.debug(
             `${LOG_PREFIX}: onSelectionChanged, kind: ${kind}, editor: ${textEditor.document.uri.fsPath}, active: [${textEditor.selection.active.line}, ${textEditor.selection.active.character}]`,
         );
-
-        // wait for possible layout updates first
-        this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
-        await this.main.bufferManager.waitForLayoutSync();
-        // wait for possible change document events
-        this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
-        await this.main.changeManager.getDocumentChangeCompletionLock(textEditor.document);
-        this.logger.debug(`${LOG_PREFIX}: Waiting done`);
-
-        const documentChange = this.main.changeManager.getDocumentCursorAfterChange(textEditor.document);
-        const cursor = selections[0].active;
-        if (documentChange && documentChange.isEqual(cursor)) {
-            this.logger.debug(
-                `${LOG_PREFIX}: Skipping onSelectionChanged event since it was selection produced by doc change`,
-            );
-            return;
-        }
 
         this.applySelectionChanged(textEditor, kind);
         // when dragging mouse, pre-emptively hide cursor to not clash with fake cursor
@@ -307,10 +290,26 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     // ! and cursor may go out-of-sync and produce a jitter
     private applySelectionChanged = debounce(
         async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
-            const selection = editor.selection;
             // reset cursor style if needed
             this.updateCursorStyle(this.main.modeManager.currentMode.name);
-            this.main.changeManager.clearDocumentCursorAfterChange(editor.document);
+
+            // wait for possible layout updates first
+            this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
+            await this.main.bufferManager.waitForLayoutSync();
+            // wait for possible change document events
+            this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
+            await this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+            this.logger.debug(`${LOG_PREFIX}: Waiting done`);
+
+            // ignore selection change caused by buffer edit
+            const selection = editor.selection;
+            const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(editor.document);
+            if (documentChange && documentChange.isEqual(selection.active)) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Skipping onSelectionChanged event since it was selection produced by doc change`,
+                );
+                return;
+            }
 
             this.logger.debug(
                 `${LOG_PREFIX}: Applying changed selection, kind: ${kind},  cursor: [${selection.active.line}, ${
@@ -384,7 +383,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         const anchor = new Position(anchorNvim[1] - 1, anchorNvim[2] - 1);
 
         this.logger.debug(
-            `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${active.line}, ${active.character}, anchor: [${anchor.line}, ${anchor.character}]`,
+            `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${active.line}, ${active.character}], anchor: [${anchor.line}, ${anchor.character}]`,
         );
 
         const activeLineLength = doc.lineAt(active.line).range.end.character;
