@@ -211,7 +211,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     ): DebouncedFunc<CursorManager["updateCursorPosInEditor"]> => {
         const existing = this.debouncedCursorUpdates.get(editor);
         if (existing) return existing;
-        const func = debounce(this.updateCursorPosInEditor, 5, { leading: false, trailing: true, maxWait: 50 });
+        const func = debounce(this.updateCursorPosInEditor, 5, { leading: false, trailing: true, maxWait: 10 });
         this.debouncedCursorUpdates.set(editor, func);
         return func;
     };
