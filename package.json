@@ -1379,6 +1379,16 @@
                 "key": "ctrl+Escape",
                 "command": "workbench.action.focusActiveEditorGroup",
                 "when": "terminalFocus"
+            },
+            {
+                "key": "ctrl+p",
+                "when": "codeActionMenuVisible && neovim.ctrlKeysNormal && neovim.init && neovim.mode != 'insert'",
+                "command": "selectPrevCodeAction"
+            },
+            {
+                "key": "ctrl+n",
+                "when": "codeActionMenuVisible && neovim.ctrlKeysNormal && neovim.init && neovim.mode != 'insert'",
+                "command": "selectNextCodeAction"
             }
         ]
     },
