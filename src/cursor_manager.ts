@@ -319,6 +319,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             );
 
             if (selection.isEmpty) {
+                // exit visual mode when clicking elsewhere
+                if (this.main.modeManager.isVisualMode && kind == TextEditorSelectionChangeKind.Mouse)
+                    await this.client.input("<Esc>");
                 await this.updateNeovimCursorPosition(editor, selection.active);
             } else {
                 await this.updateNeovimVisualSelection(editor, selection);
