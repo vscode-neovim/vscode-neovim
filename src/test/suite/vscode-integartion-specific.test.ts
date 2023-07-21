@@ -3,7 +3,7 @@ import os from "os";
 import fs from "fs";
 import { strict as assert } from "assert";
 
-import vscode from "vscode";
+import vscode, { Selection } from "vscode";
 import { NeovimClient } from "neovim";
 
 import {
@@ -218,7 +218,6 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 content: ["blah1"],
-                cursorStyle: "block",
                 mode: "V",
             },
             client,
@@ -229,7 +228,6 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 content: ["testblah2"],
-                cursorStyle: "block",
                 mode: "V",
             },
             client,
@@ -279,7 +277,6 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 content: ["blah1"],
-                cursorStyle: "block",
                 mode: "V",
             },
             client,
@@ -409,7 +406,7 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc);
         await wait(1000);
         await sendVSCodeKeys("Vj");
-        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await vscode.commands.executeCommand("workbench.action.quickOpen");
         await wait();
         await assertContent(
             {
@@ -421,7 +418,7 @@ describe("VSCode integration specific stuff", () => {
         await sendEscapeKey();
 
         await sendVSCodeKeys("GVk");
-        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await vscode.commands.executeCommand("workbench.action.quickOpen");
         await wait();
         await assertContent(
             {
@@ -440,7 +437,7 @@ describe("VSCode integration specific stuff", () => {
         await vscode.window.showTextDocument(doc);
         await wait(1000);
         await sendVSCodeKeys("v$");
-        await vscode.commands.executeCommand("vscode-neovim.send", "<C-P>");
+        await vscode.commands.executeCommand("workbench.action.quickOpen");
         await wait();
         await assertContent(
             {
@@ -482,7 +479,9 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("gg");
 
         await vscode.commands.executeCommand("workbench.action.findInFiles", { query: "blah" });
-        await wait(2000);
+        await wait(1000);
+        await vscode.commands.executeCommand("search.action.refreshSearchResults");
+        await wait(1000);
 
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
         await wait();
@@ -492,7 +491,8 @@ describe("VSCode integration specific stuff", () => {
 
         await assertContent(
             {
-                cursor: [115, 20],
+                vsCodeSelections: [new Selection(115, 16, 115, 20)],
+                neovimCursor: [115, 19],
             },
             client,
         );
@@ -501,7 +501,8 @@ describe("VSCode integration specific stuff", () => {
         await wait();
         await assertContent(
             {
-                cursor: [170, 20],
+                vsCodeSelections: [new Selection(170, 16, 170, 20)],
+                neovimCursor: [170, 19],
             },
             client,
         );

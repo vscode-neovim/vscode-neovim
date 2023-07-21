@@ -176,6 +176,7 @@ export async function sendVSCodeSpecialKey(
 export async function assertContent(
     options: {
         cursor?: [number, number];
+        neovimCursor?: [number, number];
         vsCodeCursor?: [number, number];
         cursorLine?: number;
         content?: string[];
@@ -205,6 +206,13 @@ export async function assertContent(
                 await getNeovimCursor(client),
                 options.cursor,
                 `Cursor position in neovim - ${options.cursor[0]}:${options.cursor[1]}`,
+            );
+        }
+        if (options.neovimCursor) {
+            assert.deepEqual(
+                await getNeovimCursor(client),
+                options.neovimCursor,
+                `Cursor position in neovim - ${options.neovimCursor[0]}:${options.neovimCursor[1]}`,
             );
         }
         if (options.vsCodeSelections) {
@@ -294,7 +302,7 @@ export async function setSelection(
     await wait(waitTimeout);
 }
 
-export async function setCursor(line: number, char: number, waitTimeout = 100, editor?: TextEditor): Promise<void> {
+export async function setCursor(line: number, char: number, waitTimeout = 200, editor?: TextEditor): Promise<void> {
     await setSelection([{ anchorPos: [line, char], cursorPos: [line, char] }], waitTimeout, editor);
 }
 export async function copyVSCodeSelection(): Promise<void> {

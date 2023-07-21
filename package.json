@@ -120,11 +120,6 @@
                     "default": true,
                     "description": "Use Ctrl keys in insert mode"
                 },
-                "vscode-neovim.mouseSelectionStartVisualMode": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Mouse selection starts visual mode"
-                },
                 "vscode-neovim.useWSL": {
                     "type": "boolean",
                     "default": false,
@@ -179,7 +174,7 @@
                         "MsgSeparator",
                         "MsgArea",
                         "^RedrawDebug",
-                        "^.*MatchParen",
+                        "^MatchParen",
                         "^Nvim",
                         "Operator",
                         "Delimiter",
@@ -375,48 +370,6 @@
                 "command": "vscode-neovim.escape",
                 "key": "Escape",
                 "when": "editorTextFocus && neovim.init && neovim.mode != normal"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+p",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "cmd+p",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+shift+p",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "shift+cmd+p",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "F1",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-P>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "ctrl+shift+f",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-F>"
-            },
-            {
-                "command": "vscode-neovim.send",
-                "key": "shift+cmd+f",
-                "when": "editorTextFocus && neovim.mode == visual",
-                "args": "<C-S-F>"
             },
             {
                 "command": "vscode-neovim.send",
@@ -1420,7 +1373,7 @@
         "fast-diff": "^1.3.0",
         "async-mutex": "^0.4.0",
         "lodash-es": "^4.17.21",
-        "neovim": "^4.9.0",
-        "ts-wcwidth": "^2.0.3"
+        "ts-wcwidth": "^2.0.3",
+        "neovim": "^4.9.0"
     }
 }

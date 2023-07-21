@@ -89,7 +89,10 @@ class TextEditorStub implements vscode.TextEditor {
 
     decorationOptionsList: Array<vscode.Range[] | vscode.DecorationOptions[]> = [];
 
-    constructor() {}
+    constructor() {
+        this.selection = new vscode.Selection(0, 0, 0, 0);
+        this.selections = [this.selection]; 
+    }
     async edit(
         callback: (editBuilder: vscode.TextEditorEdit) => void,
         options?: { undoStopBefore: boolean; undoStopAfter: boolean },

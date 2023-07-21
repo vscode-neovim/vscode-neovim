@@ -117,31 +117,36 @@ export class TypingManager implements Disposable {
         }
     }
 
-    private onModeChange = (): void => {
+    private onModeChange = async (): Promise<void> => {
         if (
             this.main.modeManager.isInsertMode &&
             this.typeHandlerDisposable &&
             !this.main.modeManager.isRecordingInInsertMode
         ) {
-            this.pendingKeysAfterEnter = "";
             const editor = window.activeTextEditor;
-            if (editor && this.main.changeManager.hasDocumentChangeCompletionLock(editor.document)) {
-                this.isEnteringInsertMode = true;
+            await this.client.call("getpos", ["."]); // hack to wait for cursor update
+            const cursorPromise = editor && this.main.cursorManager.waitForCursorUpdate(editor);
+            if (cursorPromise) {
                 this.logger.debug(
-                    `${LOG_PREFIX}: Waiting for document completion operation before disposing type handler`,
+                    `${LOG_PREFIX}: Waiting for cursor completion operation before disposing type handler`,
                 );
-                this.main.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
-                    this.isEnteringInsertMode = false;
+                this.pendingKeysAfterEnter = "";
+                this.isEnteringInsertMode = true;
+                cursorPromise.then(async () => {
                     if (this.main.modeManager.isInsertMode) {
                         this.disposeType();
                         this.disposeReplacePrevChar();
                     }
                     if (this.pendingKeysAfterEnter) {
-                        commands.executeCommand(this.main.modeManager.isInsertMode ? "default:type" : "type", {
+                        this.logger.debug(
+                            `${LOG_PREFIX}: Replaying pending keys after entering insert mode: ${this.pendingKeysAfterEnter}`,
+                        );
+                        await commands.executeCommand(this.main.modeManager.isInsertMode ? "default:type" : "type", {
                             text: this.pendingKeysAfterEnter,
                         });
                         this.pendingKeysAfterEnter = "";
                     }
+                    this.isEnteringInsertMode = false;
                 });
             } else {
                 this.disposeType();
@@ -182,7 +187,10 @@ export class TypingManager implements Disposable {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
             await this.main.changeManager.documentChangeLock.waitForUnlock();
             if (window.activeTextEditor)
-                await this.main.cursorManager.updateNeovimCursorPosition(window.activeTextEditor, undefined);
+                await this.main.cursorManager.updateNeovimCursorPosition(
+                    window.activeTextEditor,
+                    window.activeTextEditor.selection.active,
+                );
             await this.main.changeManager.syncDotRepeatWithNeovim();
             const keys = normalizeInputString(this.pendingKeysAfterExit);
             this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);

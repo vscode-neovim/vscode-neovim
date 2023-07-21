@@ -9,8 +9,8 @@ import {
     TextEditorEdit,
 } from "vscode";
 import diff, { Diff } from "fast-diff";
-import wcwidth from "ts-wcwidth";
 import { NeovimClient } from "neovim";
+import wcwidth from "ts-wcwidth";
 
 import { Logger } from "./logger";
 
@@ -190,26 +190,6 @@ export function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
     return ranges;
 }
 
-function getBytesFromCodePoint(point?: number): number {
-    if (point == null) {
-        return 0;
-    }
-    if (point <= 0x7f) {
-        return 1;
-    }
-    if (point <= 0x7ff) {
-        return 2;
-    }
-    if (point >= 0xd800 && point <= 0xdfff) {
-        // Surrogate pair: These take 4 bytes in UTF-8/UTF-16 and 2 chars in UTF-16 (JS strings)
-        return 4;
-    }
-    if (point < 0xffff) {
-        return 3;
-    }
-    return 4;
-}
-
 export function convertCharNumToByteNum(line: string, col: number): number {
     if (col === 0 || !line) {
         return 0;
@@ -244,12 +224,38 @@ export function convertByteNumToCharNum(line: string, col: number): number {
     return currCharNum;
 }
 
-export function calculateEditorColFromVimScreenCol(
-    line: string,
-    screenCol: number,
-    tabSize = 1,
-    useBytes = false,
-): number {
+export function convertVimPositionToEditorPosition(editor: TextEditor, vimPos: Position): Position {
+    const line = editor.document.lineAt(vimPos.line).text;
+    const character = convertByteNumToCharNum(line, vimPos.character);
+    return new Position(vimPos.line, character);
+}
+export function convertEditorPositionToVimPosition(editor: TextEditor, editorPos: Position): Position {
+    const line = editor.document.lineAt(editorPos.line).text;
+    const byte = convertCharNumToByteNum(line, editorPos.character);
+    return new Position(editorPos.line, byte);
+}
+
+function getBytesFromCodePoint(point?: number): number {
+    if (point == null) {
+        return 0;
+    }
+    if (point <= 0x7f) {
+        return 1;
+    }
+    if (point <= 0x7ff) {
+        return 2;
+    }
+    if (point >= 0xd800 && point <= 0xdfff) {
+        // Surrogate pair: These take 4 bytes in UTF-8/UTF-16 and 2 chars in UTF-16 (JS strings)
+        return 4;
+    }
+    if (point < 0xffff) {
+        return 3;
+    }
+    return 4;
+}
+
+export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize: number): number {
     if (screenCol === 0 || !line) {
         return 0;
     }
@@ -259,12 +265,6 @@ export function calculateEditorColFromVimScreenCol(
         if (line[currentCharIdx] === "\t") {
             currentVimCol += tabSize - (currentVimCol % tabSize);
             currentCharIdx++;
-        } else if (useBytes) {
-            const bytes = getBytesFromCodePoint(line.codePointAt(currentCharIdx));
-            currentVimCol += bytes;
-            // Characters which take 4 bytes also take 2 string indices.
-            // (Only relevant here since wcwidth returns half of the value to each part)
-            currentCharIdx += bytes === 4 ? 2 : 1;
         } else {
             currentVimCol += wcwidth(line[currentCharIdx]);
             currentCharIdx++;
@@ -407,20 +407,6 @@ export function accumulateDotRepeatChange(
     return newLastChange;
 }
 
-export function editorPositionToNeovimPosition(editor: TextEditor, position: Position): [number, number] {
-    const lineText = editor.document.lineAt(position.line).text;
-    const byteCol = convertCharNumToByteNum(lineText, position.character);
-    return [position.line + 1, byteCol];
-}
-
-export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, number] {
-    try {
-        return editorPositionToNeovimPosition(editor, editor.selection.active);
-    } catch {
-        return [1, 0];
-    }
-}
-
 export function getDocumentLineArray(doc: TextDocument): string[] {
     const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
     return doc.getText().split(eol);
@@ -549,4 +535,27 @@ export function applyEditorDiffOperations(
                 break;
         }
     });
+}
+
+/**
+ * Manual promise that can be resolved/rejected from outside. Used in document and cursor managers to indicate pending update.
+ */
+export class ManualPromise {
+    public promise: Promise<void>;
+    public resolve: () => void = () => {
+        // noop
+    };
+    public reject: () => void = () => {
+        // noop
+    };
+
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+        this.promise.catch((_err) => {
+            // noop
+        });
+    }
 }

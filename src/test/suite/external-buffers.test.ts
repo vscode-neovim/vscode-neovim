@@ -67,7 +67,10 @@ describe("Neovim external buffers", () => {
 
         const vscodeCursor = getVScodeCursor();
         const neovimCursor = await getNeovimCursor(client);
-        assert.ok(vscodeCursor[0] >= 189 && vscodeCursor[0] <= 191);
-        assert.ok(neovimCursor[0] >= 189 && neovimCursor[0] <= 191);
+        const text = vscode.window.activeTextEditor!.document.getText();
+
+        assert.ok(neovimCursor[0] !== 0);
+        assert.ok(vscodeCursor[0] === neovimCursor[0]);
+        assert.equal(text.split("\n")[neovimCursor[0]], "Handling of local options			*local-options*");
     });
 });

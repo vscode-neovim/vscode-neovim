@@ -4,6 +4,7 @@ import { HighlightConfiguration, HighlightProvider } from "./highlight_provider"
 import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { calculateEditorColFromVimScreenCol, convertByteNumToCharNum, GridLineEvent } from "./utils";
+import { Logger } from "./logger";
 
 export interface HighlightManagerSettings {
     highlight: HighlightConfiguration;
@@ -19,6 +20,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
     private commandsDisposables: Disposable[] = [];
 
     public constructor(
+        private logger: Logger,
         private main: MainController,
         private settings: HighlightManagerSettings,
     ) {
@@ -104,7 +106,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                         }
 
                         // const topScreenLine = gridConf.cursorLine === 0 ? 0 : gridConf.cursorLine - gridConf.screenLine;
-                        const topScreenLine = gridOffset.topLine;
+                        const topScreenLine = gridOffset.line;
                         const highlightLine = topScreenLine + row;
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             if (highlightLine > 0) {
@@ -114,7 +116,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
                             continue;
                         }
                         const line = editor.document.lineAt(highlightLine).text;
-                        const colStart = col + gridOffset.leftCol;
+                        const colStart = col + gridOffset.character;
                         const tabSize = editor.options.tabSize as number;
                         const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
                         const isExternal = this.main.bufferManager.isExternalTextDocument(editor.document);
@@ -157,10 +159,14 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
             if (!editor || !gridOffset) {
                 continue;
             }
-            const hls = this.highlightProvider.getGridHighlights(grid, gridOffset.topLine);
-            for (const [decorator, ranges] of hls) {
-                editor.setDecorations(decorator, ranges);
-            }
+            // !For text changes neovim sends first buf_lines_event followed by redraw event
+            // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
+            this.main.changeManager.getDocumentChangeCompletionLock(editor.document).then(() => {
+                const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.line);
+                for (const [decorator, ranges] of hls) {
+                    editor.setDecorations(decorator, ranges);
+                }
+            });
         }
     };
 

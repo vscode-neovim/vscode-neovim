@@ -1,6 +1,7 @@
 import {
     DecorationOptions,
     Range,
+    TextEditor,
     TextEditorDecorationType,
     ThemableDecorationRenderOptions,
     ThemeColor,
@@ -224,6 +225,14 @@ export class HighlightProvider {
 
     public getDecoratorForHighlightGroup(name: string): TextEditorDecorationType | undefined {
         let dec = this.highlighGroupToDecorator.get(name);
+        // replace MatchParenVisual with Visual, for example
+        for (const ignore of this.configuration.ignoreHighlights) {
+            if (ignore.startsWith("^") || ignore.endsWith("$")) {
+                name = name.replace(ignore.startsWith("^") ? ignore.slice(1) : ignore.slice(0, -1), "");
+            } else {
+                name = name.replace(ignore, "");
+            }
+        }
         if (!dec && name.endsWith("Default")) {
             dec = this.highlighGroupToDecorator.get(name.slice(0, -7));
         }
@@ -293,7 +302,7 @@ export class HighlightProvider {
                     if (canOverLay) {
                         const curChar = lineText.slice(cellIdx, cellIdx + text.length);
                         // text is not same as the cell text on buffer
-                        if (curChar != text && text != " " && text != "" && text != listCharsTab) {
+                        if (curChar != text && text != "" && text != listCharsTab) {
                             hlDeco.virtText = text;
                             hlDeco.virtTextPos = "overlay";
                             hlDeco.overlayPos = lineText.length > 0 ? cellIdx : 1;
@@ -352,7 +361,11 @@ export class HighlightProvider {
         }
     }
 
-    public getGridHighlights(grid: number, topLine: number): [TextEditorDecorationType, DecorationOptions[]][] {
+    public getGridHighlights(
+        editor: TextEditor,
+        grid: number,
+        topLine: number,
+    ): [TextEditorDecorationType, DecorationOptions[]][] {
         const result: [TextEditorDecorationType, DecorationOptions[]][] = [];
         const hlRanges: Map<
             string,
@@ -438,14 +451,28 @@ export class HighlightProvider {
                 continue;
             }
             const decoratorRanges = ranges.map((r) => {
-                if (r.hl) {
+                const lineLength = editor.document.lineAt(Math.min(topLine + r.lineS, editor.document.lineCount - 1))
+                    .text.length;
+                const pastEnd = r.colE >= lineLength;
+                if (r.hl || pastEnd) {
                     const conf = this.getDecoratorOptions(decorator);
+                    let text;
+                    // if we are past end, or text is " ", we need to add something to make sure it gets rendered
+                    if (r.hl) {
+                        if (r.hl.virtText == " ") {
+                            text = "\u200D";
+                        } else {
+                            text = r.hl.virtText!;
+                        }
+                    } else {
+                        text = "\u200D";
+                    }
                     return this.createVirtTextDecorationOption(
-                        r.hl.virtText!,
-                        { ...conf, backgroundColor: conf.backgroundColor || new ThemeColor("editor.background") },
+                        text,
+                        { ...conf, backgroundColor: conf.backgroundColor || new ThemeColor("editor.background") }, // overwrite text underneath
                         topLine + r.lineS,
                         r.colS + 1,
-                        r.colE,
+                        lineLength,
                     );
                 }
                 return {
@@ -517,10 +544,10 @@ export class HighlightProvider {
                     // end of the screen, VSCode will place
                     // the text in a column we weren't
                     // expecting. This code accounts for that.
-                    margin: `0 0 0 -${Math.min(text.length - (col + text.length - 1 - lineLength), text.length)}ch`,
+                    margin: `0 0 0 -${Math.min(lineLength - col + 1, text.length)}ch`,
                     ...conf,
                     ...conf.before,
-                    width: `${text.length}ch; position:absoulute; z-index:99;`,
+                    width: `${text.length}ch; position:absolute; z-index:99;`,
                     contentText: text,
                 },
             },

@@ -17,7 +17,6 @@ import { DocumentChangeManager } from "./document_change_manager";
 import {
     NeovimCommandProcessable,
     NeovimExtensionRequestProcessable,
-    NeovimRangeCommandProcessable,
     NeovimRedrawProcessable,
 } from "./neovim_events_processable";
 import { CommandLineManager } from "./command_line_manager";
@@ -36,7 +35,6 @@ export interface ControllerSettings {
     neovimPath: string;
     extensionPath: string;
     highlightsConfiguration: HighlightConfiguration;
-    mouseSelection: boolean;
     useWsl: boolean;
     customInitFile: string;
     clean: boolean;
@@ -97,18 +95,18 @@ export class MainController implements vscode.Disposable {
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
-        const neovimSupportScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
-        const neovimOptionScriptPath = path.posix.join(extensionPath, "runtime/lua", "options.lua");
+        const neovimPreScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
+        const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode/options.lua");
 
         const args = [
             "-N",
             "--embed",
             // load options after user config
-            "-c",
-            `source ${neovimOptionScriptPath}`,
+            "-S",
+            neovimPostScriptPath,
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
-            `source ${neovimSupportScriptPath}`,
+            `source ${neovimPreScriptPath}`,
         ];
 
         const workspaceFolder = vscode.workspace.workspaceFolders;
@@ -202,7 +200,7 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.viewportManager);
 
-        this.highlightManager = new HighlightManager(this, {
+        this.highlightManager = new HighlightManager(this.logger, this, {
             highlight: this.settings.highlightsConfiguration,
         });
         this.disposables.push(this.highlightManager);
@@ -210,9 +208,7 @@ export class MainController implements vscode.Disposable {
         this.changeManager = new DocumentChangeManager(this.logger, this.client, this);
         this.disposables.push(this.changeManager);
 
-        this.cursorManager = new CursorManager(this.logger, this.client, this, {
-            mouseSelectionEnabled: this.settings.mouseSelection,
-        });
+        this.cursorManager = new CursorManager(this.logger, this.client, this);
         this.disposables.push(this.cursorManager);
 
         this.typingManager = new TypingManager(this.logger, this.client, this);
@@ -281,7 +277,6 @@ export class MainController implements vscode.Disposable {
             this.cursorManager,
         ];
         const vscodeComandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
 
         if (method === "vscode-command") {
             const [vscodeCommand, commandArgs] = events as [string, unknown[]];
@@ -294,29 +289,6 @@ export class MainController implements vscode.Disposable {
                 } catch (e) {
                     this.logger.error(
                         `${vscodeCommand} failed, args: ${JSON.stringify(commandArgs)} error: ${(e as Error).message}`,
-                    );
-                }
-            });
-            return;
-        }
-        if (method === "vscode-range-command") {
-            const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, args] = events;
-            vscodeRangeCommandManagers.forEach((m) => {
-                try {
-                    m.handleVSCodeRangeCommand(
-                        vscodeCommand,
-                        line1,
-                        line2,
-                        pos1,
-                        pos2,
-                        !!leaveSelection,
-                        Array.isArray(args) ? args : [args],
-                    );
-                } catch (e) {
-                    this.logger.error(
-                        `${vscodeCommand} failed, range: [${line1}, ${line2}, ${pos1}, ${pos2}] args: ${JSON.stringify(
-                            args,
-                        )} error: ${(e as Error).message}`,
                     );
                 }
             });
@@ -365,7 +337,6 @@ export class MainController implements vscode.Disposable {
             this.cursorManager,
         ];
         const vscodeCommandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
         try {
             let result: unknown;
             if (eventName === "vscode-command") {
@@ -373,31 +344,6 @@ export class MainController implements vscode.Disposable {
                 const results = await Promise.all(
                     vscodeCommandManagers.map((m) =>
                         m.handleVSCodeCommand(vscodeCommand, Array.isArray(commandArgs) ? commandArgs : [commandArgs]),
-                    ),
-                );
-                // use first non nullable result
-                result = results.find((r) => r != null);
-            } else if (eventName === "vscode-range-command") {
-                const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, commandArgs] = eventArgs as [
-                    string,
-                    number,
-                    number,
-                    number,
-                    number,
-                    number,
-                    unknown[],
-                ];
-                const results = await Promise.all(
-                    vscodeRangeCommandManagers.map((m) =>
-                        m.handleVSCodeRangeCommand(
-                            vscodeCommand,
-                            line1,
-                            line2,
-                            pos1,
-                            pos2,
-                            !!leaveSelection,
-                            Array.isArray(commandArgs) ? commandArgs : [commandArgs],
-                        ),
                     ),
                 );
                 // use first non nullable result

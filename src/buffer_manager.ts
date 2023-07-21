@@ -21,7 +21,7 @@ import {
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromEditor } from "./utils";
+import { callAtomic, convertByteNumToCharNum } from "./utils";
 import { MainController } from "./main_controller";
 
 // !Note: document and editors in vscode events and namespace are reference stable
@@ -379,13 +379,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     winId = await this.createNeovimWindow(editorBufferId);
                     this.logger.debug(`${LOG_PREFIX}: Created new window: ${winId}`);
                     this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
-                    const cursor = getNeovimCursorPosFromEditor(visibleEditor);
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
-                    );
-                    await this.client.request("nvim_win_set_cursor", [winId, cursor]);
                     this.textEditorToWinId.set(visibleEditor, winId);
                     this.winIdToEditor.set(winId, visibleEditor);
+                    this.main.cursorManager.updateNeovimCursorPosition(visibleEditor, visibleEditor.selection.active);
                 }
             } catch (e) {
                 this.logger.error(`${LOG_PREFIX}: ${(e as Error).message}`);
@@ -474,7 +470,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
-        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, undefined);
+        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
         await this.client.request("nvim_set_current_win", [winId]);
     };
 
@@ -698,12 +694,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     const finalLine = neovimCursor[0] - 1;
                     let finalCol = neovimCursor[1];
                     try {
-                        finalCol = calculateEditorColFromVimScreenCol(
-                            doc.lineAt(finalLine).text,
-                            neovimCursor[1],
-                            1,
-                            true,
-                        );
+                        finalCol = convertByteNumToCharNum(doc.lineAt(finalLine).text, neovimCursor[1]);
                         this.logger.debug(`${LOG_PREFIX}: Adjusted cursor: [${finalLine}, ${finalCol}]`);
                     } catch (e) {
                         this.logger.warn(`${LOG_PREFIX}: Unable to get cursor pos for external buffer: ${id}`);

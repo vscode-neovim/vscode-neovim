@@ -46,7 +46,7 @@ mode and editor commands, making the best use of both editors.
     -   [Cmdline special keys](#cmdline-special-keys)
 -   [🔧 Build](#-build)
 -   [📑 How it works](#-how-it-works)
--   [❤️ Credits & External Resources](#️-credits--external-resources)
+-   [❤️ Credits \& External Resources](#️-credits--external-resources)
 
 </details>
 
@@ -161,14 +161,6 @@ The VSCode keybindings editor provides a good way to delete keybindings.
     scripts/keybindings, they won't work. If you're using them in some custom commands/mappings, you might need to
     rebind them to call VSCode commands from Neovim with `VSCodeCall/VSCodeNotify`
     ([see below](#invoking-vscode-actions-from-neovim)).
--   Visual modes don't produce VSCode selections, so any VSCode commands expecting selection won't work. To round the
-    corners, invoking the VSCode command picker from visual mode through the default hotkeys
-    (<kbd>f1</kbd>/<kbd>ctrl/cmd+shift+p</kbd>) converts VIM selection to real VSCode selection. This conversion is also
-    done automatically for some commands like commenting and formatting. If you're using some custom mapping for calling
-    VSCode commands that depends on real VSCode selection, you can use
-    `VSCodeNotifyRange`/`VSCodeNotifyRangePos`/`VSCodeNotifyVisual` (linewise, characterwise, and automatic) which will
-    convert VIM visual mode selection to VSCode selection before calling the command
-    ([see below](#invoking-vscode-actions-from-neovim)).
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
@@ -272,27 +264,12 @@ See gif in action:
 
 ### Invoking VSCode actions from neovim
 
-There are a
-[few helper functions](https://github.com/asvetliakov/vscode-neovim/blob/master/vim/vscode-neovim.vim#L17-L39) that are
-used to invoke VSCode commands from Neovim:
-
-| Command                                                                                                                                                           | Description                                                                                                                                                                                                |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VSCodeNotify(command, ...)` <br/> `VSCodeCall(command, ...)`                                                                                                     | Invoke VSCode command with optional arguments.                                                                                                                                                             |
-| `VSCodeNotifyRange(command, line1, line2, leaveSelection ,...)` <br/> `VSCodeCallRange(command, line1, line2, leaveSelection, ...)`                               | Produce linewise VSCode selection from `line1` to `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after invoking the command.                               |
-| `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` <br/> `VSCodeCallRangePos(command, line1, line2, pos1, pos2, leaveSelection, ...)` | Produce characterwise VSCode selection from `line1.pos1` to `line2.pos2` and invoke VSCode command.                                                                                                        |
-| `VSCodeNotifyVisual(command, leaveSelection, ...)` <br/> `VSCodeCallVisual(command, leaveSelection, ...)`                                                         | Produce linewise (visual line) or characterwise (visual and visual block) selection from visual mode selection and invoke VSCode command. Behaves like `VSCodeNotify/Call` when visual mode is not active. |
-
-> 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
-> unless you really need a blocking call.
+To invoke VSCode actions from Neovim, use `VSCodeNotify(command, args, ...)` or `VSCodeCall(command, args, ...)`
+functions. From lua, use `vim.fn.VSCodeNotify(command, args, ...)`. `Notify` is non-blocking, `Call` is blocking.
+Generally use Notify unless you really need a blocking call, such as wanting VSCode to process a visual selection before
+leaving it with <kbd>Esc</kbd>.
 
 #### Examples
-
-Open command picker (default binding):
-
-```vim
-xnoremap <C-S-P> <Cmd>call VSCodeNotifyVisual('workbench.action.showCommands', 1)<CR>
-```
 
 Open definition aside (default binding):
 
@@ -558,8 +535,8 @@ How to run tests:
 -   When opening a file, a scratch buffer is created within Neovim and being initialized with text content from VSCode.
 -   Normal/visual mode commands are being sent directly to Neovim. The extension listens for buffer events and applies
     edits from Neovim.
--   When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to VSCode
-    (no Neovim communication is being performed here).
+-   When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to VSCode.
+    Changes are synced to neovim in periodic intervals.
 -   After pressing escape key from the insert mode, extension sends changes obtained from the insert mode to Neovim.
 
 ## ❤️ Credits & External Resources
