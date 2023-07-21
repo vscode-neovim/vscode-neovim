@@ -537,6 +537,9 @@ export function applyEditorDiffOperations(
     });
 }
 
+/**
+ * Manual promise that can be resolved/rejected from outside. Used in document and cursor managers to indicate pending update.
+ */
 export class ManualPromise {
     public promise: Promise<void>;
     public resolve: () => void = () => {
