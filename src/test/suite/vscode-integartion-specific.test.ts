@@ -3,7 +3,7 @@ import os from "os";
 import fs from "fs";
 import { strict as assert } from "assert";
 
-import vscode from "vscode";
+import vscode, { Selection } from "vscode";
 import { NeovimClient } from "neovim";
 
 import {
@@ -491,7 +491,8 @@ describe("VSCode integration specific stuff", () => {
 
         await assertContent(
             {
-                cursor: [115, 19],
+                vsCodeSelections: [new Selection(115, 16, 115, 20)],
+                neovimCursor: [115, 19],
             },
             client,
         );
@@ -500,7 +501,8 @@ describe("VSCode integration specific stuff", () => {
         await wait();
         await assertContent(
             {
-                cursor: [170, 19],
+                vsCodeSelections: [new Selection(170, 16, 170, 20)],
+                neovimCursor: [170, 19],
             },
             client,
         );

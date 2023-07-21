@@ -210,8 +210,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
                 });
             } else {
-                this.getDebouncedUpdateCursorPos(editor).cancel();
-                this.updateCursorPosInEditor(editor, gridId);
+                this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
             }
         }
         this.gridCursorUpdates.clear();
@@ -263,6 +262,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.neovimCursorPosition.set(editor, selections[0]);
         editor.selections = selections; // always update to clear visual selections
         if (!selections[0].isEqual(prev)) {
+            this.logger.debug(`${LOG_PREFIX}: The selection was changed, scroll view`);
             this.triggerMovementFunctions(editor, active);
         }
 
@@ -270,7 +270,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.cursorUpdatePromise.delete(window.activeTextEditor!);
     };
 
-    private onSelectionChanged = async (e: TextEditorSelectionChangeEvent): Promise<void> => {
+    private onSelectionChanged = (e: TextEditorSelectionChangeEvent): void => {
         if (this.main.modeManager.isInsertMode) return;
 
         const { textEditor, kind } = e;
@@ -279,11 +279,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             `${LOG_PREFIX}: onSelectionChanged, kind: ${kind}, editor: ${textEditor.document.uri.fsPath}, active: [${textEditor.selection.active.line}, ${textEditor.selection.active.character}]`,
         );
 
-        this.applySelectionChanged(textEditor, kind);
         // when dragging mouse, pre-emptively hide cursor to not clash with fake cursor
         if (kind === TextEditorSelectionChangeKind.Mouse && !textEditor.selection.isEmpty) {
             this.updateCursorStyle("visual");
         }
+
+        this.applySelectionChanged(textEditor, kind);
     };
 
     // ! Need to debounce requests because setting cursor by consequence of neovim event will trigger this method
@@ -383,7 +384,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         const anchor = new Position(anchorNvim[1] - 1, anchorNvim[2] - 1);
 
         this.logger.debug(
-            `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, active: [${active.line}, ${active.character}], anchor: [${anchor.line}, ${anchor.character}]`,
+            `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, anchor: [${anchor.line}, ${anchor.character}], active: [${active.line}, ${active.character}]`,
         );
 
         const activeLineLength = doc.lineAt(active.line).range.end.character;
