@@ -1,4 +1,4 @@
-local util = require("util")
+local util = require("vscode.util")
 
 -- ------------------------------ multi cursor ------------------------------ --
 local should_notify_multi_cursor = nil

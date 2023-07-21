@@ -1,4 +1,4 @@
---- This file is used to force set options which may break the extension. Loaded after user config
+--- This file is used to force set options which may break the extension. Loaded manually after user config by main_controller.
 
 vim.opt.shortmess = "filnxtToOFI"
 vim.opt.cmdheight = 1

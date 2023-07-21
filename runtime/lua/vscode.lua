@@ -1,4 +1,4 @@
-require("cursor")
+require("vscode.cursor")
 
 local M = {}
 
