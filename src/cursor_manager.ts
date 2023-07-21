@@ -369,7 +369,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
-        // await this.client.input("<Esc>v<Esc>"); // set to charwise mode, but we don't want cursor updates
+        await this.client.call("visualmode", [1]);
         await this.client.call("setcharpos", ["'<", [bufId, anchor.line + 1, anchor.character + 1]]);
         await this.client.call("setcharpos", ["'>", [bufId, active.line + 1, active.character + 1]]);
         await this.client.input("gv");
@@ -380,8 +380,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     private createVisualSelection = async (editor: TextEditor, mode: Mode, active: Position): Promise<Selection[]> => {
         const doc = editor.document;
 
-        const anchorNvim = await this.client.callFunction("getcharpos", ["v"]);
-        const anchor = new Position(anchorNvim[1] - 1, anchorNvim[2] - 1);
+        const anchorNvim = await this.client.callFunction("getpos", ["v"]);
+        const anchor = convertVimPositionToEditorPosition(editor, new Position(anchorNvim[1] - 1, anchorNvim[2] - 1));
 
         this.logger.debug(
             `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, anchor: [${anchor.line}, ${anchor.character}], active: [${active.line}, ${active.character}]`,
