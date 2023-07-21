@@ -156,7 +156,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.processCursorMoved();
     }
 
-    public waitForCursorUpdate(editor: TextEditor): Promise<void> | undefined {
+    public async waitForCursorUpdate(editor: TextEditor): Promise<void> {
         const promise = this.cursorUpdatePromise.get(editor);
         if (promise) {
             return promise.promise;
@@ -199,19 +199,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             }
             // lock typing in editor until cursor update is complete
             this.cursorUpdatePromise.set(editor, new ManualPromise());
-            // !For text changes neovim sends first buf_lines_event followed by redraw event
-            // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-            const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
-            if (docPromises) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor`,
-                );
-                docPromises.then(() => {
-                    this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
-                });
-            } else {
-                this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
-            }
+            this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
         }
         this.gridCursorUpdates.clear();
     }
@@ -238,8 +226,14 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             !this.main.modeManager.isRecordingInInsertMode
         ) {
             this.logger.debug(`${LOG_PREFIX}: Skipping insert cursor update in editor`);
+            this.cursorUpdatePromise.delete(editor);
             return;
         }
+
+        // !For text changes neovim sends first buf_lines_event followed by redraw event
+        // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
+        this.logger.debug(`${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor`);
+        await this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
 
         const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
         if (!bytePos) {
@@ -266,8 +260,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.triggerMovementFunctions(editor, active);
         }
 
-        this.cursorUpdatePromise.get(window.activeTextEditor!)?.resolve();
-        this.cursorUpdatePromise.delete(window.activeTextEditor!);
+        this.cursorUpdatePromise.get(editor)?.resolve();
+        this.cursorUpdatePromise.delete(editor);
     };
 
     private onSelectionChanged = (e: TextEditorSelectionChangeEvent): void => {

@@ -10,7 +10,7 @@ export interface HighlightManagerSettings {
     highlight: HighlightConfiguration;
 }
 
-const LOG_PREFIX = "HighlightManager";
+// const LOG_PREFIX = "HighlightManager";
 
 export class HighlightManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
@@ -161,21 +161,12 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable, Ne
             }
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-            const docPromises = this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
-            if (docPromises) {
-                this.logger.debug(`${LOG_PREFIX}: Waiting for document change completion before updating highlights`);
-                docPromises.then(() => {
-                    const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.line);
-                    for (const [decorator, ranges] of hls) {
-                        editor.setDecorations(decorator, ranges);
-                    }
-                });
-            } else {
+            this.main.changeManager.getDocumentChangeCompletionLock(editor.document).then(() => {
                 const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.line);
                 for (const [decorator, ranges] of hls) {
                     editor.setDecorations(decorator, ranges);
                 }
-            }
+            });
         }
     };
 

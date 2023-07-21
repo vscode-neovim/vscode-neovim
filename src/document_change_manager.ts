@@ -109,12 +109,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         return cursor;
     }
 
-    public getDocumentChangeCompletionLock(doc: TextDocument): Promise<void[]> | undefined {
+    public async getDocumentChangeCompletionLock(doc: TextDocument): Promise<void> {
         const promises = this.textDocumentChangePromise.get(doc);
         if (!promises || !promises.length) {
             return;
         }
-        return Promise.all(promises.map((p) => p.promise).filter(Boolean));
+        await Promise.all(promises.map((p) => p.promise).filter(Boolean));
     }
 
     public hasDocumentChangeCompletionLock(doc: TextDocument): boolean {
