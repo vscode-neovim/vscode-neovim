@@ -8,7 +8,7 @@
         "ui",
         "workspace"
     ],
-    "version": "0.3.0",
+    "version": "0.3.2",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -1276,57 +1276,62 @@
             {
                 "key": "ctrl+w ctrl+w",
                 "command": "workbench.action.focusNextGroup",
-                "when": "!editorTextFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
+                "when": "!editorTextFocus && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
             },
             {
                 "key": "ctrl+w ctrl+w",
                 "command": "workbench.action.focusFirstEditorGroup",
-                "when": "!editorTextFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
+                "when": "!editorTextFocus && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
             },
             {
                 "key": "ctrl+w up",
                 "command": "workbench.action.navigateUp",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w k",
                 "command": "workbench.action.navigateUp",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w down",
                 "command": "workbench.action.navigateDown",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w j",
                 "command": "workbench.action.navigateDown",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w left",
                 "command": "workbench.action.navigateLeft",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w h",
                 "command": "workbench.action.navigateLeft",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w right",
                 "command": "workbench.action.navigateRight",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w l",
                 "command": "workbench.action.navigateRight",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w q",
                 "command": "workbench.action.closeActiveEditor",
-                "when": "!editorTextFocus && !filesExplorerFocus && !searchViewletFocus"
+                "when": "!editorTextFocus && !terminalFocus && !filesExplorerFocus && !searchViewletFocus"
+            },
+            {
+                "key": "ctrl+Escape",
+                "command": "workbench.action.focusActiveEditorGroup",
+                "when": "terminalFocus"
             }
         ]
     },
@@ -1342,18 +1347,18 @@
     },
     "devDependencies": {
         "@types/glob": "^7.1.3",
-        "@types/lodash-es": "^4.17.7",
+        "@types/lodash-es": "^4.17.8",
         "@types/mocha": "^10.0.1",
         "@types/msgpack-lite": "^0.1.7",
-        "@types/node": "^20.4.0",
+        "@types/node": "^20.4.2",
         "@types/vscode": "^1.79.1",
         "@typescript-eslint/eslint-plugin": "^5.61.0",
-        "@typescript-eslint/parser": "^5.61.0",
+        "@typescript-eslint/parser": "^5.62.0",
         "@vscode/test-electron": "^2.3.3",
         "eslint": "^8.44.0",
         "eslint-config-prettier": "^8.8.0",
         "eslint-plugin-import": "^2.27.5",
-        "eslint-plugin-prettier": "^5.0.0-alpha.1",
+        "eslint-plugin-prettier": "^5.0.0",
         "glob": "^8.0.3",
         "mocha": "^10.2.0",
         "prettier": "^3.0.0",
@@ -1361,7 +1366,7 @@
         "ts-loader": "^9.4.4",
         "typescript": "^5.1.6",
         "vsce": "^2.15.0",
-        "webpack": "^5.88.1",
+        "webpack": "^5.88.2",
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {

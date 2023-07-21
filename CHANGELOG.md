@@ -1,5 +1,20 @@
 # Change Log
 
+## [0.3.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.1...v0.3.2) (2023-07-12)
+
+
+### Bug Fixes
+
+* **main:** set `WSLENV` to pass `NVIM_APPNAME` into WSL ([#1310](https://github.com/vscode-neovim/vscode-neovim/issues/1310)) ([2b27081](https://github.com/vscode-neovim/vscode-neovim/commit/2b270812de8d53a282550ec9aeb0176cbc4c0c36))
+* **mode:** allow escaping from replace mode ([#1305](https://github.com/vscode-neovim/vscode-neovim/issues/1305)) ([76d473c](https://github.com/vscode-neovim/vscode-neovim/commit/76d473c6b97bcf582e3a9ee0806ccda8294dc9cf)), closes [#1304](https://github.com/vscode-neovim/vscode-neovim/issues/1304)
+
+## [0.3.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.0...v0.3.1) (2023-07-07)
+
+
+### Bug Fixes
+
+* colliding ctrl+w bindings in terminal ([#1300](https://github.com/vscode-neovim/vscode-neovim/issues/1300)) ([f5a25f9](https://github.com/vscode-neovim/vscode-neovim/commit/f5a25f9d73649883af78b1331c8052cecb8e46d4))
+
 ## [0.3.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.2.0...v0.3.0) (2023-07-06)
 
 

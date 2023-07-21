@@ -139,6 +139,13 @@ export class MainController implements vscode.Disposable {
         );
         if (settings.NVIM_APPNAME) {
             process.env.NVIM_APPNAME = settings.NVIM_APPNAME;
+            if (settings.useWsl) {
+                /*
+                 * `/u` flag indicates the value should only be included when invoking WSL from Win32.
+                 * https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/#u
+                 */
+                process.env.WSLENV = "NVIM_APPNAME/u";
+            }
         }
         this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
         this.nvimProc.on("close", (code) => {
