@@ -10,6 +10,7 @@ import {
 } from "vscode";
 import diff, { Diff } from "fast-diff";
 import { NeovimClient } from "neovim";
+import wcwidth from "ts-wcwidth";
 
 import { Logger } from "./logger";
 
@@ -254,7 +255,7 @@ function getBytesFromCodePoint(point?: number): number {
     return 4;
 }
 
-export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize = 1): number {
+export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize: number): number {
     if (screenCol === 0 || !line) {
         return 0;
     }
@@ -265,11 +266,8 @@ export function calculateEditorColFromVimScreenCol(line: string, screenCol: numb
             currentVimCol += tabSize - (currentVimCol % tabSize);
             currentCharIdx++;
         } else {
-            const bytes = getBytesFromCodePoint(line.codePointAt(currentCharIdx));
-            currentVimCol += bytes;
-            // Characters which take 4 bytes also take 2 string indices.
-            // (Only relevant here since wcwidth returns half of the value to each part)
-            currentCharIdx += bytes === 4 ? 2 : 1;
+            currentVimCol += wcwidth(line[currentCharIdx]);
+            currentCharIdx++;
         }
 
         if (currentCharIdx >= line.length) {
