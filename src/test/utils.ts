@@ -2,7 +2,18 @@ import { strict as assert } from "assert";
 import net from "net";
 
 import { NeovimClient, attach } from "neovim";
-import { TextEditor, window, TextEditorCursorStyle, commands, Range, EndOfLine, Selection } from "vscode";
+import {
+    TextEditor,
+    window,
+    workspace,
+    TextEditorCursorStyle,
+    commands,
+    Range,
+    EndOfLine,
+    Selection,
+    ViewColumn,
+    TextDocument,
+} from "vscode";
 
 /** Modes mapping
  * n - normal
@@ -25,7 +36,7 @@ import { TextEditor, window, TextEditorCursorStyle, commands, Range, EndOfLine, 
  * can be combined, like no - normal operator
  */
 
-export async function wait(timeout = 1000): Promise<void> {
+export async function wait(timeout = 400): Promise<void> {
     await new Promise((res) => setTimeout(res, timeout));
 }
 
@@ -48,7 +59,7 @@ export async function closeNvimClient(client: NeovimClient): Promise<void> {
     const conn: net.Socket = (client as any).testConn;
     conn.destroy();
     // client.quit();
-    await wait(1000);
+    await wait(500);
 }
 
 export async function getCurrentBufferName(client: NeovimClient): Promise<string> {
@@ -119,7 +130,7 @@ export function hasVSCodeCursorStyle(style: "block" | "underline" | "line", edit
     }
 }
 
-export async function sendVSCodeCommand(command: string, args: unknown = "", waitTimeout = 200): Promise<void> {
+export async function sendVSCodeCommand(command: string, args: unknown = "", waitTimeout = 400): Promise<void> {
     await commands.executeCommand(command, args);
     await wait(waitTimeout);
 }
@@ -139,14 +150,31 @@ export async function sendVSCodeKeys(keys: string, waitTimeout = 200): Promise<v
             append = false;
         }
         if (!append) {
-            await sendVSCodeKeysAtomic(key, waitTimeout);
+            await sendVSCodeKeysAtomic(key, "iaAIoO.:".includes(k) ? 300 : 50);
         }
     }
+    await wait(waitTimeout);
 }
 
-export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTimeout = 1000): Promise<void> {
+export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTimeout = 500): Promise<void> {
     await client.input(keys);
     await wait(waitTimeout);
+}
+
+export async function sendEscapeKey(timeout = 400): Promise<void> {
+    await commands.executeCommand("vscode-neovim.escape");
+    while (!hasVSCodeCursorStyle("block")) {
+        await wait(50);
+    }
+    await wait(timeout);
+}
+
+export async function sendInsertKey(key = "i", timeout = 300): Promise<void> {
+    await sendVSCodeKeys(key, 0);
+    while (!hasVSCodeCursorStyle("line")) {
+        await wait(50);
+    }
+    await wait(timeout);
 }
 
 export async function sendVSCodeSpecialKey(
@@ -196,6 +224,10 @@ export async function assertContent(
         throw new Error("No active editor");
     }
     try {
+        if (options.content) {
+            assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");
+            assert.deepEqual(getVSCodeContent(), options.content, "VSCode content is wrong");
+        }
         if (options.cursor) {
             assert.deepEqual(
                 getVScodeCursor(editor),
@@ -260,10 +292,6 @@ export async function assertContent(
                 );
             }
         }
-        if (options.content) {
-            assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");
-            assert.deepEqual(getVSCodeContent(), options.content, "VSCode content is wrong");
-        }
         if (options.cursorStyle) {
             assert.ok(
                 hasVSCodeCursorStyle(options.cursorStyle),
@@ -271,7 +299,7 @@ export async function assertContent(
             );
         }
         if (options.mode) {
-            assert.equal(options.mode, await getCurrentNeovimMode(client), `Neovim mode should be: ${options.mode}`);
+            assert.equal(await getCurrentNeovimMode(client), options.mode, `Neovim mode should be: ${options.mode}`);
         }
     } catch (e) {
         (e as Error).stack = stack;
@@ -279,16 +307,7 @@ export async function assertContent(
     }
 }
 
-export async function sendEscapeKey(waitTimeout = 1000): Promise<void> {
-    await commands.executeCommand("vscode-neovim.escape");
-    await wait(waitTimeout);
-}
-
-export async function setSelection(
-    selections: Array<{ anchorPos: [number, number]; cursorPos: [number, number] }>,
-    waitTimeout = 100,
-    editor?: TextEditor,
-): Promise<void> {
+export async function setSelection(selection: Selection, waitTimeout = 400, editor?: TextEditor): Promise<void> {
     if (!editor) {
         editor = window.activeTextEditor;
     }
@@ -296,43 +315,38 @@ export async function setSelection(
         throw new Error("No editor");
     }
 
-    editor.selections = selections.map(
-        (s) => new Selection(s.anchorPos[0], s.anchorPos[1], s.cursorPos[0], s.cursorPos[1]),
-    );
+    editor.selections = [selection];
     await wait(waitTimeout);
 }
 
-export async function setCursor(line: number, char: number, waitTimeout = 200, editor?: TextEditor): Promise<void> {
-    await setSelection([{ anchorPos: [line, char], cursorPos: [line, char] }], waitTimeout, editor);
+export async function setCursor(line: number, char: number, waitTimeout = 400, editor?: TextEditor): Promise<void> {
+    await setSelection(new Selection(line, char, line, char), waitTimeout, editor);
 }
+
 export async function copyVSCodeSelection(): Promise<void> {
-    if (!window.activeTextEditor) {
-        throw new Error("No editor");
-    }
-    await commands.executeCommand("editor.action.clipboardCopyAction");
-    await wait();
+    await sendVSCodeCommand("editor.action.clipboardCopyAction");
 }
-
 export async function pasteVSCode(): Promise<void> {
-    if (!window.activeTextEditor) {
-        throw new Error("No editor");
-    }
-    await commands.executeCommand("editor.action.clipboardPasteAction");
-    await wait();
+    await sendVSCodeCommand("editor.action.clipboardPasteAction");
 }
 
-export async function closeActiveEditor(escape = true): Promise<void> {
-    // need to clear to prevent vscode asking to save changes. works only with untitled editors
-    if (escape) {
-        await sendEscapeKey();
+export async function openTextDocument(options: { content: string; language?: string } | string): Promise<TextEditor> {
+    let doc: TextDocument;
+    if (typeof options === "string") {
+        doc = await workspace.openTextDocument(options);
+    } else {
+        doc = await workspace.openTextDocument(options);
     }
+    const editor = await window.showTextDocument(doc, ViewColumn.One);
+    await setCursor(0, 0);
+    await sendEscapeKey();
+    return editor;
+}
+
+export async function closeActiveEditor(): Promise<void> {
     await commands.executeCommand("workbench.action.closeActiveEditor");
 }
 
-export async function closeAllActiveEditors(escape = true): Promise<void> {
-    if (escape) {
-        await sendEscapeKey();
-    }
+export async function closeAllActiveEditors(): Promise<void> {
     await commands.executeCommand("workbench.action.closeAllEditors");
-    await wait(1000);
 }

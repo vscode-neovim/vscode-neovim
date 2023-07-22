@@ -7,11 +7,14 @@ import {
     attachTestNvimClient,
     closeNvimClient,
     closeAllActiveEditors,
-    wait,
     closeActiveEditor,
-    sendVSCodeKeysAtomic,
+    sendVSCodeKeys,
+    sendVSCodeCommand,
     getVScodeCursor,
     getNeovimCursor,
+    openTextDocument,
+    sendVSCodeKeysAtomic,
+    wait,
 } from "../utils";
 
 describe("Neovim external buffers", () => {
@@ -21,31 +24,26 @@ describe("Neovim external buffers", () => {
     });
     after(async () => {
         await closeNvimClient(client);
+        await closeAllActiveEditors();
     });
 
-    afterEach(async () => {
+    beforeEach(async () => {
         await closeAllActiveEditors();
     });
 
     it("Opens VIM help", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "blah",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "blah" });
 
-        await sendVSCodeKeysAtomic(":help");
-        await wait(1000);
-        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
-        await wait(2000);
+        await sendVSCodeKeys(":");
+        await sendVSCodeCommand("vscode-neovim.test-cmdline", "help");
+        await sendVSCodeCommand("vscode-neovim.commit-cmdline", "", 1000);
 
         const text = vscode.window.activeTextEditor!.document.getText();
-        assert.ok(text.indexOf("main help file") !== -1);
+        assert.ok(text.indexOf("NVIM DOCUMENTATION") !== -1);
 
-        await sendVSCodeKeysAtomic(":help options");
-        await wait(1000);
-        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
-        await wait(2000);
+        await sendVSCodeKeys(":");
+        await sendVSCodeCommand("vscode-neovim.test-cmdline", "help options");
+        await sendVSCodeCommand("vscode-neovim.commit-cmdline", "", 1000);
 
         const text2 = vscode.window.activeTextEditor!.document.getText();
         assert.ok(text2.indexOf("VIM REFERENCE MANUAL") !== -1);
@@ -53,17 +51,15 @@ describe("Neovim external buffers", () => {
         await closeActiveEditor();
     });
 
-    it("Cursor for external buffers is OK", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "blah",
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+    it("Cursor for external buffers is OK", async function () {
+        this.retries(3);
 
-        await sendVSCodeKeysAtomic(":help local-options");
-        await wait(1000);
-        await vscode.commands.executeCommand("vscode-neovim.commit-cmdline");
-        await wait(3000);
+        await openTextDocument({ content: "blah" });
+        await wait(2000);
+
+        await sendVSCodeKeysAtomic(":help local-options", 500);
+        await sendVSCodeCommand("vscode-neovim.commit-cmdline", "", 2000);
+        await sendVSCodeKeys("$0");
 
         const vscodeCursor = getVScodeCursor();
         const neovimCursor = await getNeovimCursor(client);

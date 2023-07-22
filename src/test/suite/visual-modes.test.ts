@@ -4,12 +4,14 @@ import vscode from "vscode";
 import {
     attachTestNvimClient,
     closeAllActiveEditors,
-    wait,
     sendVSCodeKeys,
     assertContent,
     closeNvimClient,
     sendEscapeKey,
     sendNeovimKeys,
+    openTextDocument,
+    sendInsertKey,
+    wait,
 } from "../utils";
 
 describe("Visual modes test", () => {
@@ -19,18 +21,11 @@ describe("Visual modes test", () => {
     });
     after(async () => {
         await closeNvimClient(client);
-    });
-
-    afterEach(async () => {
         await closeAllActiveEditors();
     });
 
     it("Visual mode", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "blah abc\nblah2 abc\nblah3 abc",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "blah abc\nblah2 abc\nblah3 abc" });
 
         await sendVSCodeKeys("w");
         await assertContent(
@@ -40,8 +35,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("vww", 1000);
-
+        await sendVSCodeKeys("vww");
         await assertContent(
             {
                 vsCodeCursor: [1, 7],
@@ -49,7 +43,7 @@ describe("Visual modes test", () => {
             },
             client,
         );
-        await sendVSCodeKeys("d", 1000);
+        await sendVSCodeKeys("d");
         await assertContent(
             {
                 cursor: [0, 5],
@@ -59,8 +53,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("j$vbbb", 1000);
-
+        await sendVSCodeKeys("j$vbbb");
         await assertContent(
             {
                 cursor: [0, 5],
@@ -70,7 +63,7 @@ describe("Visual modes test", () => {
             },
             client,
         );
-        await sendVSCodeKeys("d", 1000);
+        await sendVSCodeKeys("d");
         await assertContent(
             {
                 cursor: [0, 4],
@@ -99,11 +92,7 @@ describe("Visual modes test", () => {
     });
 
     it("vi-va", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["first", "{", "a", "b", "c", "}", "last"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: ["first", "{", "a", "b", "c", "}", "last"].join("\n") });
 
         await sendVSCodeKeys("jjj");
         await sendVSCodeKeys("vi{");
@@ -139,11 +128,7 @@ describe("Visual modes test", () => {
 
     // see https://github.com/vscode-neovim/vscode-neovim/pull/1258
     it.skip("viw on last symbol", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: ["test"].join("\n") });
 
         await sendVSCodeKeys("lll");
         await sendVSCodeKeys("viw");
@@ -156,11 +141,7 @@ describe("Visual modes test", () => {
     });
 
     it("Visual line mode", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["abc1 abc2 abc3", "abc1 abc2 abc3", "abc1 abc2 abc3"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: ["abc1 abc2 abc3", "abc1 abc2 abc3", "abc1 abc2 abc3"].join("\n") });
 
         await sendVSCodeKeys("jw");
         await assertContent(
@@ -170,7 +151,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("V", 1000);
+        await sendVSCodeKeys("V");
         await assertContent(
             {
                 vsCodeSelections: [new vscode.Selection(1, 0, 1, 14)],
@@ -212,11 +193,7 @@ describe("Visual modes test", () => {
     });
 
     it("Visual block mode", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n") });
 
         await sendVSCodeKeys("jw");
         await assertContent(
@@ -228,7 +205,6 @@ describe("Visual modes test", () => {
         );
 
         await sendNeovimKeys(client, "<C-v>");
-        await wait(1000);
         await assertContent(
             {
                 vsCodeSelections: [new vscode.Selection(1, 6, 1, 7)],
@@ -259,7 +235,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("0", 1000);
+        await sendVSCodeKeys("0");
         await assertContent(
             {
                 vsCodeSelections: [new vscode.Selection(0, 0, 0, 7), new vscode.Selection(1, 0, 1, 7)],
@@ -277,7 +253,6 @@ describe("Visual modes test", () => {
 
         await sendVSCodeKeys("w");
         await sendNeovimKeys(client, "<C-v>");
-        await wait(1000);
         await sendVSCodeKeys("bjd");
         await assertContent(
             {
@@ -289,15 +264,10 @@ describe("Visual modes test", () => {
     });
 
     it("Smaller or empty line between with visual block mode", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test", "a", "test", "", "test2", "", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+        await openTextDocument({ content: ["test", "a", "test", "", "test2", "", "test2"].join("\n") });
 
         await sendVSCodeKeys("ll");
         await sendNeovimKeys(client, "<C-v>");
-        await wait(1000);
 
         await sendVSCodeKeys("j");
         await assertContent(
@@ -314,7 +284,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("blah");
         await sendEscapeKey();
 
@@ -328,7 +298,6 @@ describe("Visual modes test", () => {
 
         await sendVSCodeKeys("0jjjjll");
         await sendNeovimKeys(client, "<C-v>");
-        await wait(1000);
         await sendVSCodeKeys("jj");
 
         await assertContent(
@@ -338,7 +307,7 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("I");
+        await sendInsertKey("I");
         await sendVSCodeKeys("blah");
         await sendEscapeKey();
         // I doens't create empty spaces
@@ -351,15 +320,11 @@ describe("Visual modes test", () => {
     });
 
     it("Visual line mode - multi cursor editing", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: [" blah1 abc", "  blah2 abc", "blah3 abc"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: [" blah1 abc", "  blah2 abc", "blah3 abc"].join("\n") });
 
-        await sendVSCodeKeys("V", 1000);
-        await sendVSCodeKeys("jj", 1000);
-        await sendVSCodeKeys("mi");
+        await sendVSCodeKeys("V");
+        await sendVSCodeKeys("jj");
+        await sendInsertKey("mi");
         await assertContent(
             {
                 mode: "i",
@@ -382,10 +347,9 @@ describe("Visual modes test", () => {
             client,
         );
 
-        await sendVSCodeKeys("V", 1000);
-        await sendVSCodeKeys("jj", 1000);
-        await sendVSCodeKeys("ma");
-        await wait(1000);
+        await sendVSCodeKeys("V");
+        await sendVSCodeKeys("jj");
+        await sendInsertKey("ma");
 
         await assertContent(
             {
@@ -411,15 +375,10 @@ describe("Visual modes test", () => {
     });
 
     it("Visual block mode - multi cursor editing", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n") });
 
         await sendVSCodeKeys("jwl");
         await sendNeovimKeys(client, "<C-v>");
-        await wait(1000);
         await sendVSCodeKeys("lk");
         await sendVSCodeKeys("mi");
         await assertContent(
@@ -442,7 +401,6 @@ describe("Visual modes test", () => {
 
         await sendVSCodeKeys("l");
         await sendNeovimKeys(client, "<C-v>");
-        await wait(1000);
         await sendVSCodeKeys("j");
         await sendVSCodeKeys("ma");
         await assertContent(
@@ -464,17 +422,11 @@ describe("Visual modes test", () => {
     });
 
     it("Visual block mode - selections are ok when selecting one column in multiple rows", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n") });
 
         await sendVSCodeKeys("l");
         await sendNeovimKeys(client, "<C-v>");
-        await wait(1000);
         await sendVSCodeKeys("jj");
-
         await assertContent(
             {
                 vsCodeSelections: [
@@ -494,11 +446,7 @@ describe("Visual modes test", () => {
     });
 
     it("Visual mode - $ is ok for upward selection", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+        await openTextDocument({ content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n") });
 
         await sendVSCodeKeys("jllv");
         await sendVSCodeKeys("k$");
@@ -512,12 +460,9 @@ describe("Visual modes test", () => {
     });
 
     it("Cursor is ok for multiple cursor updates - issue #141", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test", "test"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+        await openTextDocument({ content: ["test", "test"].join("\n") });
         await client.input(":xmap <LT>buffer> > >gv<CR>");
+        await wait(500);
 
         await sendVSCodeKeys("V");
         await sendVSCodeKeys("j$");
