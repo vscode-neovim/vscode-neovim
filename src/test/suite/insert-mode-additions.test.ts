@@ -89,11 +89,10 @@ describe("Simulated insert keys", () => {
         await sendVSCodeKeys("y", 200);
 
         await sendEscapeKey();
-        await sendVSCodeKeys("k");
         await assertContent(
             {
                 content: ["blah blah", "blah blah", ""],
-                cursor: [1, 0],
+                cursor: [2, 0],
             },
             client,
         );
