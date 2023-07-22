@@ -226,6 +226,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             !this.main.modeManager.isRecordingInInsertMode
         ) {
             this.logger.debug(`${LOG_PREFIX}: Skipping insert cursor update in editor`);
+            this.cursorUpdatePromise.get(editor)?.resolve();
             this.cursorUpdatePromise.delete(editor);
             return;
         }
