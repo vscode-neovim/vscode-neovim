@@ -220,6 +220,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Update cursor in active editor. Creates visual selections if appropriate.
      */
     public updateCursorPosInEditor = async (editor: TextEditor, gridId: number): Promise<void> => {
+        // !For text changes neovim sends first buf_lines_event followed by redraw event
+        // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
+        this.logger.debug(`${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor`);
+        await this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+
         if (
             this.main.modeManager.isInsertMode &&
             !this.wantInsertCursorUpdate &&
@@ -230,11 +235,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.cursorUpdatePromise.delete(editor);
             return;
         }
-
-        // !For text changes neovim sends first buf_lines_event followed by redraw event
-        // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-        this.logger.debug(`${LOG_PREFIX}: Waiting for document change completion before setting the editor cursor`);
-        await this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
 
         const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
         if (!bytePos) {
