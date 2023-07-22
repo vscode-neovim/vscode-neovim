@@ -198,7 +198,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 continue;
             }
             // lock typing in editor until cursor update is complete
-            this.cursorUpdatePromise.set(editor, new ManualPromise());
+            if (!this.cursorUpdatePromise.has(editor)) this.cursorUpdatePromise.set(editor, new ManualPromise());
             this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
         }
         this.gridCursorUpdates.clear();
