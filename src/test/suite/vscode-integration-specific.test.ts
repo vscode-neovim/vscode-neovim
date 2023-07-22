@@ -105,7 +105,7 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
 
-        await sendVSCodeKeys("L", 300);
+        await sendVSCodeKeys("L", 400);
         visibleRange = editor.visibleRanges[0];
         const cursor = getVScodeCursor(editor);
         assert.ok(cursor[0] <= visibleRange.end.line && cursor[0] >= visibleRange.end.line - 1);
@@ -116,7 +116,7 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
 
-        await sendVSCodeKeys("M");
+        await sendVSCodeKeys("M", 400);
         visibleRange = editor.visibleRanges[0];
         await assertContent(
             {
@@ -128,7 +128,7 @@ describe("VSCode integration specific stuff", () => {
         assert.ok(editor.selection.active.line >= middleline - 1);
         assert.ok(editor.selection.active.line <= middleline + 1);
 
-        await sendVSCodeKeys("H", 300);
+        await sendVSCodeKeys("H", 400);
         visibleRange = editor.visibleRanges[0];
         await assertContent(
             {
@@ -272,25 +272,31 @@ describe("VSCode integration specific stuff", () => {
         );
     });
 
-    it("Cursor is ok when go to def into editor in the other pane", async function () {
-        this.retries(3);
-
+    it("Cursor is ok when go to def into editor in the other pane", async () => {
         const doc1 = await vscode.workspace.openTextDocument(path.join(__dirname, "../../../test_fixtures/bb.ts"));
         await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
+        await wait(1500);
+
         const doc2 = await vscode.workspace.openTextDocument(
             path.join(__dirname, "../../../test_fixtures/def-with-scroll.ts"),
         );
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.Two, true);
-        await sendVSCodeCommand("workbench.action.focusFirstEditorGroup", "", 500);
+        await wait(1500);
 
-        await sendVSCodeKeys("gg5j", 500);
-        await wait(6000); // wait for ts server
+        // make sure we're in first editor group
+        await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
+        await wait();
+
+        await sendVSCodeKeys("gg5j", 0);
+        await wait(1000);
+
         await vscode.commands.executeCommand(
             "editor.action.revealDefinitionAside",
             doc1.uri,
             new vscode.Position(5, 1),
         );
-        await wait(1000);
+        await wait(1500);
+
         await assertContent(
             {
                 cursor: [115, 16],
