@@ -10,12 +10,12 @@ export async function run(): Promise<void> {
     // Create the mocha test
     const mocha = new Mocha({
         ui: "bdd",
-        timeout: 35000,
+        timeout: 25000,
         bail: false,
         slow: 20000,
         fullTrace: true,
-        retries: 3,
         grep: ".*",
+        retries: 2,
     });
     const testsRoot = path.resolve(__dirname, "..");
     return new Promise((c, e) => {

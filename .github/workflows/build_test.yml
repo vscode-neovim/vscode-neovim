@@ -26,9 +26,7 @@ jobs:
               id: vim
               with:
                   neovim: true
-                  # Use the oldest supported Neovim version here so we don't accidentally
-                  # break the extension on older versions
-                  version: v0.8.0
+                  version: v0.9.0
             - name: npm install
               run: npm ci --silent
             - name: Build

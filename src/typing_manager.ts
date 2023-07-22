@@ -124,15 +124,15 @@ export class TypingManager implements Disposable {
             !this.main.modeManager.isRecordingInInsertMode
         ) {
             const editor = window.activeTextEditor;
-            await this.client.call("getpos", ["."]); // hack to wait for cursor update
-            const cursorPromise = editor && this.main.cursorManager.waitForCursorUpdate(editor);
-            if (cursorPromise) {
+            const documentPromise = editor && this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+            if (documentPromise) {
                 this.logger.debug(
                     `${LOG_PREFIX}: Waiting for cursor completion operation before disposing type handler`,
                 );
                 this.pendingKeysAfterEnter = "";
                 this.isEnteringInsertMode = true;
-                cursorPromise.then(async () => {
+                documentPromise.then(async () => {
+                    await this.main.cursorManager.waitForCursorUpdate(editor);
                     if (this.main.modeManager.isInsertMode) {
                         this.disposeType();
                         this.disposeReplacePrevChar();

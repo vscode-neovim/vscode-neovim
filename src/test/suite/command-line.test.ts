@@ -1,15 +1,14 @@
 import { strict as assert } from "assert";
 
-import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
 import {
     attachTestNvimClient,
     sendVSCodeCommand,
     sendVSCodeKeys,
-    wait,
     closeAllActiveEditors,
     closeNvimClient,
+    openTextDocument,
 } from "../utils";
 
 describe("Command line", () => {
@@ -19,16 +18,11 @@ describe("Command line", () => {
     });
     after(async () => {
         await closeNvimClient(client);
-    });
-
-    afterEach(async () => {
         await closeAllActiveEditors();
     });
 
     it("Navigates history", async () => {
-        const doc = await vscode.workspace.openTextDocument({ content: "abc" });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "abc" });
 
         await sendVSCodeKeys(":");
         await sendVSCodeCommand("vscode-neovim.test-cmdline", 'echo "abc"');
@@ -67,9 +61,7 @@ describe("Command line", () => {
     });
 
     it("Supports cmdline shortcuts", async () => {
-        const doc = await vscode.workspace.openTextDocument({ content: "abc" });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "abc" });
 
         await sendVSCodeKeys(":");
         await sendVSCodeCommand("vscode-neovim.test-cmdline", 'echo "abc 123');
@@ -88,9 +80,7 @@ describe("Command line", () => {
     });
 
     it("Supports pasting from register", async () => {
-        const doc = await vscode.workspace.openTextDocument({ content: "abc def geh" });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "abc def geh" });
 
         await sendVSCodeKeys("wyiwwdiw0:");
         await sendVSCodeCommand("vscode-neovim.send-cmdline", '<C-r>"');
@@ -109,11 +99,7 @@ describe("Command line", () => {
     });
 
     it("Supports C-l", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["1abc", "", "2abc blah", "3abc blah blah", "4abc"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: ["1abc", "", "2abc blah", "3abc blah blah", "4abc"].join("\n") });
 
         await sendVSCodeKeys("/");
         await sendVSCodeCommand("vscode-neovim.test-cmdline", "1");
