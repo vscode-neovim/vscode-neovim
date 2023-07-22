@@ -1352,7 +1352,7 @@
         "@types/msgpack-lite": "^0.1.7",
         "@types/node": "^20.4.2",
         "@types/vscode": "^1.80.0",
-        "@typescript-eslint/eslint-plugin": "^5.61.0",
+        "@typescript-eslint/eslint-plugin": "^6.1.0",
         "@typescript-eslint/parser": "^5.62.0",
         "@vscode/test-electron": "^2.3.3",
         "eslint": "^8.44.0",
