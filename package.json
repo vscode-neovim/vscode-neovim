@@ -167,7 +167,6 @@
                         ]
                     },
                     "default": {
-                        "Directory": "vim",
                         "IncSearch": {
                             "backgroundColor": "theme.editor.findMatchBackground",
                             "borderColor": "theme.editor.findMatchBorder"
@@ -178,9 +177,7 @@
                         },
                         "Visual": {
                             "backgroundColor": "theme.editor.selectionBackground"
-                        },
-                        "Conceal": "vim",
-                        "Substitute": "vim"
+                        }
                     }
                 }
             }
