@@ -104,12 +104,6 @@
                     "title": "Neovim width",
                     "description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
                 },
-                "vscode-neovim.neovimViewportHeightExtend": {
-                    "type": "number",
-                    "default": 1,
-                    "title": "Neovim viewport height extend",
-                    "description": "How much to extend neovim viewport on each side beyond vscode editor size. Increase if you are not seeing decorations or highlights on the edges of the editor."
-                },
                 "vscode-neovim.useCtrlKeysForNormalMode": {
                     "type": "boolean",
                     "default": true,
@@ -302,14 +296,6 @@
             {
                 "command": "vscode-neovim.send-cmdline",
                 "title": "Neovim: Send key in cmdline"
-            },
-            {
-                "command": "vscode-neovim.ctrl-e",
-                "title": "Neovim: ctrl-e"
-            },
-            {
-                "command": "vscode-neovim.ctrl-y",
-                "title": "Neovim: ctrl-y"
             }
         ],
         "keybindings": [
@@ -694,9 +680,10 @@
                 "args": "<C-d>"
             },
             {
-                "command": "vscode-neovim.ctrl-e",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+e",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-e>"
             },
             {
                 "command": "vscode-neovim.send",
@@ -747,9 +734,10 @@
                 "args": "<C-x>"
             },
             {
-                "command": "vscode-neovim.ctrl-y",
+                "command": "vscode-neovim.send",
                 "key": "ctrl+y",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal",
+                "args": "<C-y>"
             },
             {
                 "command": "vscode-neovim.send",

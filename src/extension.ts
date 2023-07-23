@@ -18,7 +18,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = isWindows && settings.get("useWSL", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
-    const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 1);
     const customInit = getNeovimInitPath() ?? "";
     const clean = settings.get("neovimClean", false);
     const NVIM_APPNAME = settings.get("NVIM_APPNAME", "");
@@ -44,7 +43,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             neovimPath: neovimPath,
             useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
             neovimViewportWidth: neovimWidth,
-            neovimViewportHeightExtend: neovimViewportHeightExtend,
             logConf: {
                 logPath,
                 outputToConsole,

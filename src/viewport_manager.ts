@@ -29,7 +29,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         private logger: Logger,
         private client: NeovimClient,
         private main: MainController,
-        private neovimViewportHeightExtend: number,
     ) {
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
     }

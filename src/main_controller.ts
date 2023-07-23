@@ -7,7 +7,6 @@ import { attach, NeovimClient } from "neovim";
 import { createLogger, transports as loggerTransports } from "winston";
 
 import { HighlightConfiguration } from "./highlight_provider";
-import { CommandsController } from "./commands_controller";
 import { ModeManager } from "./mode_manager";
 import { BufferManager } from "./buffer_manager";
 import { TypingManager } from "./typing_manager";
@@ -40,7 +39,6 @@ export interface ControllerSettings {
     clean: boolean;
     NVIM_APPNAME: string;
     neovimViewportWidth: number;
-    neovimViewportHeightExtend: number;
     logConf: {
         level: "none" | "error" | "warn" | "debug";
         logPath: string;
@@ -70,7 +68,6 @@ export class MainController implements vscode.Disposable {
     public changeManager!: DocumentChangeManager;
     public typingManager!: TypingManager;
     public cursorManager!: CursorManager;
-    public commandsController!: CommandsController;
     public commandLineManager!: CommandLineManager;
     public statusLineManager!: StatusLineManager;
     public highlightManager!: HighlightManager;
@@ -180,9 +177,6 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.commandsController = new CommandsController(this.client);
-        this.disposables.push(this.commandsController);
-
         this.modeManager = new ModeManager(this.logger);
         this.disposables.push(this.modeManager);
 
@@ -191,12 +185,7 @@ export class MainController implements vscode.Disposable {
         });
         this.disposables.push(this.bufferManager);
 
-        this.viewportManager = new ViewportManager(
-            this.logger,
-            this.client,
-            this,
-            this.settings.neovimViewportHeightExtend,
-        );
+        this.viewportManager = new ViewportManager(this.logger, this.client, this);
         this.disposables.push(this.viewportManager);
 
         this.highlightManager = new HighlightManager(this.logger, this, {
@@ -269,7 +258,6 @@ export class MainController implements vscode.Disposable {
         const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
             this.modeManager,
             this.changeManager,
-            this.commandsController,
             this.bufferManager,
             this.viewportManager,
             this.highlightManager,
@@ -330,7 +318,6 @@ export class MainController implements vscode.Disposable {
         const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
             this.modeManager,
             this.changeManager,
-            this.commandsController,
             this.bufferManager,
             this.highlightManager,
             this.cursorManager,
