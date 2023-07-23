@@ -429,7 +429,8 @@ describe("Dot-repeat", () => {
     it("With o and undo", async () => {
         await openTextDocument({ content: ["test1", "test2", "test3"].join("\n") });
 
-        await sendVSCodeKeys("o\n\n\n");
+        await sendInsertKey("o");
+        await sendVSCodeKeys("\n\n\n");
         await sendEscapeKey();
 
         await sendVSCodeKeys("j.");
