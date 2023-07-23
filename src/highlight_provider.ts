@@ -404,23 +404,6 @@ export class HighlightProvider {
         return result;
     }
 
-    public clearHighlights(grid: number): [TextEditorDecorationType, Range[]][] {
-        const prevHighlights = this.prevGridHighlightsIds.get(grid);
-        this.highlights.delete(grid);
-        this.prevGridHighlightsIds.delete(grid);
-        if (!prevHighlights) {
-            return [];
-        }
-        const result: [TextEditorDecorationType, Range[]][] = [];
-        for (const id of prevHighlights) {
-            const decorator = this.getDecoratorForHighlightId(id);
-            if (decorator) {
-                result.push([decorator, []]);
-            }
-        }
-        return result;
-    }
-
     private createDecoratorForHighlightId(id: number, options: ThemableDecorationRenderOptions): void {
         const decorator = window.createTextEditorDecorationType(options);
         this.decoratorConfigurations.set(decorator, options);

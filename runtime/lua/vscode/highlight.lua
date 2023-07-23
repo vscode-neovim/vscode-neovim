@@ -13,6 +13,5 @@ local function ignore_highlights()
     vim.api.nvim_set_hl(0, "Whitespace", {})
 end
 
--- remove highlight groups that should never be shown
 ignore_highlights()
 vim.api.nvim_create_autocmd({ "FileType", "ColorScheme" }, { callback = ignore_highlights })
