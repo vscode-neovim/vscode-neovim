@@ -38,9 +38,11 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
                         never,
                         [{ kind: "ui" | "syntax" | "terminal"; ui_name: string; hi_name: string }],
                     ][]) {
-                        // if this hl consists of only one group, apply a custom decoration if applicable
-                        const name = info && info.length === 1 ? info[0].hi_name : undefined;
-                        this.highlightProvider.addHighlightGroup(id, uiAttrs, name);
+                        this.highlightProvider.addHighlightGroup(
+                            id,
+                            uiAttrs,
+                            info.map((i) => i.hi_name),
+                        );
                     }
                     break;
                 }

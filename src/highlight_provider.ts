@@ -118,7 +118,6 @@ export class HighlightProvider {
      * HL group id to text decorator
      */
     private highlighIdToDecorator: Map<number, TextEditorDecorationType> = new Map();
-    private highlighIdToGroup: Map<number, string> = new Map();
     /**
      * Store configuration per decorator
      */
@@ -135,9 +134,9 @@ export class HighlightProvider {
         }
     }
 
-    public addHighlightGroup(id: number, attrs: VimHighlightUIAttributes, name: string | undefined): void {
-        this.highlighIdToGroup.set(id, name || "");
-        const customHl = name && this.configuration.highlights[name];
+    public addHighlightGroup(id: number, attrs: VimHighlightUIAttributes, groups: string[]): void {
+        // if this hl consists of only one group, apply a custom decoration if applicable
+        const customHl = groups.length === 1 && this.configuration.highlights[groups[0]];
         if (customHl && customHl !== "vim") {
             // no need to create custom decorator if already exists
             if (!this.highlighIdToDecorator.has(id)) {
@@ -146,9 +145,11 @@ export class HighlightProvider {
         } else {
             // remove if exists
             if (this.highlighIdToDecorator.has(id)) this.highlighIdToDecorator.get(id)?.dispose();
-            const options = customHl || "vim";
-            const conf = options === "vim" ? vimHighlightToVSCodeOptions(attrs) : options;
-            this.createDecoratorForHighlightId(id, conf);
+            // don't create decoration for empty attrs
+            if (Object.keys(attrs).length) {
+                const conf = vimHighlightToVSCodeOptions(attrs);
+                this.createDecoratorForHighlightId(id, conf);
+            }
         }
     }
 
