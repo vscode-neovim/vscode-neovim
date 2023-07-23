@@ -398,6 +398,22 @@ export function accumulateDotRepeatChange(
     return newLastChange;
 }
 
+/**
+ * @param editor editor in question
+ * @returns (1, 0)-indexed viewport range
+ */
+export function getNeovimViewportPosFromEditor(editor: TextEditor): [number, number] | undefined {
+    try {
+        const ranges = editor.visibleRanges;
+        const startLine = ranges[0].start.line;
+        const endLine = ranges[ranges.length - 1].end.line;
+
+        return [startLine + 1, endLine + 1];
+    } catch {
+        return;
+    }
+}
+
 export function getDocumentLineArray(doc: TextDocument): string[] {
     const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
     return doc.getText().split(eol);
