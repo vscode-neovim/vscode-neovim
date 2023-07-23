@@ -135,8 +135,9 @@ export class HighlightProvider {
     }
 
     public addHighlightGroup(id: number, attrs: VimHighlightUIAttributes, groups: string[]): void {
-        // if this hl consists of only one group, apply a custom decoration if applicable
-        const customHl = groups.length === 1 && this.configuration.highlights[groups[0]];
+        // if the highlight consists of any custom groups, use that instead
+        const customName = groups.reverse().find((g) => this.configuration.highlights[g] !== undefined);
+        const customHl = customName && this.configuration.highlights[customName];
         if (customHl && customHl !== "vim") {
             // no need to create custom decorator if already exists
             if (!this.highlighIdToDecorator.has(id)) {
