@@ -11,9 +11,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const neovimPath = getNeovimPath();
     const isWindows = process.platform == "win32";
 
-    const highlightConfIgnore = settings.get("highlightGroups.ignoreHighlights");
     const highlightConfHighlights = settings.get("highlightGroups.highlights");
-    const highlightConfUnknown = settings.get("highlightGroups.unknownHighlight");
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = isWindows && settings.get("useWSL", false);
@@ -38,8 +36,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             extensionPath: context.extensionPath.replace(/\\/g, "\\\\"),
             highlightsConfiguration: {
                 highlights: highlightConfHighlights,
-                ignoreHighlights: highlightConfIgnore,
-                unknownHighlight: highlightConfUnknown,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any,
             neovimPath: neovimPath,

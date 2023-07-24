@@ -1,3 +1,4 @@
+require("vscode.defaults")
 require("vscode.cursor")
 
 local M = {}

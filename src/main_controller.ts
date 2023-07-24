@@ -96,7 +96,7 @@ export class MainController implements vscode.Disposable {
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
         const neovimPreScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
-        const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode/options.lua");
+        const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode/force_options.lua");
 
         const args = [
             "-N",
@@ -200,9 +200,7 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.viewportManager);
 
-        this.highlightManager = new HighlightManager(this.logger, this, {
-            highlight: this.settings.highlightsConfiguration,
-        });
+        this.highlightManager = new HighlightManager(this, this.settings.highlightsConfiguration);
         this.disposables.push(this.highlightManager);
 
         this.changeManager = new DocumentChangeManager(this.logger, this.client, this);
@@ -273,7 +271,6 @@ export class MainController implements vscode.Disposable {
             this.commandsController,
             this.bufferManager,
             this.viewportManager,
-            this.highlightManager,
             this.cursorManager,
         ];
         const vscodeComandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
@@ -333,7 +330,6 @@ export class MainController implements vscode.Disposable {
             this.changeManager,
             this.commandsController,
             this.bufferManager,
-            this.highlightManager,
             this.cursorManager,
         ];
         const vscodeCommandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
