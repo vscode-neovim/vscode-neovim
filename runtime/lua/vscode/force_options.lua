@@ -56,3 +56,18 @@ forceoptions(vim.opt)
 vim.api.nvim_create_autocmd({ "BufEnter", "FileType" }, {
     callback = function() forceoptions(vim.opt_local) end,
 })
+
+-- send option changes to vscode, and then reset
+vim.api.nvim_create_autocmd({ "OptionSet" }, {
+    callback = function(ev)
+        vim.fn.VSCodeExtensionNotify("option-set", vim.fn.win_getid(), ev.match,
+            {
+                option_type = vim.v.option_type,
+                option_new = vim.v.option_new,
+                option_oldlocal = vim.v.option_oldlocal,
+                option_oldglobal = vim.v.option_oldglobal,
+                option_old = vim.v.option_old
+            })
+        forceoptions(vim.opt)
+    end
+})
