@@ -1,4 +1,5 @@
 local util = require("vscode.util")
+local vscode = require("vscode")
 
 -- ------------------------------ multi cursor ------------------------------ --
 local should_notify_multi_cursor = nil
@@ -26,7 +27,7 @@ local function notify_multi_cursor()
   should_notify_multi_cursor = nil
   local startPos = vim.fn.getcharpos("'<")
   local endPos = vim.fn.getcharpos("'>")
-  vim.fn.VSCodeExtensionNotify('visual-edit', multi_cursor_append, multi_cursor_visual_mode, startPos[2], endPos[2],
+  vscode.notify('visual-edit', multi_cursor_append, multi_cursor_visual_mode, startPos[2], endPos[2],
     startPos[3], endPos[3], multi_cursor_skip_empty)
 end
 
@@ -42,7 +43,7 @@ vim.keymap.set('x', 'mI', function() prepare_multi_cursor(false, false) end)
 
 -- ----------------------- forced visual cursor updates ----------------------- --
 local function visual_changed()
-  vim.fn.VSCodeExtensionNotify('visual-changed', vim.fn.win_getid())
+  vscode.notify_extension('visual-changed', vim.fn.win_getid())
 end
 
 -- simulate VisualChanged event to update visual selection
