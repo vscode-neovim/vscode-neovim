@@ -1,5 +1,5 @@
+require("vscode.defaults")
 require("vscode.cursor")
-require("vscode.highlight")
 
 local M = {}
 
