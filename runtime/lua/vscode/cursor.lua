@@ -30,7 +30,7 @@ function M.notify_multi_cursor()
   M.should_notify_multi_cursor = nil
   local startPos = vim.fn.getcharpos("'<")
   local endPos = vim.fn.getcharpos("'>")
-  api.notify('visual-edit', M.multi_cursor_append, M.multi_cursor_visual_mode, startPos[2], endPos[2],
+  api.notify_extension('visual-edit', M.multi_cursor_append, M.multi_cursor_visual_mode, startPos[2], endPos[2],
     startPos[3], endPos[3], M.multi_cursor_skip_empty)
 end
 
