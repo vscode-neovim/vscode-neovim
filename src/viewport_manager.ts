@@ -152,7 +152,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         }
         const viewport = this.gridViewport.get(gridId);
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.line) {
-            this.client.executeLua("require('vscode.util').scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
+            this.client.executeLua("require('vscode.api').scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
         }
     }
 }
