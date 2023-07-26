@@ -41,11 +41,6 @@ function! VSCodeClearUndo(bufId)
 endfunction
 
 
-" Set text decorations for given ranges. Used in easymotion
-function! VSCodeSetTextDecorations(hlName, rowsCols)
-    call VSCodeExtensionNotify('text-decorations', a:hlName, a:rowsCols)
-endfunction
-
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
     if exists('b:vscode_temp') && b:vscode_temp
