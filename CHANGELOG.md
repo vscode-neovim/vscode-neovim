@@ -1,5 +1,45 @@
 # Change Log
 
+## [0.4.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.2...v0.4.0) (2023-07-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **highlight:** remove easymotion support
+* **highlight:** `"vscode-neovim.highlightGroups.ignoreHighlights"` is removed, ignore syntax groups from nvim instead by using `hi MySyntaxGroup NONE`.
+* **cursor:** `VSCodeNotifyVisual` and `VSCodeNotifyRange` is removed, use `VSCodeNotify` instead
+* **cursor:** send vscode selections to neovim, including intuitive mouse selections (remove mouse setting)
+
+### fact
+
+* **highlight:** ignore undesired highlights from vim side instead of vscode side ([#1334](https://github.com/vscode-neovim/vscode-neovim/issues/1334)) ([5ed8081](https://github.com/vscode-neovim/vscode-neovim/commit/5ed80815676217565fbdb759d7e1c26139e11a6c))
+* **highlight:** remove easymotion support ([161371e](https://github.com/vscode-neovim/vscode-neovim/commit/161371ee385b1da0c9f6d0df7db2ef4c98498b62))
+
+
+### Features
+
+* **cursor:** improve performance and flicker ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **cursor:** remove range-based commands ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **cursor:** send vscode selections to neovim, including intuitive mouse selections (remove mouse setting) ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **cursor:** sync visual selections with vscode ([#1258](https://github.com/vscode-neovim/vscode-neovim/issues/1258)) ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **lua:** add lua api ([#1339](https://github.com/vscode-neovim/vscode-neovim/issues/1339)) ([6be0ff3](https://github.com/vscode-neovim/vscode-neovim/commit/6be0ff383be87558a062e09cefb3c41e4e76625a))
+
+
+### Bug Fixes
+
+* **cursor:** cursor promise resolving ([9ed40f3](https://github.com/vscode-neovim/vscode-neovim/commit/9ed40f3db2cfb48f2b5cdea7e26acb35ef901136))
+* **cursor:** don't overwrite cursor promise and wait for document change ([0d334af](https://github.com/vscode-neovim/vscode-neovim/commit/0d334af2c6ac352ccfd6f3cf25ea3b0d3f688e73))
+* **highlight:** fix blank extmarks ([#1143](https://github.com/vscode-neovim/vscode-neovim/issues/1143)) ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **highlight:** fix extmarks beyond end of line ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **highlight:** ignore compound group names, like MatchParenVisual ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **highlight:** wait for document change before creating highlights ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **typing:** fix rapid typing after entering insert mode ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+
+
+### Miscellaneous Chores
+
+* release 0.4.0 ([ced7306](https://github.com/vscode-neovim/vscode-neovim/commit/ced7306622d0e39f71ede44513482452e35b1a5a))
+
 ## [0.3.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.1...v0.3.2) (2023-07-12)
 
 
