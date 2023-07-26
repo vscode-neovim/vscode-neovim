@@ -44,10 +44,6 @@ export interface DotRepeatChange {
      */
     text: string;
     /**
-     * Set if it was the first change and started either through o or O
-     */
-    startMode?: "o" | "O";
-    /**
      * Text eol
      */
     eol: string;
@@ -358,16 +354,11 @@ export function getNeovimInitPath(): string | undefined {
     return getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
 }
 
-export function normalizeDotRepeatChange(
-    change: TextDocumentContentChangeEvent,
-    eol: string,
-    startMode?: "o" | "O",
-): DotRepeatChange {
+export function normalizeDotRepeatChange(change: TextDocumentContentChangeEvent, eol: string): DotRepeatChange {
     return {
         rangeLength: change.rangeLength,
         rangeOffset: change.rangeOffset,
         text: change.text,
-        startMode,
         eol,
     };
 }
@@ -405,6 +396,22 @@ export function accumulateDotRepeatChange(
         newLastChange.rangeLength += change.rangeLength;
     }
     return newLastChange;
+}
+
+/**
+ * @param editor editor in question
+ * @returns (1, 0)-indexed viewport range
+ */
+export function getNeovimViewportPosFromEditor(editor: TextEditor): [number, number] | undefined {
+    try {
+        const ranges = editor.visibleRanges;
+        const startLine = ranges[0].start.line;
+        const endLine = ranges[ranges.length - 1].end.line;
+
+        return [startLine + 1, endLine + 1];
+    } catch {
+        return;
+    }
 }
 
 export function getDocumentLineArray(doc: TextDocument): string[] {

@@ -94,7 +94,7 @@ describe("VSCode integration specific stuff", () => {
     it("Scrolling actions", async () => {
         const editor = await openTextDocument(path.join(__dirname, "../../../test_fixtures/scrolltest.txt"));
 
-        await sendVSCodeCommand("vscode-neovim.ctrl-f");
+        await sendVSCodeKeys("<C-f>", 0);
 
         let visibleRange = editor.visibleRanges[0];
         assert.strictEqual(editor.selection.active.line, visibleRange.start.line);

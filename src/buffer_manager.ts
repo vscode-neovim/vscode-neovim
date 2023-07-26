@@ -21,8 +21,9 @@ import {
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { callAtomic, convertByteNumToCharNum } from "./utils";
+import { callAtomic, convertByteNumToCharNum, getNeovimViewportPosFromEditor } from "./utils";
 import { MainController } from "./main_controller";
+import { SMOOTH_SCROLLING_TIME } from "./viewport_manager";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -382,6 +383,19 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     this.textEditorToWinId.set(visibleEditor, winId);
                     this.winIdToEditor.set(winId, visibleEditor);
                     this.main.cursorManager.updateNeovimCursorPosition(visibleEditor, visibleEditor.selection.active);
+
+                    const requests: [string, unknown[]][] = [];
+                    const viewport = getNeovimViewportPosFromEditor(visibleEditor);
+                    let viewportMsg = "no available viewport";
+                    if (viewport) {
+                        requests.push(["nvim_execute_lua", ["vscode.scroll_viewport(...)", [winId, ...viewport]]]);
+                        viewportMsg = `[${viewport[0] - 1}, ${viewport[1] - 1}]`;
+                    }
+
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId},  viewport: ${viewportMsg}`,
+                    );
+                    await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
                 }
             } catch (e) {
                 this.logger.error(`${LOG_PREFIX}: ${(e as Error).message}`);
@@ -445,7 +459,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     // ! we're interested only in the editor final layout and vscode may call this function few times, e.g. when moving an editor to other group
     // ! so lets debounce it slightly
-    private syncLayoutDebounced = debounce(this.syncLayout, 200, { leading: false, trailing: true });
+    private syncLayoutDebounced = debounce(this.syncLayout, SMOOTH_SCROLLING_TIME + 10, {
+        leading: false,
+        trailing: true,
+    });
 
     private syncActiveEditor = async (): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX}: syncing active editor`);

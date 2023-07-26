@@ -73,7 +73,6 @@ endfunction
 
 " Load altercmd first
 execute 'source ' . s:currDir . '/vim-altercmd/plugin/altercmd.vim'
-execute 'source ' . s:currDir . '/vscode-scrolling.vim'
 execute 'source ' . s:currDir . '/vscode-jumplist.vim'
 execute 'source ' . s:currDir . '/vscode-code-actions.vim'
 execute 'source ' . s:currDir . '/vscode-file-commands.vim'
