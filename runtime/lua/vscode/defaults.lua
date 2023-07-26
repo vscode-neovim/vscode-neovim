@@ -1,18 +1,8 @@
--- customise statusbar
-vim.opt.shortmess = "filnxtToOFI"
+-- this module is responsible for setting default vim options and hiding undesired syntax groups
+local M = {}
 
---- Turn on auto-indenting
-vim.opt.autoindent = true
-vim.opt.smartindent = true
-
---- split/nosplit doesn't work currently, see https://github.com/asvetliakov/vscode-neovim/issues/329
-vim.opt.inccommand = ""
-
--- disable matchparen because we don't need it
-vim.g.loaded_matchparen = 1
-
--- syntax groups that are hidden by default but can be overridden by `vscode-neovim.highlightGroups.highlights` or init.vim config (inside ColorScheme au)
-local function apply_highlights()
+-- ignore syntax groups by default but can be overridden by `vscode-neovim.highlightGroups.highlights` or init.vim config (inside ColorScheme au)
+function M.default_highlights()
     vim.api.nvim_set_hl(0, "Normal", {})
     vim.api.nvim_set_hl(0, "NormalNC", {})
     vim.api.nvim_set_hl(0, "NormalFloat", {})
@@ -26,5 +16,22 @@ local function apply_highlights()
     vim.api.nvim_set_hl(0, 'Cursor', { reverse = true })
 end
 
-apply_highlights()
-vim.api.nvim_create_autocmd({ "FileType", "ColorScheme" }, { callback = apply_highlights })
+function M.setup()
+    -- customise statusbar
+    vim.opt.shortmess = "filnxtToOFI"
+
+    --- Turn on auto-indenting
+    vim.opt.autoindent = true
+    vim.opt.smartindent = true
+
+    --- split/nosplit doesn't work currently, see https://github.com/asvetliakov/vscode-neovim/issues/329
+    vim.opt.inccommand = ""
+
+    -- disable matchparen because we don't need it
+    vim.g.loaded_matchparen = 1
+
+    M.default_highlights()
+    vim.api.nvim_create_autocmd({ "FileType", "ColorScheme" }, { callback = M.default_highlights })
+end
+
+return M

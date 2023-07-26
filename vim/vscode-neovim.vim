@@ -99,5 +99,5 @@ augroup END
 
 
 lua << EOF
-require("vscode")
+require("vscode").setup()
 EOF
