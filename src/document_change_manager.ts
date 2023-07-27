@@ -399,7 +399,7 @@ export class DocumentChangeManager implements Disposable {
         }
 
         const eol = doc.eol === EndOfLine.LF ? "\n" : "\r\n";
-        const requests = this.parseDocumentChanges(editor, bufId, contentChanges, origText, eol);
+        const [requests, steps] = this.parseDocumentChanges(editor, bufId, contentChanges, origText, eol);
 
         const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
         if (!bufTick) {
@@ -411,7 +411,7 @@ export class DocumentChangeManager implements Disposable {
                 bufTick + requests.length
             }`,
         );
-        this.bufferSkipTicks.set(bufId, bufTick + contentChanges.length);
+        this.bufferSkipTicks.set(bufId, bufTick + steps);
 
         this.logger.debug(`${LOG_PREFIX}: Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
@@ -427,18 +427,19 @@ export class DocumentChangeManager implements Disposable {
         changes: readonly TextDocumentContentChangeEvent[],
         origText: string,
         eol: string,
-    ): [string, unknown[]][] {
+    ): [[string, unknown[]][], number] {
         const requests: [string, unknown[]][] = [];
         const gridId = editor && this.main.bufferManager.getGridIdFromEditor(editor);
         const cursorNvim = gridId && this.main.viewportManager.getCursorFromViewport(gridId);
         const cursor = cursorNvim && convertVimPositionToEditorPosition(editor, cursorNvim);
+        let input = "";
+        let steps = 0;
         if (cursor) {
             // the absolute index of the cursor in the document
             let cursorIndex =
                 cursor.line > 0
                     ? origText.split(eol).slice(0, cursor.line).join(eol).length + cursor.character + eol.length
                     : cursor.character;
-            let input = "";
             for (const change of changes) {
                 const start = change.range.start;
                 const end = change.range.end;
@@ -459,20 +460,24 @@ export class DocumentChangeManager implements Disposable {
                 if (rangeLength == 0 && startIndex === cursorIndex) {
                     // insert text
                     input += text;
+                    steps += text.length;
                     cursorIndex += text.length;
                     origText = origText.slice(0, startIndex) + text + origText.slice(endIndex);
                 } else if (text === "" && startIndex === cursorIndex - rangeLength) {
                     // delete text
                     input += `${"<BS>".repeat(rangeLength)}`;
                     cursorIndex -= rangeLength;
+                    steps += rangeLength;
                     origText = origText.slice(0, startIndex) + origText.slice(endIndex);
                 } else if (text === "" && endIndex === cursorIndex + rangeLength) {
                     // delete text to the right
                     input += `${"<Del>".repeat(rangeLength)}`;
+                    steps += rangeLength;
                     origText = origText.slice(0, startIndex) + origText.slice(endIndex);
                 } else {
                     // other
                     if (input) requests.push(["nvim_input", [input]]);
+                    steps += 1;
                     const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
                     const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
                     requests.push([
@@ -489,6 +494,7 @@ export class DocumentChangeManager implements Disposable {
                 const text = c.text;
                 const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
                 const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
+                steps += 1;
                 requests.push([
                     "nvim_buf_set_text",
                     [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)],
@@ -496,6 +502,6 @@ export class DocumentChangeManager implements Disposable {
             }
         }
 
-        return requests;
+        return [requests, steps];
     }
 }
