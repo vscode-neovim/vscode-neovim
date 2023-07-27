@@ -38,10 +38,6 @@ export class TypingManager implements Disposable {
      */
     private pendingKeysAfterEnter = "";
     /**
-     * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
-     */
-    private compositeEscapeFirstPressTimestamp?: number;
-    /**
      * Composing flag
      */
     private isInComposition = false;
@@ -63,16 +59,6 @@ export class TypingManager implements Disposable {
         this.disposables.push(commands.registerCommand("vscode-neovim.enable", () => this.onEnableCommand("enable")));
         this.disposables.push(commands.registerCommand("vscode-neovim.disable", () => this.onEnableCommand("disable")));
         this.disposables.push(commands.registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle")));
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
-                this.handleCompositeEscapeFirstKey(key),
-            ),
-        );
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape2", (key: string) =>
-                this.handleCompositeEscapeSecondKey(key),
-            ),
-        );
         this.disposables.push(commands.registerCommand("compositionStart", this.onCompositionStart));
         this.disposables.push(commands.registerCommand("compositionEnd", this.onCompositionEnd));
         this.main.modeManager.onModeChange(this.onModeChange);
@@ -233,29 +219,6 @@ export class TypingManager implements Disposable {
         if (this.neovimEnable || key !== "<Esc>") {
             this.isExitingInsertMode = true;
             await this.onSendBlockingCommand(key);
-        }
-    };
-
-    private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {
-        const now = new Date().getTime();
-        if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
-            this.compositeEscapeFirstPressTimestamp = undefined;
-            await commands.executeCommand("deleteLeft");
-            await this.onEscapeKeyCommand();
-        } else {
-            this.compositeEscapeFirstPressTimestamp = now;
-            await commands.executeCommand("type", { text: key });
-        }
-    };
-
-    private handleCompositeEscapeSecondKey = async (key: string): Promise<void> => {
-        const now = new Date().getTime();
-        if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
-            this.compositeEscapeFirstPressTimestamp = undefined;
-            await commands.executeCommand("deleteLeft");
-            await this.onEscapeKeyCommand();
-        } else {
-            await commands.executeCommand("type", { text: key });
         }
     };
 

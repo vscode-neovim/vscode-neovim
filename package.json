@@ -208,14 +208,6 @@
                 "title": "Neovim send escape key to neovim, or other keys that will exit insert mode"
             },
             {
-                "command": "vscode-neovim.compositeEscape1",
-                "title": "Composite escape key 1"
-            },
-            {
-                "command": "vscode-neovim.compositeEscape2",
-                "title": "Composite escape key 2"
-            },
-            {
                 "command": "vscode-neovim.commit-cmdline",
                 "title": "Neovim: Accept cmdline"
             },
