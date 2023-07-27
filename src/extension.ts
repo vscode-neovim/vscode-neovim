@@ -20,6 +20,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 1);
     const customInit = getNeovimInitPath() ?? "";
     const clean = settings.get("neovimClean", false);
+    const neovimCmd = settings.get("neovimCmd", "");
     const NVIM_APPNAME = settings.get("NVIM_APPNAME", "");
     const logPath = settings.get("logPath", "");
     const logLevel = settings.get("logLevel", "none");
@@ -32,6 +33,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const plugin = new MainController({
             customInitFile: customInit,
             clean: clean,
+            neovimCmd: neovimCmd,
             NVIM_APPNAME: NVIM_APPNAME,
             extensionPath: context.extensionPath.replace(/\\/g, "\\\\"),
             highlightsConfiguration: {

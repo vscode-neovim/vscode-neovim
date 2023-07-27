@@ -38,6 +38,7 @@ export interface ControllerSettings {
     useWsl: boolean;
     customInitFile: string;
     clean: boolean;
+    neovimCmd: string;
     NVIM_APPNAME: string;
     neovimViewportWidth: number;
     neovimViewportHeightExtend: number;
@@ -128,6 +129,9 @@ export class MainController implements vscode.Disposable {
         }
         if (settings.clean) {
             args.push("--clean");
+        }
+        if (settings.neovimCmd) {
+            args.push("--cmd", settings.neovimCmd);
         }
         if (settings.customInitFile) {
             args.push("-u", settings.customInitFile);

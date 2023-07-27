@@ -93,6 +93,11 @@
                     "default": false,
                     "markdownDescription": "Equivalent to the startup option `--clean`."
                 },
+                "vscode-neovim.neovimCmd": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Command passed to startup option `--cmd`, see `:h --cmd`"
+                },
                 "vscode-neovim.NVIM_APPNAME": {
                     "type": "string",
                     "default": "",
