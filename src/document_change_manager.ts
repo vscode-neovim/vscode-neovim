@@ -9,6 +9,8 @@ import {
     Selection,
     TextDocument,
     TextDocumentChangeEvent,
+    TextDocumentContentChangeEvent,
+    TextEditor,
     window,
     workspace,
 } from "vscode";
@@ -25,6 +27,7 @@ import {
     getDocumentLineArray,
     prepareEditRangesFromDiff,
     ManualPromise,
+    convertVimPositionToEditorPosition,
 } from "./utils";
 import { MainController } from "./main_controller";
 
@@ -390,18 +393,13 @@ export class DocumentChangeManager implements Disposable {
             return;
         }
 
-        const eol = doc.eol === EndOfLine.LF ? "\n" : "\r\n";
-
-        const requests: [string, unknown[]][] = [];
-
-        for (const c of contentChanges) {
-            const start = c.range.start;
-            const end = c.range.end;
-            const text = c.text;
-            const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
-            const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
-            requests.push(["nvim_buf_set_text", [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)]]);
+        let editor: TextEditor | undefined;
+        if (window.activeTextEditor?.document === doc) {
+            editor = window.activeTextEditor;
         }
+
+        const eol = doc.eol === EndOfLine.LF ? "\n" : "\r\n";
+        const requests = this.parseDocumentChanges(editor, bufId, contentChanges, origText, eol);
 
         const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
         if (!bufTick) {
@@ -419,4 +417,85 @@ export class DocumentChangeManager implements Disposable {
         this.main.cursorManager.wantInsertCursorUpdate = false;
         if (requests.length) await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
     };
+
+    // takes a list of changes and returns a list of neovim requests.
+    // normally, will apply the changes directly using nvim_buf_set_text.
+    // however, when typing is detected (a contiunous addition/removal next to the cursor), nvim_input will be used to properly set dot-repeat
+    private parseDocumentChanges(
+        editor: TextEditor | undefined,
+        bufId: number,
+        changes: readonly TextDocumentContentChangeEvent[],
+        origText: string,
+        eol: string,
+    ): [string, unknown[]][] {
+        const requests: [string, unknown[]][] = [];
+        const gridId = editor && this.main.bufferManager.getGridIdFromEditor(editor);
+        const cursorNvim = gridId && this.main.viewportManager.getCursorFromViewport(gridId);
+        const cursor = cursorNvim && convertVimPositionToEditorPosition(editor, cursorNvim);
+        if (cursor) {
+            // the absolute index of the cursor in the document
+            let cursorIndex =
+                cursor.line > 0
+                    ? origText.split(eol).slice(0, cursor.line).join(eol).length + cursor.character + eol.length
+                    : cursor.character;
+            let input = "";
+            for (const change of changes) {
+                const start = change.range.start;
+                const end = change.range.end;
+                const text = change.text;
+                const rangeLength = change.rangeLength;
+
+                // the absolute index of the start of the change in the document
+                const startIndex =
+                    start.line > 0
+                        ? origText.split(eol).slice(0, start.line).join(eol).length + start.character + eol.length
+                        : start.character;
+                // the absolute index of the end of the change in the document
+                const endIndex =
+                    end.line > 0
+                        ? origText.split(eol).slice(0, end.line).join(eol).length + end.character + eol.length
+                        : end.character;
+
+                if (rangeLength == 0 && startIndex === cursorIndex) {
+                    // insert text
+                    input += text;
+                    cursorIndex += text.length;
+                    origText = origText.slice(0, startIndex) + text + origText.slice(endIndex);
+                } else if (text === "" && startIndex === cursorIndex - rangeLength) {
+                    // delete text
+                    input += `${"<BS>".repeat(rangeLength)}`;
+                    cursorIndex -= rangeLength;
+                    origText = origText.slice(0, startIndex) + origText.slice(endIndex);
+                } else if (text === "" && endIndex === cursorIndex + rangeLength) {
+                    // delete text to the right
+                    input += `${"<Del>".repeat(rangeLength)}`;
+                    origText = origText.slice(0, startIndex) + origText.slice(endIndex);
+                } else {
+                    // other
+                    if (input) requests.push(["nvim_input", [input]]);
+                    const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
+                    const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
+                    requests.push([
+                        "nvim_buf_set_text",
+                        [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)],
+                    ]);
+                }
+            }
+            if (input) requests.push(["nvim_input", [input]]);
+        } else {
+            for (const c of changes) {
+                const start = c.range.start;
+                const end = c.range.end;
+                const text = c.text;
+                const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
+                const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
+                requests.push([
+                    "nvim_buf_set_text",
+                    [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)],
+                ]);
+            }
+        }
+
+        return requests;
+    }
 }
