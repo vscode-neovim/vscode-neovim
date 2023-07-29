@@ -254,9 +254,10 @@ See gif in action:
 ### Invoking VSCode actions from neovim
 
 To invoke VSCode actions from Neovim, use `VSCodeNotify(command, args, ...)` or `VSCodeCall(command, args, ...)`
-functions. From lua, use `require("vscode").notify(command, args, ...)` or `require("vscode").call(command, args, ...)`.
-`Notify` is non-blocking, `Call` is blocking. Generally use Notify unless you really need a blocking call, such as
-wanting VSCode to process a visual selection before leaving it with <kbd>Esc</kbd>.
+functions. From lua, use `require("vscode-neovim").notify(command, args, ...)` or
+`require("vscode-neovim").call(command, args, ...)`. `Notify` is non-blocking, `Call` is blocking. Generally use Notify
+unless you really need a blocking call, such as wanting VSCode to process a visual selection before leaving it with
+<kbd>Esc</kbd>.
 
 #### Examples
 
