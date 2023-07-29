@@ -99,5 +99,5 @@ augroup END
 
 
 lua << EOF
-require("vscode").setup()
+require("vscode-neovim").setup()
 EOF

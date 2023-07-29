@@ -1,5 +1,5 @@
-local util = require("vscode.util")
-local api = require("vscode.api")
+local util = require("vscode-neovim.util")
+local api = require("vscode-neovim.api")
 
 -- this module is responsible for creating multiple cursors, triggering a visual update, and displaying the fake visual cursor
 local M = {}
