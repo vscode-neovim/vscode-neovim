@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.4.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.0...v0.4.1) (2023-07-30)
+
+
+### Bug Fixes
+
+* **cursor:** re-add new `VSCodeNotifyRange` impl ([368c58d](https://github.com/vscode-neovim/vscode-neovim/commit/368c58db5fe5b6ae2bca37df3d6cfeb2fb98d62e))
+* **cursor:** re-add new VSCodeNotifyRange impl ([#1358](https://github.com/vscode-neovim/vscode-neovim/issues/1358)) ([368c58d](https://github.com/vscode-neovim/vscode-neovim/commit/368c58db5fe5b6ae2bca37df3d6cfeb2fb98d62e))
+* **custom_commands:** wait for cursor update before issuing command ([368c58d](https://github.com/vscode-neovim/vscode-neovim/commit/368c58db5fe5b6ae2bca37df3d6cfeb2fb98d62e))
+* **lua:** rename vscode lua plugin to vscode-neovim ([#1356](https://github.com/vscode-neovim/vscode-neovim/issues/1356)) ([72adf16](https://github.com/vscode-neovim/vscode-neovim/commit/72adf160dcc5bc0066555c33c526140c2f835f95))
+* re-add `VSCodeCommentary` ([368c58d](https://github.com/vscode-neovim/vscode-neovim/commit/368c58db5fe5b6ae2bca37df3d6cfeb2fb98d62e))
+
 ## [0.4.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.2...v0.4.0) (2023-07-26)
 
 
