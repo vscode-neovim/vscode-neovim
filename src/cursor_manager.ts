@@ -91,7 +91,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const [vscodeCommand, mode, line1, line2, pos1, pos2, leaveSelection, inargs] = args as any;
                 try {
-                    this.handleRangeCommand(
+                    await this.handleRangeCommand(
                         vscodeCommand,
                         mode,
                         line1,
