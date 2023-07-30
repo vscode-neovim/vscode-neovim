@@ -87,6 +87,29 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
                 break;
             }
+            case "range-command": {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const [vscodeCommand, mode, line1, line2, pos1, pos2, leaveSelection, inargs] = args as any;
+                try {
+                    await this.handleRangeCommand(
+                        vscodeCommand,
+                        mode,
+                        line1,
+                        line2,
+                        pos1,
+                        pos2,
+                        !!leaveSelection,
+                        Array.isArray(inargs) ? inargs : [inargs],
+                    );
+                } catch (e) {
+                    this.logger.error(
+                        `${vscodeCommand} failed, range: [${line1}, ${line2}, ${pos1}, ${pos2}] args: ${JSON.stringify(
+                            inargs,
+                        )} error: ${(e as Error).message}`,
+                    );
+                }
+                break;
+            }
             case "visual-edit": {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const [append, visualMode, startLine, endLine, startCol, endCol, skipEmpty] = args as any;
@@ -248,7 +271,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         const mode = this.main.modeManager.currentMode;
         if (mode.isVisual) {
-            selections = await this.createVisualSelection(editor, mode, active);
+            selections = await this.createVisualSelection(editor, mode, active, undefined);
         } else {
             this.logger.debug(`${LOG_PREFIX}: Updating cursor in editor pos: [${active.line}, ${active.character}]`);
             selections = [new Selection(active, active)];
@@ -375,11 +398,18 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     // given a neovim visual selection range (and the current mode), create a vscode selection
-    private createVisualSelection = async (editor: TextEditor, mode: Mode, active: Position): Promise<Selection[]> => {
+    private createVisualSelection = async (
+        editor: TextEditor,
+        mode: Mode,
+        active: Position,
+        anchor: Position | undefined,
+    ): Promise<Selection[]> => {
         const doc = editor.document;
 
-        const anchorNvim = await this.client.callFunction("getpos", ["v"]);
-        const anchor = convertVimPositionToEditorPosition(editor, new Position(anchorNvim[1] - 1, anchorNvim[2] - 1));
+        if (!anchor) {
+            const anchorNvim = await this.client.callFunction("getpos", ["v"]);
+            anchor = convertVimPositionToEditorPosition(editor, new Position(anchorNvim[1] - 1, anchorNvim[2] - 1));
+        }
 
         this.logger.debug(
             `${LOG_PREFIX}: Creating visual selection, mode: ${mode.visual}, anchor: [${anchor.line}, ${anchor.character}], active: [${active.line}, ${active.character}]`,
@@ -459,6 +489,49 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         editor.revealRange(new Selection(pos, pos), type);
         this.main.viewportManager.scrollNeovim(editor);
     };
+
+    /**
+     * Produce vscode selection and execute command
+     * @param command VSCode command to execute
+     * @param startLine Start line to select. 1based
+     * @param endLine End line to select. 1based
+     * @param startPos Start pos to select. 1based. If 0 then whole line will be selected
+     * @param endPos End pos to select, 1based. If you then whole line will be selected
+     * @param leaveSelection When true won't clear vscode selection after running the command
+     * @param args Additional args
+     */
+    public async handleRangeCommand(
+        command: string,
+        mode: string,
+        startLine: number,
+        endLine: number,
+        startPos: number,
+        endPos: number,
+        leaveSelection: boolean,
+        args: unknown[],
+    ): Promise<unknown> {
+        const e = window.activeTextEditor;
+        if (!e) return;
+        this.logger.debug(
+            `${LOG_PREFIX}: Range command: ${command}, range: [${startLine}, ${startPos}] - [${endLine}, ${endPos}], leaveSelection: ${leaveSelection}`,
+        );
+        const prevSelections = e.selections;
+        const selection = await this.createVisualSelection(
+            e,
+            new Mode(mode),
+            new Position(endLine - 1, endPos - 1),
+            new Position(startLine - 1, startPos - 1),
+        );
+        this.neovimCursorPosition.set(e, selection[0]);
+        e.selections = selection;
+        const res = await commands.executeCommand(command, ...args);
+        this.logger.debug(`${LOG_PREFIX}: Range command completed`);
+        if (!leaveSelection) {
+            this.neovimCursorPosition.set(e, prevSelections[0]);
+            e.selections = prevSelections;
+        }
+        return res;
+    }
 
     private async multipleCursorFromVisualMode(
         append: boolean,

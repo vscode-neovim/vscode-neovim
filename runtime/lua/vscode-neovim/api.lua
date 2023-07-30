@@ -23,6 +23,23 @@ function M.call_extension(command, ...)
     return vim.rpcrequest(vim.g.vscode_channel, plugin_event_name, command, { ... })
 end
 
+-- send command to vscode with range (line or char). [1, 1]-based.
+function M.call_range(command, line1, line2, leaveSelection, ...)
+    return M.call_extension('range-command', command, 'V', line1, line2, 1, 1, leaveSelection, { ... })
+end
+
+function M.notify_range(command, line1, line2, leaveSelection, ...)
+    return M.notify_extension('range-command', command, 'V', line1, line2, 1, 1, leaveSelection, { ... })
+end
+
+function M.call_range_pos(command, line1, line2, pos1, pos2, leaveSelection, ...)
+    return M.call_extension('range-command', command, 'v', line1, line2, pos1, pos2, leaveSelection, { ... })
+end
+
+function M.notify_range_pos(command, line1, line2, pos1, pos2, leaveSelection, ...)
+    return M.notify_extension('range-command', command, 'v', line1, line2, pos1, pos2, leaveSelection, { ... })
+end
+
 ---call from vscode to sync viewport with neovim
 ---@param vscode_topline number the top line of vscode visible range
 ---@param vscode_endline number the end line of vscode visible range

@@ -218,7 +218,7 @@ export class MainController implements vscode.Disposable {
         this.statusLineManager = new StatusLineManager(this.logger, this.client);
         this.disposables.push(this.statusLineManager);
 
-        this.customCommandsManager = new CustomCommandsManager(this.logger);
+        this.customCommandsManager = new CustomCommandsManager(this.logger, this);
         this.disposables.push(this.customCommandsManager);
 
         this.multilineMessagesManager = new MutlilineMessagesManager(this.logger);

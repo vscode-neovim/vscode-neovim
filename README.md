@@ -253,13 +253,30 @@ See gif in action:
 
 ### Invoking VSCode actions from neovim
 
-To invoke VSCode actions from Neovim, use `VSCodeNotify(command, args, ...)` or `VSCodeCall(command, args, ...)`
-functions. From lua, use `require("vscode-neovim").notify(command, args, ...)` or
-`require("vscode-neovim").call(command, args, ...)`. `Notify` is non-blocking, `Call` is blocking. Generally use Notify
-unless you really need a blocking call, such as wanting VSCode to process a visual selection before leaving it with
-<kbd>Esc</kbd>.
+There are a
+[few helper functions](https://github.com/vscode-neovim/vscode-neovim/blob/master/vim/vscode-neovim.vim#L17-L39) that
+are used to invoke VSCode commands from Neovim. Note that the commands that start with `require("vscode-neovim")` are
+lua variants.
+
+| Command                                                                                                                                                                                                                             | Description                                                                                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <ul><li>`VSCodeNotify(command, ...)`</li><li>`VSCodeCall`</li><li>`require("vscode-neovim").notify`</li> <li>`require("vscode-neovim").call`</li></ul>                                                                              | Invoke VSCode command with optional arguments.                                                                                                                                                |
+| <ul><li>`VSCodeNotifyRange(command, line1, line2, leaveSelection, ...)` </li><li>`VSCodeCallRange`</li><li>`require("vscode-neovim").notify_range`</li><li>`require("vscode-neovim").call_range`</li></ul>                          | Produce linewise VSCode selection from `line1` to `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after invoking the command. Line is 1-based. |
+| <ul><li>`VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`</li><li>`VSCodeCallRangePos`</li><li>`require("vscode-neovim").notify_range_pos`</li><li>`require("vscode-neovim").call_range_pos`</li></ul> | Produce characterwise VSCode selection from `line1.pos1` to `line2.pos2` and invoke VSCode command. Pos is \[1,1\]-based.                                                                     |
+
+> 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
+> unless you really need a blocking call. One example of a blocking call is wanting VSCode to process a visual selection
+> when running a command before exiting visual mode.
 
 #### Examples
+
+Format selection (default binding):
+
+```vim
+xnoremap = <Cmd>call VSCodeCall('editor.action.formatSelection')<CR>
+nnoremap = <Cmd>call VSCodeCall('editor.action.formatSelection')<CR><Esc>
+nnoremap == <Cmd>call VSCodeCall('editor.action.formatSelection')<CR>
+```
 
 Open definition aside (default binding):
 
