@@ -255,7 +255,8 @@ See gif in action:
 
 There are a
 [few helper functions](https://github.com/vscode-neovim/vscode-neovim/blob/master/vim/vscode-neovim.vim#L17-L39) that
-are used to invoke VSCode commands from Neovim:
+are used to invoke VSCode commands from Neovim. Note that the commands that start with `require("vscode-neovim")` are
+lua variants.
 
 | Command                                                                                                                                                                                                                             | Description                                                                                                                                                                                   |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
