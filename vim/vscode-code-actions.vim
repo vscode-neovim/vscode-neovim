@@ -13,7 +13,7 @@ function! s:vscodeCommentary(...) abort
         let [line1, line2] = [line("'["), line("']")]
     endif
 
-    call VSCodeCallRange('editor.action.commentLine', line1, line2, 1)
+    call VSCodeCallRange('editor.action.commentLine', line1, line2, 0)
 endfunction
 
 

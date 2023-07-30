@@ -515,7 +515,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Range command: ${command}, range: [${startLine}, ${startPos}] - [${endLine}, ${endPos}], leaveSelection: ${leaveSelection}`,
         );
-        const prevSelections = [...e.selections];
+        const prevSelections = e.selections;
         const selection = await this.createVisualSelection(
             e,
             new Mode(mode),
