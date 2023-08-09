@@ -1275,7 +1275,7 @@
         "@typescript-eslint/parser": "^5.62.0",
         "@vscode/test-electron": "^2.3.3",
         "eslint": "^8.46.0",
-        "eslint-config-prettier": "^8.9.0",
+        "eslint-config-prettier": "^9.0.0",
         "eslint-plugin-import": "^2.27.5",
         "eslint-plugin-prettier": "^5.0.0",
         "glob": "^8.0.3",
