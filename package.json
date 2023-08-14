@@ -1269,7 +1269,7 @@
         "@types/lodash-es": "^4.17.8",
         "@types/mocha": "^10.0.1",
         "@types/msgpack-lite": "^0.1.7",
-        "@types/node": "^20.4.5",
+        "@types/node": "^20.5.0",
         "@types/vscode": "^1.80.0",
         "@typescript-eslint/eslint-plugin": "^5.61.0",
         "@typescript-eslint/parser": "^5.62.0",
