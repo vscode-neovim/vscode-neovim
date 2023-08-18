@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.4.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.1...v0.4.2) (2023-08-18)
+
+
+### Bug Fixes
+
+* **highlight:** remove flash.nvim lag ([#1389](https://github.com/vscode-neovim/vscode-neovim/issues/1389)) ([e38e628](https://github.com/vscode-neovim/vscode-neovim/commit/e38e628b084a716cc5718545016f34cac28713f6))
+
 ## [0.4.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.0...v0.4.1) (2023-07-30)
 
 
