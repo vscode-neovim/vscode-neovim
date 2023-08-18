@@ -215,7 +215,7 @@ export class HighlightProvider {
                     const curChar = lineText.slice(cellIdx, cellIdx + text.length);
                     // text is not same as the cell text on buffer
                     if (text === listCharsTab) text = "\t";
-                    if (curChar !== text && text !== "") {
+                    if (curChar !== "" && text !== "" && curChar !== text) {
                         hlDeco.virtText = text;
                         hlDeco.overlayPos = lineText.length > 0 ? cellIdx : 1;
                     }
@@ -359,17 +359,13 @@ export class HighlightProvider {
             const decoratorRanges = ranges.map((r) => {
                 const lineLength = editor.document.lineAt(Math.min(topLine + r.lineS, editor.document.lineCount - 1))
                     .text.length;
-                const pastEnd = r.colE >= lineLength;
+                const pastEnd = r.colE >= lineLength && r.colS >= lineLength;
                 if (r.hl || pastEnd) {
                     const conf = this.getDecoratorOptions(decorator);
                     let text;
                     // if we are past end, or text is " ", we need to add something to make sure it gets rendered
                     if (r.hl) {
-                        if (r.hl.virtText == " ") {
-                            text = "\u200D";
-                        } else {
-                            text = r.hl.virtText!;
-                        }
+                        text = r.hl.virtText!.replace(" ", "\u200D");
                     } else {
                         text = "\u200D";
                     }
