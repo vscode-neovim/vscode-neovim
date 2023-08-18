@@ -212,11 +212,13 @@ export class HighlightProvider {
                     const hlDeco: Highlight = {
                         hlId: cellHlId,
                     };
+                    // check if text is not same as the cell text on buffer
+                    // only render decorations one cell past the end of the line
                     const curChar = lineText.slice(cellIdx, cellIdx + text.length);
-                    // text is not same as the cell text on buffer
                     if (text === listCharsTab) text = "\t";
-                    if (curChar !== "" && text !== "" && curChar !== text) {
-                        hlDeco.virtText = text;
+                    if (cellIdx <= lineText.length && text !== "" && curChar !== text) {
+                        // if we are past end, or text is " ", we need to add something to make sure it gets rendered
+                        hlDeco.virtText = text.replace(" ", "\u200D");
                         hlDeco.overlayPos = lineText.length > 0 ? cellIdx : 1;
                     }
                     gridHl[row][cellIdx] = hlDeco;
@@ -359,18 +361,10 @@ export class HighlightProvider {
             const decoratorRanges = ranges.map((r) => {
                 const lineLength = editor.document.lineAt(Math.min(topLine + r.lineS, editor.document.lineCount - 1))
                     .text.length;
-                const pastEnd = r.colE >= lineLength && r.colS >= lineLength;
-                if (r.hl || pastEnd) {
+                if (r.hl) {
                     const conf = this.getDecoratorOptions(decorator);
-                    let text;
-                    // if we are past end, or text is " ", we need to add something to make sure it gets rendered
-                    if (r.hl) {
-                        text = r.hl.virtText!.replace(" ", "\u200D");
-                    } else {
-                        text = "\u200D";
-                    }
                     return this.createVirtTextDecorationOption(
-                        text,
+                        r.hl.virtText!,
                         { ...conf, backgroundColor: conf.backgroundColor || new ThemeColor("editor.background") }, // overwrite text underneath
                         topLine + r.lineS,
                         r.colS + 1,
