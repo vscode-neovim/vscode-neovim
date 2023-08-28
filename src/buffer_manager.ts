@@ -534,9 +534,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
 
         const requests: [string, unknown[]][] = [
-            ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
-            ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
-            ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
             // fill the buffer
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
@@ -552,6 +549,11 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
             // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
+            // nvim_buf_set_name will do filetype detection
+            // we must override tab options after vim initializes defaults
+            ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
+            ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
+            ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
         ];
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
         // Looks like need to be in separate request
