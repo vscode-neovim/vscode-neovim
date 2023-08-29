@@ -463,16 +463,19 @@ describe("Visual modes test", () => {
         const {
             options: { insertSpaces, tabSize },
         } = await openTextDocument({ content: ["test", "test"].join("\n") });
-        await client.input(":xmap <LT>buffer> > >gv<CR>");
-        await wait(500);
 
+        await wait(200);
+        await client.input(":xmap <LT>buffer> > >gv<CR>");
+
+        await wait(200);
         await sendVSCodeKeys("V");
         await sendVSCodeKeys("j$");
+        await sendVSCodeKeys(">");
+
+        await wait(200);
+        await sendEscapeKey();
 
         const indent = insertSpaces ? " ".repeat(tabSize as number) : "\t";
-        await sendVSCodeKeys(">");
-        await wait(1000);
-        await sendEscapeKey();
         await assertContent(
             {
                 content: [`${indent}test`, `${indent}test`],
@@ -480,7 +483,8 @@ describe("Visual modes test", () => {
             },
             client,
         );
-        await wait(500);
+
+        await wait(200);
         await sendVSCodeKeys("gvd");
         await assertContent(
             {
