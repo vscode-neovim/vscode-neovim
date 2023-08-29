@@ -16,7 +16,12 @@ import {
     Uri,
     ViewColumn,
     window,
+    TextDocumentContentProvider,
     workspace,
+    EventEmitter,
+    Range,
+    TextEditorRevealType,
+    Event,
 } from "vscode";
 
 import { Logger } from "./logger";
@@ -36,6 +41,8 @@ export interface BufferManagerSettings {
 const LOG_PREFIX = "BufferManager";
 
 const BUFFER_NAME_PREFIX = "__vscode_neovim__-";
+
+const BUFFER_SCHEME = "vscode-neovim";
 
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
@@ -72,6 +79,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Tab configuration for each editor
      */
     private editorTabConfiguration: WeakMap<TextEditor, { tabSize: number; insertSpaces: boolean }> = new WeakMap();
+    /**
+     * Provider for external buffers' document contents (e.g. `:help`)
+     */
+    private bufferProvider: BufferProvider;
 
     /**
      * Buffer event delegate
@@ -97,6 +108,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
         this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
         this.disposables.push(window.onDidChangeTextEditorOptions(this.onDidChangeEditorOptions));
+
+        this.bufferProvider = new BufferProvider(logger, client);
+        this.disposables.push(workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider));
     }
 
     public dispose(): void {
@@ -578,15 +592,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
     };
 
-    private receivedBufferEvent = (
+    private receivedBufferEvent = async (
         buffer: Buffer,
         tick: number,
         firstLine: number,
         lastLine: number,
         linedata: string[],
         more: boolean,
-    ): void => {
+    ): Promise<void> => {
         this.onBufferEvent && this.onBufferEvent(buffer.id, tick, firstLine, lastLine, linedata, more);
+        const uri = this.buildExternalBufferUri(await buffer.name, buffer.id);
+        this.logger.debug(`${LOG_PREFIX}: received buffer event for ${uri}`);
+        this.bufferProvider.documentDidChange.fire(uri);
     };
 
     /**
@@ -721,6 +738,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         return workspace.textDocuments.find((d) => d.uri.toString() === uri);
     }
 
+    private buildExternalBufferUri(name: string, id: number): Uri {
+        return Uri.from({ scheme: BUFFER_SCHEME, path: name, fragment: id.toString() });
+    }
+
     private async attachNeovimExternalBuffer(
         name: string,
         id: number,
@@ -732,13 +753,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!buf) {
             return;
         }
-        // don't bother with displaying empty buffer
-        const lines = await buf.lines;
-        if (!lines.length || (lines.length === 1 && !lines[0])) {
-            this.logger.debug(`${LOG_PREFIX}: Skipping empty external buffer ${id}`);
-            return;
-        }
-        const doc = await workspace.openTextDocument({ content: lines.join("\n") });
+
+        const uri = this.buildExternalBufferUri(name, buf.id);
+        this.logger.debug(`${LOG_PREFIX}: opening external buffer ${uri}`);
+        const doc = await workspace.openTextDocument(uri);
         this.externalTextDocuments.add(doc);
         this.textDocumentToBufferId.set(doc, id);
         this.onBufferInit && this.onBufferInit(id, doc);
@@ -806,5 +824,43 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
             }, 5000);
         }
+    }
+}
+
+/**
+ * Implements the VSCode document provider API for external buffers from neovim.
+ */
+class BufferProvider implements TextDocumentContentProvider {
+    /**
+     * Fire this event to update the document contents (i.e. re-evaluate the provider).
+     */
+    public documentDidChange: EventEmitter<Uri> = new EventEmitter();
+
+    onDidChange = this.documentDidChange.event;
+
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+    ) {}
+
+    async provideTextDocumentContent(uri: Uri, token: CancellationToken): Promise<string | undefined> {
+        this.logger.debug(`${LOG_PREFIX}: providing content for ${uri}`);
+
+        let id = parseInt(uri.fragment);
+
+        const buffers = await this.client.buffers;
+        const buf = buffers.find((b) => b.id === id);
+        if (!buf || token.isCancellationRequested) {
+            return;
+        }
+
+        // don't bother with displaying empty buffer
+        const lines = await buf.lines;
+        if (!lines.length || (lines.length === 1 && !lines[0])) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping empty external buffer ${id}`);
+            return;
+        }
+
+        return lines.join("\n");
     }
 }
