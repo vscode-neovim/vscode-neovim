@@ -1,6 +1,7 @@
 import { strict as assert } from "assert";
-import { NeovimClient } from "neovim";
 import path from "path";
+
+import { NeovimClient } from "neovim";
 import vscode from "vscode";
 
 import { attachTestNvimClient, closeAllActiveEditors, closeNvimClient, openTextDocument, wait } from "../utils";
@@ -21,35 +22,42 @@ describe("Tab options test", () => {
         await closeAllActiveEditors();
     });
 
-    async function getTabOptions(): Promise<{ expandtab: boolean; tabstop: number }> {
+    async function checkTab(editor: vscode.TextEditor): Promise<void> {
+        const { insertSpaces, tabSize } = editor.options;
         const [[expandtab, tabstop]] = await client.callAtomic([
             ["nvim_buf_get_option", [0, "expandtab"]],
             ["nvim_buf_get_option", [0, "tabstop"]],
         ]);
-        return { expandtab, tabstop };
-    }
-
-    async function checkEditor(editor: vscode.TextEditor) {
-        await wait(300);
-        const { insertSpaces, tabSize } = editor.options;
-        const { expandtab, tabstop } = await getTabOptions();
         assert.equal(insertSpaces, expandtab, "insertSpaces should be equal to expandtab");
         assert.equal(tabSize, tabstop, "tabSize should be equal to tabstop");
     }
 
     it("should sync editor options for new buffer", async () => {
-        const editor = await openTextDocument(path.join(__dirname, "../../../test_fixtures/a.ts"));
-        await checkEditor(editor);
+        let editor;
+
+        editor = await openTextDocument({ content: "testing..." });
+        await wait(200);
+        await checkTab(editor);
+
+        await wait(200);
+
+        editor = await openTextDocument(path.join(__dirname, "../../../test_fixtures/a.ts"));
+        await wait(200);
+        await checkTab(editor);
     });
 
     it("should resync options when editor options changed", async () => {
         const editor = await openTextDocument({ content: "test" });
-        await checkEditor(editor);
+        await wait(200);
 
         editor.options.insertSpaces = !editor.options.insertSpaces;
-        await checkEditor(editor);
+        await wait(200);
+        await checkTab(editor);
+
+        await wait(200);
 
         editor.options.tabSize = (editor.options.tabSize as number) * 2;
-        await checkEditor(editor);
+        await wait(200);
+        await checkTab(editor);
     });
 });

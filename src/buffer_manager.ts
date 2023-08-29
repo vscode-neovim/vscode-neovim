@@ -533,6 +533,11 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             });
         }
 
+        const tabOptions: [string, unknown[]][] = [
+            ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
+            ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
+            ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
+        ];
         const requests: [string, unknown[]][] = [
             // fill the buffer
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
@@ -551,11 +556,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
             // nvim_buf_set_name will do filetype detection
             // we must override tab options after vim initializes defaults
-            ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
-            ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
-            ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
+            ...tabOptions,
         ];
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+        // Debugging through breakpoints reveals that in some cases the indentation options are overridden again.
+        // It is currently possible to work around this issue with a separate request
+        await callAtomic(this.client, tabOptions, this.logger, LOG_PREFIX);
         // Looks like need to be in separate request
         if (!this.isExternalTextDocument(document)) {
             await this.client.callFunction("VSCodeClearUndo", bufId);
