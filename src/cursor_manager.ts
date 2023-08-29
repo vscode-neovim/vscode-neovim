@@ -345,7 +345,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 await this.updateNeovimVisualSelection(editor, selection);
             }
         },
-        200,
+        20,
         { leading: false, trailing: true },
     );
 
