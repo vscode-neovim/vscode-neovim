@@ -1,3 +1,4 @@
+import { isNumber } from "lodash";
 import {
     DecorationOptions,
     Range,
@@ -186,6 +187,9 @@ export class HighlightProvider {
         let hasUpdates = false;
 
         for (const [ctext, hlId, repeat] of cells) {
+            if (isNumber(hlId)) {
+                cellHlId = hlId;
+            }
             let text = ctext;
 
             // 2+bytes chars (such as chinese characters) have "" as second cell
@@ -195,9 +199,6 @@ export class HighlightProvider {
             // tab fill character
             if (text === "♥") {
                 continue;
-            }
-            if (hlId != null) {
-                cellHlId = hlId;
             }
 
             const listCharsTab = "❥";
