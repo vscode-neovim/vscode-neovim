@@ -1,4 +1,3 @@
-import { isNumber } from "lodash";
 import {
     DecorationOptions,
     Range,
@@ -187,7 +186,7 @@ export class HighlightProvider {
         let hasUpdates = false;
 
         for (const [ctext, hlId, repeat] of cells) {
-            if (isNumber(hlId)) {
+            if (hlId != null) {
                 cellHlId = hlId;
             }
             let text = ctext;
