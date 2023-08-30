@@ -460,23 +460,31 @@ describe("Visual modes test", () => {
     });
 
     it("Cursor is ok for multiple cursor updates - issue #141", async () => {
-        await openTextDocument({ content: ["test", "test"].join("\n") });
-        await client.input(":xmap <LT>buffer> > >gv<CR>");
-        await wait(500);
+        const {
+            options: { insertSpaces, tabSize },
+        } = await openTextDocument({ content: ["test", "test"].join("\n") });
 
+        await wait(200);
+        await client.input(":xmap <LT>buffer> > >gv<CR>");
+
+        await wait(200);
         await sendVSCodeKeys("V");
         await sendVSCodeKeys("j$");
-
         await sendVSCodeKeys(">");
-        await wait(1000);
+
+        await wait(200);
         await sendEscapeKey();
+
+        const indent = insertSpaces ? " ".repeat(tabSize as number) : "\t";
         await assertContent(
             {
-                content: ["    test", "    test"],
+                content: [`${indent}test`, `${indent}test`],
                 cursor: [1, 4],
             },
             client,
         );
+
+        await wait(200);
         await sendVSCodeKeys("gvd");
         await assertContent(
             {
