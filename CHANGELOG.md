@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.4.3](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.2...v0.4.3) (2023-08-30)
+
+
+### Bug Fixes
+
+* **highlights:** fix misaligned rendering in visual mode ([#1401](https://github.com/vscode-neovim/vscode-neovim/issues/1401)) ([479f525](https://github.com/vscode-neovim/vscode-neovim/commit/479f525efac1b23e4ca146a96f7e7145b69b88d8))
+* **options:** force disable colorcolumn and winblend ([de11cf3](https://github.com/vscode-neovim/vscode-neovim/commit/de11cf32c72f3cc741efc18044ebefd5a12a62dc))
+
 ## [0.4.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.1...v0.4.2) (2023-08-18)
 
 
