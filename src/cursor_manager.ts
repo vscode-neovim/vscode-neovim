@@ -390,8 +390,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${pos.line}, ${pos.character}]`,
         );
         const vimPos = [pos.line + 1, pos.character]; // nvim_win_set_cursor is [1, 0] based
-        const request: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, vimPos]]];
-        await callAtomic(this.client, request, this.logger, LOG_PREFIX);
+        await this.client.request("nvim_win_set_cursor", [winId, vimPos]); // a little faster
+        // const request: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, vimPos]]];
+        // await callAtomic(this.client, request, this.logger, LOG_PREFIX);
     }
 
     private async updateNeovimVisualSelection(editor: TextEditor, selection: Selection): Promise<void> {
