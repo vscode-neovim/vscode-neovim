@@ -63,6 +63,12 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     private debouncedCursorUpdates: WeakMap<TextEditor, DebouncedFunc<CursorManager["updateCursorPosInEditor"]>> =
         new WeakMap();
 
+    // Different change kinds use different debounce times
+    private debouncedApplySelectionChanged: Map<number, DebouncedFunc<CursorManager["applySelectionChanged"]>> =
+        new Map();
+    // A flag indicates that func still pending.
+    private previousApplyDebounceTime: number | undefined;
+
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
@@ -195,16 +201,20 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!modeConf) {
             return;
         }
+        let style;
+        if (modeName == "visual") {
+            // in visual mode, we try to hide the cursor because we only use it for selections
+            style = TextEditorCursorStyle.LineThin;
+        } else if (modeConf.cursorShape === "block") {
+            style = TextEditorCursorStyle.Block;
+        } else if (modeConf.cursorShape === "horizontal") {
+            style = TextEditorCursorStyle.Underline;
+        } else {
+            style = TextEditorCursorStyle.Line;
+        }
         for (const editor of window.visibleTextEditors) {
-            if (modeName == "visual") {
-                // in visual mode, we try to hide the cursor because we only use it for selections
-                editor.options.cursorStyle = TextEditorCursorStyle.LineThin;
-            } else if (modeConf.cursorShape === "block") {
-                editor.options.cursorStyle = TextEditorCursorStyle.Block;
-            } else if (modeConf.cursorShape === "horizontal") {
-                editor.options.cursorStyle = TextEditorCursorStyle.Underline;
-            } else {
-                editor.options.cursorStyle = TextEditorCursorStyle.Line;
+            if (editor.options.cursorStyle !== style) {
+                editor.options.cursorStyle = style;
             }
         }
     }
@@ -302,34 +312,50 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.updateCursorStyle("visual");
         }
 
-        this.applySelectionChanged(textEditor, kind);
+        this.getDebouncedApplySelectionChanged(kind)(textEditor, kind);
     };
 
     // ! Need to debounce requests because setting cursor by consequence of neovim event will trigger this method
     // ! and cursor may go out-of-sync and produce a jitter
-    private applySelectionChanged = debounce(
-        async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
-            // reset cursor style if needed
-            this.updateCursorStyle(this.main.modeManager.currentMode.name);
+    private getDebouncedApplySelectionChanged = (
+        kind: TextEditorSelectionChangeKind | undefined,
+    ): DebouncedFunc<CursorManager["applySelectionChanged"]> => {
+        const debounceTime =
+            // Should use same debounce time if previous debounced func still pending
+            this.previousApplyDebounceTime !== undefined
+                ? this.previousApplyDebounceTime
+                : kind === TextEditorSelectionChangeKind.Mouse
+                ? 150
+                : 50;
+        this.previousApplyDebounceTime = debounceTime;
 
-            // wait for possible layout updates first
-            this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
-            await this.main.bufferManager.waitForLayoutSync();
-            // wait for possible change document events
-            this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
-            await this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
-            this.logger.debug(`${LOG_PREFIX}: Waiting done`);
+        let func = this.debouncedApplySelectionChanged.get(debounceTime);
+        if (func) return func;
+        func = debounce(this.applySelectionChanged, debounceTime, { leading: false, trailing: true, maxWait: 10 });
+        this.debouncedApplySelectionChanged.set(debounceTime, func);
+        return func;
+    };
 
-            // ignore selection change caused by buffer edit
-            const selection = editor.selection;
-            const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(editor.document);
-            if (documentChange && documentChange.isEqual(selection.active)) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Skipping onSelectionChanged event since it was selection produced by doc change`,
-                );
-                return;
-            }
+    private applySelectionChanged = async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
+        // reset cursor style if needed
+        this.updateCursorStyle(this.main.modeManager.currentMode.name);
 
+        // wait for possible layout updates first
+        this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
+        await this.main.bufferManager.waitForLayoutSync();
+        // wait for possible change document events
+        this.logger.debug(`${LOG_PREFIX}: Waiting for possible document change completion operation`);
+        await this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+        this.logger.debug(`${LOG_PREFIX}: Waiting done`);
+
+        // ignore selection change caused by buffer edit
+        const selection = editor.selection;
+        const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(editor.document);
+        if (documentChange && documentChange.isEqual(selection.active)) {
+            this.logger.debug(
+                `${LOG_PREFIX}: Skipping onSelectionChanged event since it was selection produced by doc change`,
+            );
+        } else {
             this.logger.debug(
                 `${LOG_PREFIX}: Applying changed selection, kind: ${kind},  cursor: [${selection.active.line}, ${
                     selection.active.character
@@ -344,10 +370,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             } else {
                 await this.updateNeovimVisualSelection(editor, selection);
             }
-        },
-        200,
-        { leading: false, trailing: true },
-    );
+        }
+        this.previousApplyDebounceTime = undefined;
+    };
 
     /**
      * Set cursor position in neovim. Coords are [0, 0] based.
