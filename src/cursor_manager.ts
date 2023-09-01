@@ -15,14 +15,13 @@ import {
 
 import { Logger } from "./logger";
 import { MainController } from "./main_controller";
+import { Mode } from "./mode_manager";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import {
-    callAtomic,
     convertEditorPositionToVimPosition,
     convertVimPositionToEditorPosition,
     ManualPromise,
 } from "./utils";
-import { Mode } from "./mode_manager";
 
 const LOG_PREFIX = "CursorManager";
 
@@ -201,7 +200,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (!modeConf) {
             return;
         }
-        let style;
+        let style: TextEditorCursorStyle;
         if (modeName == "visual") {
             // in visual mode, we try to hide the cursor because we only use it for selections
             style = TextEditorCursorStyle.LineThin;
@@ -213,9 +212,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             style = TextEditorCursorStyle.Line;
         }
         for (const editor of window.visibleTextEditors) {
-            if (editor.options.cursorStyle !== style) {
-                editor.options.cursorStyle = style;
-            }
+            editor.options.cursorStyle = style;
         }
     }
 
@@ -336,7 +333,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         return func;
     };
 
-    private applySelectionChanged = async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined) => {
+    private applySelectionChanged = async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined): Promise<void> => {
         // reset cursor style if needed
         this.updateCursorStyle(this.main.modeManager.currentMode.name);
 
