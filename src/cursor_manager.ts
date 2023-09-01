@@ -319,7 +319,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (this.previousApplyDebounceTime !== undefined) {
             debounceTime = this.previousApplyDebounceTime;
         } else if (kind === TextEditorSelectionChangeKind.Mouse) {
-            debounceTime = 150;
+            debounceTime = 100;
         } else {
             debounceTime = 50;
         }
@@ -327,7 +327,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         let func = this.debouncedApplySelectionChanged.get(debounceTime);
         if (func) return func;
-        func = debounce(this.applySelectionChanged, debounceTime);
+        func = debounce(this.applySelectionChanged, debounceTime, { leading: false, trailing: true });
         this.debouncedApplySelectionChanged.set(debounceTime, func);
         return func;
     };
@@ -390,8 +390,6 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         );
         const vimPos = [pos.line + 1, pos.character]; // nvim_win_set_cursor is [1, 0] based
         await this.client.request("nvim_win_set_cursor", [winId, vimPos]); // a little faster
-        // const request: [string, unknown[]][] = [["nvim_win_set_cursor", [winId, vimPos]]];
-        // await callAtomic(this.client, request, this.logger, LOG_PREFIX);
     }
 
     private async updateNeovimVisualSelection(editor: TextEditor, selection: Selection): Promise<void> {
