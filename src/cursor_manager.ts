@@ -17,11 +17,7 @@ import { Logger } from "./logger";
 import { MainController } from "./main_controller";
 import { Mode } from "./mode_manager";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import {
-    convertEditorPositionToVimPosition,
-    convertVimPositionToEditorPosition,
-    ManualPromise,
-} from "./utils";
+import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise } from "./utils";
 
 const LOG_PREFIX = "CursorManager";
 
@@ -317,13 +313,16 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     private getDebouncedApplySelectionChanged = (
         kind: TextEditorSelectionChangeKind | undefined,
     ): DebouncedFunc<CursorManager["applySelectionChanged"]> => {
-        const debounceTime =
-            // Should use same debounce time if previous debounced func still pending
-            this.previousApplyDebounceTime !== undefined
-                ? this.previousApplyDebounceTime
-                : kind === TextEditorSelectionChangeKind.Mouse
-                ? 150
-                : 50;
+        let debounceTime: number;
+        // Should use same debounce time if previous debounced func still in progress
+        // This avoid multiple cursor updates with different positions at the same time
+        if (this.previousApplyDebounceTime !== undefined) {
+            debounceTime = this.previousApplyDebounceTime;
+        } else if (kind === TextEditorSelectionChangeKind.Mouse) {
+            debounceTime = 150;
+        } else {
+            debounceTime = 50;
+        }
         this.previousApplyDebounceTime = debounceTime;
 
         let func = this.debouncedApplySelectionChanged.get(debounceTime);
@@ -333,7 +332,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         return func;
     };
 
-    private applySelectionChanged = async (editor: TextEditor, kind: TextEditorSelectionChangeKind | undefined): Promise<void> => {
+    private applySelectionChanged = async (
+        editor: TextEditor,
+        kind: TextEditorSelectionChangeKind | undefined,
+    ): Promise<void> => {
         // reset cursor style if needed
         this.updateCursorStyle(this.main.modeManager.currentMode.name);
 
