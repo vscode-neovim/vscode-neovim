@@ -331,7 +331,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         let func = this.debouncedApplySelectionChanged.get(debounceTime);
         if (func) return func;
-        func = debounce(this.applySelectionChanged, debounceTime, { leading: false, trailing: true, maxWait: 10 });
+        func = debounce(this.applySelectionChanged, debounceTime);
         this.debouncedApplySelectionChanged.set(debounceTime, func);
         return func;
     };
