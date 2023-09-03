@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.4.4](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.3...v0.4.4) (2023-09-03)
+
+
+### Bug Fixes
+
+* **cursor:** optimized cursor synchronization debouncing ([#1406](https://github.com/vscode-neovim/vscode-neovim/issues/1406)) ([7326aae](https://github.com/vscode-neovim/vscode-neovim/commit/7326aaed7f8cd588e02869274f3f1df8c89086fd))
+* **mode:** synchronize mode after startup ([#1411](https://github.com/vscode-neovim/vscode-neovim/issues/1411)) ([3804505](https://github.com/vscode-neovim/vscode-neovim/commit/380450514efadd29074761e039657fd97bfc7008))
+
 ## [0.4.3](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.2...v0.4.3) (2023-08-30)
 
 
