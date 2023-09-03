@@ -559,3 +559,13 @@ export class ManualPromise {
         });
     }
 }
+
+export function wait(ms: number): Promise<void> {
+    if (ms <= 0) return Promise.resolve(undefined);
+    return new Promise((resolve) => {
+        let timer = setTimeout(() => {
+            resolve(undefined);
+        }, ms);
+        timer.unref();
+    });
+}
