@@ -110,9 +110,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
+        if (!this.changeLayoutPromise) {
+            this.changeLayoutPromise = new Promise((res) => (this.changeLayoutPromiseResolve = res));
+        }
         // this.cancelTokenSource will always be cancelled when the visible editors change
-        await this.syncLayout(this.cancelTokenSource.token);
-        await this.syncActiveEditor();
+        await this.syncLayoutDebounced(this.cancelTokenSource.token);
+        await this.syncActiveEditorDebounced();
     }
 
     public async waitForLayoutSync(): Promise<void> {
