@@ -295,26 +295,46 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     private onWindowChanged = async (winId: number): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX} onWindowChanged, target window id: ${winId}`);
-        let editor = this.getEditorFromWinId(winId);
-        if (!editor || window.activeTextEditor === editor) return;
-        await new Promise((res) => setTimeout(res, 20));
+        let targetEditor = this.getEditorFromWinId(winId);
+        if (!targetEditor || window.activeTextEditor === targetEditor) return;
+        await new Promise((res) => setTimeout(res, 50));
         this.changeLayoutPromise && (await this.changeLayoutPromise);
         this.syncActiveEditorPromise && (await this.syncActiveEditorPromise.promise);
         // triggered by vscode side operations
         if (window.activeTextEditor === undefined) {
+            // e.g. open settings, open keyboard shortcuts settings which overrides active editor
             this.logger.debug(`${LOG_PREFIX} activeTextEditor is undefined, skipping`);
             return;
         }
         const { id: curwin } = await this.client.getWindow();
-        editor = this.getEditorFromWinId(curwin);
-        if (!editor || window.activeTextEditor === editor) {
+        targetEditor = this.getEditorFromWinId(curwin);
+        if (!targetEditor || window.activeTextEditor === targetEditor) {
             this.logger.debug(`${LOG_PREFIX} editor already synced, skipping`);
             return;
         }
-        if (editor.document.uri.scheme === "output") {
-            await commands.executeCommand("workbench.panel.output.focus");
+        const uri = targetEditor.document.uri;
+        const { scheme } = uri;
+        if (scheme === "output") {
+            return commands.executeCommand("workbench.panel.output.focus");
+        } else if (scheme === "vscode-notebook-cell") {
+            const targetNotebook = window.visibleNotebookEditors.find((e) => e.notebook.uri.fsPath === uri.fsPath);
+            if (targetNotebook) {
+                // 1. jump to target notebook
+                await window.showTextDocument(targetEditor.document, targetNotebook.viewColumn);
+                // wait a bit to let vscode finish its internal operations
+                await new Promise((res) => setTimeout(res, 50));
+                // 2. jump to target cell
+                await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
+                return;
+            }
         } else {
-            await window.showTextDocument(editor.document, editor.viewColumn);
+            await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
+            return;
+        }
+        if (window.activeTextEditor) {
+            // should not happen
+            await window.showTextDocument(window.activeTextEditor.document, window.activeTextEditor.viewColumn);
+            return;
         }
     };
 
