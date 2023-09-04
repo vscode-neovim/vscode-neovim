@@ -45,8 +45,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Internal sync promise
      */
-    private changeLayoutPromise?: Promise<void>;
-    private changeLayoutPromiseResolve?: () => void;
+    private changeLayoutPromise?: ManualPromise;
     private cancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
     private syncActiveEditorPromise?: ManualPromise;
     /**
@@ -111,15 +110,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
+        if (!this.changeLayoutPromise) {
+            this.changeLayoutPromise = new ManualPromise();
+        }
         // this.cancelTokenSource will always be cancelled when the visible editors change
-        await this.syncLayout(this.cancelTokenSource.token);
-        await this.syncActiveEditor();
+        await this.syncLayoutDebounced(this.cancelTokenSource.token);
+        await this.syncActiveEditorDebounced();
     }
 
     public async waitForLayoutSync(): Promise<void> {
         if (this.changeLayoutPromise) {
             this.logger.debug(`${LOG_PREFIX}: Waiting for completing layout resyncing`);
-            await this.changeLayoutPromise;
+            await this.changeLayoutPromise.promise;
             this.logger.debug(`${LOG_PREFIX}: Waiting done`);
         }
     }
@@ -364,7 +366,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         // !for this init a promise early, then resolve it after processing
         this.logger.debug(`${LOG_PREFIX}: onDidChangeVisibleTextEditors`);
         if (!this.changeLayoutPromise) {
-            this.changeLayoutPromise = new Promise((res) => (this.changeLayoutPromiseResolve = res));
+            this.changeLayoutPromise = new ManualPromise();
         }
 
         // Cancel the previous syncLayout call, and then create a new token source for the new
@@ -492,9 +494,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.logger.debug(`${LOG_PREFIX}: Cancellation requested in syncLayout, returning`);
             return;
         }
-        if (this.changeLayoutPromiseResolve) {
-            this.changeLayoutPromiseResolve();
-        }
+
+        this.changeLayoutPromise?.resolve();
         this.changeLayoutPromise = undefined;
     };
 
