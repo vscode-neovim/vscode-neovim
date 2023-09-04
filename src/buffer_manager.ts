@@ -513,8 +513,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
         try {
             await this.client.request("nvim_set_current_win", [winId]);
-        } catch (e: any) {
-            this.logger.error(`${LOG_PREFIX} ${e.message}`);
+        } catch (e) {
+            this.logger.error(`${LOG_PREFIX} ${(e as Error).message}`);
         }
 
         this.syncActiveEditorPromise?.resolve();
