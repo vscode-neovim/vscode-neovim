@@ -391,8 +391,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         const vimPos = [pos.line + 1, pos.character]; // nvim_win_set_cursor is [1, 0] based
         try {
             await this.client.request("nvim_win_set_cursor", [winId, vimPos]); // a little faster
-        } catch (e: any) {
-            this.logger.error(`${LOG_PREFIX}: ${e.message}`);
+        } catch (e) {
+            this.logger.error(`${LOG_PREFIX}: ${(e as Error).message}`);
         }
     }
 
