@@ -297,8 +297,23 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     private onWindowChanged = async (winId: number): Promise<void> => {
         this.logger.debug(`${LOG_PREFIX} onWindowChanged, target window id: ${winId}`);
+
+        const returnToActiveEditor = async () => {
+            if (window.activeTextEditor) {
+                await window.showTextDocument(window.activeTextEditor.document, window.activeTextEditor.viewColumn);
+            }
+        };
+
         let targetEditor = this.getEditorFromWinId(winId);
-        if (!targetEditor || window.activeTextEditor === targetEditor) return;
+        if (!targetEditor) {
+            this.logger.debug(`${LOG_PREFIX} target editor not found <check 1>, return to active editor`);
+            await returnToActiveEditor();
+            return;
+        }
+        if (window.activeTextEditor === targetEditor) return;
+        // since the event could be triggered by vscode side operations
+        // we need to wait a bit to let vscode finish its internal operations
+        // then check if the target editor is still the same
         await new Promise((res) => setTimeout(res, 50));
         this.syncLayoutPromise && (await this.syncLayoutPromise.promise);
         this.syncActiveEditorPromise && (await this.syncActiveEditorPromise.promise);
@@ -311,35 +326,43 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         await this.main.cursorManager.waitForCursorUpdate(window.activeTextEditor);
         const { id: curwin } = await this.client.getWindow();
         targetEditor = this.getEditorFromWinId(curwin);
-        if (!targetEditor || window.activeTextEditor === targetEditor) {
-            this.logger.debug(`${LOG_PREFIX} editor already synced, skipping`);
+        if (!targetEditor) {
+            this.logger.debug(`${LOG_PREFIX} target editor not found <check 2>, return to active editor`);
+            returnToActiveEditor();
             return;
         }
+        if (window.activeTextEditor === targetEditor) return;
         await this.main.cursorManager.waitForCursorUpdate(targetEditor);
         const uri = targetEditor.document.uri;
         const { scheme } = uri;
-        if (scheme === "output") {
-            return commands.executeCommand("workbench.panel.output.focus");
-        } else if (scheme === "vscode-notebook-cell") {
-            const targetNotebook = window.visibleNotebookEditors.find((e) => e.notebook.uri.fsPath === uri.fsPath);
-            if (targetNotebook) {
-                // 1. jump to target notebook
-                await window.showTextDocument(targetEditor.document, targetNotebook.viewColumn);
-                // wait a bit to let vscode finish its internal operations
-                await new Promise((res) => setTimeout(res, 50));
-                // 2. jump to target cell
+        switch (scheme) {
+            case "output": {
+                await commands.executeCommand("workbench.panel.output.focus");
+                return;
+            }
+
+            case "vscode-notebook-cell": {
+                const targetNotebook = window.visibleNotebookEditors.find((e) => e.notebook.uri.fsPath === uri.fsPath);
+                if (targetNotebook) {
+                    // 1. jump to target notebook
+                    await window.showTextDocument(targetEditor.document, targetNotebook.viewColumn);
+                    // wait a bit to let vscode finish its internal operations
+                    await new Promise((res) => setTimeout(res, 50));
+                    // 2. jump to target cell
+                    await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
+                    return;
+                }
+                break;
+            }
+
+            default: {
                 await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
                 return;
             }
-        } else {
-            await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
-            return;
         }
-        if (window.activeTextEditor) {
-            // should not happen
-            await window.showTextDocument(window.activeTextEditor.document, window.activeTextEditor.viewColumn);
-            return;
-        }
+
+        // Should not happen
+        await returnToActiveEditor();
     };
 
     private onWindowChangedDebounced = debounce(this.onWindowChanged, 100, { leading: false, trailing: true });
