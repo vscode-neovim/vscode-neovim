@@ -58,13 +58,12 @@ export class CustomCommandsManager implements Disposable, NeovimCommandProcessab
                         if (+data.option_new) {
                             editor.options.lineNumbers = TextEditorLineNumbersStyle.Relative;
                         } else {
-                            editor.options.lineNumbers = TextEditorLineNumbersStyle.On; // most compatible option with nvim
+                            editor.options.lineNumbers = TextEditorLineNumbersStyle.On;
                         }
                         break;
                     default:
                         return;
                 }
-                // only log if we actually set something
                 this.logger.debug(`${LOG_PREFIX}: option ${name} set (${JSON.stringify(data)})`);
                 break;
             }
