@@ -28,43 +28,17 @@ export class CustomCommandsManager implements Disposable, NeovimCommandProcessab
 
     public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
         switch (name) {
-            case "option-set": {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const [winId, name, data] = args as [
-                    number,
-                    string,
-                    {
-                        option_type: string;
-                        option_new: string;
-                        option_oldlocal: string;
-                        option_oldglobal: string;
-                        option_old: string;
-                    },
-                ];
+            case "change-number": {
+                const [winId, style] = args as [number, "off" | "on" | "relative"];
                 const editor = this.main.bufferManager.getEditorFromWinId(winId);
-                if (!editor) {
-                    return;
+                if (editor) {
+                    editor.options.lineNumbers =
+                        style === "off"
+                            ? TextEditorLineNumbersStyle.Off
+                            : style === "on"
+                            ? TextEditorLineNumbersStyle.On
+                            : TextEditorLineNumbersStyle.Relative;
                 }
-                switch (name) {
-                    case "number":
-                        console.log(+data.option_new);
-                        if (+data.option_new) {
-                            editor.options.lineNumbers = TextEditorLineNumbersStyle.On;
-                        } else {
-                            editor.options.lineNumbers = TextEditorLineNumbersStyle.Off;
-                        }
-                        break;
-                    case "relativenumber":
-                        if (+data.option_new) {
-                            editor.options.lineNumbers = TextEditorLineNumbersStyle.Relative;
-                        } else {
-                            editor.options.lineNumbers = TextEditorLineNumbersStyle.On;
-                        }
-                        break;
-                    default:
-                        return;
-                }
-                this.logger.debug(`${LOG_PREFIX}: option ${name} set (${JSON.stringify(data)})`);
                 break;
             }
         }

@@ -35,8 +35,6 @@ local function forceoptions(opt)
 	opt.conceallevel = 0
 	opt.hidden = true
 	opt.bufhidden = "hide"
-	opt.number = false
-	opt.relativenumber = false
 	opt.list = true
 	--- Need to know tabs for HL
 	opt.listchars = { tab = "❥♥" }
@@ -62,62 +60,55 @@ api.nvim_create_autocmd({ "BufEnter", "FileType" }, {
 	end,
 })
 
--- send option changes to vscode, and then reset
-vim.api.nvim_create_autocmd({ "OptionSet" }, {
-	callback = function(ev)
-		local option_name = ev.match
-		vim.fn.VSCodeExtensionNotify("option-set", api.nvim_get_current_win(), option_name, {
-			option_type = vim.v.option_type,
-			option_new = vim.v.option_new,
-			option_oldlocal = vim.v.option_oldlocal,
-			option_oldglobal = vim.v.option_oldglobal,
-			option_old = vim.v.option_old,
-		})
-		if option_name == "number" then
-			vim.w.vscode_number = vim.v.option_new
+--- Synchronize Line Number Style ---
+-- TODO: Allow configing whether to sync the number option
+
+local check_number = (function()
+	local check_timer
+	local function _check_number()
+		local number, relativenumber = vim.wo.number, vim.wo.relativenumber
+		if vim.w.vscode_number ~= number or vim.w.vscode_relativenumber ~= relativenumber then
+			local style = "off"
+			if number then
+				style = "on"
+			end
+			if relativenumber then
+				style = "relative"
+			end
+			vim.fn.VSCodeExtensionNotify("change-number", api.nvim_get_current_win(), style)
 		end
-		if option_name == "relativenumber" then
-			vim.w.vscode_relativenumber = vim.v.option_new
+
+		vim.w.vscode_number = number
+		vim.w.vscode_relativenumber = relativenumber
+	end
+	return function()
+		if check_timer and check_timer:is_active() then
+			check_timer:close()
 		end
-		forceoptions(vim.opt)
-	end,
+		check_timer = vim.defer_fn(_check_number, 10)
+	end
+end)()
+
+api.nvim_create_autocmd("OptionSet", {
+	pattern = { "number", "relativenumber" },
+	callback = check_number,
 })
 
-
-
--- People generally use autocmds to toggle number style.
--- `OptionSet` event won't be triggered without `nested` flag.
--- So we need to check it manaually.
-api.nvim_create_autocmd({ "BufEnter", "InsertLeave", "BufLeave", "InsertEnter", "BufWinEnter", "BufWinLeave" }, {
+api.nvim_create_autocmd({
+	"BufLeave",
+	"BufEnter",
+	"InsertLeave",
+	"InsertEnter",
+}, {
 	callback = function()
-		local curwin = api.nvim_get_current_win()
-		if vim.w.vscode_number ~= vim.wo.number then
-			vim.w.vscode_number = vim.wo.number
-			vim.fn.VSCodeExtensionNotify("option-set", curwin, "number", {
-				option_type = "local",
-				option_new = vim.wo.number,
-				option_oldlocal = false,
-				option_oldglobal = false,
-				option_old = false,
-			})
-		end
-
-		if vim.w.vscode_relativenumber ~= vim.wo.relativenumber then
-			vim.w.vscode_relativenumber = vim.wo.relativenumber
-			vim.fn.VSCodeExtensionNotify("option-set", curwin, "relativenumber", {
-				option_type = "local",
-				option_new = vim.wo.relativenumber,
-				option_oldlocal = false,
-				option_oldglobal = false,
-				option_old = false,
-			})
-		end
-
-		if vim.wo.number then
-			vim.wo.number = false
-		end
-		if vim.wo.relativenumber then
-			vim.wo.relativenumber = false
+    -- In vscode-neovim, buffer binded to its own window
+		if not vim.b.vscode_loaded_default_number then
+			vim.wo.number = vim.w.vscode_number
+			vim.wo.relativenumber = vim.w.vscode_relativenumber
+			---@diagnostic disable-next-line: inject-field
+			vim.b.vscode_loaded_default_number = true
+		else
+			check_number()
 		end
 	end,
 })
