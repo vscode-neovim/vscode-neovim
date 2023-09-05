@@ -45,8 +45,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Internal sync promise
      */
-    private changeLayoutPromise?: ManualPromise;
-    private cancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
+    private syncLayoutPromise?: ManualPromise;
+    private syncLayoutCancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
     private syncActiveEditorPromise?: ManualPromise;
     /**
      * Currently opened editors
@@ -110,18 +110,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
-        if (!this.changeLayoutPromise) {
-            this.changeLayoutPromise = new ManualPromise();
+        if (!this.syncLayoutPromise) {
+            this.syncLayoutPromise = new ManualPromise();
         }
         // this.cancelTokenSource will always be cancelled when the visible editors change
-        await this.syncLayoutDebounced(this.cancelTokenSource.token);
+        await this.syncLayoutDebounced(this.syncLayoutCancelTokenSource.token);
         await this.syncActiveEditorDebounced();
     }
 
     public async waitForLayoutSync(): Promise<void> {
-        if (this.changeLayoutPromise) {
+        if (this.syncLayoutPromise) {
             this.logger.debug(`${LOG_PREFIX}: Waiting for completing layout resyncing`);
-            await this.changeLayoutPromise.promise;
+            await this.syncLayoutPromise.promise;
             this.logger.debug(`${LOG_PREFIX}: Waiting done`);
         }
     }
@@ -300,7 +300,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         let targetEditor = this.getEditorFromWinId(winId);
         if (!targetEditor || window.activeTextEditor === targetEditor) return;
         await new Promise((res) => setTimeout(res, 50));
-        this.changeLayoutPromise && (await this.changeLayoutPromise);
+        this.syncLayoutPromise && (await this.syncLayoutPromise.promise);
         this.syncActiveEditorPromise && (await this.syncActiveEditorPromise.promise);
         // triggered by vscode side operations
         if (window.activeTextEditor === undefined) {
@@ -367,15 +367,15 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         // !we need to wait to complete last call before processing onDidChangeActiveTextEditor
         // !for this init a promise early, then resolve it after processing
         this.logger.debug(`${LOG_PREFIX}: onDidChangeVisibleTextEditors`);
-        if (!this.changeLayoutPromise) {
-            this.changeLayoutPromise = new ManualPromise();
+        if (!this.syncLayoutPromise) {
+            this.syncLayoutPromise = new ManualPromise();
         }
 
         // Cancel the previous syncLayout call, and then create a new token source for the new
         // syncLayout call
-        this.cancelTokenSource.cancel();
-        this.cancelTokenSource = new CancellationTokenSource();
-        this.syncLayoutDebounced(this.cancelTokenSource.token);
+        this.syncLayoutCancelTokenSource.cancel();
+        this.syncLayoutCancelTokenSource = new CancellationTokenSource();
+        this.syncLayoutDebounced(this.syncLayoutCancelTokenSource.token);
     };
 
     private onDidChangeActiveTextEditor = (): void => {
@@ -497,8 +497,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             return;
         }
 
-        this.changeLayoutPromise?.resolve();
-        this.changeLayoutPromise = undefined;
+        this.syncLayoutPromise?.resolve();
+        this.syncLayoutPromise = undefined;
     };
 
     // ! we're interested only in the editor final layout and vscode may call this function few times, e.g. when moving an editor to other group
