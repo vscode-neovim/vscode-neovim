@@ -63,13 +63,21 @@ mode and editor commands, making the best use of both editors.
 -   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify Linux path to nvim binary.
     `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available through
     `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
--   Add to your `settings.json`:
+-   Assign [affinity](#affinity) value for performance improvement.
 
-```json
-"extensions.experimental.affinity": {
-    "asvetliakov.vscode-neovim": 1
-},
-```
+    -   Settings > Features > Extensions > Experimental Affinity.
+
+            Assign value 1 for entry `asvetliakov.vscode-neovim`
+            ![Alt text](images/experimental_affinity.png)
+
+        OR
+
+    -   Add to your `settings.json`:
+        ```json
+        "extensions.experimental.affinity": {
+            "asvetliakov.vscode-neovim": 1
+        },
+        ```
 
 ### Neovim configuration
 
@@ -167,7 +175,17 @@ register the `type` command (like [VSCodeVim](https://marketplace.visualstudio.c
 
 #### Performance problems
 
+##### Affinity
+
 Make sure you have the extension running in its own thread using affinity (see [installation](#installation)).
+
+Extensions that share the same affinity value are associated with a shared extension host (extension manager from
+VSCode). Performance issues arise when a number of extensions have the same host. On going operations of one extension
+may slow down the operations of another. However, if an extension is assigned an affinity, its extension host runs in a
+separate worker thread. The operations of extension with host in one thread doesn't directly affect the operations of
+extension with its host running in another.
+
+##### Other Extensions
 
 If you have any performance problems (cursor jitter usually) make sure you're not using these kinds of extensions:
 
