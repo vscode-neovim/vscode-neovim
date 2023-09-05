@@ -50,7 +50,7 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
     /**
      * Current neovim mode
      */
-    private mode: Mode = new Mode();
+    private mode: Mode = new Mode("n");
     /**
      * True when macro recording in insert mode
      */

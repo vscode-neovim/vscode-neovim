@@ -21,7 +21,7 @@ import {
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { callAtomic, convertByteNumToCharNum } from "./utils";
+import { ManualPromise, callAtomic, convertByteNumToCharNum } from "./utils";
 import { MainController } from "./main_controller";
 
 // !Note: document and editors in vscode events and namespace are reference stable
@@ -45,8 +45,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Internal sync promise
      */
-    private changeLayoutPromise?: Promise<void>;
-    private changeLayoutPromiseResolve?: () => void;
+    private changeLayoutPromise?: ManualPromise;
     private cancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
     /**
      * Currently opened editors
@@ -110,15 +109,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
+        if (!this.changeLayoutPromise) {
+            this.changeLayoutPromise = new ManualPromise();
+        }
         // this.cancelTokenSource will always be cancelled when the visible editors change
-        await this.syncLayout(this.cancelTokenSource.token);
-        await this.syncActiveEditor();
+        await this.syncLayoutDebounced(this.cancelTokenSource.token);
+        await this.syncActiveEditorDebounced();
     }
 
     public async waitForLayoutSync(): Promise<void> {
         if (this.changeLayoutPromise) {
             this.logger.debug(`${LOG_PREFIX}: Waiting for completing layout resyncing`);
-            await this.changeLayoutPromise;
+            await this.changeLayoutPromise.promise;
             this.logger.debug(`${LOG_PREFIX}: Waiting done`);
         }
     }
@@ -312,7 +314,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         // !for this init a promise early, then resolve it after processing
         this.logger.debug(`${LOG_PREFIX}: onDidChangeVisibleTextEditors`);
         if (!this.changeLayoutPromise) {
-            this.changeLayoutPromise = new Promise((res) => (this.changeLayoutPromiseResolve = res));
+            this.changeLayoutPromise = new ManualPromise();
         }
 
         // Cancel the previous syncLayout call, and then create a new token source for the new
@@ -437,9 +439,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.logger.debug(`${LOG_PREFIX}: Cancellation requested in syncLayout, returning`);
             return;
         }
-        if (this.changeLayoutPromiseResolve) {
-            this.changeLayoutPromiseResolve();
-        }
+
+        this.changeLayoutPromise?.resolve();
         this.changeLayoutPromise = undefined;
     };
 
@@ -533,10 +534,12 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             });
         }
 
-        const requests: [string, unknown[]][] = [
+        const tabOptions: [string, unknown[]][] = [
             ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
             ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
             ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
+        ];
+        const requests: [string, unknown[]][] = [
             // fill the buffer
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
@@ -552,8 +555,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
             // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
+            // nvim_buf_set_name will do filetype detection
+            // we must override tab options after vim initializes defaults
+            ...tabOptions,
         ];
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+        // Debugging through breakpoints reveals that in some cases the indentation options are overridden again.
+        // It is currently possible to work around this issue with a separate request
+        await callAtomic(this.client, tabOptions, this.logger, LOG_PREFIX);
         // Looks like need to be in separate request
         if (!this.isExternalTextDocument(document)) {
             await this.client.callFunction("VSCodeClearUndo", bufId);

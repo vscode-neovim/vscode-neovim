@@ -31,6 +31,22 @@ function! VSCodeExtensionNotify(cmd, ...)
     call rpcnotify(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
+function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
+    call VSCodeExtensionCall('range-command', a:cmd, 'V', a:line1, a:line2, 1, 1, a:leaveSelection, a:000)
+endfunction
+
+function! VSCodeNotifyRange(cmd, line1, line2, leaveSelection, ...)
+    call VSCodeExtensionNotify('range-command', a:cmd, 'V', a:line1, a:line2, 1, 1, a:leaveSelection, a:000)
+endfunction
+
+function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
+    call VSCodeExtensionCall('range-command', a:cmd, 'v', a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
+endfunction
+
+function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
+    call VSCodeExtensionNotify('range-command', a:cmd, 'v', a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
+endfunction
+
 " Called from extension when opening/creating new file in vscode to reset undo tree
 function! VSCodeClearUndo(bufId)
     let oldlevels = &undolevels
@@ -40,11 +56,6 @@ function! VSCodeClearUndo(bufId)
     unlet oldlevels
 endfunction
 
-
-" Set text decorations for given ranges. Used in easymotion
-function! VSCodeSetTextDecorations(hlName, rowsCols)
-    call VSCodeExtensionNotify('text-decorations', a:hlName, a:rowsCols)
-endfunction
 
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
@@ -97,12 +108,12 @@ augroup VscodeGeneral
     " Looks like external windows are coming with "set wrap" set automatically, disable them
     " autocmd WinNew,WinEnter * :set nowrap
     autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
-    autocmd ModeChanged * call VSCodeExtensionNotify('mode-changed', v:event.new_mode)
+    autocmd VimEnter,ModeChanged * call VSCodeExtensionNotify('mode-changed', mode())
     " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.
     autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:luaPath
 augroup END
 
 
 lua << EOF
-require("vscode")
+require("vscode-neovim").setup()
 EOF

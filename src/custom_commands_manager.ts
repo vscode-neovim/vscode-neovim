@@ -1,4 +1,4 @@
-import { commands, Disposable, TextEditorLineNumbersStyle } from "vscode";
+import { commands, Disposable, TextEditorLineNumbersStyle, window } from "vscode";
 
 import { Logger } from "./logger";
 import { NeovimCommandProcessable, NeovimExtensionRequestProcessable } from "./neovim_events_processable";
@@ -19,6 +19,9 @@ export class CustomCommandsManager implements Disposable, NeovimCommandProcessab
     }
 
     public async handleVSCodeCommand(command: string, args: unknown[]): Promise<unknown> {
+        const editor = window.activeTextEditor;
+        if (!editor) return;
+        await this.main.cursorManager.waitForCursorUpdate(editor);
         const res = await commands.executeCommand(command, ...args);
         return res;
     }

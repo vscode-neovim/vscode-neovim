@@ -195,7 +195,7 @@ describe("Dot-repeat", () => {
         );
 
         await sendVSCodeKeys("0ggj");
-        await sendInsertKey("O");
+        await sendInsertKey("O", 500); // delay to fix flaky test
         await sendVSCodeKeys("blah2");
         await sendEscapeKey();
 

@@ -13,11 +13,13 @@ vim.opt.autoread = false
 vim.opt.autowrite = false
 vim.opt.cursorline = false
 vim.opt.signcolumn = "no"
+vim.opt.winblend = 0
 
 --- Disable statusline and ruler since we don't need them anyway
 vim.opt.statusline = ""
 vim.opt.laststatus = 0
 vim.opt.ruler = false
+vim.opt.colorcolumn = nil
 
 --- Disable modeline processing. It's being used for tab related settings usually and we don't want to override ours
 vim.opt.modeline = false
