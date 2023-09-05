@@ -308,12 +308,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.logger.debug(`${LOG_PREFIX} activeTextEditor is undefined, skipping`);
             return;
         }
+        await this.main.cursorManager.waitForCursorUpdate(window.activeTextEditor);
         const { id: curwin } = await this.client.getWindow();
         targetEditor = this.getEditorFromWinId(curwin);
         if (!targetEditor || window.activeTextEditor === targetEditor) {
             this.logger.debug(`${LOG_PREFIX} editor already synced, skipping`);
             return;
         }
+        await this.main.cursorManager.waitForCursorUpdate(targetEditor);
         const uri = targetEditor.document.uri;
         const { scheme } = uri;
         if (scheme === "output") {
