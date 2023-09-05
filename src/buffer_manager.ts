@@ -509,10 +509,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: syncing active editor`);
         await this.waitForLayoutSync();
 
-        const activeEditor = window.activeTextEditor;
-        if (!activeEditor) {
+        const finish = () => {
             this.syncActiveEditorPromise?.resolve();
             this.syncActiveEditorPromise = undefined;
+        };
+
+        const activeEditor = window.activeTextEditor;
+        if (!activeEditor) {
+            finish();
             return;
         }
         const winId = this.textEditorToWinId.get(activeEditor);
@@ -526,8 +530,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }, docUri: ${activeEditor.document.uri.toString()}`,
             );
 
-            this.syncActiveEditorPromise?.resolve();
-            this.syncActiveEditorPromise = undefined;
+            finish();
             return;
         }
         this.logger.debug(
@@ -540,8 +543,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.logger.error(`${LOG_PREFIX} ${(e as Error).message}`);
         }
 
-        this.syncActiveEditorPromise?.resolve();
-        this.syncActiveEditorPromise = undefined;
+        finish();
     };
 
     private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 100, { leading: false, trailing: true });
