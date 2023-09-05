@@ -103,8 +103,8 @@ api.nvim_create_autocmd({
 	callback = function()
     -- In vscode-neovim, buffer binded to its own window
 		if not vim.b.vscode_loaded_default_number then
-			vim.wo.number = vim.w.vscode_number
-			vim.wo.relativenumber = vim.w.vscode_relativenumber
+			vim.wo.number = vim.b.vscode_number
+			vim.wo.relativenumber = vim.b.vscode_relativenumber
 			---@diagnostic disable-next-line: inject-field
 			vim.b.vscode_loaded_default_number = true
 		else
