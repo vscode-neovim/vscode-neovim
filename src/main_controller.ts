@@ -420,7 +420,7 @@ export class MainController implements vscode.Disposable {
 
         vscode.window
             .showWarningMessage(
-                "No affinity assigned to vscode-neovim. It is recommended to assign affinity for major performance improvements. Would you like to set default affinity?",
+                "No affinity assigned to vscode-neovim. It is recommended to assign affinity for major performance improvements. Would you like to set default affinity? [Learn more](https://github.com/vscode-neovim/vscode-neovim#affinity)",
                 "Yes",
                 "Cancel",
             )
