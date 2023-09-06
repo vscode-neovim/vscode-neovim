@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.4.5](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.4...v0.4.5) (2023-09-06)
+
+
+### Bug Fixes
+
+* **buffer:** avoid sync conflicts during startup ([#1414](https://github.com/vscode-neovim/vscode-neovim/issues/1414)) ([0b3ab8f](https://github.com/vscode-neovim/vscode-neovim/commit/0b3ab8f7d53ba5271dadba54dfa37e90544737b9))
+* **buffer:** the output document should be modifiable ([#1416](https://github.com/vscode-neovim/vscode-neovim/issues/1416)) ([bc7e09b](https://github.com/vscode-neovim/vscode-neovim/commit/bc7e09b5125d9f04f168b9aaf4b017911df9daef))
+
 ## [0.4.4](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.3...v0.4.4) (2023-09-03)
 
 
