@@ -64,10 +64,11 @@ api.nvim_create_autocmd({ "BufEnter", "FileType" }, {
 -- TODO: Allow configing whether to sync the number option
 
 local check_number = (function()
-    local check_timer
     local function _check_number()
         local number, relativenumber = vim.wo.number, vim.wo.relativenumber
         if vim.w.vscode_number ~= number or vim.w.vscode_relativenumber ~= relativenumber then
+            vim.w.vscode_number = number
+            vim.w.vscode_relativenumber = relativenumber
             local style = "off"
             if number then
                 style = "on"
@@ -77,10 +78,8 @@ local check_number = (function()
             end
             vim.fn.VSCodeExtensionNotify("change-number", api.nvim_get_current_win(), style)
         end
-
-        vim.w.vscode_number = number
-        vim.w.vscode_relativenumber = relativenumber
     end
+    local check_timer
     return function()
         if check_timer and check_timer:is_active() then
             check_timer:close()

@@ -14,7 +14,7 @@ import {
     wait,
 } from "../utils";
 
-describe("Tab options test", () => {
+describe("Sync options test", () => {
     let client: NeovimClient;
     before(async () => {
         client = await attachTestNvimClient();
