@@ -61,4 +61,20 @@ function M.scroll_viewport(vscode_topline, vscode_endline)
     end
 end
 
+---Close windows
+---@param wins number[]
+function M.close_windows(wins)
+    for _, win in ipairs(wins) do
+        pcall(vim.api.nvim_win_close, win, true)
+    end
+end
+
+---Delete buffers
+---@param bufs number[]
+function M.delete_buffers(bufs)
+    for _, buf in ipairs(bufs) do
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    end
+end
+
 return M

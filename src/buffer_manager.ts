@@ -336,9 +336,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: syncing layout`);
         // store in copy, just in case
         const currentVisibleEditors = [...window.visibleTextEditors];
+        const preservedPrevVisibleEditors: TextEditor[] = [];
         const prevVisibleEditors = this.openedEditors;
 
-        const nvimRequests: [string, unknown[]][] = [];
         // Open/change neovim windows
         this.logger.debug(`${LOG_PREFIX}: new/changed editors/windows`);
         for (const visibleEditor of currentVisibleEditors) {
@@ -395,45 +395,51 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
 
         this.logger.debug(`${LOG_PREFIX}: Closing non visible editors`);
-        // close any non visible neovim windows
+        const unusedWindows: number[] = [];
+        const unusedBuffers: number[] = [];
         for (const prevVisibleEditor of prevVisibleEditors) {
-            // still visible, skip
             if (currentVisibleEditors.includes(prevVisibleEditor)) {
                 this.logger.debug(
                     `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, visibility hasn't changed, skip`,
                 );
                 continue;
             }
+            // buffers
             const document = prevVisibleEditor.document;
-            if (!currentVisibleEditors.find((e) => e.document === document) && document.isClosed) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
-                        document,
-                    )}`,
-                );
-                const bufId = this.textDocumentToBufferId.get(document);
-                this.textDocumentToBufferId.delete(document);
-                if (bufId) {
-                    nvimRequests.push(["nvim_command", [`bdelete! ${bufId}`]]);
+            if (!currentVisibleEditors.find((e) => e.document === document)) {
+                if (document.isClosed) {
+                    this.logger.debug(
+                        `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
+                            document,
+                        )}`,
+                    );
+                    const bufId = this.textDocumentToBufferId.get(document);
+                    this.textDocumentToBufferId.delete(document);
+                    if (bufId) unusedBuffers.push(bufId);
+                } else {
+                    if (!preservedPrevVisibleEditors.includes(prevVisibleEditor)) {
+                        preservedPrevVisibleEditors.push(prevVisibleEditor);
+                    }
                 }
             }
+            // windows
             const winId = this.textEditorToWinId.get(prevVisibleEditor);
-
-            if (!winId) {
-                continue;
+            if (winId) {
+                this.logger.debug(
+                    `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
+                );
+                this.textEditorToWinId.delete(prevVisibleEditor);
+                this.winIdToEditor.delete(winId);
+                unusedWindows.push(winId);
             }
-
-            this.logger.debug(
-                `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
-            );
-            this.textEditorToWinId.delete(prevVisibleEditor);
-            this.winIdToEditor.delete(winId);
-            nvimRequests.push(["nvim_win_close", [winId, true]]);
         }
-        await callAtomic(this.client, nvimRequests, this.logger, LOG_PREFIX);
+        unusedBuffers.length &&
+            (await this.client.executeLua("require'vscode-neovim.api'.delete_buffers(...)", [unusedBuffers]));
+        unusedWindows.length &&
+            (await this.client.executeLua("require'vscode-neovim.api'.close_windows(...)", [unusedWindows]));
 
         // remember new visible editors
-        this.openedEditors = currentVisibleEditors;
+        this.openedEditors = [...currentVisibleEditors, ...preservedPrevVisibleEditors];
 
         if (cancelToken.isCancellationRequested) {
             // If the visible editors has changed since we started, don't resolve the promise,
