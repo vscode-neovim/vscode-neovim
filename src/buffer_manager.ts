@@ -339,7 +339,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         const preservedPrevVisibleEditors: TextEditor[] = [];
         const prevVisibleEditors = this.openedEditors;
 
-        const nvimRequests: [string, unknown[]][] = [];
         // Open/change neovim windows
         this.logger.debug(`${LOG_PREFIX}: new/changed editors/windows`);
         for (const visibleEditor of currentVisibleEditors) {
@@ -396,7 +395,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
 
         this.logger.debug(`${LOG_PREFIX}: Closing non visible editors`);
-        // close any non visible neovim windows
+        const unusedWindows: number[] = [];
+        const unusedBuffers: number[] = [];
         for (const prevVisibleEditor of prevVisibleEditors) {
             if (currentVisibleEditors.includes(prevVisibleEditor)) {
                 this.logger.debug(
@@ -415,9 +415,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     );
                     const bufId = this.textDocumentToBufferId.get(document);
                     this.textDocumentToBufferId.delete(document);
-                    if (bufId) {
-                        nvimRequests.push(["nvim_buf_delete", [bufId, { force: true }]]);
-                    }
+                    if (bufId) unusedBuffers.push(bufId);
                 } else {
                     if (!preservedPrevVisibleEditors.includes(prevVisibleEditor)) {
                         preservedPrevVisibleEditors.push(prevVisibleEditor);
@@ -432,10 +430,13 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 );
                 this.textEditorToWinId.delete(prevVisibleEditor);
                 this.winIdToEditor.delete(winId);
-                nvimRequests.push(["nvim_win_close", [winId, true]]);
+                unusedWindows.push(winId);
             }
         }
-        await callAtomic(this.client, nvimRequests, this.logger, LOG_PREFIX);
+        unusedBuffers.length &&
+            (await this.client.executeLua("require'vscode-neovim.api'.delete_buffers(...)", [unusedBuffers]));
+        unusedWindows.length &&
+            (await this.client.executeLua("require'vscode-neovim.api'.close_windows(...)", [unusedWindows]));
 
         // remember new visible editors
         this.openedEditors = [...currentVisibleEditors, ...preservedPrevVisibleEditors];
