@@ -38,6 +38,7 @@ export interface Highlight {
     overlayPos?: number;
     line?: string;
 }
+
 /**
  * Convert VIM HL attributes to vscode text decoration attributes
  * @param uiAttrs VIM UI attribute
@@ -177,6 +178,8 @@ export class HighlightProvider {
         lineText: string,
         cells: [string, number?, number?][],
     ): boolean {
+        const listCharsTab = "❥";
+
         let cellHlId = 0;
         let cellIdx = start;
         if (!this.highlights.has(grid)) {
@@ -185,22 +188,25 @@ export class HighlightProvider {
         const gridHl = this.highlights.get(grid)!;
         let hasUpdates = false;
 
-        for (const [ctext, hlId, repeat] of cells) {
+        for (const [idx, [ctext, hlId, repeat]] of cells.entries()) {
             if (hlId != null) {
                 cellHlId = hlId;
             }
             let text = ctext;
 
             // 2+bytes chars (such as chinese characters) have "" as second cell
+            // chinese '你'.length == 1
+            // emoji   '😅'.length == 2
+            // Ignore other emojis of other lengths.
             if (text === "") {
-                continue;
+                if (idx > 0 && cells[idx - 1][0].length == 1) {
+                    continue;
+                }
             }
             // tab fill character
             if (text === "♥") {
                 continue;
             }
-
-            const listCharsTab = "❥";
 
             const repeatTo = text === "\t" || text === listCharsTab ? 1 : repeat || 1;
             for (let i = 0; i < repeatTo; i++) {
