@@ -45,8 +45,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Internal sync promise
      */
-    private changeLayoutPromise?: ManualPromise;
-    private cancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
+    private syncLayoutPromise?: ManualPromise;
+    private syncLayoutCancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
+    private syncActiveEditorPromise?: ManualPromise;
     /**
      * Currently opened editors
      * !Note: Order can be any, it doesn't relate to visible order
@@ -109,18 +110,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
-        if (!this.changeLayoutPromise) {
-            this.changeLayoutPromise = new ManualPromise();
+        if (!this.syncLayoutPromise) {
+            this.syncLayoutPromise = new ManualPromise();
         }
         // this.cancelTokenSource will always be cancelled when the visible editors change
-        await this.syncLayoutDebounced(this.cancelTokenSource.token);
+        await this.syncLayoutDebounced(this.syncLayoutCancelTokenSource.token);
         await this.syncActiveEditorDebounced();
     }
 
     public async waitForLayoutSync(): Promise<void> {
-        if (this.changeLayoutPromise) {
+        if (this.syncLayoutPromise) {
             this.logger.debug(`${LOG_PREFIX}: Waiting for completing layout resyncing`);
-            await this.changeLayoutPromise.promise;
+            await this.syncLayoutPromise.promise;
             this.logger.debug(`${LOG_PREFIX}: Waiting done`);
         }
     }
@@ -290,8 +291,84 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
                 break;
             }
+            case "window-changed": {
+                this.onWindowChangedDebounced(args[0] as number);
+                break;
+            }
         }
     }
+
+    private onWindowChanged = async (winId: number): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX} onWindowChanged, target window id: ${winId}`);
+
+        const returnToActiveEditor = async () => {
+            if (window.activeTextEditor) {
+                await window.showTextDocument(window.activeTextEditor.document, window.activeTextEditor.viewColumn);
+            }
+        };
+
+        let targetEditor = this.getEditorFromWinId(winId);
+        if (!targetEditor) {
+            this.logger.debug(`${LOG_PREFIX} target editor not found <check 1>, return to active editor`);
+            await returnToActiveEditor();
+            return;
+        }
+        if (window.activeTextEditor === targetEditor) return;
+        // since the event could be triggered by vscode side operations
+        // we need to wait a bit to let vscode finish its internal operations
+        // then check if the target editor is still the same
+        await new Promise((res) => setTimeout(res, 50));
+        this.syncLayoutPromise && (await this.syncLayoutPromise.promise);
+        this.syncActiveEditorPromise && (await this.syncActiveEditorPromise.promise);
+        // triggered by vscode side operations
+        if (window.activeTextEditor === undefined) {
+            // e.g. open settings, open keyboard shortcuts settings which overrides active editor
+            this.logger.debug(`${LOG_PREFIX} activeTextEditor is undefined, skipping`);
+            return;
+        }
+        await this.main.cursorManager.waitForCursorUpdate(window.activeTextEditor);
+        const { id: curwin } = await this.client.getWindow();
+        targetEditor = this.getEditorFromWinId(curwin);
+        if (!targetEditor) {
+            this.logger.debug(`${LOG_PREFIX} target editor not found <check 2>, return to active editor`);
+            returnToActiveEditor();
+            return;
+        }
+        if (window.activeTextEditor === targetEditor) return;
+        await this.main.cursorManager.waitForCursorUpdate(targetEditor);
+        const uri = targetEditor.document.uri;
+        const { scheme } = uri;
+        switch (scheme) {
+            case "output": {
+                await commands.executeCommand("workbench.panel.output.focus");
+                return;
+            }
+
+            case "vscode-notebook-cell": {
+                const targetNotebook = window.visibleNotebookEditors.find((e) => e.notebook.uri.fsPath === uri.fsPath);
+                if (targetNotebook) {
+                    // 1. jump to target notebook
+                    await window.showTextDocument(targetEditor.document, targetNotebook.viewColumn);
+                    // wait a bit to let vscode finish its internal operations
+                    await new Promise((res) => setTimeout(res, 50));
+                    // 2. jump to target cell
+                    await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
+                    return;
+                }
+                break;
+            }
+
+            default: {
+                await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
+                return;
+            }
+        }
+
+        // Should not happen
+        await returnToActiveEditor();
+    };
+
+    private onWindowChangedDebounced = debounce(this.onWindowChanged, 100, { leading: false, trailing: true });
 
     /**
      * !Note when closing text editor with document, vscode sends onDidCloseTextDocument first
@@ -316,19 +393,22 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         // !we need to wait to complete last call before processing onDidChangeActiveTextEditor
         // !for this init a promise early, then resolve it after processing
         this.logger.debug(`${LOG_PREFIX}: onDidChangeVisibleTextEditors`);
-        if (!this.changeLayoutPromise) {
-            this.changeLayoutPromise = new ManualPromise();
+        if (!this.syncLayoutPromise) {
+            this.syncLayoutPromise = new ManualPromise();
         }
 
         // Cancel the previous syncLayout call, and then create a new token source for the new
         // syncLayout call
-        this.cancelTokenSource.cancel();
-        this.cancelTokenSource = new CancellationTokenSource();
-        this.syncLayoutDebounced(this.cancelTokenSource.token);
+        this.syncLayoutCancelTokenSource.cancel();
+        this.syncLayoutCancelTokenSource = new CancellationTokenSource();
+        this.syncLayoutDebounced(this.syncLayoutCancelTokenSource.token);
     };
 
     private onDidChangeActiveTextEditor = (): void => {
         this.logger.debug(`${LOG_PREFIX}: onDidChangeActiveTextEditor`);
+        if (!this.syncActiveEditorPromise) {
+            this.syncActiveEditorPromise = new ManualPromise();
+        }
         this.syncActiveEditorDebounced();
     };
 
@@ -449,8 +529,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             return;
         }
 
-        this.changeLayoutPromise?.resolve();
-        this.changeLayoutPromise = undefined;
+        this.syncLayoutPromise?.resolve();
+        this.syncLayoutPromise = undefined;
     };
 
     // ! we're interested only in the editor final layout and vscode may call this function few times, e.g. when moving an editor to other group
@@ -461,8 +541,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: syncing active editor`);
         await this.waitForLayoutSync();
 
+        const finish = () => {
+            this.syncActiveEditorPromise?.resolve();
+            this.syncActiveEditorPromise = undefined;
+        };
+
         const activeEditor = window.activeTextEditor;
         if (!activeEditor) {
+            finish();
             return;
         }
         const winId = this.textEditorToWinId.get(activeEditor);
@@ -475,13 +561,21 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     activeEditor.viewColumn
                 }, docUri: ${activeEditor.document.uri.toString()}`,
             );
+
+            finish();
             return;
         }
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
         await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
-        await this.client.request("nvim_set_current_win", [winId]);
+        try {
+            await this.client.request("nvim_set_current_win", [winId]);
+        } catch (e) {
+            this.logger.error(`${LOG_PREFIX} ${(e as Error).message}`);
+        }
+
+        finish();
     };
 
     private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 100, { leading: false, trailing: true });
