@@ -1256,7 +1256,7 @@
     },
     "scripts": {
         "lint": "eslint --ext .ts src",
-        "format": "prettier --ignore-path .gitignore --write .",
+        "format": "prettier --ignore-path .gitignore --ignore-path .prettierignore --write .",
         "test": "node ./out/test/runTest.js",
         "pretest": "npm run test-compile",
         "vscode:prepublish": "webpack --mode production",

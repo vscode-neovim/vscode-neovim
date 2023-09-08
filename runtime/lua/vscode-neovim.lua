@@ -12,8 +12,8 @@ M.call_range_pos = api.call_range_pos
 M.notify_range_pos = api.notify_range_pos
 
 M.setup = function()
-    defaults.setup()
-    cursor.setup()
+  defaults.setup()
+  cursor.setup()
 end
 
 return M
