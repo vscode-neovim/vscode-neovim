@@ -267,7 +267,6 @@ export class MainController implements vscode.Disposable {
         ];
         const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
             this.modeManager,
-            this.changeManager,
             this.commandsController,
             this.bufferManager,
             this.viewportManager,
@@ -327,7 +326,6 @@ export class MainController implements vscode.Disposable {
     ): Promise<void> => {
         const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
             this.modeManager,
-            this.changeManager,
             this.commandsController,
             this.bufferManager,
             this.cursorManager,

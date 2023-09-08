@@ -9,6 +9,8 @@ import {
     Selection,
     TextDocument,
     TextDocumentChangeEvent,
+    TextDocumentContentChangeEvent,
+    TextEditor,
     window,
     workspace,
 } from "vscode";
@@ -16,27 +18,22 @@ import { Mutex } from "async-mutex";
 
 import { BufferManager } from "./buffer_manager";
 import { Logger } from "./logger";
-import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
-    accumulateDotRepeatChange,
     applyEditorDiffOperations,
     callAtomic,
     computeEditorOperationsFromDiff,
     diffLineToChars,
     convertCharNumToByteNum,
-    DotRepeatChange,
     getDocumentLineArray,
-    isChangeSubsequentToChange,
-    isCursorChange,
-    normalizeDotRepeatChange,
     prepareEditRangesFromDiff,
     ManualPromise,
+    convertVimPositionToEditorPosition,
 } from "./utils";
 import { MainController } from "./main_controller";
 
 const LOG_PREFIX = "DocumentChangeManager";
 
-export class DocumentChangeManager implements Disposable, NeovimExtensionRequestProcessable {
+export class DocumentChangeManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Array of pending events to apply in batch
@@ -72,14 +69,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      * ! It's possible to just fetch content from neovim and check instead of tracking here, but this will add unnecessary lag
      */
     private documentContentInNeovim: WeakMap<TextDocument, string> = new WeakMap();
-    /**
-     * Dot repeat workaround
-     */
-    private dotRepeatChange: DotRepeatChange | undefined;
-    /**
-     * A hint for dot-repeat indicating of how the insert mode was started
-     */
-    private dotRepeatStartModeInsertHint?: "o" | "O";
     /**
      * True when we're currently applying edits, so incoming changes will go into pending events queue
      */
@@ -119,76 +108,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
 
     public hasDocumentChangeCompletionLock(doc: TextDocument): boolean {
         return (this.textDocumentChangePromise.get(doc)?.length || 0) > 0;
-    }
-
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        if (name === "insert-line") {
-            const [type] = args as ["before" | "after"];
-            this.dotRepeatStartModeInsertHint = type === "before" ? "O" : "o";
-            this.logger.debug(`${LOG_PREFIX}: Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
-        }
-    }
-
-    public async syncDotRepeatWithNeovim(): Promise<void> {
-        // dot-repeat executes last change across all buffers. So we'll create a temporary buffer & window,
-        // replay last changes here to trick neovim and destroy it after
-        if (!this.dotRepeatChange) {
-            return;
-        }
-        this.logger.debug(`${LOG_PREFIX}: Syncing dot repeat`);
-        const dotRepeatChange = { ...this.dotRepeatChange };
-        this.dotRepeatChange = undefined;
-
-        const currWin = await this.client.window;
-
-        // temporary buffer to replay the changes
-        const buf = await this.client.createBuffer(false, true);
-        if (typeof buf === "number") {
-            return;
-        }
-        // create temporary win
-        await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
-        const win = await this.client.openWindow(buf, true, {
-            external: true,
-            width: 100,
-            height: 100,
-        });
-        await this.client.setOption("eventignore", "");
-        if (typeof win === "number") {
-            return;
-        }
-        const edits: [string, unknown[]][] = [];
-
-        // for delete changes we need an actual text, so let's prefill with something
-        // accumulate all possible lengths of deleted text to be safe
-        const delRangeLength = dotRepeatChange.rangeLength;
-        if (delRangeLength) {
-            const stub = new Array(delRangeLength).fill("x").join("");
-            edits.push(
-                ["nvim_buf_set_lines", [buf.id, 0, 0, false, [stub]]],
-                ["nvim_win_set_cursor", [win.id, [1, delRangeLength]]],
-            );
-        }
-        let editStr = "";
-        if (dotRepeatChange.startMode) {
-            editStr += `<Esc>${dotRepeatChange.startMode}`;
-            // remove EOL from first change
-            if (dotRepeatChange.text.startsWith(dotRepeatChange.eol)) {
-                dotRepeatChange.text = dotRepeatChange.text.slice(dotRepeatChange.eol.length);
-            }
-        }
-        if (dotRepeatChange.rangeLength) {
-            editStr += [...new Array(dotRepeatChange.rangeLength).keys()].map(() => "<BS>").join("");
-        }
-        editStr += dotRepeatChange.text.split(dotRepeatChange.eol).join("\n").replace("<", "<LT>");
-        edits.push(["nvim_input", [editStr]]);
-        // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
-        await callAtomic(this.client, edits, this.logger, LOG_PREFIX);
-
-        const cleanEdits: [string, unknown[]][] = [];
-        cleanEdits.push(["nvim_set_current_win", [currWin.id]]);
-        cleanEdits.push(["nvim_win_close", [win.id, true]]);
-        await callAtomic(this.client, cleanEdits, this.logger, LOG_PREFIX);
     }
 
     private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {
@@ -474,35 +393,13 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             return;
         }
 
+        let editor: TextEditor | undefined;
+        if (window.activeTextEditor?.document === doc) {
+            editor = window.activeTextEditor;
+        }
+
         const eol = doc.eol === EndOfLine.LF ? "\n" : "\r\n";
-        const startModeHint = this.dotRepeatStartModeInsertHint;
-        const activeEditor = window.activeTextEditor;
-
-        // Store dot repeat
-        if (activeEditor && activeEditor.document === doc && this.main.modeManager.isInsertMode) {
-            this.dotRepeatStartModeInsertHint = undefined;
-            const cursor = activeEditor.selection.active;
-            for (const change of contentChanges) {
-                if (isCursorChange(change, cursor, eol)) {
-                    if (this.dotRepeatChange && isChangeSubsequentToChange(change, this.dotRepeatChange)) {
-                        this.dotRepeatChange = accumulateDotRepeatChange(change, this.dotRepeatChange);
-                    } else {
-                        this.dotRepeatChange = normalizeDotRepeatChange(change, eol, startModeHint);
-                    }
-                }
-            }
-        }
-
-        const requests: [string, unknown[]][] = [];
-
-        for (const c of contentChanges) {
-            const start = c.range.start;
-            const end = c.range.end;
-            const text = c.text;
-            const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
-            const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
-            requests.push(["nvim_buf_set_text", [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)]]);
-        }
+        const [requests, steps] = this.parseDocumentChanges(editor, bufId, contentChanges, origText, eol);
 
         const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
         if (!bufTick) {
@@ -514,10 +411,97 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                 bufTick + requests.length
             }`,
         );
-        this.bufferSkipTicks.set(bufId, bufTick + contentChanges.length);
+        this.bufferSkipTicks.set(bufId, bufTick + steps);
 
         this.logger.debug(`${LOG_PREFIX}: Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
         if (requests.length) await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
     };
+
+    // takes a list of changes and returns a list of neovim requests.
+    // normally, will apply the changes directly using nvim_buf_set_text.
+    // however, when typing is detected (a contiunous addition/removal next to the cursor), nvim_input will be used to properly set dot-repeat
+    private parseDocumentChanges(
+        editor: TextEditor | undefined,
+        bufId: number,
+        changes: readonly TextDocumentContentChangeEvent[],
+        origText: string,
+        eol: string,
+    ): [[string, unknown[]][], number] {
+        const requests: [string, unknown[]][] = [];
+        const gridId = editor && this.main.bufferManager.getGridIdFromEditor(editor);
+        const cursorNvim = gridId && this.main.viewportManager.getCursorFromViewport(gridId);
+        const cursor = cursorNvim && convertVimPositionToEditorPosition(editor, cursorNvim);
+        let input = "";
+        let steps = 0;
+        if (cursor) {
+            // the absolute index of the cursor in the document
+            let cursorIndex =
+                cursor.line > 0
+                    ? origText.split(eol).slice(0, cursor.line).join(eol).length + cursor.character + eol.length
+                    : cursor.character;
+            for (const change of changes) {
+                const start = change.range.start;
+                const end = change.range.end;
+                const text = change.text;
+                const rangeLength = change.rangeLength;
+
+                // the absolute index of the start of the change in the document
+                const startIndex =
+                    start.line > 0
+                        ? origText.split(eol).slice(0, start.line).join(eol).length + start.character + eol.length
+                        : start.character;
+                // the absolute index of the end of the change in the document
+                const endIndex =
+                    end.line > 0
+                        ? origText.split(eol).slice(0, end.line).join(eol).length + end.character + eol.length
+                        : end.character;
+
+                if (rangeLength == 0 && startIndex === cursorIndex) {
+                    // insert text
+                    input += text;
+                    steps += text.length;
+                    cursorIndex += text.length;
+                    origText = origText.slice(0, startIndex) + text + origText.slice(endIndex);
+                } else if (text === "" && startIndex === cursorIndex - rangeLength) {
+                    // delete text
+                    input += `${"<BS>".repeat(rangeLength)}`;
+                    cursorIndex -= rangeLength;
+                    steps += rangeLength;
+                    origText = origText.slice(0, startIndex) + origText.slice(endIndex);
+                } else if (text === "" && endIndex === cursorIndex + rangeLength) {
+                    // delete text to the right
+                    input += `${"<Del>".repeat(rangeLength)}`;
+                    steps += rangeLength;
+                    origText = origText.slice(0, startIndex) + origText.slice(endIndex);
+                } else {
+                    // other
+                    if (input) requests.push(["nvim_input", [input]]);
+                    steps += 1;
+                    const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
+                    const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
+                    requests.push([
+                        "nvim_buf_set_text",
+                        [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)],
+                    ]);
+                }
+            }
+            if (input) requests.push(["nvim_input", [input]]);
+        } else {
+            for (const c of changes) {
+                const start = c.range.start;
+                const end = c.range.end;
+                const text = c.text;
+                const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
+                const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
+                steps += 1;
+                requests.push([
+                    "nvim_buf_set_text",
+                    [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)],
+                ]);
+            }
+        }
+
+        return [requests, steps];
+    }
 }

@@ -27,7 +27,6 @@ mode and editor commands, making the best use of both editors.
     -   [VSCode specific differences](#vscode-specific-differences)
     -   [Troubleshooting](#troubleshooting)
         -   [Performance problems](#performance-problems)
-    -   [Composite escape keys](#composite-escape-keys)
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
@@ -153,11 +152,6 @@ The VSCode keybindings editor provides a good way to delete keybindings.
 -   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
--   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat.
-    sequence. In Neovim, if you type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here
-    the repeat sequence would be `1`. However in VSCode it would be `a1bc`. Another difference is that when you delete
-    some text in insert mode, dot repeat only works from right-to-left, meaning it will treat <kbd>Del</kbd> key as
-    <kbd>BS</kbd> keys when running dot repeat.
 
 ### Troubleshooting
 
@@ -184,35 +178,6 @@ If you have any performance problems (cursor jitter usually) make sure you're no
 
 If you're not sure, disable all other extensions, **reload VSCode window**, and see if the problem persists before
 reporting it.
-
-### Composite escape keys
-
-Since VSCode is responsible for insert mode, custom insert-mode VIM mappings don't work. To map composite escape keys,
-put into your keybindings.json:
-
-for <kbd>jj</kbd>
-
-```json
-{
-    "command": "vscode-neovim.compositeEscape1",
-    "key": "j",
-    "when": "neovim.mode == insert && editorTextFocus",
-    "args": "j"
-}
-```
-
-to enable <kbd>jk</kbd> add also:
-
-```json
-{
-    "command": "vscode-neovim.compositeEscape2",
-    "key": "k",
-    "when": "neovim.mode == insert && editorTextFocus",
-    "args": "k"
-}
-```
-
-Currently, there is no way to map both `jk` and `kj`, or to map `jk` without also mapping `jj`.
 
 ### Jumplist
 
