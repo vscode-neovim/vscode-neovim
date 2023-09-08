@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.5.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.5...v0.5.0) (2023-09-08)
+
+
+### Features
+
+* handle window change event ([#1417](https://github.com/vscode-neovim/vscode-neovim/issues/1417)) ([325b10f](https://github.com/vscode-neovim/vscode-neovim/commit/325b10f86916a906b6261d6f0fba60d3f6079b38))
+
+
+### Bug Fixes
+
+* clean up buffers properly ([#1428](https://github.com/vscode-neovim/vscode-neovim/issues/1428)) ([48ef8e6](https://github.com/vscode-neovim/vscode-neovim/commit/48ef8e6302f6f3d87897cc1c900af8dc1bca3593))
+* **highlights:** fix highlights when emojis exist ([#1430](https://github.com/vscode-neovim/vscode-neovim/issues/1430)) ([050be0b](https://github.com/vscode-neovim/vscode-neovim/commit/050be0b37728e1aa2be7f74dac311deec896334b))
+
 ## [0.4.5](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.4...v0.4.5) (2023-09-06)
 
 
