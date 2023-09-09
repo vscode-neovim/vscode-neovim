@@ -91,7 +91,7 @@ class TextEditorStub implements vscode.TextEditor {
 
     constructor() {
         this.selection = new vscode.Selection(0, 0, 0, 0);
-        this.selections = [this.selection]; 
+        this.selections = [this.selection];
     }
     async edit(
         callback: (editBuilder: vscode.TextEditorEdit) => void,

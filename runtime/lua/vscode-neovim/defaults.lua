@@ -21,21 +21,21 @@ function M.default_highlights()
 end
 
 function M.setup()
-    -- customise statusbar
-    vim.opt.shortmess = "filnxtToOFI"
+  -- customise statusbar
+  vim.opt.shortmess = "filnxtToOFI"
 
-    --- Turn on auto-indenting
-    vim.opt.autoindent = true
-    vim.opt.smartindent = true
+  --- Turn on auto-indenting
+  vim.opt.autoindent = true
+  vim.opt.smartindent = true
 
-    --- split/nosplit doesn't work currently, see https://github.com/asvetliakov/vscode-neovim/issues/329
-    vim.opt.inccommand = ""
+  --- split/nosplit doesn't work currently, see https://github.com/asvetliakov/vscode-neovim/issues/329
+  vim.opt.inccommand = ""
 
-    -- disable matchparen because we don't need it
-    vim.g.loaded_matchparen = 1
+  -- disable matchparen because we don't need it
+  vim.g.loaded_matchparen = 1
 
-    M.default_highlights()
-    vim.api.nvim_create_autocmd({ "FileType", "ColorScheme" }, { callback = M.default_highlights })
+  M.default_highlights()
+  vim.api.nvim_create_autocmd({ "FileType", "ColorScheme" }, { callback = M.default_highlights })
 end
 
 return M
