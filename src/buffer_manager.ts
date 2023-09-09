@@ -651,7 +651,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
             // used for synchronization of number options
-            // Currently we ignore the `relative` style
             ["nvim_buf_set_var", [bufId, "vscode_number", number]],
             ["nvim_buf_set_var", [bufId, "vscode_relativenumber", relativeNumber]],
             // make sure to disable syntax (yeah we're doing it neovim files, but better to be safe than not)

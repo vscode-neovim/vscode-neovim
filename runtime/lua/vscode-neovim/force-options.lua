@@ -15,6 +15,8 @@ vim.opt.autowrite = false
 vim.opt.cursorline = false
 vim.opt.signcolumn = "no"
 vim.opt.winblend = 0
+-- Fixed number width, 10 is enough
+vim.opt.numberwidth = 10
 
 --- Disable statusline and ruler since we don't need them anyway
 vim.opt.statusline = ""
@@ -36,6 +38,7 @@ local function forceoptions(opt)
   opt.hidden = true
   opt.bufhidden = "hide"
   opt.list = true
+  opt.numberwidth = 10
   --- Need to know tabs for HL
   opt.listchars = { tab = "❥♥" }
   -- disable syntax hl for vscode buffers
@@ -100,7 +103,6 @@ api.nvim_create_autocmd({
   "InsertEnter",
 }, {
   callback = function()
-    -- In vscode-neovim, buffer binded to its own window
     if not vim.b.vscode_loaded_default_number then
       vim.wo.number = vim.b.vscode_number
       vim.wo.relativenumber = vim.b.vscode_relativenumber
