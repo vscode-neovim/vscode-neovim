@@ -77,4 +77,11 @@ function M.delete_buffers(bufs)
   end
 end
 
+---A wrapper of vim.lsp.util.apply_text_edits, return buffer changedtick
+function M.apply_text_edits(edits, bufnr, encoding)
+  encoding = encoding or "utf-8"
+  vim.lsp.util.apply_text_edits(edits, bufnr, encoding)
+  return vim.api.nvim_buf_get_changedtick(bufnr)
+end
+
 return M
