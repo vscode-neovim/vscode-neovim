@@ -49,11 +49,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     private syncLayoutCancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
     private syncActiveEditorPromise?: ManualPromise;
     /**
-     * Currently opened editors
-     * !Note: Order can be any, it doesn't relate to visible order
-     */
-    private openedEditors: TextEditor[] = [];
-    /**
      * Text documents originated externally, as consequence of neovim command, like :help or :PlugStatus
      */
     private externalTextDocuments: WeakSet<TextDocument> = new Set();
@@ -374,7 +369,11 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * !Note when closing text editor with document, vscode sends onDidCloseTextDocument first
      * @param doc
      */
-    private onDidCloseTextDocument = (doc: TextDocument): void => {
+    private onDidCloseTextDocument = (_doc: TextDocument): void => {
+        // Don't need to do anything here
+        // Regardless of whether the document was previously visible or not,
+        // it will always be cleaned up properly in syncLayout.
+        /*
         const hasVisibleEditor = !!this.openedEditors.find((d) => d.document === doc);
         // we'll handle it in onDidChangeVisibleTextEditors()
         if (!hasVisibleEditor) {
@@ -385,6 +384,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             //     this.unloadBuffer(bufId);
             // }
         }
+        */
     };
 
     private onDidChangeVisibleTextEditors = (): void => {
@@ -416,8 +416,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: syncing layout`);
         // store in copy, just in case
         const currentVisibleEditors = [...window.visibleTextEditors];
-        const preservedPrevVisibleEditors: TextEditor[] = [];
-        const prevVisibleEditors = this.openedEditors;
 
         // Open/change neovim windows
         this.logger.debug(`${LOG_PREFIX}: new/changed editors/windows`);
@@ -474,52 +472,30 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             }
         }
 
-        this.logger.debug(`${LOG_PREFIX}: Closing non visible editors`);
+        this.logger.debug(`${LOG_PREFIX}: Clean up windows and buffers`);
         const unusedWindows: number[] = [];
         const unusedBuffers: number[] = [];
-        for (const prevVisibleEditor of prevVisibleEditors) {
-            if (currentVisibleEditors.includes(prevVisibleEditor)) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, visibility hasn't changed, skip`,
-                );
-                continue;
-            }
-            // buffers
-            const document = prevVisibleEditor.document;
-            if (!currentVisibleEditors.find((e) => e.document === document)) {
-                if (document.isClosed) {
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
-                            document,
-                        )}`,
-                    );
-                    const bufId = this.textDocumentToBufferId.get(document);
-                    this.textDocumentToBufferId.delete(document);
-                    if (bufId) unusedBuffers.push(bufId);
-                } else {
-                    if (!preservedPrevVisibleEditors.includes(prevVisibleEditor)) {
-                        preservedPrevVisibleEditors.push(prevVisibleEditor);
-                    }
-                }
-            }
-            // windows
-            const winId = this.textEditorToWinId.get(prevVisibleEditor);
-            if (winId) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
-                );
-                this.textEditorToWinId.delete(prevVisibleEditor);
+        // close windows
+        [...this.textEditorToWinId.entries()].forEach(([editor, winId]) => {
+            if (!currentVisibleEditors.includes(editor)) {
+                this.logger.debug(`${LOG_PREFIX}: Editor viewColumn: ${editor.viewColumn}, winId: ${winId}, closing`);
+                this.textEditorToWinId.delete(editor);
                 this.winIdToEditor.delete(winId);
                 unusedWindows.push(winId);
             }
-        }
+        });
+        // delete buffers
+        [...this.textDocumentToBufferId.entries()].forEach(([document, bufId]) => {
+            if (!currentVisibleEditors.some((editor) => editor.document === document) && document.isClosed) {
+                this.logger.debug(`${LOG_PREFIX}: Document: ${document.uri.toString()}, bufId: ${bufId}, deleting`);
+                this.textDocumentToBufferId.delete(document);
+                unusedBuffers.push(bufId);
+            }
+        });
         unusedBuffers.length &&
             (await this.client.executeLua("require'vscode-neovim.api'.delete_buffers(...)", [unusedBuffers]));
         unusedWindows.length &&
             (await this.client.executeLua("require'vscode-neovim.api'.close_windows(...)", [unusedWindows]));
-
-        // remember new visible editors
-        this.openedEditors = [...currentVisibleEditors, ...preservedPrevVisibleEditors];
 
         if (cancelToken.isCancellationRequested) {
             // If the visible editors has changed since we started, don't resolve the promise,
