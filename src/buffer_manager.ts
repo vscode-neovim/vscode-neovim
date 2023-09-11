@@ -805,7 +805,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     } catch (e) {
                         this.logger.warn(`${LOG_PREFIX}: Unable to get cursor pos for external buffer: ${id}`);
                     }
-                    editor.selections = [new Selection(finalLine, finalCol, finalLine, finalCol)];
+
+                    const selection = new Selection(finalLine, finalCol, finalLine, finalCol);
+                    editor.selections = [selection];
+                    editor.revealRange(selection, TextEditorRevealType.AtTop);
                 }
             }, 1000);
 
