@@ -65,10 +65,9 @@ mode and editor commands, making the best use of both editors.
     `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
 -   Assign [affinity](#affinity) value for performance improvement.
 
-    -   Settings > Features > Extensions > Experimental Affinity.
+    -   Go to Settings > Features > Extensions > Experimental Affinity.
 
-            Assign value 1 for entry `asvetliakov.vscode-neovim`
-            ![Alt text](images/experimental_affinity.png)
+        Add an entry with item name `asvetliakov.vscode-neovim` and value 1.
 
         OR
 
