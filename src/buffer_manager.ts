@@ -19,9 +19,7 @@ import {
     TextDocumentContentProvider,
     workspace,
     EventEmitter,
-    Range,
     TextEditorRevealType,
-    Event,
 } from "vscode";
 
 import { Logger } from "./logger";
@@ -109,7 +107,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
         this.disposables.push(window.onDidChangeTextEditorOptions(this.onDidChangeEditorOptions));
 
-        this.bufferProvider = new BufferProvider(logger, client);
+        this.bufferProvider = new BufferProvider(logger, client, this.receivedBufferEvent);
         this.disposables.push(workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider));
     }
 
@@ -247,7 +245,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
                 const id = parseInt(idStr, 10);
                 if (!(name && this.isVscodeUriName(name))) {
-                    this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: ${name}, id: ${id}`);
+                    this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: '${name}', id: ${id}`);
                     if (id === 1) {
                         this.logger.debug(`${LOG_PREFIX}: ${id} is the first neovim buffer, skipping`);
                         return;
@@ -739,7 +737,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     private buildExternalBufferUri(name: string, id: number): Uri {
-        return Uri.from({ scheme: BUFFER_SCHEME, path: name, fragment: id.toString() });
+        return Uri.from({ scheme: BUFFER_SCHEME, authority: id.toString(), path: name });
     }
 
     private async attachNeovimExternalBuffer(
@@ -748,20 +746,13 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         expandTab: boolean,
         tabStop: number,
     ): Promise<void> {
-        const buffers = await this.client.buffers;
-        const buf = buffers.find((b) => b.id === id);
-        if (!buf) {
-            return;
-        }
-
-        const uri = this.buildExternalBufferUri(name, buf.id);
+        const uri = this.buildExternalBufferUri(name, id);
         this.logger.debug(`${LOG_PREFIX}: opening external buffer ${uri}`);
         const doc = await workspace.openTextDocument(uri);
+
         this.externalTextDocuments.add(doc);
         this.textDocumentToBufferId.set(doc, id);
         this.onBufferInit && this.onBufferInit(id, doc);
-        buf.listen("lines", this.receivedBufferEvent);
-        await buf[ATTACH](true);
 
         const windows = await this.client.windows;
         let closeWinId = 0;
@@ -830,6 +821,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 }
 
+type BufferChangeCallback = BufferManager["receivedBufferEvent"];
+
 /**
  * Implements the VSCode document provider API for external buffers from neovim.
  */
@@ -844,16 +837,18 @@ class BufferProvider implements TextDocumentContentProvider {
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
+        private receivedBufferEvent: BufferChangeCallback,
     ) {}
 
     async provideTextDocumentContent(uri: Uri, token: CancellationToken): Promise<string | undefined> {
-        this.logger.debug(`${LOG_PREFIX}: providing content for ${uri}`);
+        this.logger.debug(`${LOG_PREFIX}: trying to provide content for ${uri}`);
 
-        let id = parseInt(uri.fragment);
+        const id = parseInt(uri.authority, 10);
 
         const buffers = await this.client.buffers;
         const buf = buffers.find((b) => b.id === id);
         if (!buf || token.isCancellationRequested) {
+            this.logger.debug(`${LOG_PREFIX}: external buffer ${id} not found`);
             return;
         }
 
@@ -863,6 +858,12 @@ class BufferProvider implements TextDocumentContentProvider {
             this.logger.debug(`${LOG_PREFIX}: Skipping empty external buffer ${id}`);
             return;
         }
+
+        buf.listen("lines", (...args: Parameters<BufferChangeCallback>) => {
+            this.receivedBufferEvent(...args);
+            this.documentDidChange.fire(uri);
+        });
+        await buf[ATTACH](true);
 
         return lines.join("\n");
     }
