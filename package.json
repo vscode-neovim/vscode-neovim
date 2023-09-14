@@ -156,11 +156,29 @@
                     "title": "Highlight Groups Configuration",
                     "description": "Define colors for various VIM highlight groups. Values may be 'vim' to use colors from vim or text decoration properties object",
                     "additionalProperties": {
-                        "oneOf": [
-                            {
-                                "type": "object"
+                        "type": "object",
+                        "properties": {
+                            "backgroundColor": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
+                            },
+                            "color": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
+                            },
+                            "border": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
+                            },
+                            "borderColor": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
+                            },
+                            "textDecoration": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
                             }
-                        ]
+                        }
                     },
                     "default": {
                         "IncSearch": {
