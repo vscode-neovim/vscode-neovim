@@ -3,7 +3,7 @@ import { Disposable } from "vscode";
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
 import { MainController } from "./main_controller";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
-import { calculateEditorColFromVimScreenCol, GridLineEvent } from "./utils";
+import { GridLineEvent } from "./utils";
 
 // const LOG_PREFIX = "HighlightManager";
 
@@ -93,16 +93,16 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
                             }
                             continue;
                         }
-                        const line = editor.document.lineAt(highlightLine).text;
-                        const colStart = col + gridOffset.character;
+                        const lineText = editor.document.lineAt(highlightLine).text;
+                        const vimCol = col + gridOffset.character;
                         const tabSize = editor.options.tabSize as number;
-                        const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
                         const update = this.highlightProvider.processHLCellsEvent(
                             grid,
                             row,
-                            finalStartCol,
-                            line,
+                            vimCol,
                             cells,
+                            lineText,
+                            tabSize,
                         );
                         if (update) {
                             gridHLUpdates.add(grid);

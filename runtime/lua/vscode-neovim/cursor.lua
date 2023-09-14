@@ -106,8 +106,6 @@ function M.highlight_fake_cursor()
     local line = vim.fn.line(".")
     local col = vim.fn.col(".")
     local ch = util.get_char_at(line, col) or " "
-    -- !nvim won't send tab, so we use ❥ instead
-    ch = ch == "\t" and "❥" or ch
     M.fake_cursor = vim.api.nvim_buf_set_extmark(
       0,
       M.fake_ns,

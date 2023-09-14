@@ -38,7 +38,7 @@ local function forceoptions(opt)
   opt.relativenumber = false
   opt.list = true
   --- Need to know tabs for HL
-  opt.listchars = { tab = "❥♥" }
+  opt.listchars = { tab = "  " }
   -- disable syntax hl for vscode buffers
   if vim.b.vscode_controlled and opt == vim.opt_local then
     opt.syntax = "off"
