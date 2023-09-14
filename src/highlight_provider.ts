@@ -179,10 +179,10 @@ export class HighlightProvider {
         // Calculates the number of spaces occupied by the tab
         // There has been improvement in highlighting when tab characters are interspersed,
         // but there are still issues with updating partial highlights. e.g. fake cursor
-        const calcTabCells = (line: string, tabCol: number) => {
-            let nearestTabIdx = [...line].slice(0, tabCol).lastIndexOf("\t");
+        const calcTabCells = (tabCol: number) => {
+            let nearestTabIdx = [...lineText].slice(0, tabCol).lastIndexOf("\t");
             nearestTabIdx = nearestTabIdx === -1 ? 0 : nearestTabIdx + 1;
-            const center = [...line].slice(nearestTabIdx, tabCol).join("");
+            const center = [...lineText].slice(nearestTabIdx, tabCol).join("");
             return tabSize - (wcswidth(center) % tabSize);
         };
 
@@ -191,7 +191,6 @@ export class HighlightProvider {
         // {text, hlId?, repeat?} => {text, hlId}
         const newCells: { text: string; hlId: number }[] = [];
         {
-            // const tabCount = (lineText.match(/\t/g) || []).length;
             const maxCells = getWidth(lineText);
             let curHlId = 0;
             for (const [text, _hlId, _repeat] of cells) {
@@ -221,9 +220,7 @@ export class HighlightProvider {
         // then the redraw cells may contain cells from the previous column.
         if (editorCol > 0) {
             const expectedCells =
-                lineChars[editorCol - 1] === "\t"
-                    ? calcTabCells(lineText, editorCol - 1)
-                    : wcswidth(lineChars[editorCol - 1]);
+                lineChars[editorCol - 1] === "\t" ? calcTabCells(editorCol - 1) : wcswidth(lineChars[editorCol - 1]);
             if (expectedCells > 1) {
                 const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""));
                 if (expectedVimCol > vimCol) {
@@ -250,7 +247,7 @@ export class HighlightProvider {
             const curChar = lineChars[curCol];
             if (curChar === "\t") {
                 hls.push({ hlId: cell.hlId, virtText: cell.text });
-                for (let i = 0; i < calcTabCells(lineText, curCol) - 1; i++) {
+                for (let i = 0; i < calcTabCells(curCol) - 1; i++) {
                     cell = cellIter.next().value;
                     if (cell && cell.text !== "") {
                         hls.push({ hlId: cell.hlId, virtText: cell.text });
@@ -258,12 +255,15 @@ export class HighlightProvider {
                 }
             } else {
                 if (isDouble(curChar)) {
-                    const nextCell = cellIter.next().value;
                     if (curChar === cell.text) {
+                        // range highlight
                         hls.push({ hlId: cell.hlId });
+                        cellIter.next();
                     } else {
+                        // virt text
                         hls.push({ hlId: cell.hlId, virtText: cell.text });
-                        if (!isDouble(cell.text)) {
+                        const { value: nextCell, done } = cellIter.next();
+                        if (!isDouble(cell.text) && !done) {
                             hls.push({ hlId: nextCell.hlId, virtText: nextCell.text });
                         }
                     }
