@@ -159,10 +159,6 @@
                         "oneOf": [
                             {
                                 "type": "object"
-                            },
-                            {
-                                "type": "string",
-                                "const": "vim"
                             }
                         ]
                     },

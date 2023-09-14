@@ -28,10 +28,10 @@ export interface VimHighlightUIAttributes {
 
 export interface HighlightConfiguration {
     /**
-     * Map specific highlight to use either vim configuration or use vscode decorator configuration
+     * Map specific highlight to use vscode decorator configuration
      */
     highlights: {
-        [key: string]: "vim" | ThemableDecorationRenderOptions;
+        [key: string]: ThemableDecorationRenderOptions;
     };
 }
 
@@ -87,26 +87,12 @@ function normalizeThemeColor(color: string | ThemeColor | undefined): string | T
 }
 
 function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): ThemableDecorationRenderOptions {
-    const newConfig: ThemableDecorationRenderOptions = {
-        ...config,
-        after: config.after ? { ...config.after } : undefined,
-        before: config.before ? { ...config.before } : undefined,
-    };
+    const newConfig: ThemableDecorationRenderOptions = { ...config };
     newConfig.backgroundColor = normalizeThemeColor(newConfig.backgroundColor);
     newConfig.borderColor = normalizeThemeColor(newConfig.borderColor);
     newConfig.color = normalizeThemeColor(newConfig.color);
     newConfig.outlineColor = normalizeThemeColor(newConfig.outlineColor);
     newConfig.overviewRulerColor = normalizeThemeColor(newConfig.overviewRulerColor);
-    if (newConfig.after) {
-        newConfig.after.backgroundColor = normalizeThemeColor(newConfig.after.backgroundColor);
-        newConfig.after.borderColor = normalizeThemeColor(newConfig.after.borderColor);
-        newConfig.after.color = normalizeThemeColor(newConfig.after.color);
-    }
-    if (newConfig.before) {
-        newConfig.before.backgroundColor = normalizeThemeColor(newConfig.before.backgroundColor);
-        newConfig.before.borderColor = normalizeThemeColor(newConfig.before.borderColor);
-        newConfig.before.color = normalizeThemeColor(newConfig.before.color);
-    }
     return newConfig;
 }
 
@@ -114,7 +100,8 @@ const isDouble = (c: string) => wcswidth(c) === 2;
 
 export class HighlightProvider {
     /**
-     * Current HL. key is the grid id and values is two dimension array representing rows and cols. Array may contain empty values
+     * key is the grid id and values is a three-dimensional array representing rows and columns.
+     * Each column can contain multiple highlights. e.g. double-width character, tab
      */
     private highlights: Map<number, Highlight[][][]> = new Map();
     private prevGridHighlightsIds: Map<number, Set<number>> = new Map();
@@ -132,9 +119,7 @@ export class HighlightProvider {
     public constructor(conf: HighlightConfiguration) {
         this.configuration = conf;
         for (const [key, config] of Object.entries(this.configuration.highlights)) {
-            if (config !== "vim") {
-                this.configuration.highlights[key] = normalizeDecorationConfig(config);
-            }
+            this.configuration.highlights[key] = normalizeDecorationConfig(config);
         }
     }
 
@@ -148,7 +133,7 @@ export class HighlightProvider {
         // if the highlight consists of any custom groups, use that instead
         const customName = groups.reverse().find((g) => this.configuration.highlights[g] !== undefined);
         const customHl = customName && this.configuration.highlights[customName];
-        if (customHl && customHl !== "vim") {
+        if (customHl) {
             // no need to create custom decorator if already exists
             if (!this.highlighIdToDecorator.has(id)) {
                 this.createDecoratorForHighlightId(id, customHl);
