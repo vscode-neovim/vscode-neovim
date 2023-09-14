@@ -190,12 +190,15 @@ export class HighlightProvider {
     ): boolean {
         let hasUpdates = false;
 
+        const getWidth = (text: string) => wcswidth(text.replace(/\t/g, " ".repeat(tabSize)));
+
         const editorCol = calculateEditorColFromVimScreenCol(lineText, vimCol, tabSize);
 
         // {text, hlId?, repeat?} => {text, hlId}
         const newCells: { text: string; hlId: number }[] = [];
         {
-            const maxCells = wcswidth(lineText.replace(/^\t+/, " ".repeat(tabSize)));
+            // const tabCount = (lineText.match(/\t/g) || []).length;
+            const maxCells = getWidth(lineText);
             let curHlId = 0;
             for (const [text, _hlId, _repeat] of cells) {
                 if (newCells.length > maxCells && text == " ") break;
@@ -225,7 +228,7 @@ export class HighlightProvider {
         if (editorCol > 0) {
             const expectedCells = lineChars[editorCol - 1] === "\t" ? tabSize : wcswidth(lineChars[editorCol - 1]);
             if (expectedCells > 1) {
-                const expectedVimCol = wcswidth(lineChars.slice(0, editorCol).join(""));
+                const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""));
                 if (expectedVimCol > vimCol) {
                     const rightHls: Highlight[] = [];
                     for (let i = 0; i < expectedVimCol - vimCol; i++) {
@@ -252,7 +255,7 @@ export class HighlightProvider {
                 hls.push({ hlId: cell.hlId, virtText: cell.text });
                 for (let i = 0; i < tabSize - 1; i++) {
                     cell = cellIter.next().value;
-                    if (cell.text !== "") {
+                    if (cell && cell.text !== "") {
                         hls.push({ hlId: cell.hlId, virtText: cell.text });
                     }
                 }
@@ -426,9 +429,9 @@ export class HighlightProvider {
         // However, in vscode, we will ignore the highlighting ID of 0.
         // So, we add the character to the preceding virtual text.
         const processedColHighlights: { hlId: number; virtText: string }[] = [];
-        colHighlights.forEach(({ virtText, hlId }, idx) => {
-            if (hlId === 0 && idx > 0) {
-                processedColHighlights[idx - 1].virtText! += virtText;
+        colHighlights.forEach(({ virtText, hlId }) => {
+            if (hlId === 0 && processedColHighlights.length > 0) {
+                processedColHighlights[processedColHighlights.length - 1].virtText! += virtText;
             } else {
                 processedColHighlights.push({ hlId, virtText: virtText! });
             }
@@ -462,6 +465,7 @@ export class HighlightProvider {
                 },
             });
         });
+        // console.log(JSON.stringify(Array.from(hlId_options.entries()), null, 2));
         return hlId_options;
     }
 }
