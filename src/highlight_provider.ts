@@ -1,3 +1,4 @@
+import { cloneDeep } from "lodash-es";
 import wcswidth from "ts-wcwidth";
 import {
     DecorationOptions,
@@ -175,6 +176,10 @@ export class HighlightProvider {
     ): boolean {
         let hasUpdates = false;
 
+        // Some characters, such as emojis, have a length of 2
+        // Add an extra column to fix rendering position.
+        lineText = [...lineText].reduce((p, c) => p + (c.length === 1 ? c : `${c} `), "");
+
         const getWidth = (text: string) => wcswidth(text.replace(/\t/g, " ".repeat(tabSize)));
         // Calculates the number of spaces occupied by the tab
         // There has been improvement in highlighting when tab characters are interspersed,
@@ -202,6 +207,21 @@ export class HighlightProvider {
                 }
             }
         }
+        const cellIter = {
+            _index: 0,
+            _cells: cloneDeep(newCells),
+            next(): { text: string; hlId: number } | undefined {
+                return this._cells[this._index++];
+            },
+            getNext(): { text: string; hlId: number } | undefined {
+                return this._cells[this._index];
+            },
+            setNext(hlId: number, text: string) {
+                if (this._index < this._cells.length) {
+                    this._cells[this._index] = { hlId, text };
+                }
+            },
+        };
 
         if (!this.highlights.has(grid)) {
             this.highlights.set(grid, []);
@@ -213,7 +233,6 @@ export class HighlightProvider {
 
         const lineChars = [...lineText];
         let curCol = editorCol;
-        const cellIter = newCells.values();
 
         // #region
         // If the previous column can contain multiple cells,
@@ -227,8 +246,7 @@ export class HighlightProvider {
                     const rightHls: Highlight[] = [];
                     for (let i = 0; i < expectedVimCol - vimCol; i++) {
                         const cell = cellIter.next();
-                        if (cell.done) break; // wont't happen
-                        rightHls.push({ hlId: cell.value.hlId, virtText: cell.value.text });
+                        cell && rightHls.push({ hlId: cell.hlId, virtText: cell.text });
                     }
                     const leftHls: Highlight[] = [];
                     if (expectedCells - rightHls.length) {
@@ -240,15 +258,14 @@ export class HighlightProvider {
         }
         // #endregion
 
-        let cellItem = cellIter.next();
-        while (!cellItem.done) {
+        let cell = cellIter.next();
+        while (cell) {
             const hls: Highlight[] = [];
-            let cell = cellItem.value;
             const curChar = lineChars[curCol];
             if (curChar === "\t") {
                 hls.push({ hlId: cell.hlId, virtText: cell.text });
                 for (let i = 0; i < calcTabCells(curCol) - 1; i++) {
-                    cell = cellIter.next().value;
+                    cell = cellIter.next();
                     if (cell && cell.text !== "") {
                         hls.push({ hlId: cell.hlId, virtText: cell.text });
                     }
@@ -258,13 +275,30 @@ export class HighlightProvider {
                     if (curChar === cell.text) {
                         // range highlight
                         hls.push({ hlId: cell.hlId });
-                        cellIter.next();
+
+                        // If current character length is 2, next column is manually inserted column,
+                        // so reserve next cell for filling.
+                        // Otherwise, ignore next cell.
+                        if (curChar.length === 1) cellIter.next();
                     } else {
                         // virt text
                         hls.push({ hlId: cell.hlId, virtText: cell.text });
-                        const { value: nextCell, done } = cellIter.next();
-                        if (!isDouble(cell.text) && !done) {
-                            hls.push({ hlId: nextCell.hlId, virtText: nextCell.text });
+                        if (isDouble(cell.text)) {
+                            // same as above
+                            if (curChar.length === 1) cellIter.next();
+                        } else {
+                            if (curChar.length === 1) {
+                                const nextCell = cellIter.next();
+                                nextCell && hls.push({ hlId: nextCell.hlId, virtText: nextCell.text });
+                            } else {
+                                // Get the next cell, then manually offset it and add it to the highlights of the current column,
+                                // while the next cell will be used to fill the manually inserted column. Messy...
+                                const nextCell = cellIter.getNext();
+                                if (nextCell) {
+                                    nextCell && hls.push({ hlId: nextCell.hlId, virtText: " " + nextCell.text });
+                                    cellIter.setNext(nextCell.hlId, " ");
+                                }
+                            }
                         }
                     }
                 } else {
@@ -292,7 +326,7 @@ export class HighlightProvider {
             }
             /////////////////////////////////////////////
             curCol++;
-            cellItem = cellIter.next();
+            cell = cellIter.next();
         }
 
         return hasUpdates;
@@ -457,7 +491,7 @@ export class HighlightProvider {
                         ...conf,
                         contentText: text,
                         margin: `0 0 0 ${offset}ch`,
-                        width: `${width}ch; position:absolute; z-index:99;`,
+                        width: `${width}ch; position:absolute; z-index:${99 - offset};`,
                     },
                 },
             });
