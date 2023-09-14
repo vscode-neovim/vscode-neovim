@@ -71,8 +71,8 @@ describe("Test ext mark", () => {
         const decoration = stubTextEditor.decorationOptionsList[0][0] as DecorationOptions;
 
         assert.ok(decoration.renderOptions); // it should have overlay decoration
-        assert.ok(decoration.renderOptions?.after?.contentText == "j");
-        assert.ok(decoration.renderOptions?.after?.color == "#ff0000");
+        assert.ok(decoration.renderOptions?.before?.contentText == "j");
+        assert.ok(decoration.renderOptions?.before?.color == "#ff0000");
     });
 });
 
