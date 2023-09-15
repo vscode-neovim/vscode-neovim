@@ -737,7 +737,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     private buildExternalBufferUri(name: string, id: number): Uri {
-        return Uri.from({ scheme: BUFFER_SCHEME, authority: id.toString(), path: name });
+        // These might not *always* be file names, but they often are (e.g. for :help) so
+        // make sure we properly convert slashes for the path component, especially on Windows
+        return Uri.file(name).with({ scheme: BUFFER_SCHEME, authority: id.toString() });
     }
 
     private async attachNeovimExternalBuffer(
