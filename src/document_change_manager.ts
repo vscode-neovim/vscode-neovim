@@ -493,21 +493,16 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             }
         }
 
-        const edits = contentChanges.map((c) => ({
-            range: {
-                start: {
-                    line: c.range.start.line,
-                    character: c.range.start.character,
-                },
-                end: {
-                    line: c.range.end.line,
-                    character: c.range.end.character,
-                },
-            },
-            newText: c.text,
-        }));
-
-        if (!edits.length) return;
+        const changeArgs = [];
+        for (const change of contentChanges) {
+            const {
+                text,
+                range: { start, end },
+            } = change;
+            const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
+            const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
+            changeArgs.push([start.line, startBytes, end.line, endBytes, text.split(eol)]);
+        }
 
         const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
         if (!bufTick) {
@@ -515,13 +510,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             return;
         }
 
-        this.bufferSkipTicks.set(bufId, bufTick + edits.length + 100); // 100 is arbitrary, we will set correct value later
+        this.bufferSkipTicks.set(bufId, bufTick + changeArgs.length);
 
         this.logger.debug(`${LOG_PREFIX}: Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
 
-        const code = "return require('vscode-neovim.api').apply_text_edits(...)";
-        const tick = await this.client.executeLua(code, [edits, bufId, "utf-8"]);
-        this.bufferSkipTicks.set(bufId, tick as any as number);
+        const code = "return require('vscode-neovim.api').handle_changes(...)";
+        await this.client.executeLua(code, [bufId, changeArgs]);
     };
 }
