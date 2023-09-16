@@ -176,9 +176,13 @@ export class HighlightProvider {
     ): boolean {
         let hasUpdates = false;
 
-        // Some characters, such as emojis, have a length of 2
-        // Add an extra column to fix rendering position.
-        lineText = [...lineText].reduce((p, c) => p + (c.length === 1 ? c : `${c} `), "");
+        if (!this.highlights.has(grid)) {
+            this.highlights.set(grid, []);
+        }
+        const gridHl = this.highlights.get(grid)!;
+        if (!gridHl[row]) {
+            gridHl[row] = [];
+        }
 
         const getWidth = (text: string) => wcswidth(text.replace(/\t/g, " ".repeat(tabSize)));
         // Calculates the number of spaces occupied by the tab
@@ -194,22 +198,23 @@ export class HighlightProvider {
         const editorCol = calculateEditorColFromVimScreenCol(lineText, vimCol, tabSize);
 
         // {text, hlId?, repeat?} => {text, hlId}
-        const newCells: { text: string; hlId: number }[] = [];
+        const validCells: { text: string; hlId: number }[] = [];
         {
-            const maxCells = getWidth(lineText);
+            const maxValidCells = [...lineText].slice(editorCol).length;
             let curHlId = 0;
             for (const [text, _hlId, _repeat] of cells) {
-                if (newCells.length > maxCells && text == " ") break;
+                // Check space is for keeping cells of eol virtual text;
+                if (validCells.length > maxValidCells && text == " ") break;
                 if (_hlId != null) curHlId = _hlId;
                 for (let i = 0; i < (_repeat ?? 1); i++) {
-                    if (newCells.length > maxCells && text == " ") break;
-                    newCells.push({ text, hlId: curHlId });
+                    if (validCells.length > maxValidCells && text == " ") break;
+                    validCells.push({ text, hlId: curHlId });
                 }
             }
         }
         const cellIter = {
             _index: 0,
-            _cells: cloneDeep(newCells),
+            _cells: cloneDeep(validCells),
             next(): { text: string; hlId: number } | undefined {
                 return this._cells[this._index++];
             },
@@ -223,23 +228,14 @@ export class HighlightProvider {
             },
         };
 
-        if (!this.highlights.has(grid)) {
-            this.highlights.set(grid, []);
-        }
-        const gridHl = this.highlights.get(grid)!;
-        if (!gridHl[row]) {
-            gridHl[row] = [];
-        }
-
-        const lineChars = [...lineText];
-        let curCol = editorCol;
-
         // #region
         // If the previous column can contain multiple cells,
         // then the redraw cells may contain cells from the previous column.
         if (editorCol > 0) {
-            const expectedCells =
-                lineChars[editorCol - 1] === "\t" ? calcTabCells(editorCol - 1) : wcswidth(lineChars[editorCol - 1]);
+            const lineChars = [...lineText];
+            const prevCol = editorCol - 1;
+            const prevChar = lineChars[prevCol];
+            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : wcswidth(prevChar);
             if (expectedCells > 1) {
                 const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""));
                 if (expectedVimCol > vimCol) {
@@ -250,13 +246,20 @@ export class HighlightProvider {
                     }
                     const leftHls: Highlight[] = [];
                     if (expectedCells - rightHls.length) {
-                        leftHls.push(...(gridHl[row][editorCol - 1] ?? []).slice(0, expectedCells - rightHls.length));
+                        leftHls.push(...(gridHl[row][prevCol] ?? []).slice(0, expectedCells - rightHls.length));
                     }
-                    gridHl[row][editorCol - 1] = [...leftHls, ...rightHls];
+                    gridHl[row][prevCol] = [...leftHls, ...rightHls];
                 }
             }
         }
         // #endregion
+
+        // Some characters, such as emojis, have a length of 2
+        // So add an extra column to fix rendering position.
+        const filledLineText = [...lineText].reduce((p, c) => p + (c.length === 1 ? c : `${c} `), "");
+
+        const lineChars = [...filledLineText];
+        let curCol = editorCol;
 
         let cell = cellIter.next();
         while (cell) {
@@ -325,6 +328,21 @@ export class HighlightProvider {
                 gridHl[row][curCol] = hls;
             }
             /////////////////////////////////////////////
+            /*
+            if (curCol > lineText.length) {
+                const lineTextLength = lineText.length;
+                const targetLine = [...lineText].slice(editorCol).join("");
+                const targetLineLength = targetLine.length;
+                const cellLine = newCells.reduce((p, c) => p + c.text, "");
+                const cellLineLength = cellLine.length;
+                const info = `row:${row} vimCol:${vimCol} editorCol:${editorCol} currCol:${curCol};`;
+                const cellsLength = newCells.length;
+                const cellsInfo = JSON.stringify(newCells);
+                console.log(
+                    `${info}\n${lineTextLength}【${lineText}】\n${targetLineLength}【${targetLine}】\n${cellLineLength}【${cellLine}】\n${cellsLength}\n${cellsInfo}\n`,
+                );
+            }
+            */
             curCol++;
             cell = cellIter.next();
         }
@@ -481,6 +499,7 @@ export class HighlightProvider {
             const conf = this.getDecoratorOptions(decorator);
             const width = text.length;
             if (col > lineText.length) {
+                // console.log(`offset:${offset} col > lineText.lenght => ${col} - ${lineText.length}`);
                 offset += col - lineText.length; // for 'eol' virtual text
             }
             hlId_options.get(hlId)!.push({
@@ -491,7 +510,7 @@ export class HighlightProvider {
                         ...conf,
                         contentText: text,
                         margin: `0 0 0 ${offset}ch`,
-                        width: `${width}ch; position:absolute; z-index:${99 - offset};`,
+                        width: `${width}ch; position:absolute; z-index:${99 - offset}; --hlId: ${hlId};`,
                     },
                 },
             });
