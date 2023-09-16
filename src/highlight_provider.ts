@@ -1,3 +1,4 @@
+import GraphemeSplitter from "grapheme-splitter";
 import { cloneDeep } from "lodash-es";
 import wcswidth from "ts-wcwidth";
 import {
@@ -97,7 +98,12 @@ function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): The
     return newConfig;
 }
 
-const isDouble = (c: string) => wcswidth(c) === 2;
+// 你 length:1 width:2
+// 🚀 length:2 width:2
+// 🕵️ length:3 width:2
+// ❤️ length:2 width:1
+const isDouble = (c?: string) => wcswidth(c) === 2 || (c ?? "").length > 1;
+const segment = (str: string) => new GraphemeSplitter().splitGraphemes(str);
 
 export class HighlightProvider {
     /**
@@ -184,15 +190,21 @@ export class HighlightProvider {
             gridHl[row] = [];
         }
 
-        const getWidth = (text: string) => wcswidth(text.replace(/\t/g, " ".repeat(tabSize)));
+        const getWidth = (text?: string) => {
+            const t = (text ?? "").replace(/\t/g, " ".repeat(tabSize));
+            return segment(t).reduce((p, c) => p + (isDouble(c) ? 2 : 1), 0);
+        };
+
+        const lineChars = segment(lineText);
+
         // Calculates the number of spaces occupied by the tab
         // There has been improvement in highlighting when tab characters are interspersed,
         // but there are still issues with updating partial highlights. e.g. fake cursor
         const calcTabCells = (tabCol: number) => {
-            let nearestTabIdx = [...lineText].slice(0, tabCol).lastIndexOf("\t");
+            let nearestTabIdx = lineChars.slice(0, tabCol).lastIndexOf("\t");
             nearestTabIdx = nearestTabIdx === -1 ? 0 : nearestTabIdx + 1;
-            const center = [...lineText].slice(nearestTabIdx, tabCol).join("");
-            return tabSize - (wcswidth(center) % tabSize);
+            const center = lineChars.slice(nearestTabIdx, tabCol).join("");
+            return tabSize - (getWidth(center) % tabSize);
         };
 
         const editorCol = calculateEditorColFromVimScreenCol(lineText, vimCol, tabSize);
@@ -200,12 +212,13 @@ export class HighlightProvider {
         // {text, hlId?, repeat?} => {text, hlId}
         const validCells: { text: string; hlId: number }[] = [];
         {
-            const maxValidCells = [...lineText].slice(editorCol).length;
+            const maxValidCells = getWidth(lineChars.slice(editorCol).join(""));
             let currHlId = 0;
             for (const [text, _hlId, _repeat] of cells) {
                 // Check space is for keeping cells of eol virtual text;
                 if (validCells.length > maxValidCells && text == " ") break;
                 if (_hlId != null) currHlId = _hlId;
+                if (text === "") continue;
                 for (let i = 0; i < (_repeat ?? 1); i++) {
                     if (validCells.length > maxValidCells && text == " ") break;
                     validCells.push({ text, hlId: currHlId });
@@ -232,10 +245,9 @@ export class HighlightProvider {
         // If the previous column can contain multiple cells,
         // then the redraw cells may contain cells from the previous column.
         if (editorCol > 0) {
-            const lineChars = [...lineText];
             const prevCol = editorCol - 1;
             const prevChar = lineChars[prevCol];
-            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : wcswidth(prevChar);
+            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : getWidth(prevChar);
             if (expectedCells > 1) {
                 const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""));
                 if (expectedVimCol > vimCol) {
@@ -254,96 +266,71 @@ export class HighlightProvider {
         }
         // #endregion
 
-        // Some characters, such as emojis, have a length of 2
-        // So add an extra column to fix rendering position.
-        const filledLineText = [...lineText].reduce((p, c) => p + (c.length === 1 ? c : `${c} `), "");
+        // Insert additional columns for characters with length greater than 1.
+        const filledLineText = segment(lineText).reduce((p, c) => p + c + " ".repeat(c.length - 1), "");
 
-        const lineChars = [...filledLineText];
-        let currCol = editorCol;
-
+        const filledLineChars = segment(filledLineText);
+        let currCharCol = editorCol;
         let cell = cellIter.next();
         while (cell) {
             const hls: Highlight[] = [];
-            const currChar = lineChars[currCol];
-            if (currChar === "\t") {
-                hls.push({ hlId: cell.hlId, virtText: cell.text });
-                for (let i = 0; i < calcTabCells(currCol) - 1; i++) {
-                    cell = cellIter.next();
-                    if (cell && cell.text !== "") {
-                        hls.push({ hlId: cell.hlId, virtText: cell.text });
-                    }
-                }
-            } else {
-                if (isDouble(currChar)) {
-                    if (currChar === cell.text) {
-                        // range highlight
-                        hls.push({ hlId: cell.hlId });
+            const add = (hlId: number, text?: string) => hls.push({ hlId, virtText: text });
+            const currChar = filledLineChars[currCharCol];
+            const extraCols = currChar ? currChar.length - 1 : 0;
+            currCharCol += extraCols;
+            // magic... some emojis have text versions e.g. [..."❤️"] == ['❤', '️']
+            const hlCol = currCharCol - (currChar ? [...currChar].length - 1 : 0);
 
-                        // If current character length is 2, next column is manually inserted column,
-                        // so reserve next cell for filling.
-                        // Otherwise, ignore next cell.
-                        if (currChar.length === 1) cellIter.next();
-                    } else {
-                        // virt text
-                        hls.push({ hlId: cell.hlId, virtText: cell.text });
-                        if (isDouble(cell.text)) {
-                            // same as above
-                            if (currChar.length === 1) cellIter.next();
-                        } else {
-                            if (currChar.length === 1) {
-                                const nextCell = cellIter.next();
-                                nextCell && hls.push({ hlId: nextCell.hlId, virtText: nextCell.text });
-                            } else {
-                                // Get the next cell, then manually offset it and add it to the highlights of the current column,
-                                // while the next cell will be used to fill the manually inserted column. Messy...
-                                const nextCell = cellIter.getNext();
-                                if (nextCell) {
-                                    nextCell && hls.push({ hlId: nextCell.hlId, virtText: " " + nextCell.text });
-                                    cellIter.setNext(nextCell.hlId, " ");
-                                }
-                            }
-                        }
+            do {
+                if (currChar === "\t") {
+                    add(cell.hlId, cell.text);
+                    for (let i = 0; i < calcTabCells(currCharCol) - 1; i++) {
+                        cell = cellIter.next();
+                        cell && add(cell.hlId, cell.text);
                     }
-                } else {
+
+                    break;
+                }
+
+                if (currChar && isDouble(currChar)) {
                     if (currChar === cell.text) {
-                        hls.push({ hlId: cell.hlId });
-                    } else {
-                        hls.push({ hlId: cell.hlId, virtText: cell.text });
-                        if (isDouble(cell.text)) {
-                            // Next cell text is empty, should ignore it
-                            currCol++;
-                            cellIter.next();
-                        }
+                        add(cell.hlId);
+                        break;
+                    }
+
+                    add(cell.hlId, cell.text);
+                    if (!isDouble(cell.text)) {
+                        const nextCell = cellIter.next();
+                        nextCell && add(nextCell.hlId, nextCell.text);
+                        extraCols && add((nextCell ?? cell).hlId, " ".repeat(extraCols));
+                    }
+
+                    break;
+                }
+
+                if (currChar === cell.text) {
+                    add(cell.hlId);
+                } else {
+                    add(cell.hlId, cell.text);
+                    if (isDouble(cell.text)) {
+                        currCharCol++;
                     }
                 }
-            }
+
+                // eslint-disable-next-line no-constant-condition
+            } while (false);
 
             if (!hls.length || !hls.some((d) => d.hlId !== 0)) {
-                if (gridHl[row][currCol]) {
+                if (gridHl[row][hlCol]) {
                     hasUpdates = true;
-                    delete gridHl[row][currCol];
+                    delete gridHl[row][hlCol];
                 }
             } else {
                 hasUpdates = true;
-                gridHl[row][currCol] = hls;
+                gridHl[row][hlCol] = hls;
             }
             /////////////////////////////////////////////
-            /*
-            if (currCol > lineText.length) {
-                const lineTextLength = lineText.length;
-                const targetLine = [...lineText].slice(editorCol).join("");
-                const targetLineLength = targetLine.length;
-                const cellLine = validCells.reduce((p, c) => p + c.text, "");
-                const cellLineLength = cellLine.length;
-                const info = `row:${row} vimCol:${vimCol} editorCol:${editorCol} currCol:${currCol};`;
-                const cellsLength = validCells.length;
-                const cellsInfo = JSON.stringify(validCells);
-                console.log(
-                    `${info}\n${lineTextLength}【${lineText}】\n${targetLineLength}【${targetLine}】\n${cellLineLength}【${cellLine}】\n${cellsLength}\n${cellsInfo}\n`,
-                );
-            }
-            */
-            currCol++;
+            currCharCol++;
             cell = cellIter.next();
         }
 
@@ -505,7 +492,8 @@ export class HighlightProvider {
             const decorator = this.getDecoratorForHighlightId(hlId);
             if (!decorator) return;
             if (!hlId_options.has(hlId)) hlId_options.set(hlId, []);
-            const text = virtText.replace(" ", "\u200D");
+            const text = virtText.replace(/ /g, "\u200D");
+            // const text = virtText.replace(/ /g, "-");
             const conf = this.getDecoratorOptions(decorator);
             const width = text.length;
             if (col > lineText.length) {
