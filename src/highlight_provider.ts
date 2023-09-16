@@ -329,15 +329,15 @@ export class HighlightProvider {
             }
             /////////////////////////////////////////////
             /*
-            if (curCol > lineText.length) {
+            if (currCol > lineText.length) {
                 const lineTextLength = lineText.length;
                 const targetLine = [...lineText].slice(editorCol).join("");
                 const targetLineLength = targetLine.length;
-                const cellLine = newCells.reduce((p, c) => p + c.text, "");
+                const cellLine = validCells.reduce((p, c) => p + c.text, "");
                 const cellLineLength = cellLine.length;
-                const info = `row:${row} vimCol:${vimCol} editorCol:${editorCol} currCol:${curCol};`;
-                const cellsLength = newCells.length;
-                const cellsInfo = JSON.stringify(newCells);
+                const info = `row:${row} vimCol:${vimCol} editorCol:${editorCol} currCol:${currCol};`;
+                const cellsLength = validCells.length;
+                const cellsInfo = JSON.stringify(validCells);
                 console.log(
                     `${info}\n${lineTextLength}【${lineText}】\n${targetLineLength}【${targetLine}】\n${cellLineLength}【${cellLine}】\n${cellsLength}\n${cellsInfo}\n`,
                 );
@@ -409,7 +409,11 @@ export class HighlightProvider {
         if (gridHl) {
             gridHl.forEach((rowHighlights, row) => {
                 const line = row + topLine;
-                const lineText = editor.document.lineAt(Math.min(editor.document.lineCount - 1, line)).text;
+                // FIXME: Possibly due to viewport desync
+                if (line >= editor.document.lineCount) {
+                    return;
+                }
+                const lineText = editor.document.lineAt(line).text;
                 let currHlId = 0;
                 let currStartCol = 0;
                 let currEndCol = 0;
@@ -470,6 +474,12 @@ export class HighlightProvider {
         colHighlights: Highlight[],
         lineText: string,
     ): Map<number, DecorationOptions[]> {
+        // FIXME: Temporarily ignore EOL virt text.
+        // Sometimes strange virtual text occurs, and it's hard to debug.
+        // It could also be related to viewport desync.
+        if (col >= lineText.length) {
+            return new Map();
+        }
         const hlId_options = new Map<number, DecorationOptions[]>();
 
         // #region
@@ -499,7 +509,6 @@ export class HighlightProvider {
             const conf = this.getDecoratorOptions(decorator);
             const width = text.length;
             if (col > lineText.length) {
-                // console.log(`offset:${offset} col > lineText.lenght => ${col} - ${lineText.length}`);
                 offset += col - lineText.length; // for 'eol' virtual text
             }
             hlId_options.get(hlId)!.push({
