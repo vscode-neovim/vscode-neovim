@@ -201,14 +201,14 @@ export class HighlightProvider {
         const validCells: { text: string; hlId: number }[] = [];
         {
             const maxValidCells = [...lineText].slice(editorCol).length;
-            let curHlId = 0;
+            let currHlId = 0;
             for (const [text, _hlId, _repeat] of cells) {
                 // Check space is for keeping cells of eol virtual text;
                 if (validCells.length > maxValidCells && text == " ") break;
-                if (_hlId != null) curHlId = _hlId;
+                if (_hlId != null) currHlId = _hlId;
                 for (let i = 0; i < (_repeat ?? 1); i++) {
                     if (validCells.length > maxValidCells && text == " ") break;
-                    validCells.push({ text, hlId: curHlId });
+                    validCells.push({ text, hlId: currHlId });
                 }
             }
         }
@@ -259,38 +259,38 @@ export class HighlightProvider {
         const filledLineText = [...lineText].reduce((p, c) => p + (c.length === 1 ? c : `${c} `), "");
 
         const lineChars = [...filledLineText];
-        let curCol = editorCol;
+        let currCol = editorCol;
 
         let cell = cellIter.next();
         while (cell) {
             const hls: Highlight[] = [];
-            const curChar = lineChars[curCol];
-            if (curChar === "\t") {
+            const currChar = lineChars[currCol];
+            if (currChar === "\t") {
                 hls.push({ hlId: cell.hlId, virtText: cell.text });
-                for (let i = 0; i < calcTabCells(curCol) - 1; i++) {
+                for (let i = 0; i < calcTabCells(currCol) - 1; i++) {
                     cell = cellIter.next();
                     if (cell && cell.text !== "") {
                         hls.push({ hlId: cell.hlId, virtText: cell.text });
                     }
                 }
             } else {
-                if (isDouble(curChar)) {
-                    if (curChar === cell.text) {
+                if (isDouble(currChar)) {
+                    if (currChar === cell.text) {
                         // range highlight
                         hls.push({ hlId: cell.hlId });
 
                         // If current character length is 2, next column is manually inserted column,
                         // so reserve next cell for filling.
                         // Otherwise, ignore next cell.
-                        if (curChar.length === 1) cellIter.next();
+                        if (currChar.length === 1) cellIter.next();
                     } else {
                         // virt text
                         hls.push({ hlId: cell.hlId, virtText: cell.text });
                         if (isDouble(cell.text)) {
                             // same as above
-                            if (curChar.length === 1) cellIter.next();
+                            if (currChar.length === 1) cellIter.next();
                         } else {
-                            if (curChar.length === 1) {
+                            if (currChar.length === 1) {
                                 const nextCell = cellIter.next();
                                 nextCell && hls.push({ hlId: nextCell.hlId, virtText: nextCell.text });
                             } else {
@@ -305,13 +305,13 @@ export class HighlightProvider {
                         }
                     }
                 } else {
-                    if (curChar === cell.text) {
+                    if (currChar === cell.text) {
                         hls.push({ hlId: cell.hlId });
                     } else {
                         hls.push({ hlId: cell.hlId, virtText: cell.text });
                         if (isDouble(cell.text)) {
                             // Next cell text is empty, should ignore it
-                            curCol++;
+                            currCol++;
                             cellIter.next();
                         }
                     }
@@ -319,13 +319,13 @@ export class HighlightProvider {
             }
 
             if (!hls.length || !hls.some((d) => d.hlId !== 0)) {
-                if (gridHl[row][curCol]) {
+                if (gridHl[row][currCol]) {
                     hasUpdates = true;
-                    delete gridHl[row][curCol];
+                    delete gridHl[row][currCol];
                 }
             } else {
                 hasUpdates = true;
-                gridHl[row][curCol] = hls;
+                gridHl[row][currCol] = hls;
             }
             /////////////////////////////////////////////
             /*
@@ -343,7 +343,7 @@ export class HighlightProvider {
                 );
             }
             */
-            curCol++;
+            currCol++;
             cell = cellIter.next();
         }
 
@@ -410,9 +410,9 @@ export class HighlightProvider {
             gridHl.forEach((rowHighlights, row) => {
                 const line = row + topLine;
                 const lineText = editor.document.lineAt(Math.min(editor.document.lineCount - 1, line)).text;
-                let curHlId = 0;
-                let curStartCol = 0;
-                let curEndCol = 0;
+                let currHlId = 0;
+                let currStartCol = 0;
+                let currEndCol = 0;
                 rowHighlights.forEach((colHighlights, col) => {
                     if (colHighlights.length > 1 || colHighlights[0].virtText) {
                         this.createColVirtTextOptions(line, col, colHighlights, lineText).forEach((options, hlId) =>
@@ -421,19 +421,19 @@ export class HighlightProvider {
                     } else {
                         // Extend range highlights
                         const { hlId } = colHighlights[0];
-                        if (curHlId === hlId && curEndCol === col - 1) {
-                            curEndCol = col;
+                        if (currHlId === hlId && currEndCol === col - 1) {
+                            currEndCol = col;
                         } else {
-                            if (curHlId)
-                                pushOptions(curHlId, { range: new Range(line, curStartCol, line, curEndCol + 1) });
-                            curHlId = hlId;
-                            curStartCol = col;
-                            curEndCol = col;
+                            if (currHlId)
+                                pushOptions(currHlId, { range: new Range(line, currStartCol, line, currEndCol + 1) });
+                            currHlId = hlId;
+                            currStartCol = col;
+                            currEndCol = col;
                         }
                     }
                 });
-                if (curHlId) {
-                    pushOptions(curHlId, { range: new Range(line, curStartCol, line, curEndCol + 1) });
+                if (currHlId) {
+                    pushOptions(currHlId, { range: new Range(line, currStartCol, line, currEndCol + 1) });
                 }
             });
         }
