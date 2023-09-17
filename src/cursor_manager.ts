@@ -422,10 +422,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
-        await this.client.call("visualmode", [1]);
-        await this.client.call("setcharpos", ["'<", [bufId, anchor.line + 1, anchor.character + 1]]);
-        await this.client.call("setcharpos", ["'>", [bufId, active.line + 1, active.character + 1]]);
-        await this.client.input("gv");
+        const visualmode = await this.client.call("visualmode", [1]);
+        await this.client.call("nvim_buf_set_mark", [bufId, "<", anchor.line + 1, anchor.character, {}]);
+        await this.client.call("nvim_buf_set_mark", [bufId, ">", active.line + 1, active.character, {}]);
+        await this.client.input(visualmode === "V" ? "gvv" : "gv");
         await this.client.call("winrestview", [{ curswant: active.character }]);
     }
 
