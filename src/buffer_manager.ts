@@ -590,18 +590,25 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
     };
 
-    private receivedBufferEvent = async (
+    private receivedBufferEvent = (
         buffer: Buffer,
         tick: number,
         firstLine: number,
         lastLine: number,
         linedata: string[],
         more: boolean,
-    ): Promise<void> => {
+    ): void => {
         this.onBufferEvent && this.onBufferEvent(buffer.id, tick, firstLine, lastLine, linedata, more);
-        const uri = this.buildExternalBufferUri(await buffer.name, buffer.id);
-        this.logger.debug(`${LOG_PREFIX}: received buffer event for ${uri}`);
-        this.bufferProvider.documentDidChange.fire(uri);
+        // Ensure the receivedBufferEvent callback finishes before we fire
+        // the event notifying the doc provider of any changes
+        (async () => {
+            const uri = this.buildExternalBufferUri(await buffer.name, buffer.id);
+            this.logger.debug(`${LOG_PREFIX}: received buffer event for ${uri}`);
+            this.bufferProvider.documentDidChange.fire(uri);
+            return uri;
+        })().then(undefined, (e) => {
+            this.logger.error(`${LOG_PREFIX}: failed to notify document change: ${e}`);
+        });
     };
 
     /**
@@ -823,8 +830,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 }
 
-type BufferChangeCallback = BufferManager["receivedBufferEvent"];
-
 /**
  * Implements the VSCode document provider API for external buffers from neovim.
  */
@@ -839,7 +844,7 @@ class BufferProvider implements TextDocumentContentProvider {
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
-        private receivedBufferEvent: BufferChangeCallback,
+        private receivedBufferEvent: BufferManager["receivedBufferEvent"],
     ) {}
 
     async provideTextDocumentContent(uri: Uri, token: CancellationToken): Promise<string | undefined> {
@@ -861,10 +866,7 @@ class BufferProvider implements TextDocumentContentProvider {
             return;
         }
 
-        buf.listen("lines", (...args: Parameters<BufferChangeCallback>) => {
-            this.receivedBufferEvent(...args);
-            this.documentDidChange.fire(uri);
-        });
+        buf.listen("lines", this.receivedBufferEvent);
         await buf[ATTACH](true);
 
         return lines.join("\n");
