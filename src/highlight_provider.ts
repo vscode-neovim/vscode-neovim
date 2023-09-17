@@ -470,7 +470,7 @@ export class HighlightProvider {
         // FIXME: Temporarily ignore EOL virt text.
         // Sometimes strange virtual text occurs, and it's hard to debug.
         // It could also be related to viewport desync.
-        if (col >= lineText.length) {
+        if (col >= lineText.length + 4) {
             return new Map();
         }
         const hlId_options = new Map<number, DecorationOptions[]>();
