@@ -70,16 +70,17 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         private main: MainController,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
-        this.disposables.push(window.onDidChangeVisibleTextEditors(() => this.updateCursorStyle()));
-        this.disposables.push(
-            window.onDidChangeActiveTextEditor(() => {
-                this.updateCursorStyle();
-                // Sometimes the cursor is reset to the default style.
-                // Currently, can reproduce this issue when jumping between cells in Notebook.
-                setTimeout(() => this.updateCursorStyle(), 100);
-            }),
-        );
+
+        const updateCursorStyle = () => {
+            this.updateCursorStyle();
+            // Sometimes the cursor is reset to the default style.
+            // Currently, can reproduce this issue when jumping between cells in Notebook.
+            setTimeout(() => this.updateCursorStyle(), 100);
+        };
+        this.disposables.push(window.onDidChangeVisibleTextEditors(updateCursorStyle));
+        this.disposables.push(window.onDidChangeActiveTextEditor(updateCursorStyle));
     }
+
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
     }
