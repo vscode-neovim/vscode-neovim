@@ -115,6 +115,8 @@ describe("Command line", () => {
         await sendVSCodeCommand("vscode-neovim.commit-cmdline");
         assert.equal(await client.commandOutput("echo getreg('/')"), "abc");
 
+        await client.call("setreg", ["/", ""]);
+
         // fails in macos
         // await sendVSCodeKeys(":");
         // await sendVSCodeCommand("vscode-neovim.test-cmdline", "%s/a");

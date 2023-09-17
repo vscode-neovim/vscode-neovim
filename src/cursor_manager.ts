@@ -70,16 +70,17 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         private main: MainController,
     ) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
-        this.disposables.push(window.onDidChangeVisibleTextEditors(() => this.updateCursorStyle()));
-        this.disposables.push(
-            window.onDidChangeActiveTextEditor(() => {
-                this.updateCursorStyle();
-                // Sometimes the cursor is reset to the default style.
-                // Currently, can reproduce this issue when jumping between cells in Notebook.
-                setTimeout(() => this.updateCursorStyle(), 100);
-            }),
-        );
+
+        const updateCursorStyle = () => {
+            this.updateCursorStyle();
+            // Sometimes the cursor is reset to the default style.
+            // Currently, can reproduce this issue when jumping between cells in Notebook.
+            setTimeout(() => this.updateCursorStyle(), 100);
+        };
+        this.disposables.push(window.onDidChangeVisibleTextEditors(updateCursorStyle));
+        this.disposables.push(window.onDidChangeActiveTextEditor(updateCursorStyle));
     }
+
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
     }
@@ -421,10 +422,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(
             `${LOG_PREFIX}: Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
-        await this.client.call("visualmode", [1]);
-        await this.client.call("setcharpos", ["'<", [bufId, anchor.line + 1, anchor.character + 1]]);
-        await this.client.call("setcharpos", ["'>", [bufId, active.line + 1, active.character + 1]]);
-        await this.client.input("gv");
+        const visualmode = await this.client.call("visualmode", [1]);
+        await this.client.call("nvim_buf_set_mark", [bufId, "<", anchor.line + 1, anchor.character, {}]);
+        await this.client.call("nvim_buf_set_mark", [bufId, ">", active.line + 1, active.character, {}]);
+        await this.client.input(visualmode === "V" ? "gvv" : "gv");
         await this.client.call("winrestview", [{ curswant: active.character }]);
     }
 

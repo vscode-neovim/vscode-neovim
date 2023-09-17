@@ -493,15 +493,15 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             }
         }
 
-        const requests: [string, unknown[]][] = [];
-
-        for (const c of contentChanges) {
-            const start = c.range.start;
-            const end = c.range.end;
-            const text = c.text;
+        const changeArgs = [];
+        for (const change of contentChanges) {
+            const {
+                text,
+                range: { start, end },
+            } = change;
             const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
             const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
-            requests.push(["nvim_buf_set_text", [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)]]);
+            changeArgs.push([start.line, startBytes, end.line, endBytes, text.split(eol)]);
         }
 
         const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
@@ -509,15 +509,13 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             this.logger.warn(`${LOG_PREFIX}: Can't get changed tick for bufId: ${bufId}, deleted?`);
             return;
         }
-        this.logger.debug(
-            `${LOG_PREFIX}: BufId: ${bufId}, lineChanges: ${requests.length}, tick: ${bufTick}, skipTick: ${
-                bufTick + requests.length
-            }`,
-        );
-        this.bufferSkipTicks.set(bufId, bufTick + contentChanges.length);
+
+        this.bufferSkipTicks.set(bufId, bufTick + changeArgs.length);
 
         this.logger.debug(`${LOG_PREFIX}: Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
-        if (requests.length) await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+
+        const code = "return require('vscode-neovim.api').handle_changes(...)";
+        await this.client.executeLua(code, [bufId, changeArgs]);
     };
 }

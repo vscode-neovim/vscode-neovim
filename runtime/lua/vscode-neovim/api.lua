@@ -1,3 +1,5 @@
+local api = vim.api
+local fn = vim.fn
 -- used to execute vscode command
 local command_event_name = "vscode-command"
 -- used for extension communications
@@ -75,6 +77,43 @@ function M.delete_buffers(bufs)
   for _, buf in ipairs(bufs) do
     pcall(vim.api.nvim_buf_delete, buf, { force = true })
   end
+end
+
+---Handle document changes
+---@param bufnr number
+---@param changes (string | integer)[][]
+---@return number: changed tick of the buffer
+function M.handle_changes(bufnr, changes)
+  -- Save and restore local marks
+  -- Code modified from https://github.com/neovim/neovim/pull/14630
+  local marks = {}
+  for _, m in pairs(fn.getmarklist(bufnr or api.nvim_get_current_buf())) do
+    if m.mark:match("^'[a-z]$") then
+      marks[m.mark:sub(2, 2)] = { m.pos[2], m.pos[3] - 1 } -- api-indexed
+    end
+  end
+
+  for _, change in ipairs(changes) do
+    api.nvim_buf_set_text(bufnr, unpack(change))
+  end
+
+  local max = api.nvim_buf_line_count(bufnr)
+  -- no need to restore marks that still exist
+  for _, m in pairs(fn.getmarklist(bufnr or api.nvim_get_current_buf())) do
+    marks[m.mark:sub(2, 2)] = nil
+  end
+  -- restore marks
+  for mark, pos in pairs(marks) do
+    if pos then
+      -- make sure we don't go out of bounds
+      local line = (api.nvim_buf_get_lines(bufnr, pos[1] - 1, pos[1], false))[1] or ""
+      pos[1] = math.min(pos[1], max)
+      pos[2] = math.min(pos[2], #line)
+      api.nvim_buf_set_mark(bufnr or 0, mark, pos[1], pos[2], {})
+    end
+  end
+
+  return api.nvim_buf_get_changedtick(bufnr)
 end
 
 return M
