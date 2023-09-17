@@ -64,8 +64,8 @@ export class TypingManager implements Disposable {
                         "command:workbench.action.openGlobalKeybindings?" +
                         encodeURIComponent('["vscode-neovim.send"]');
                     window.showErrorMessage(
-                        `Empty args used. Please check your [keybinds](${link}) ` +
-                            "to ensure that all vscode-neovim.send commands include the args parameter.",
+                        `No args provided to vscode-neovim.send. Please check your [keybinds](${link}) ` +
+                            "to ensure that all send commands include the args parameter.",
                     );
                     return Promise.resolve();
                 }
