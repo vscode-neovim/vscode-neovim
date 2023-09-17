@@ -37,8 +37,12 @@ export interface HighlightConfiguration {
     };
 }
 
-export interface Highlight {
+type Cell = [string, number?, number?];
+interface ValidCell {
+    text: string;
     hlId: number;
+}
+interface Highlight extends ValidCell {
     virtText?: string;
 }
 
@@ -103,7 +107,10 @@ function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): The
 // 🕵️ length:3 width:2
 // ❤️ length:2 width:1
 const isDouble = (c?: string) => wcswidth(c) === 2 || (c ?? "").length > 1;
-const segment = (str: string) => new GraphemeSplitter().splitGraphemes(str);
+const segment: (str: string) => string[] = (() => {
+    const splitter = new GraphemeSplitter();
+    return (str) => splitter.splitGraphemes(str);
+})();
 
 export class HighlightProvider {
     /**
@@ -176,7 +183,7 @@ export class HighlightProvider {
         grid: number,
         row: number,
         vimCol: number,
-        cells: [string, number?, number?][],
+        cells: Cell[],
         lineText: string,
         tabSize: number,
     ): boolean {
@@ -209,8 +216,7 @@ export class HighlightProvider {
 
         const editorCol = calculateEditorColFromVimScreenCol(lineText, vimCol, tabSize);
 
-        // {text, hlId?, repeat?} => {text, hlId}
-        const validCells: { text: string; hlId: number }[] = [];
+        const validCells: ValidCell[] = [];
         {
             const maxValidCells = getWidth(lineChars.slice(editorCol).join(""));
             let currHlId = 0;
@@ -254,7 +260,7 @@ export class HighlightProvider {
                     const rightHls: Highlight[] = [];
                     for (let i = 0; i < expectedVimCol - vimCol; i++) {
                         const cell = cellIter.next();
-                        cell && rightHls.push({ hlId: cell.hlId, virtText: cell.text });
+                        cell && rightHls.push({ ...cell, virtText: cell.text });
                     }
                     const leftHls: Highlight[] = [];
                     if (expectedCells - rightHls.length) {
@@ -274,7 +280,7 @@ export class HighlightProvider {
         let cell = cellIter.next();
         while (cell) {
             const hls: Highlight[] = [];
-            const add = (hlId: number, text?: string) => hls.push({ hlId, virtText: text });
+            const add = (cell: ValidCell, virtText?: string) => hls.push({ ...cell, virtText });
             const currChar = filledLineChars[currCharCol];
             const extraCols = currChar ? currChar.length - 1 : 0;
             currCharCol += extraCols;
@@ -283,10 +289,10 @@ export class HighlightProvider {
 
             do {
                 if (currChar === "\t") {
-                    add(cell.hlId, cell.text);
+                    add(cell, cell.text);
                     for (let i = 0; i < calcTabCells(currCharCol) - 1; i++) {
                         cell = cellIter.next();
-                        cell && add(cell.hlId, cell.text);
+                        cell && add(cell, cell.text);
                     }
 
                     break;
@@ -294,24 +300,24 @@ export class HighlightProvider {
 
                 if (currChar && isDouble(currChar)) {
                     if (currChar === cell.text) {
-                        add(cell.hlId);
+                        add(cell);
                         break;
                     }
 
-                    add(cell.hlId, cell.text);
+                    add(cell, cell.text);
                     if (!isDouble(cell.text)) {
                         const nextCell = cellIter.next();
-                        nextCell && add(nextCell.hlId, nextCell.text);
-                        extraCols && add((nextCell ?? cell).hlId, " ".repeat(extraCols));
+                        nextCell && add(nextCell, nextCell.text);
+                        extraCols && add(nextCell ?? cell, " ".repeat(extraCols));
                     }
 
                     break;
                 }
 
                 if (currChar === cell.text) {
-                    add(cell.hlId);
+                    add(cell);
                 } else {
-                    add(cell.hlId, cell.text);
+                    add(cell, cell.text);
                     if (isDouble(cell.text)) {
                         currCharCol++;
                     }
@@ -469,17 +475,23 @@ export class HighlightProvider {
         }
         const hlId_options = new Map<number, DecorationOptions[]>();
 
+        colHighlights = cloneDeep(colHighlights);
+
         // #region
         // When on a 2-width character,
         // there may be a cell with a highlight ID of 0 and its content is a space used to hide the cell.
         // However, in vscode, we will ignore the highlighting ID of 0.
         // So, we add the character to the preceding virtual text.
         const processedColHighlights: { hlId: number; virtText: string }[] = [];
-        colHighlights.forEach(({ virtText, hlId }) => {
+        colHighlights.forEach(({ virtText, hlId, text }) => {
+            // In certain edge cases, the right-side highlight may be appended later,
+            // resulting in the column being converted to virt text type.
+            // So, the left-side highlight may not include virtText.
+            virtText ??= text;
             if (hlId === 0 && processedColHighlights.length > 0) {
-                processedColHighlights[processedColHighlights.length - 1].virtText! += virtText;
+                processedColHighlights[processedColHighlights.length - 1].virtText += virtText;
             } else {
-                processedColHighlights.push({ hlId, virtText: virtText! });
+                processedColHighlights.push({ hlId, virtText });
             }
         });
         // #endregion
