@@ -55,26 +55,37 @@ export class TypingManager implements Disposable {
         private client: NeovimClient,
         private main: MainController,
     ) {
+        const warnOnEmptyKey = (method: (key: string) => Promise<void>): typeof method => {
+            return (key: string) => {
+                if (key) {
+                    return method.apply(this, [key]);
+                } else {
+                    const link =
+                        "command:workbench.action.openGlobalKeybindings?" +
+                        encodeURIComponent('["vscode-neovim.send"]');
+                    window.showErrorMessage(
+                        `No args provided to vscode-neovim.send. Please check your [keybinds](${link}) ` +
+                            "to ensure that all send commands include the args parameter.",
+                    );
+                    return Promise.resolve();
+                }
+            };
+        };
         this.registerType();
         this.registerReplacePrevChar();
-        this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.enable", () => this.onEnableCommand("enable")));
-        this.disposables.push(commands.registerCommand("vscode-neovim.disable", () => this.onEnableCommand("disable")));
-        this.disposables.push(commands.registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle")));
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
-                this.handleCompositeEscapeFirstKey(key),
-            ),
-        );
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape2", (key: string) =>
-                this.handleCompositeEscapeSecondKey(key),
-            ),
-        );
-        this.disposables.push(commands.registerCommand("compositionStart", this.onCompositionStart));
-        this.disposables.push(commands.registerCommand("compositionEnd", this.onCompositionEnd));
+        const registerCommand = (cmd: string, cb: (...args: any[]) => any) => {
+            this.disposables.push(commands.registerCommand(cmd, cb, this));
+        };
+        registerCommand("vscode-neovim.send", warnOnEmptyKey(this.onSendCommand));
+        registerCommand("vscode-neovim.send-blocking", warnOnEmptyKey(this.onSendBlockingCommand));
+        registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand);
+        registerCommand("vscode-neovim.enable", () => this.onEnableCommand("enable"));
+        registerCommand("vscode-neovim.disable", () => this.onEnableCommand("disable"));
+        registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle"));
+        registerCommand("vscode-neovim.compositeEscape1", warnOnEmptyKey(this.handleCompositeEscapeFirstKey));
+        registerCommand("vscode-neovim.compositeEscape2", warnOnEmptyKey(this.handleCompositeEscapeSecondKey));
+        registerCommand("compositionStart", this.onCompositionStart);
+        registerCommand("compositionEnd", this.onCompositionEnd);
         this.main.modeManager.onModeChange(this.onModeChange);
     }
 
