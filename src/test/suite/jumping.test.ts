@@ -1,6 +1,7 @@
 import path from "path";
 
 import { NeovimClient } from "neovim";
+import { Position } from "vscode";
 
 import {
     attachTestNvimClient,
@@ -13,7 +14,7 @@ import {
     wait,
 } from "../utils";
 
-describe("Jumplist & jump actions", () => {
+describe("Jumplist & jump actions & marks", () => {
     // abc
     let client: NeovimClient;
     before(async () => {
@@ -72,5 +73,18 @@ describe("Jumplist & jump actions", () => {
             },
             client,
         );
+    });
+
+    it("lower-case marks should still exist after changes #543", async function () {
+        const editor = await openTextDocument({ content: ["abc", "def", "uvw", "xyz"].join("\n") });
+        await wait(300);
+        await sendNeovimKeys(client, "maG");
+        editor.edit((builder) => {
+            builder.replace(new Position(0, 0), "ABC");
+        });
+        await wait(300);
+        await sendNeovimKeys(client, "'a");
+        await wait(300);
+        await assertContent({ cursor: [0, 0] }, client, editor);
     });
 });
