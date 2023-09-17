@@ -67,6 +67,7 @@ export class TypingManager implements Disposable {
                         `Empty args used. Please check your [keybinds](${link}) ` +
                             "to ensure that all vscode-neovim.send commands include the args parameter.",
                     );
+                    return Promise.resolve();
                 }
             };
         };
@@ -77,7 +78,7 @@ export class TypingManager implements Disposable {
         };
         registerCommand("vscode-neovim.send", warnOnEmptyKey(this.onSendCommand));
         registerCommand("vscode-neovim.send-blocking", warnOnEmptyKey(this.onSendBlockingCommand));
-        registerCommand("vscode-neovim.escape", warnOnEmptyKey(this.onEscapeKeyCommand));
+        registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand);
         registerCommand("vscode-neovim.enable", () => this.onEnableCommand("enable"));
         registerCommand("vscode-neovim.disable", () => this.onEnableCommand("disable"));
         registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle"));
