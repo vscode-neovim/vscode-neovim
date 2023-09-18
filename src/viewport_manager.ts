@@ -1,5 +1,6 @@
 import { NeovimClient } from "neovim";
-import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent, Position } from "vscode";
+import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent, Position, workspace } from "vscode";
+import { DebouncedFunc, debounce } from "lodash-es";
 
 import { Logger } from "./logger";
 import { MainController } from "./main_controller";
@@ -129,9 +130,36 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         }
     }
 
+    // #region
+    // FIXME: This is a temporary solution to reduce cursor jitter when scrolling.
+    private debouncedScrollNeovim!: DebouncedFunc<ViewportManager["scrollNeovim"]>;
+    private debounceTime = 20;
+    private refreshDebounceTime(): boolean {
+        const smoothScrolling = workspace.getConfiguration("editor").get("smoothScrolling", false);
+        const debounceTime = smoothScrolling ? 100 : 20; // vscode's scrolling duration is 125ms.
+        const updated = this.debounceTime !== debounceTime;
+        this.debounceTime = debounceTime;
+        return updated;
+    }
+    private refreshDebounceScroll() {
+        this.debouncedScrollNeovim = debounce(this.scrollNeovim.bind(this), this.debounceTime, {
+            leading: false,
+            trailing: true,
+        });
+    }
     private onDidChangeVisibleRange = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
-        this.scrollNeovim(e.textEditor);
+        if (!this.debouncedScrollNeovim) {
+            this.refreshDebounceTime();
+            this.refreshDebounceScroll();
+            workspace.onDidChangeConfiguration(
+                (e) => e.affectsConfiguration("editor") && this.refreshDebounceTime() && this.refreshDebounceScroll(),
+                null,
+                this.disposables,
+            );
+        }
+        this.debouncedScrollNeovim(e.textEditor);
     };
+    // #endregion
 
     public scrollNeovim(editor: TextEditor | null): void {
         if (editor == null || this.main.modeManager.isInsertMode) {
