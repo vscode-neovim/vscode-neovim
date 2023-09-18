@@ -757,7 +757,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     ): Promise<void> {
         const uri = this.buildExternalBufferUri(name, id);
         this.logger.debug(`${LOG_PREFIX}: opening external buffer ${uri}`);
-        const doc = await workspace.openTextDocument(uri);
+
+        let doc: TextDocument;
+        try {
+            doc = await workspace.openTextDocument(uri);
+        } catch (error) {
+            this.logger.debug(`${LOG_PREFIX}: unable to open external buffer: ${error}`);
+            return;
+        }
 
         this.externalTextDocuments.add(doc);
         this.textDocumentToBufferId.set(doc, id);
