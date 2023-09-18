@@ -218,18 +218,28 @@ export class HighlightProvider {
 
         const validCells: ValidCell[] = [];
         {
-            const maxValidCells = getWidth(lineChars.slice(editorCol).join(""));
+            const maxValidCells = getWidth(lineText) - vimCol;
+            const eolCells: ValidCell[] = [];
             let currHlId = 0;
-            for (const [text, _hlId, _repeat] of cells) {
-                // Check space is for keeping cells of eol virtual text;
-                if (validCells.length > maxValidCells && text == " ") break;
+            loop: for (const [text, _hlId, _repeat] of cells) {
                 if (_hlId != null) currHlId = _hlId;
                 if (text === "") continue;
                 for (let i = 0; i < (_repeat ?? 1); i++) {
-                    if (validCells.length > maxValidCells && text == " ") break;
-                    validCells.push({ text, hlId: currHlId });
+                    // If there are additional cells, always keep one, so use LE here.
+                    if (validCells.length <= maxValidCells) {
+                        validCells.push({ text, hlId: currHlId });
+                        continue;
+                    }
+                    // Need to check if the remaining cells are valid for EOL marks
+                    if (eolCells.length >= 5 && eolCells.slice(-5).every(({ text }) => text === " ")) {
+                        eolCells.splice(-5, 5);
+                        break loop;
+                    } else {
+                        eolCells.push({ text, hlId: currHlId });
+                    }
                 }
             }
+            validCells.push(...eolCells);
         }
         const cellIter = {
             _index: 0,
