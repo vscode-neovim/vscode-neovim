@@ -57,9 +57,14 @@ export async function attachTestNvimClient(): Promise<NeovimClient> {
 export async function closeNvimClient(client: NeovimClient): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conn: net.Socket = (client as any).testConn;
-    conn.destroy();
-    // client.quit();
+
+    // Try to gracefully close the socket first, this prevents noisy errors if it works.
+    // The Neovim server seems well-behaved normally and will close the connection.
+    conn.end();
+    // After giving the server some time to respond for graceful shutdown,
     await wait(500);
+    // destroy the connection forcefully if it hasn't already been closed.
+    conn.resetAndDestroy();
 }
 
 export async function getCurrentBufferName(client: NeovimClient): Promise<string> {
