@@ -112,6 +112,22 @@ const segment: (str: string) => string[] = (() => {
     return (str) => splitter.splitGraphemes(str);
 })();
 
+class CellIter {
+    private _index = 0;
+    constructor(private _cells: ValidCell[]) {}
+    next(): { text: string; hlId: number } | undefined {
+        return this._cells[this._index++];
+    }
+    getNext(): { text: string; hlId: number } | undefined {
+        return this._cells[this._index];
+    }
+    setNext(hlId: number, text: string) {
+        if (this._index < this._cells.length) {
+            this._cells[this._index] = { hlId, text };
+        }
+    }
+}
+
 export class HighlightProvider {
     /**
      * key is the grid id and values is a three-dimensional array representing rows and columns.
@@ -241,21 +257,7 @@ export class HighlightProvider {
             }
             validCells.push(...eolCells);
         }
-        const cellIter = {
-            _index: 0,
-            _cells: cloneDeep(validCells),
-            next(): { text: string; hlId: number } | undefined {
-                return this._cells[this._index++];
-            },
-            getNext(): { text: string; hlId: number } | undefined {
-                return this._cells[this._index];
-            },
-            setNext(hlId: number, text: string) {
-                if (this._index < this._cells.length) {
-                    this._cells[this._index] = { hlId, text };
-                }
-            },
-        };
+        const cellIter = new CellIter(validCells);
 
         // #region
         // If the previous column can contain multiple cells,
