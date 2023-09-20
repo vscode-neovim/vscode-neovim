@@ -1,8 +1,10 @@
+import * as vscode from "vscode";
 import { Disposable, window, QuickPick, QuickPickItem, commands } from "vscode";
 import { NeovimClient } from "neovim";
 
 import { GlyphChars } from "./constants";
 import { Logger } from "./logger";
+import { EXT_NAME } from "./utils";
 
 const LOG_PREFIX = "CmdLine";
 
@@ -23,6 +25,8 @@ export class CommandLineController implements Disposable {
 
     private completionTimer?: NodeJS.Timeout;
 
+    private completionDelayTime: number;
+
     private completionItems: QuickPickItem[] = [];
 
     private mode = "";
@@ -38,9 +42,12 @@ export class CommandLineController implements Disposable {
         private client: NeovimClient,
         private callbacks: CommandLineCallbacks,
     ) {
+        const settings = vscode.workspace.getConfiguration(EXT_NAME);
+
         this.callbacks = callbacks;
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;
+        this.completionDelayTime = settings.get("completionDelay", 1500);
         this.disposables.push(this.input.onDidAccept(this.onAccept));
         this.disposables.push(this.input.onDidChangeValue(this.onChange));
         this.disposables.push(this.input.onDidHide(this.onHide));
@@ -63,11 +70,16 @@ export class CommandLineController implements Disposable {
             if (content) {
                 this.input.value = content;
             }
-            // Display completions only after 1.5secons, so it won't bother for simple things like ":w" or ":noh"
+            // Display completions only after a configurable amount of time (1.5s default), so it won't bother for simple things like ":w" or ":noh"
             this.completionAllowed = false;
             this.completionItems = [];
             this.input.items = [];
-            this.completionTimer = setTimeout(this.processCompletionTimer, 1500);
+
+            if (this.completionDelayTime === 0) {
+                this.processCompletionTimer();
+            } else {
+                this.completionTimer = setTimeout(this.processCompletionTimer, this.completionDelayTime);
+            }
         } else {
             const newTitle = prompt || this.getTitle(mode);
             if (newTitle !== this.input.title) {
