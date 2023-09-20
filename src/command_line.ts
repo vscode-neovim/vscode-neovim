@@ -1,10 +1,8 @@
-import * as vscode from "vscode";
 import { Disposable, window, QuickPick, QuickPickItem, commands } from "vscode";
 import { NeovimClient } from "neovim";
 
 import { GlyphChars } from "./constants";
 import { Logger } from "./logger";
-import { EXT_NAME } from "./utils";
 
 const LOG_PREFIX = "CmdLine";
 
@@ -25,8 +23,6 @@ export class CommandLineController implements Disposable {
 
     private completionTimer?: NodeJS.Timeout;
 
-    private completionDelayTime: number;
-
     private completionItems: QuickPickItem[] = [];
 
     private mode = "";
@@ -41,13 +37,11 @@ export class CommandLineController implements Disposable {
         private logger: Logger,
         private client: NeovimClient,
         private callbacks: CommandLineCallbacks,
+        private completionDelay: number,
     ) {
-        const settings = vscode.workspace.getConfiguration(EXT_NAME);
-
         this.callbacks = callbacks;
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;
-        this.completionDelayTime = settings.get("completionDelay", 1500);
         this.disposables.push(this.input.onDidAccept(this.onAccept));
         this.disposables.push(this.input.onDidChangeValue(this.onChange));
         this.disposables.push(this.input.onDidHide(this.onHide));
@@ -75,10 +69,10 @@ export class CommandLineController implements Disposable {
             this.completionItems = [];
             this.input.items = [];
 
-            if (this.completionDelayTime === 0) {
+            if (this.completionDelay === 0) {
                 this.processCompletionTimer();
             } else {
-                this.completionTimer = setTimeout(this.processCompletionTimer, this.completionDelayTime);
+                this.completionTimer = setTimeout(this.processCompletionTimer, this.completionDelay);
             }
         } else {
             const newTitle = prompt || this.getTitle(mode);
