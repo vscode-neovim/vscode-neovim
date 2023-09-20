@@ -15,8 +15,6 @@ vim.opt.autowrite = false
 vim.opt.cursorline = false
 vim.opt.signcolumn = "no"
 vim.opt.winblend = 0
--- Fixed number width, 10 is enough
-vim.opt.numberwidth = 10
 
 --- Disable statusline and ruler since we don't need them anyway
 vim.opt.statusline = ""
@@ -38,7 +36,11 @@ local function forceoptions(opt)
   opt.hidden = true
   opt.bufhidden = "hide"
   opt.list = true
-  opt.numberwidth = 10
+  -- Fix the gutter width, no need to consider highlighting issues caused by number, signcolumn, foldcolumn anymore.
+  -- {{
+  opt.numberwidth = 1
+  opt.statuscolumn = ("-"):rep(20) -- max-signcolumn(9) + max-foldcolumn(9) + numberwidth(1) + 1
+  -- }}
   --- Need to know tabs for HL
   opt.listchars = { tab = "❥♥" }
   -- disable syntax hl for vscode buffers
@@ -97,6 +99,7 @@ api.nvim_create_autocmd("OptionSet", {
 })
 
 api.nvim_create_autocmd({
+  "CursorMoved",
   "BufLeave",
   "BufEnter",
   "InsertLeave",
@@ -104,8 +107,8 @@ api.nvim_create_autocmd({
 }, {
   callback = function()
     if not vim.b.vscode_loaded_default_number then
-      vim.wo.number = vim.b.vscode_number
-      vim.wo.relativenumber = vim.b.vscode_relativenumber
+      vim.wo.number = not not vim.b.vscode_number
+      vim.wo.relativenumber = not not vim.b.vscode_relativenumber
       ---@diagnostic disable-next-line: inject-field
       vim.b.vscode_loaded_default_number = true
     else
