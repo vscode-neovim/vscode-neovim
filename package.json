@@ -8,7 +8,7 @@
         "ui",
         "workspace"
     ],
-    "version": "0.5.0",
+    "version": "0.6.1",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -103,6 +103,12 @@
                     "default": 1000,
                     "title": "Neovim width",
                     "description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
+                },
+                "vscode-neovim.completionDelay": {
+                    "type": "number",
+                    "default": 1500,
+                    "title": "Completion Delay",
+                    "description": "The delay in ms until the wildmenu completions are shown. This is to not bother you when you write :w or :noh."
                 },
                 "vscode-neovim.neovimViewportHeightExtend": {
                     "type": "number",
@@ -1269,12 +1275,12 @@
         "@types/lodash-es": "^4.17.9",
         "@types/mocha": "^10.0.1",
         "@types/msgpack-lite": "^0.1.7",
-        "@types/node": "^20.5.9",
+        "@types/node": "^20.6.2",
         "@types/vscode": "^1.80.0",
         "@typescript-eslint/eslint-plugin": "^5.61.0",
         "@typescript-eslint/parser": "^5.62.0",
         "@vscode/test-electron": "^2.3.4",
-        "eslint": "^8.48.0",
+        "eslint": "^8.49.0",
         "eslint-config-prettier": "^9.0.0",
         "eslint-plugin-import": "^2.28.1",
         "eslint-plugin-prettier": "^5.0.0",
@@ -1283,7 +1289,7 @@
         "prettier": "^3.0.3",
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.4.4",
-        "typescript": "^5.1.6",
+        "typescript": "^5.2.2",
         "vsce": "^2.15.0",
         "webpack": "^5.88.2",
         "webpack-cli": "^5.1.4"

@@ -37,6 +37,7 @@ export class CommandLineController implements Disposable {
         private logger: Logger,
         private client: NeovimClient,
         private callbacks: CommandLineCallbacks,
+        private completionDelay: number,
     ) {
         this.callbacks = callbacks;
         this.input = window.createQuickPick();
@@ -63,11 +64,16 @@ export class CommandLineController implements Disposable {
             if (content) {
                 this.input.value = content;
             }
-            // Display completions only after 1.5secons, so it won't bother for simple things like ":w" or ":noh"
+            // Display completions only after a configurable amount of time (1.5s default), so it won't bother for simple things like ":w" or ":noh"
             this.completionAllowed = false;
             this.completionItems = [];
             this.input.items = [];
-            this.completionTimer = setTimeout(this.processCompletionTimer, 1500);
+
+            if (this.completionDelay === 0) {
+                this.processCompletionTimer();
+            } else {
+                this.completionTimer = setTimeout(this.processCompletionTimer, this.completionDelay);
+            }
         } else {
             const newTitle = prompt || this.getTitle(mode);
             if (newTitle !== this.input.title) {

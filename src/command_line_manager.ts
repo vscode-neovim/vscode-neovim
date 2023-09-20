@@ -20,6 +20,7 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
+        private completionDelay: number,
     ) {}
 
     public dispose(): void {
@@ -91,11 +92,16 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
 
     private showCmd = (content: string, firstc: string, prompt: string): void => {
         if (!this.commandLine) {
-            this.commandLine = new CommandLineController(this.logger, this.client, {
-                onAccepted: this.onCmdAccept,
-                onCanceled: this.onCmdCancel,
-                onChanged: this.onCmdChange,
-            });
+            this.commandLine = new CommandLineController(
+                this.logger,
+                this.client,
+                {
+                    onAccepted: this.onCmdAccept,
+                    onCanceled: this.onCmdCancel,
+                    onChanged: this.onCmdChange,
+                },
+                this.completionDelay,
+            );
         }
         this.commandLine.show(content, firstc, prompt);
     };

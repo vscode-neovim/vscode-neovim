@@ -1,5 +1,27 @@
 # Change Log
 
+## [0.6.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.6.0...v0.6.1) (2023-09-17)
+
+
+### Bug Fixes
+
+* **buffer, change:** save and restore local marks ([#1439](https://github.com/vscode-neovim/vscode-neovim/issues/1439)) ([9e194a0](https://github.com/vscode-neovim/vscode-neovim/commit/9e194a0ba3534b1e3b3473c625052388f1ba4a32))
+* **cursor, visual:** fix sync mouse selection ([#1451](https://github.com/vscode-neovim/vscode-neovim/issues/1451)) ([bdf3b19](https://github.com/vscode-neovim/vscode-neovim/commit/bdf3b19a49611a9be94c795985cd7de5ff9b1259))
+* **test:** clean up reg '/' after cmdline testing ([#1453](https://github.com/vscode-neovim/vscode-neovim/issues/1453)) ([2bc2a80](https://github.com/vscode-neovim/vscode-neovim/commit/2bc2a807e7d7f3d18a72918fb0d790a564e1eb39))
+
+## [0.6.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.5.0...v0.6.0) (2023-09-11)
+
+
+### Features
+
+* **options:** prompt to enable experimental affinity([#1051](https://github.com/vscode-neovim/vscode-neovim/issues/1051), [#1267](https://github.com/vscode-neovim/vscode-neovim/issues/1267)) ([#1415](https://github.com/vscode-neovim/vscode-neovim/issues/1415)) ([482cfd8](https://github.com/vscode-neovim/vscode-neovim/commit/482cfd8a36c654163314fbbe4816a55bfa062d8e))
+* **statusline:** combine status line items ([#1429](https://github.com/vscode-neovim/vscode-neovim/issues/1429)) ([7f0de58](https://github.com/vscode-neovim/vscode-neovim/commit/7f0de58fd39add25d53d3ff074dc33fce88fa1eb))
+
+
+### Bug Fixes
+
+* **buffer:** Ensure proper cleanup of windows and buffers ([#1438](https://github.com/vscode-neovim/vscode-neovim/issues/1438)) ([7c9dc96](https://github.com/vscode-neovim/vscode-neovim/commit/7c9dc9671ba2010e3607f86fa3c7b3d061a4e808))
+
 ## [0.5.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.5...v0.5.0) (2023-09-08)
 
 
