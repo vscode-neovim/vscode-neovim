@@ -17,6 +17,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const useWsl = isWindows && settings.get("useWSL", false);
     const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
+    const completionDelay = settings.get("completionDelay", 1500);
     const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 1);
     const customInit = getNeovimInitPath() ?? "";
     const clean = settings.get("neovimClean", false);
@@ -43,6 +44,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             neovimViewportWidth: neovimWidth,
             neovimViewportHeightExtend: neovimViewportHeightExtend,
             revealCursorScrollLine: revealCursorScrollLine,
+            completionDelay: completionDelay,
             logConf: {
                 logPath,
                 outputToConsole,
