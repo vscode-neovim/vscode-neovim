@@ -104,17 +104,19 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
                             vimCol -= 20;
                         }
 
-                        const tabSize = editor.options.tabSize as number;
-                        const update = this.highlightProvider.processHLCellsEvent(
-                            grid,
-                            row,
-                            vimCol,
-                            cells,
-                            lineText,
-                            tabSize,
-                        );
-                        if (update) {
-                            gridHLUpdates.add(grid);
+                        if (cells.length) {
+                            const tabSize = editor.options.tabSize as number;
+                            const update = this.highlightProvider.processHLCellsEvent(
+                                grid,
+                                row,
+                                vimCol,
+                                cells,
+                                lineText,
+                                tabSize,
+                            );
+                            if (update) {
+                                gridHLUpdates.add(grid);
+                            }
                         }
                     }
                     break;
