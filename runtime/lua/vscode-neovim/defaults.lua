@@ -14,6 +14,7 @@ function M.default_highlights()
   vim.api.nvim_set_hl(0, "LineNr", {})
   vim.api.nvim_set_hl(0, "LineNrAbove", {})
   vim.api.nvim_set_hl(0, "LineNrBelow", {})
+  vim.api.nvim_set_hl(0, "CursorLine", {})
   vim.api.nvim_set_hl(0, "CursorLineNr", {})
 
   -- make cursor visible for plugins that use fake cursor

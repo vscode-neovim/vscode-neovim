@@ -39,7 +39,7 @@ local function forceoptions(opt)
   -- Fix the gutter width, no need to consider highlighting issues caused by number, signcolumn, foldcolumn anymore.
   -- {{
   opt.numberwidth = 1
-  opt.statuscolumn = ("-"):rep(20) -- max-signcolumn(9) + max-foldcolumn(9) + numberwidth(1) + 1
+  opt.statuscolumn = "%#NonText#" .. ("-"):rep(20) -- max-signcolumn(9) + max-foldcolumn(9) + numberwidth(1) + 1
   -- }}
   --- Need to know tabs for HL
   opt.listchars = { tab = "  " }
