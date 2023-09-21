@@ -1,4 +1,4 @@
-import { Disposable } from "vscode";
+import { Disposable, TextEditorLineNumbersStyle } from "vscode";
 
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
 import { MainController } from "./main_controller";
@@ -94,7 +94,16 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
                             continue;
                         }
                         const lineText = editor.document.lineAt(highlightLine).text;
-                        const vimCol = col + gridOffset.character;
+                        let vimCol = col + gridOffset.character;
+
+                        // remove cells from statuscolumn
+                        if (vimCol < 20) {
+                            vimCol = 0;
+                            cells.splice(0, 1);
+                        } else {
+                            vimCol -= 20;
+                        }
+
                         const tabSize = editor.options.tabSize as number;
                         const update = this.highlightProvider.processHLCellsEvent(
                             grid,

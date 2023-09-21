@@ -104,6 +104,12 @@
                     "title": "Neovim width",
                     "description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
                 },
+                "vscode-neovim.completionDelay": {
+                    "type": "number",
+                    "default": 1500,
+                    "title": "Completion Delay",
+                    "description": "The delay in ms until the wildmenu completions are shown. This is to not bother you when you write :w or :noh."
+                },
                 "vscode-neovim.neovimViewportHeightExtend": {
                     "type": "number",
                     "default": 1,

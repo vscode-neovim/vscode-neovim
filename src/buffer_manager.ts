@@ -12,6 +12,7 @@ import {
     Selection,
     TextDocument,
     TextEditor,
+    TextEditorLineNumbersStyle,
     TextEditorOptionsChangeEvent,
     Uri,
     ViewColumn,
@@ -640,11 +641,16 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
             ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
         ];
+        const number = !!(editor?.options.lineNumbers !== TextEditorLineNumbersStyle.Off);
+        const relativeNumber = !!(editor?.options.lineNumbers === TextEditorLineNumbersStyle.Relative);
         const requests: [string, unknown[]][] = [
             // fill the buffer
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
+            // used for synchronization of number options
+            ["nvim_buf_set_var", [bufId, "vscode_number", number]],
+            ["nvim_buf_set_var", [bufId, "vscode_relativenumber", relativeNumber]],
             // make sure to disable syntax (yeah we're doing it neovim files, but better to be safe than not)
             // !Setting to false breaks filetype detection
             // ["nvim_buf_set_option", [bufId, "syntax", false]],
