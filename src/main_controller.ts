@@ -54,7 +54,7 @@ const LOG_PREFIX = "MainController";
 
 export class MainController implements vscode.Disposable {
     private nvimProc: ChildProcess;
-    private client: NeovimClient;
+    public client: NeovimClient;
 
     private disposables: vscode.Disposable[] = [];
 
@@ -272,6 +272,7 @@ export class MainController implements vscode.Disposable {
             this.modeManager,
             this.changeManager,
             this.commandsController,
+            this.customCommandsManager,
             this.bufferManager,
             this.viewportManager,
             this.cursorManager,
@@ -332,6 +333,7 @@ export class MainController implements vscode.Disposable {
             this.modeManager,
             this.changeManager,
             this.commandsController,
+            this.customCommandsManager,
             this.bufferManager,
             this.cursorManager,
         ];
