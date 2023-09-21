@@ -19,8 +19,8 @@ describe("Sync options test", () => {
     before(async () => {
         client = await attachTestNvimClient();
         await client.command("augroup TestOptions");
-        await client.command("autocmd InsertEnter * set nornu");
-        await client.command("autocmd InsertLeave * set rnu");
+        await client.command("autocmd InsertEnter * set nu nornu");
+        await client.command("autocmd InsertLeave * set nu rnu");
         await client.command("augroup END");
     });
     after(async () => {
@@ -33,17 +33,33 @@ describe("Sync options test", () => {
 
     it("number & relativenumber", async () => {
         const editor = await openTextDocument({ content: "testing...\n".repeat(10) });
-        await wait();
+        await wait(200);
 
         await setCursor(3, 0);
-        await wait();
+        await wait(200);
+
+        await client.command("set nu");
+        await wait(200);
+        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.On);
+
+        await client.command("set rnu");
+        await wait(200);
+        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Relative);
+
+        await client.command("set nornu");
+        await wait(200);
+        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.On);
+
+        await client.command("set nonu");
+        await wait(200);
+        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Off);
 
         await sendVSCodeKeys("i");
-        await wait();
+        await wait(200);
         assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.On);
 
         await sendEscapeKey();
-        await wait();
+        await wait(200);
         assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Relative);
     });
 });
