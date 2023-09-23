@@ -354,7 +354,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                                     // !As fallback we look after applying edits if we have selection
                                     const oldText = editor.document
                                         .getText(new Range(range.start, 0, range.end, 99999))
-                                        .replace("\r\n", "\n");
+                                        .replace(/\r\n/g, "\n");
                                     const newText = text.join("\n");
                                     if (newText.length > oldText.length && newText.startsWith(oldText)) {
                                         builder.insert(
