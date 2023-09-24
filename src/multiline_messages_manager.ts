@@ -1,8 +1,8 @@
 import { Disposable, OutputChannel, window } from "vscode";
 
+import { EXT_NAME } from "./constants";
 import { Logger } from "./logger";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
-import { EXT_NAME } from "./utils";
 
 export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];

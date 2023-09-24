@@ -1,53 +1,35 @@
-import { spawn, ChildProcess, execSync } from "child_process";
+import { ChildProcess, execSync, spawn } from "child_process";
 import path from "path";
 
-import vscode from "vscode";
 import { attach, NeovimClient } from "neovim";
+import vscode from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { createLogger, transports as loggerTransports } from "winston";
 
-import { HighlightConfiguration } from "./highlight_provider";
-import { CommandsController } from "./commands_controller";
-import { ModeManager } from "./mode_manager";
 import { BufferManager } from "./buffer_manager";
-import { TypingManager } from "./typing_manager";
+import { CommandLineManager } from "./command_line_manager";
+import { CommandsController } from "./commands_controller";
+import { config } from "./config";
+import { EXT_ID } from "./constants";
 import { CursorManager } from "./cursor_manager";
-import { Logger, LogLevel } from "./logger";
+import { CustomCommandsManager } from "./custom_commands_manager";
 import { DocumentChangeManager } from "./document_change_manager";
+import { HighlightManager } from "./highlight_manager";
+import { Logger, LogLevel } from "./logger";
+import { ModeManager } from "./mode_manager";
+import { MutlilineMessagesManager } from "./multiline_messages_manager";
 import {
     NeovimCommandProcessable,
     NeovimExtensionRequestProcessable,
     NeovimRedrawProcessable,
 } from "./neovim_events_processable";
-import { CommandLineManager } from "./command_line_manager";
 import { StatusLineManager } from "./status_line_manager";
-import { HighlightManager } from "./highlight_manager";
-import { CustomCommandsManager } from "./custom_commands_manager";
-import { EXT_ID, findLastEvent } from "./utils";
-import { MutlilineMessagesManager } from "./multiline_messages_manager";
+import { TypingManager } from "./typing_manager";
+import { findLastEvent } from "./utils";
 import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
-}
-
-export interface ControllerSettings {
-    neovimPath: string;
-    extensionPath: string;
-    highlightsConfiguration: HighlightConfiguration;
-    useWsl: boolean;
-    customInitFile: string;
-    clean: boolean;
-    NVIM_APPNAME: string;
-    neovimViewportWidth: number;
-    neovimViewportHeightExtend: number;
-    revealCursorScrollLine: boolean;
-    completionDelay: number;
-    logConf: {
-        level: "none" | "error" | "warn" | "debug";
-        logPath: string;
-        outputToConsole: boolean;
-    };
 }
 
 const LOG_PREFIX = "MainController";
@@ -65,7 +47,6 @@ export class MainController implements vscode.Disposable {
     private currentRedrawBatch: [string, ...unknown[]][] = [];
 
     private logger!: Logger;
-    private settings: ControllerSettings;
 
     public modeManager!: ModeManager;
     public bufferManager!: BufferManager;
@@ -80,17 +61,10 @@ export class MainController implements vscode.Disposable {
     public multilineMessagesManager!: MutlilineMessagesManager;
     public viewportManager!: ViewportManager;
 
-    public constructor(settings: ControllerSettings) {
-        this.settings = settings;
-        this.logger = new Logger(
-            LogLevel[settings.logConf.level],
-            settings.logConf.logPath,
-            settings.logConf.outputToConsole,
-        );
+    public constructor(extensionPath: string) {
+        this.logger = new Logger(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
         this.disposables.push(this.logger);
-
-        let extensionPath = settings.extensionPath;
-        if (settings.useWsl) {
+        if (config.useWsl) {
             // execSync returns a newline character at the end
             extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
         }
@@ -112,12 +86,12 @@ export class MainController implements vscode.Disposable {
 
         const workspaceFolder = vscode.workspace.workspaceFolders;
         const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : undefined;
-        if (cwd && !settings.useWsl && !vscode.env.remoteName) {
+        if (cwd && !config.useWsl && !vscode.env.remoteName) {
             args.push("-c", `cd ${cwd}`);
         }
 
-        if (settings.useWsl) {
-            args.unshift(settings.neovimPath);
+        if (config.useWsl) {
+            args.unshift(config.neovimPath);
         }
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
@@ -127,20 +101,20 @@ export class MainController implements vscode.Disposable {
                 `${process.env.NEOVIM_DEBUG_HOST || "127.0.0.1"}:${process.env.NEOVIM_DEBUG_PORT || 4000}`,
             );
         }
-        if (settings.clean) {
+        if (config.clean) {
             args.push("--clean");
         }
-        if (settings.customInitFile) {
-            args.push("-u", settings.customInitFile);
+        if (config.neovimInitPath) {
+            args.push("-u", config.neovimInitPath);
         }
         this.logger.debug(
-            `${LOG_PREFIX}: Spawning nvim, path: ${settings.neovimPath}, useWsl: ${
-                settings.useWsl
-            }, args: ${JSON.stringify(args)}`,
+            `${LOG_PREFIX}: Spawning nvim, path: ${config.neovimPath}, useWsl: ${config.useWsl}, args: ${JSON.stringify(
+                args,
+            )}`,
         );
-        if (settings.NVIM_APPNAME) {
-            process.env.NVIM_APPNAME = settings.NVIM_APPNAME;
-            if (settings.useWsl) {
+        if (config.NVIM_APPNAME) {
+            process.env.NVIM_APPNAME = config.NVIM_APPNAME;
+            if (config.useWsl) {
                 /*
                  * `/u` flag indicates the value should only be included when invoking WSL from Win32.
                  * https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/#u
@@ -148,7 +122,7 @@ export class MainController implements vscode.Disposable {
                 process.env.WSLENV = "NVIM_APPNAME/u";
             }
         }
-        this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
+        this.nvimProc = spawn(config.useWsl ? "C:\\Windows\\system32\\wsl.exe" : config.neovimPath, args, {});
         this.nvimProc.on("close", (code) => {
             this.logger.error(`${LOG_PREFIX}: Neovim exited with code: ${code}`);
         });
@@ -184,26 +158,19 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
+        this.commandsController = new CommandsController(this.client);
         this.disposables.push(this.commandsController);
 
         this.modeManager = new ModeManager(this.logger);
         this.disposables.push(this.modeManager);
 
-        this.bufferManager = new BufferManager(this.logger, this.client, this, {
-            neovimViewportWidth: this.settings.neovimViewportWidth,
-        });
+        this.bufferManager = new BufferManager(this.logger, this.client, this);
         this.disposables.push(this.bufferManager);
 
-        this.viewportManager = new ViewportManager(
-            this.logger,
-            this.client,
-            this,
-            this.settings.neovimViewportHeightExtend,
-        );
+        this.viewportManager = new ViewportManager(this.logger, this.client, this);
         this.disposables.push(this.viewportManager);
 
-        this.highlightManager = new HighlightManager(this, this.settings.highlightsConfiguration);
+        this.highlightManager = new HighlightManager(this);
         this.disposables.push(this.highlightManager);
 
         this.changeManager = new DocumentChangeManager(this.logger, this.client, this);
@@ -215,7 +182,7 @@ export class MainController implements vscode.Disposable {
         this.typingManager = new TypingManager(this.logger, this.client, this);
         this.disposables.push(this.typingManager);
 
-        this.commandLineManager = new CommandLineManager(this.logger, this.client, this.settings.completionDelay);
+        this.commandLineManager = new CommandLineManager(this.logger, this.client);
         this.disposables.push(this.commandLineManager);
 
         this.statusLineManager = new StatusLineManager(this.logger, this.client);
@@ -229,7 +196,7 @@ export class MainController implements vscode.Disposable {
 
         this.logger.debug(`${LOG_PREFIX}: UIAttach`);
         // !Attach after setup of notifications, otherwise we can get blocking call and stuck
-        await this.client.uiAttach(this.settings.neovimViewportWidth, 100, {
+        await this.client.uiAttach(config.neovimViewportWidth, 100, {
             rgb: true,
             // override: true,
             ext_cmdline: true,

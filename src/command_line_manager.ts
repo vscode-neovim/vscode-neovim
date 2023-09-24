@@ -2,6 +2,7 @@ import { NeovimClient } from "neovim";
 import { Disposable } from "vscode";
 
 import { CommandLineController } from "./command_line";
+import { config } from "./config";
 import { Logger } from "./logger";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { normalizeInputString } from "./utils";
@@ -20,7 +21,6 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
     public constructor(
         private logger: Logger,
         private client: NeovimClient,
-        private completionDelay: number,
     ) {}
 
     public dispose(): void {
@@ -100,7 +100,7 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
                     onCanceled: this.onCmdCancel,
                     onChanged: this.onCmdChange,
                 },
-                this.completionDelay,
+                config.completionDelay,
             );
         }
         this.commandLine.show(content, firstc, prompt);

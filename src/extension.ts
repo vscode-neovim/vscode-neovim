@@ -1,56 +1,10 @@
 import * as vscode from "vscode";
 
 import { MainController } from "./main_controller";
-import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME } from "./utils";
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    const ext = vscode.extensions.getExtension(EXT_ID)!;
-    const settings = vscode.workspace.getConfiguration(EXT_NAME);
-    const neovimPath = getNeovimPath();
-    const isWindows = process.platform == "win32";
-
-    const highlightConfHighlights = settings.get("highlightGroups.highlights");
-    const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
-    const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
-    const useWsl = isWindows && settings.get("useWSL", false);
-    const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
-    const neovimWidth = settings.get("neovimWidth", 1000);
-    const completionDelay = settings.get("completionDelay", 1500);
-    const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 1);
-    const customInit = getNeovimInitPath() ?? "";
-    const clean = settings.get("neovimClean", false);
-    const NVIM_APPNAME = settings.get("NVIM_APPNAME", "");
-    const logPath = settings.get("logPath", "");
-    const logLevel = settings.get("logLevel", "none");
-    const outputToConsole = settings.get("logOutputToConsole", false);
-
-    vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
-    vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
-
     try {
-        const plugin = new MainController({
-            customInitFile: customInit,
-            clean: clean,
-            NVIM_APPNAME: NVIM_APPNAME,
-            extensionPath: context.extensionPath.replace(/\\/g, "\\\\"),
-            highlightsConfiguration: {
-                highlights: highlightConfHighlights,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any,
-            neovimPath: neovimPath,
-            useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
-            neovimViewportWidth: neovimWidth,
-            neovimViewportHeightExtend: neovimViewportHeightExtend,
-            revealCursorScrollLine: revealCursorScrollLine,
-            completionDelay: completionDelay,
-            logConf: {
-                logPath,
-                outputToConsole,
-                level: logLevel,
-            },
-        });
+        const plugin = new MainController(context.extensionPath.replace(/\\/g, "\\\\"));
         context.subscriptions.push(plugin);
         await plugin.init();
     } catch (e) {
@@ -58,7 +12,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
 }
 
-// this method is called when your extension is deactivated
 export function deactivate(): void {
     // ignore
 }

@@ -12,6 +12,7 @@ import {
 } from "vscode";
 
 import { calculateEditorColFromVimScreenCol } from "./utils";
+import { config } from "./config";
 
 export interface VimHighlightUIAttributes {
     foreground?: number;
@@ -150,11 +151,12 @@ export class HighlightProvider {
     private visualHighlightId?: number;
     private visualHighlightIds: number[] = [];
 
-    public constructor(conf: HighlightConfiguration) {
-        this.configuration = conf;
-        for (const [key, config] of Object.entries(this.configuration.highlights)) {
-            this.configuration.highlights[key] = normalizeDecorationConfig(config);
+    public constructor() {
+        const highlights: HighlightConfiguration["highlights"] = {};
+        for (const [key, opts] of Object.entries(config.highlights)) {
+            highlights[key] = normalizeDecorationConfig(opts);
         }
+        this.configuration = { highlights };
     }
 
     private createDecoratorForHighlightId(id: number, options: ThemableDecorationRenderOptions): void {

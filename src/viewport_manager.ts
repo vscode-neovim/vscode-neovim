@@ -1,7 +1,8 @@
-import { NeovimClient } from "neovim";
-import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent, Position, workspace } from "vscode";
 import { DebouncedFunc, debounce } from "lodash-es";
+import { NeovimClient } from "neovim";
+import { Disposable, Position, TextEditor, TextEditorVisibleRangesChangeEvent, window, workspace } from "vscode";
 
+import { config } from "./config";
 import { Logger } from "./logger";
 import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
@@ -30,7 +31,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         private logger: Logger,
         private client: NeovimClient,
         private main: MainController,
-        private neovimViewportHeightExtend: number,
     ) {
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
     }
@@ -169,9 +169,9 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
             return;
         }
-        const startLine = ranges[0].start.line - this.neovimViewportHeightExtend;
+        const startLine = ranges[0].start.line - config.neovimViewportHeightExtend;
         // when it have fold we need get the last range. it need add 1 line on multiple fold
-        const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
+        const endLine = ranges[ranges.length - 1].end.line + ranges.length + config.neovimViewportHeightExtend;
         const currentLine = editor.selection.active.line;
 
         const gridId = this.main.bufferManager.getGridIdFromEditor(editor);

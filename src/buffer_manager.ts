@@ -6,27 +6,28 @@ import { ATTACH } from "neovim/lib/api/Buffer";
 import {
     CancellationToken,
     CancellationTokenSource,
-    commands,
     Disposable,
     EndOfLine,
+    EventEmitter,
     Selection,
     TextDocument,
+    TextDocumentContentProvider,
     TextEditor,
     TextEditorLineNumbersStyle,
     TextEditorOptionsChangeEvent,
+    TextEditorRevealType,
     Uri,
     ViewColumn,
+    commands,
     window,
-    TextDocumentContentProvider,
     workspace,
-    EventEmitter,
-    TextEditorRevealType,
 } from "vscode";
 
+import { config } from "./config";
 import { Logger } from "./logger";
+import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { ManualPromise, callAtomic, convertByteNumToCharNum } from "./utils";
-import { MainController } from "./main_controller";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -101,7 +102,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         private logger: Logger,
         private client: NeovimClient,
         private main: MainController,
-        private settings: BufferManagerSettings,
     ) {
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
@@ -699,7 +699,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const win = await this.client.openWindow(bufId as any, false, {
             external: true,
-            width: this.settings.neovimViewportWidth,
+            width: config.neovimViewportWidth,
             height: 100,
         });
         await this.client.setOption("eventignore", "");

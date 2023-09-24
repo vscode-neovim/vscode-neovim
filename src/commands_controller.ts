@@ -1,6 +1,7 @@
-import vscode, { Disposable } from "vscode";
 import { NeovimClient } from "neovim";
+import vscode, { Disposable } from "vscode";
 
+import { config } from "./config";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 export class CommandsController implements Disposable, NeovimExtensionRequestProcessable {
@@ -8,11 +9,8 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
 
     private disposables: Disposable[] = [];
 
-    private revealCursorScrollLine: boolean;
-
-    public constructor(client: NeovimClient, revealCursorScrollLine: boolean) {
+    public constructor(client: NeovimClient) {
         this.client = client;
-        this.revealCursorScrollLine = revealCursorScrollLine;
         this.disposables.push(
             vscode.commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
         );
@@ -75,7 +73,7 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     };
 
     private scrollLine = (to: "up" | "down"): void => {
-        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: this.revealCursorScrollLine });
+        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: config.revealCursorScrollLine });
     };
 
     private goToLine = (to: "top" | "middle" | "bottom"): void => {
