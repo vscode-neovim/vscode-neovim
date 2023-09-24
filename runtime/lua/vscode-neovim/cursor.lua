@@ -111,7 +111,7 @@ function M.highlight_fake_cursor()
       M.fake_ns,
       line - 1,
       col - 1,
-      { virt_text = { { ch, "Cursor" } }, virt_text_pos = "overlay", hl_mode = "combine", priority = 65534 }
+      { virt_text = { { ch, "Cursor" } }, virt_text_pos = "overlay", hl_mode = "replace", priority = 65534 }
     )
   end
 end

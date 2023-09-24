@@ -1,25 +1,5 @@
--- this module is responsible for setting default vim options and hiding undesired syntax groups
+-- this module is responsible for setting default vim options
 local M = {}
-
--- ignore syntax groups by default but can be overridden by `vscode-neovim.highlightGroups.highlights` or init.vim config (inside ColorScheme au)
-function M.default_highlights()
-  vim.api.nvim_set_hl(0, "Normal", {})
-  vim.api.nvim_set_hl(0, "NormalNC", {})
-  vim.api.nvim_set_hl(0, "NormalFloat", {})
-  vim.api.nvim_set_hl(0, "NonText", {})
-  vim.api.nvim_set_hl(0, "Visual", {})
-  vim.api.nvim_set_hl(0, "VisualNOS", {})
-  vim.api.nvim_set_hl(0, "Substitute", {})
-  vim.api.nvim_set_hl(0, "Whitespace", {})
-  vim.api.nvim_set_hl(0, "LineNr", {})
-  vim.api.nvim_set_hl(0, "LineNrAbove", {})
-  vim.api.nvim_set_hl(0, "LineNrBelow", {})
-  vim.api.nvim_set_hl(0, "CursorLine", {})
-  vim.api.nvim_set_hl(0, "CursorLineNr", {})
-
-  -- make cursor visible for plugins that use fake cursor
-  vim.api.nvim_set_hl(0, "Cursor", { reverse = true })
-end
 
 function M.setup()
   -- customise statusbar
@@ -34,9 +14,6 @@ function M.setup()
 
   -- disable matchparen because we don't need it
   vim.g.loaded_matchparen = 1
-
-  M.default_highlights()
-  vim.api.nvim_create_autocmd({ "FileType", "ColorScheme" }, { callback = M.default_highlights })
 end
 
 return M

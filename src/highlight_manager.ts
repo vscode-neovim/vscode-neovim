@@ -123,6 +123,7 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
                 }
             }
         }
+
         if (gridHLUpdates.size) {
             this.applyHLGridUpdates(gridHLUpdates);
         }

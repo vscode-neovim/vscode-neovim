@@ -146,6 +146,10 @@ export class HighlightProvider {
 
     private configuration: HighlightConfiguration;
 
+    // Treat all colors mixed with Visual as Visual to avoid defective rendering due to disjointed decoration ranges.
+    private visualHighlightId?: number;
+    private visualHighlightIds: number[] = [];
+
     public constructor(conf: HighlightConfiguration) {
         this.configuration = conf;
         for (const [key, config] of Object.entries(this.configuration.highlights)) {
@@ -160,6 +164,10 @@ export class HighlightProvider {
     }
 
     public addHighlightGroup(id: number, attrs: VimHighlightUIAttributes, groups: string[]): void {
+        if (groups.includes("Visual")) {
+            if (groups.length === 1) this.visualHighlightId = id;
+            else this.visualHighlightIds.push(id);
+        }
         // if the highlight consists of any custom groups, use that instead
         const customName = groups.reverse().find((g) => this.configuration.highlights[g] !== undefined);
         const customHl = customName && this.configuration.highlights[customName];
@@ -238,7 +246,9 @@ export class HighlightProvider {
             const eolCells: ValidCell[] = [];
             let currHlId = 0;
             loop: for (const [text, _hlId, _repeat] of cells) {
-                if (_hlId != null) currHlId = _hlId;
+                if (_hlId != null) {
+                    currHlId = this.visualHighlightIds.includes(_hlId) ? this.visualHighlightId ?? _hlId : _hlId;
+                }
                 if (text === "") continue;
                 for (let i = 0; i < (_repeat ?? 1); i++) {
                     // If there are additional cells, always keep one, so use LE here.

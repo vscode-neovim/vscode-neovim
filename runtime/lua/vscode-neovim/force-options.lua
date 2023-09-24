@@ -26,8 +26,7 @@ vim.opt.colorcolumn = nil
 vim.opt.modeline = false
 vim.opt.modelines = 0
 
---- Allow to use vim HL for external buffers, vscode buffers explicitly disable it
-vim.cmd([[syntax on]])
+vim.cmd.syntax("on")
 
 -- --------------------- forced global and local critical options -------------------- --
 local function forceoptions(opt)
@@ -41,12 +40,7 @@ local function forceoptions(opt)
   opt.numberwidth = 1
   opt.statuscolumn = "%#NonText#" .. ("-"):rep(20) -- max-signcolumn(9) + max-foldcolumn(9) + numberwidth(1) + 1
   -- }}
-  --- Need to know tabs for HL
   opt.listchars = { tab = "  " }
-  -- disable syntax hl for vscode buffers
-  if vim.b.vscode_controlled and opt == vim.opt_local then
-    opt.syntax = "off"
-  end
   --- Turn off auto-folding
   opt.foldenable = false
   opt.foldcolumn = "0"
