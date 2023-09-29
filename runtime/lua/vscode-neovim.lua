@@ -16,4 +16,12 @@ M.setup = function()
   cursor.setup()
 end
 
+vim.api.nvim_create_autocmd("InsertLeave", {
+  callback = function()
+    vim.fn.VSCodeNotify("hideSuggestWidget")
+    vim.fn.VSCodeNotify("closeParameterHints")
+    vim.fn.VSCodeNotify("editor.action.inlineSuggest.hide")
+  end,
+})
+
 return M
