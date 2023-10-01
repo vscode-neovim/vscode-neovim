@@ -384,6 +384,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     public async updateNeovimCursorPosition(editor: TextEditor, active: Position): Promise<void> {
         const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
         if (!winId) return;
+        const neovimCursorPos = this.neovimCursorPosition.get(editor);
+        if (!this.main.modeManager.isInsertMode && neovimCursorPos && neovimCursorPos.active.isEqual(active)) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping event since neovim has same cursor pos`);
+            return;
+        }
         const pos = convertEditorPositionToVimPosition(editor, active);
         this.logger.debug(
             `${LOG_PREFIX}: Updating cursor pos in neovim, winId: ${winId}, pos: [${pos.line}, ${pos.character}]`,
