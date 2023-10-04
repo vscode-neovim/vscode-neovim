@@ -376,6 +376,23 @@ describe("Insert mode and buffer synchronization", () => {
         );
     });
 
+    it("Updates cursor position after exiting insert mode", async () => {
+        await openTextDocument({ content: "blah1 blah2 blah3" });
+
+        await sendInsertKey("A");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeKeys("4");
+
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                cursor: [0, 16],
+            },
+            client,
+        );
+    });
+
     it("Handles keys typed immediately after sending escape key", async () => {
         await openTextDocument({ content: ["blah1 blah2"].join("\n") });
 

@@ -201,6 +201,7 @@ export class TypingManager implements Disposable {
                 await this.main.cursorManager.updateNeovimCursorPosition(
                     window.activeTextEditor,
                     window.activeTextEditor.selection.active,
+                    false,
                 );
             await this.main.changeManager.syncDotRepeatWithNeovim();
             const keys = normalizeInputString(this.pendingKeysAfterExit);
