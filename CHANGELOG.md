@@ -1,5 +1,23 @@
 # Change Log
 
+## [0.7.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.6.1...v0.7.0) (2023-10-04)
+
+
+### Features
+
+* **buffer:** add external buffer doc provider (de48ee2) ([ba9d0dd](https://github.com/vscode-neovim/vscode-neovim/commit/ba9d0dde18bac45cb8c902360d65273b75eac80e))
+* **command line:** add a configurable completion timer delay ([#1467](https://github.com/vscode-neovim/vscode-neovim/issues/1467)) ([0cb897c](https://github.com/vscode-neovim/vscode-neovim/commit/0cb897c0d7805dafad5967602534a2f8b61ffadf))
+* hide completion widgets when leaving insert mode ([#1478](https://github.com/vscode-neovim/vscode-neovim/issues/1478)) ([6d1dbba](https://github.com/vscode-neovim/vscode-neovim/commit/6d1dbbaa01e21fd71fde1d94ad1a1b504b1fc600))
+* **options:** synchronize editor line numbers ([#1426](https://github.com/vscode-neovim/vscode-neovim/issues/1426)) ([4a13f06](https://github.com/vscode-neovim/vscode-neovim/commit/4a13f06c08ae040ea7811376a4a8dddaf8007a59))
+* warn on empty `vscode-neovim.send` args ([#1455](https://github.com/vscode-neovim/vscode-neovim/issues/1455)) ([d1cbcf9](https://github.com/vscode-neovim/vscode-neovim/commit/d1cbcf977f84df110b5b94d53334b7c9fb98fd01))
+
+
+### Bug Fixes
+
+* **cursor:** ensure normal visual mode for mouse selection ([#1463](https://github.com/vscode-neovim/vscode-neovim/issues/1463)) ([1b0ea63](https://github.com/vscode-neovim/vscode-neovim/commit/1b0ea63c67c5247e8451df8b94af7bdb0ff80f89))
+* **cursor:** update position after exiting insert mode ([#1479](https://github.com/vscode-neovim/vscode-neovim/issues/1479)) ([da787ed](https://github.com/vscode-neovim/vscode-neovim/commit/da787ed0170637f8a9ca19c46d929189527aa7c6))
+* **viewport:** reduce cursor jitter (temporary solution) ([#1459](https://github.com/vscode-neovim/vscode-neovim/issues/1459)) ([237e795](https://github.com/vscode-neovim/vscode-neovim/commit/237e795fb48374fbef8a6a7cb7f40810630ab6ee))
+
 ## [0.6.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.6.0...v0.6.1) (2023-09-17)
 
 
