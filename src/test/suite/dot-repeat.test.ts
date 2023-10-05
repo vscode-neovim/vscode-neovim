@@ -14,6 +14,7 @@ import {
     copyVSCodeSelection,
     openTextDocument,
     sendInsertKey,
+    sendVSCodeKeysAtomic,
 } from "../utils";
 
 describe("Dot-repeat", () => {
@@ -88,20 +89,21 @@ describe("Dot-repeat", () => {
             client,
         );
     });
-    it('Adding special "<BS>" characters', async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "abc",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
 
-        await sendVSCodeKeys("A");
-        await sendVSCodeKeys("<BS>");
+    it("Entering special keycodes", async () => {
+        const originalContent = "abc";
+        await openTextDocument({ content: originalContent });
+
+        await sendInsertKey("A");
+        const textToType = "<BS><Cmd><LT><BS><BS><Right><Return>hello<Enter>";
+        for (const char of textToType) {
+            await sendVSCodeKeysAtomic(char, 50);
+        }
         await sendEscapeKey();
         await sendVSCodeKeys(".");
         await assertContent(
             {
-                content: ["abc<BS><BS>"],
+                content: [`${originalContent}${textToType.repeat(2)}`],
             },
             client,
         );
