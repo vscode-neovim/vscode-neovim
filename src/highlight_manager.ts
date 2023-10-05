@@ -3,7 +3,7 @@ import { Disposable, TextEditorLineNumbersStyle } from "vscode";
 import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
 import { MainController } from "./main_controller";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
-import { calculateEditorColFromVimScreenCol, GridLineEvent } from "./utils";
+import { GridLineEvent } from "./utils";
 
 // const LOG_PREFIX = "HighlightManager";
 
@@ -93,34 +93,37 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
                             }
                             continue;
                         }
+                        const lineText = editor.document.lineAt(highlightLine).text;
+                        let vimCol = col + gridOffset.character;
 
                         // remove cells from statuscolumn
-                        if (col < 20) {
-                            col = 0;
+                        if (vimCol < 20) {
+                            vimCol = 0;
                             cells.splice(0, 1);
                         } else {
-                            col -= 20;
+                            vimCol -= 20;
                         }
 
-                        const line = editor.document.lineAt(highlightLine).text;
-                        const colStart = col + gridOffset.character;
-                        const tabSize = editor.options.tabSize as number;
-                        const finalStartCol = calculateEditorColFromVimScreenCol(line, colStart, tabSize);
-                        const update = this.highlightProvider.processHLCellsEvent(
-                            grid,
-                            row,
-                            finalStartCol,
-                            line,
-                            cells,
-                        );
-                        if (update) {
-                            gridHLUpdates.add(grid);
+                        if (cells.length) {
+                            const tabSize = editor.options.tabSize as number;
+                            const update = this.highlightProvider.processHLCellsEvent(
+                                grid,
+                                row,
+                                vimCol,
+                                cells,
+                                lineText,
+                                tabSize,
+                            );
+                            if (update) {
+                                gridHLUpdates.add(grid);
+                            }
                         }
                     }
                     break;
                 }
             }
         }
+
         if (gridHLUpdates.size) {
             this.applyHLGridUpdates(gridHLUpdates);
         }

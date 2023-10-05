@@ -651,9 +651,6 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             // used for synchronization of number options
             ["nvim_buf_set_var", [bufId, "vscode_number", number]],
             ["nvim_buf_set_var", [bufId, "vscode_relativenumber", relativeNumber]],
-            // make sure to disable syntax (yeah we're doing it neovim files, but better to be safe than not)
-            // !Setting to false breaks filetype detection
-            // ["nvim_buf_set_option", [bufId, "syntax", false]],
             // buffer name = document URI
             ["nvim_buf_set_name", [bufId, BUFFER_NAME_PREFIX + document.uri.toString()]],
             // Turn off modifications for external documents

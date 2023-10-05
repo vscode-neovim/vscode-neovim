@@ -1,3 +1,6 @@
+import GraphemeSplitter from "grapheme-splitter";
+import { cloneDeep } from "lodash-es";
+import wcswidth from "ts-wcwidth";
 import {
     DecorationOptions,
     Range,
@@ -7,6 +10,8 @@ import {
     ThemeColor,
     window,
 } from "vscode";
+
+import { calculateEditorColFromVimScreenCol } from "./utils";
 
 export interface VimHighlightUIAttributes {
     foreground?: number;
@@ -25,18 +30,20 @@ export interface VimHighlightUIAttributes {
 
 export interface HighlightConfiguration {
     /**
-     * Map specific highlight to use either vim configuration or use vscode decorator configuration
+     * Map specific highlight to use vscode decorator configuration
      */
     highlights: {
-        [key: string]: "vim" | ThemableDecorationRenderOptions;
+        [key: string]: ThemableDecorationRenderOptions;
     };
 }
 
-export interface Highlight {
+type Cell = [string, number?, number?];
+interface ValidCell {
+    text: string;
     hlId: number;
+}
+interface Highlight extends ValidCell {
     virtText?: string;
-    overlayPos?: number;
-    line?: string;
 }
 
 /**
@@ -86,34 +93,47 @@ function normalizeThemeColor(color: string | ThemeColor | undefined): string | T
 }
 
 function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): ThemableDecorationRenderOptions {
-    const newConfig: ThemableDecorationRenderOptions = {
-        ...config,
-        after: config.after ? { ...config.after } : undefined,
-        before: config.before ? { ...config.before } : undefined,
-    };
+    const newConfig: ThemableDecorationRenderOptions = { ...config };
     newConfig.backgroundColor = normalizeThemeColor(newConfig.backgroundColor);
     newConfig.borderColor = normalizeThemeColor(newConfig.borderColor);
     newConfig.color = normalizeThemeColor(newConfig.color);
     newConfig.outlineColor = normalizeThemeColor(newConfig.outlineColor);
     newConfig.overviewRulerColor = normalizeThemeColor(newConfig.overviewRulerColor);
-    if (newConfig.after) {
-        newConfig.after.backgroundColor = normalizeThemeColor(newConfig.after.backgroundColor);
-        newConfig.after.borderColor = normalizeThemeColor(newConfig.after.borderColor);
-        newConfig.after.color = normalizeThemeColor(newConfig.after.color);
-    }
-    if (newConfig.before) {
-        newConfig.before.backgroundColor = normalizeThemeColor(newConfig.before.backgroundColor);
-        newConfig.before.borderColor = normalizeThemeColor(newConfig.before.borderColor);
-        newConfig.before.color = normalizeThemeColor(newConfig.before.color);
-    }
     return newConfig;
+}
+
+// 你 length:1 width:2
+// 🚀 length:2 width:2
+// 🕵️ length:3 width:2
+// ❤️ length:2 width:1
+const isDouble = (c?: string) => wcswidth(c) === 2 || (c ?? "").length > 1;
+const segment: (str: string) => string[] = (() => {
+    const splitter = new GraphemeSplitter();
+    return (str) => splitter.splitGraphemes(str);
+})();
+
+class CellIter {
+    private _index = 0;
+    constructor(private _cells: ValidCell[]) {}
+    next(): { text: string; hlId: number } | undefined {
+        return this._cells[this._index++];
+    }
+    getNext(): { text: string; hlId: number } | undefined {
+        return this._cells[this._index];
+    }
+    setNext(hlId: number, text: string) {
+        if (this._index < this._cells.length) {
+            this._cells[this._index] = { hlId, text };
+        }
+    }
 }
 
 export class HighlightProvider {
     /**
-     * Current HL. key is the grid id and values is two dimension array representing rows and cols. Array may contain empty values
+     * key is the grid id and values is a three-dimensional array representing rows and columns.
+     * Each column can contain multiple highlights. e.g. double-width character, tab
      */
-    private highlights: Map<number, Highlight[][]> = new Map();
+    private highlights: Map<number, Highlight[][][]> = new Map();
     private prevGridHighlightsIds: Map<number, Set<number>> = new Map();
     /**
      * HL group id to text decorator
@@ -126,20 +146,32 @@ export class HighlightProvider {
 
     private configuration: HighlightConfiguration;
 
+    // Treat all colors mixed with Visual as Visual to avoid defective rendering due to disjointed decoration ranges.
+    private visualHighlightId?: number;
+    private visualHighlightIds: number[] = [];
+
     public constructor(conf: HighlightConfiguration) {
         this.configuration = conf;
         for (const [key, config] of Object.entries(this.configuration.highlights)) {
-            if (config !== "vim") {
-                this.configuration.highlights[key] = normalizeDecorationConfig(config);
-            }
+            this.configuration.highlights[key] = normalizeDecorationConfig(config);
         }
     }
 
+    private createDecoratorForHighlightId(id: number, options: ThemableDecorationRenderOptions): void {
+        const decorator = window.createTextEditorDecorationType(options);
+        this.decoratorConfigurations.set(decorator, options);
+        this.highlighIdToDecorator.set(id, decorator);
+    }
+
     public addHighlightGroup(id: number, attrs: VimHighlightUIAttributes, groups: string[]): void {
+        if (groups.includes("Visual")) {
+            if (groups.length === 1) this.visualHighlightId = id;
+            else this.visualHighlightIds.push(id);
+        }
         // if the highlight consists of any custom groups, use that instead
         const customName = groups.reverse().find((g) => this.configuration.highlights[g] !== undefined);
         const customHl = customName && this.configuration.highlights[customName];
-        if (customHl && customHl !== "vim") {
+        if (customHl) {
             // no need to create custom decorator if already exists
             if (!this.highlighIdToDecorator.has(id)) {
                 this.createDecoratorForHighlightId(id, customHl);
@@ -174,67 +206,160 @@ export class HighlightProvider {
     public processHLCellsEvent(
         grid: number,
         row: number,
-        start: number,
+        vimCol: number,
+        cells: Cell[],
         lineText: string,
-        cells: [string, number?, number?][],
+        tabSize: number,
     ): boolean {
-        const listCharsTab = "❥";
+        let hasUpdates = false;
 
-        let cellHlId = 0;
-        let cellIdx = start;
         if (!this.highlights.has(grid)) {
             this.highlights.set(grid, []);
         }
         const gridHl = this.highlights.get(grid)!;
-        let hasUpdates = false;
+        if (!gridHl[row]) {
+            gridHl[row] = [];
+        }
 
-        for (const [idx, [ctext, hlId, repeat]] of cells.entries()) {
-            if (hlId != null) {
-                cellHlId = hlId;
-            }
-            let text = ctext;
+        const getWidth = (text?: string) => {
+            const t = (text ?? "").replace(/\t/g, " ".repeat(tabSize));
+            return segment(t).reduce((p, c) => p + (isDouble(c) ? 2 : 1), 0);
+        };
 
-            // 2+bytes chars (such as chinese characters) have "" as second cell
-            // chinese '你'.length == 1
-            // emoji   '😅'.length == 2
-            // Ignore other emojis of other lengths.
-            if (text === "") {
-                if (idx > 0 && cells[idx - 1][0].length == 1) {
-                    continue;
+        const lineChars = segment(lineText);
+
+        // Calculates the number of spaces occupied by the tab
+        const calcTabCells = (tabCol: number) => {
+            let nearestTabIdx = lineChars.slice(0, tabCol).lastIndexOf("\t");
+            nearestTabIdx = nearestTabIdx === -1 ? 0 : nearestTabIdx + 1;
+            const center = lineChars.slice(nearestTabIdx, tabCol).join("");
+            return tabSize - (getWidth(center) % tabSize);
+        };
+
+        const editorCol = calculateEditorColFromVimScreenCol(lineText, vimCol, tabSize);
+
+        const validCells: ValidCell[] = [];
+        {
+            const maxValidCells = getWidth(lineText) - vimCol;
+            const eolCells: ValidCell[] = [];
+            let currHlId = 0;
+            loop: for (const [text, _hlId, _repeat] of cells) {
+                if (_hlId != null) {
+                    currHlId = this.visualHighlightIds.includes(_hlId) ? this.visualHighlightId ?? _hlId : _hlId;
                 }
-            }
-            // tab fill character
-            if (text === "♥") {
-                continue;
-            }
-
-            const repeatTo = text === "\t" || text === listCharsTab ? 1 : repeat || 1;
-            for (let i = 0; i < repeatTo; i++) {
-                if (!gridHl[row]) {
-                    gridHl[row] = [];
-                }
-                if (cellHlId != 0) {
-                    hasUpdates = true;
-                    const hlDeco: Highlight = {
-                        hlId: cellHlId,
-                    };
-                    // check if text is not same as the cell text on buffer
-                    // only render decorations one cell past the end of the line
-                    const curChar = lineText.slice(cellIdx, cellIdx + text.length);
-                    if (text === listCharsTab) text = "\t";
-                    if (cellIdx <= lineText.length && text !== "" && curChar !== text) {
-                        // if we are past end, or text is " ", we need to add something to make sure it gets rendered
-                        hlDeco.virtText = text.replace(" ", "\u200D");
-                        hlDeco.overlayPos = lineText.length > 0 ? cellIdx : 1;
+                if (text === "") continue;
+                for (let i = 0; i < (_repeat ?? 1); i++) {
+                    // If there are additional cells, always keep one, so use LE here.
+                    if (validCells.length <= maxValidCells) {
+                        validCells.push({ text, hlId: currHlId });
+                        continue;
                     }
-                    gridHl[row][cellIdx] = hlDeco;
-                } else if (gridHl[row][cellIdx]) {
-                    hasUpdates = true;
-                    delete gridHl[row][cellIdx];
+                    // Need to check if the remaining cells are valid for EOL marks
+                    if (eolCells.length >= 5 && eolCells.slice(-5).every(({ text }) => text === " ")) {
+                        eolCells.splice(-5, 5);
+                        break loop;
+                    } else {
+                        eolCells.push({ text, hlId: currHlId });
+                    }
                 }
-                cellIdx++;
+            }
+            validCells.push(...eolCells);
+        }
+        const cellIter = new CellIter(validCells);
+
+        // #region
+        // If the previous column can contain multiple cells,
+        // then the redraw cells may contain cells from the previous column.
+        if (editorCol > 0) {
+            const prevCol = editorCol - 1;
+            const prevChar = lineChars[prevCol];
+            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : getWidth(prevChar);
+            if (expectedCells > 1) {
+                const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""));
+                if (expectedVimCol > vimCol) {
+                    const rightHls: Highlight[] = [];
+                    for (let i = 0; i < expectedVimCol - vimCol; i++) {
+                        const cell = cellIter.next();
+                        cell && rightHls.push({ ...cell, virtText: cell.text });
+                    }
+                    const leftHls: Highlight[] = [];
+                    if (expectedCells - rightHls.length) {
+                        leftHls.push(...(gridHl[row][prevCol] ?? []).slice(0, expectedCells - rightHls.length));
+                    }
+                    gridHl[row][prevCol] = [...leftHls, ...rightHls];
+                }
             }
         }
+        // #endregion
+
+        // Insert additional columns for characters with length greater than 1.
+        const filledLineText = segment(lineText).reduce((p, c) => p + c + " ".repeat(c.length - 1), "");
+
+        const filledLineChars = segment(filledLineText);
+        let currCharCol = editorCol;
+        let cell = cellIter.next();
+        while (cell) {
+            const hls: Highlight[] = [];
+            const add = (cell: ValidCell, virtText?: string) => hls.push({ ...cell, virtText });
+            const currChar = filledLineChars[currCharCol];
+            const extraCols = currChar ? currChar.length - 1 : 0;
+            currCharCol += extraCols;
+            // ... some emojis have text versions e.g. [..."❤️"] == ['❤', '️']
+            const hlCol = currCharCol - (currChar ? [...currChar].length - 1 : 0);
+
+            do {
+                if (currChar === "\t") {
+                    add(cell, cell.text);
+                    for (let i = 0; i < calcTabCells(currCharCol) - 1; i++) {
+                        cell = cellIter.next();
+                        cell && add(cell, cell.text);
+                    }
+
+                    break;
+                }
+
+                if (currChar && isDouble(currChar)) {
+                    if (currChar === cell.text) {
+                        add(cell);
+                        break;
+                    }
+
+                    add(cell, cell.text);
+                    if (!isDouble(cell.text)) {
+                        const nextCell = cellIter.next();
+                        nextCell && add(nextCell, nextCell.text);
+                        extraCols && add(nextCell ?? cell, " ".repeat(extraCols));
+                    }
+
+                    break;
+                }
+
+                if (currChar === cell.text) {
+                    add(cell);
+                } else {
+                    add(cell, cell.text);
+                    if (isDouble(cell.text)) {
+                        currCharCol++;
+                    }
+                }
+
+                // eslint-disable-next-line no-constant-condition
+            } while (false);
+
+            if (!hls.length || !hls.some((d) => d.hlId !== 0)) {
+                if (gridHl[row][hlCol]) {
+                    hasUpdates = true;
+                    delete gridHl[row][hlCol];
+                }
+            } else {
+                hasUpdates = true;
+                gridHl[row][hlCol] = hls;
+            }
+            /////////////////////////////////////////////
+            currCharCol++;
+            cell = cellIter.next();
+        }
+
         return hasUpdates;
     }
 
@@ -285,158 +410,139 @@ export class HighlightProvider {
         grid: number,
         topLine: number,
     ): [TextEditorDecorationType, DecorationOptions[]][] {
-        const result: [TextEditorDecorationType, DecorationOptions[]][] = [];
-        const hlRanges: Map<
-            number,
-            Array<{ lineS: number; lineE: number; colS: number; colE: number; hl?: Highlight }>
-        > = new Map();
-        const gridHl = this.highlights.get(grid);
+        const hlId_options = new Map<number, DecorationOptions[]>();
+        const pushOptions = (hlId: number, ...options: DecorationOptions[]) => {
+            if (!hlId_options.has(hlId)) {
+                hlId_options.set(hlId, []);
+            }
+            hlId_options.get(hlId)!.push(...options);
+        };
 
+        const gridHl = this.highlights.get(grid);
         if (gridHl) {
-            let currHlId = 0;
-            let currHlStartRow = 0;
-            let currHlEndRow = 0;
-            let currHlStartCol = 0;
-            let currHlEndCol = 0;
-            // forEach faster than for in/of for arrays while iterating on array with empty values
-            gridHl.forEach((rowHighlights, rowIdx) => {
-                rowHighlights.forEach((hlDeco, cellIdx) => {
-                    if (hlDeco.virtText) {
-                        if (!hlRanges.has(hlDeco.hlId)) {
-                            hlRanges.set(hlDeco.hlId, []);
-                        }
-                        // it only has one character we don't need group like normal highlight
-                        hlRanges.get(hlDeco.hlId)!.push({
-                            lineS: rowIdx,
-                            lineE: rowIdx,
-                            colS: hlDeco.overlayPos || cellIdx,
-                            colE: cellIdx + 1,
-                            hl: hlDeco,
-                        });
-                        return;
-                    }
-                    if (
-                        currHlId === hlDeco.hlId &&
-                        // allow to extend prev HL if on same row and next cell OR previous row and end of range is end col
-                        currHlEndRow === rowIdx &&
-                        currHlEndCol === cellIdx - 1
-                    ) {
-                        currHlEndCol = cellIdx;
+            gridHl.forEach((rowHighlights, row) => {
+                const line = row + topLine;
+                // FIXME: Possibly due to viewport desync
+                if (line >= editor.document.lineCount) {
+                    return;
+                }
+                const lineText = editor.document.lineAt(line).text;
+                let currHlId = 0;
+                let currStartCol = 0;
+                let currEndCol = 0;
+                rowHighlights.forEach((colHighlights, col) => {
+                    if (colHighlights.length > 1 || colHighlights[0].virtText) {
+                        this.createColVirtTextOptions(line, col, colHighlights, lineText).forEach((options, hlId) =>
+                            pushOptions(hlId, ...options),
+                        );
                     } else {
-                        if (currHlId) {
-                            if (!hlRanges.has(currHlId)) {
-                                hlRanges.set(currHlId, []);
-                            }
-                            hlRanges.get(currHlId)!.push({
-                                lineS: currHlStartRow,
-                                lineE: currHlEndRow,
-                                colS: currHlStartCol,
-                                colE: currHlEndCol,
-                            });
-                            currHlId = 0;
-                            currHlStartCol = 0;
-                            currHlEndCol = 0;
-                            currHlStartRow = 0;
-                            currHlEndRow = 0;
+                        // Extend range highlights
+                        const { hlId } = colHighlights[0];
+                        if (currHlId === hlId && currEndCol === col - 1) {
+                            currEndCol = col;
+                        } else {
+                            if (currHlId)
+                                pushOptions(currHlId, { range: new Range(line, currStartCol, line, currEndCol + 1) });
+                            currHlId = hlId;
+                            currStartCol = col;
+                            currEndCol = col;
                         }
-                        currHlId = hlDeco.hlId;
-                        currHlStartRow = rowIdx;
-                        currHlEndRow = rowIdx;
-                        currHlStartCol = cellIdx;
-                        currHlEndCol = cellIdx;
                     }
                 });
-            });
-            if (currHlId) {
-                if (!hlRanges.has(currHlId)) {
-                    hlRanges.set(currHlId, []);
+                if (currHlId) {
+                    pushOptions(currHlId, { range: new Range(line, currStartCol, line, currEndCol + 1) });
                 }
-                hlRanges.get(currHlId)!.push({
-                    lineS: currHlStartRow,
-                    lineE: currHlEndRow,
-                    colS: currHlStartCol,
-                    colE: currHlEndCol,
-                });
-            }
-        }
-        for (const [id, ranges] of hlRanges) {
-            const decorator = this.getDecoratorForHighlightId(id);
-            if (!decorator) {
-                continue;
-            }
-            const decoratorRanges = ranges.map((r) => {
-                const lineLength = editor.document.lineAt(Math.min(topLine + r.lineS, editor.document.lineCount - 1))
-                    .text.length;
-                if (r.hl) {
-                    const conf = this.getDecoratorOptions(decorator);
-                    return this.createVirtTextDecorationOption(
-                        r.hl.virtText!,
-                        { ...conf, backgroundColor: conf.backgroundColor || new ThemeColor("editor.background") }, // overwrite text underneath
-                        topLine + r.lineS,
-                        r.colS + 1,
-                        lineLength,
-                    );
-                }
-                return {
-                    range: new Range(topLine + r.lineS, r.colS, topLine + r.lineE, r.colE + 1),
-                } as DecorationOptions;
             });
-            result.push([decorator, decoratorRanges]);
         }
+
+        const result: [TextEditorDecorationType, DecorationOptions[]][] = [];
+        hlId_options.forEach((options, hlId) => {
+            if (options.length) {
+                const decorator = this.getDecoratorForHighlightId(hlId);
+                if (decorator) {
+                    result.push([decorator, options]);
+                }
+            }
+        });
 
         const prevHighlights = this.prevGridHighlightsIds.get(grid);
         if (prevHighlights) {
             for (const id of prevHighlights) {
-                if (!hlRanges.has(id)) {
+                if (!hlId_options.has(id)) {
                     const decorator = this.getDecoratorForHighlightId(id);
-                    if (!decorator) {
-                        continue;
+                    if (decorator) {
+                        result.push([decorator, []]);
                     }
-                    result.push([decorator, []]);
                 }
             }
         }
-        this.prevGridHighlightsIds.set(grid, new Set(hlRanges.keys()));
+        this.prevGridHighlightsIds.set(grid, new Set(hlId_options.keys()));
+
         return result;
     }
 
-    private createDecoratorForHighlightId(id: number, options: ThemableDecorationRenderOptions): void {
-        const decorator = window.createTextEditorDecorationType(options);
-        this.decoratorConfigurations.set(decorator, options);
-        this.highlighIdToDecorator.set(id, decorator);
-    }
-
-    public createVirtTextDecorationOption(
-        text: string,
-        conf: ThemableDecorationRenderOptions,
-        lineNum: number,
+    createColVirtTextOptions(
+        line: number,
         col: number,
-        lineLength: number,
-    ): DecorationOptions {
-        const textDeco: DecorationOptions = {
-            range: new Range(lineNum, col + text.length - 1, lineNum, col + text.length - 1),
-            renderOptions: {
-                // Inspired by https://github.com/VSCodeVim/Vim/blob/badecf1b7ecd239e3ed58720245b6f4a74e439b7/src/actions/plugins/easymotion/easymotion.ts#L64
-                after: {
-                    // What's up with the negative right
-                    // margin? That shifts the decoration to the
-                    // right. By default VSCode places the
-                    // decoration behind the text. If we
-                    // shift it one character to the right,
-                    // it will be on top.
-                    // Why do all that math in the right
-                    // margin?  If we try to draw off the
-                    // end of the screen, VSCode will place
-                    // the text in a column we weren't
-                    // expecting. This code accounts for that.
-                    margin: `0 0 0 -${Math.min(lineLength - col + 1, text.length)}ch`,
-                    ...conf,
-                    ...conf.before,
-                    width: `${text.length}ch; position:absolute; z-index:99;`,
-                    contentText: text,
+        colHighlights: Highlight[],
+        lineText: string,
+    ): Map<number, DecorationOptions[]> {
+        // FIXME: Temporarily ignore EOL virt text.
+        // Sometimes strange virtual text occurs, and it's hard to debug.
+        // It could also be related to viewport desync.
+        if (col >= lineText.length + 4) {
+            return new Map();
+        }
+        const hlId_options = new Map<number, DecorationOptions[]>();
+
+        colHighlights = cloneDeep(colHighlights);
+
+        // #region
+        // When on a multi-width character,
+        // there may be a cell with a highlight ID of 0 and its content is a space used to hide the cell.
+        // However, in vscode, we will ignore the highlighting ID of 0.
+        // So, we add the character to the preceding virtual text.
+        const processedColHighlights: { hlId: number; virtText: string }[] = [];
+        colHighlights.forEach(({ virtText, hlId, text }) => {
+            // In certain edge cases, the right-side highlight may be appended later,
+            // resulting in the column being converted to virt text type.
+            // So, the left-side highlight may not include virtText.
+            virtText ??= text;
+            if (hlId === 0 && processedColHighlights.length > 0) {
+                processedColHighlights[processedColHighlights.length - 1].virtText += virtText;
+            } else {
+                processedColHighlights.push({ hlId, virtText });
+            }
+        });
+        // #endregion
+
+        const virtTextCol = Math.min(lineText.length, col);
+        const range = new Range(line, virtTextCol, line, virtTextCol);
+        const backgroundColor = new ThemeColor("editor.background");
+
+        processedColHighlights.forEach(({ virtText, hlId }, offset) => {
+            const decorator = this.getDecoratorForHighlightId(hlId);
+            if (!decorator) return;
+            if (!hlId_options.has(hlId)) hlId_options.set(hlId, []);
+            const text = virtText.replace(/ /g, "\u200D");
+            const conf = this.getDecoratorOptions(decorator);
+            const width = text.length;
+            if (col > lineText.length) {
+                offset += col - lineText.length; // for 'eol' virtual text
+            }
+            hlId_options.get(hlId)!.push({
+                range,
+                renderOptions: {
+                    before: {
+                        backgroundColor,
+                        ...conf,
+                        contentText: text,
+                        margin: `0 0 0 ${offset}ch`,
+                        width: `${width}ch; position:absolute; z-index:${99 - offset}; --hlId: ${hlId};`,
+                    },
                 },
-            },
-        };
-        return textDeco;
+            });
+        });
+        return hlId_options;
     }
 }

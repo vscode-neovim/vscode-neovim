@@ -162,15 +162,29 @@
                     "title": "Highlight Groups Configuration",
                     "description": "Define colors for various VIM highlight groups. Values may be 'vim' to use colors from vim or text decoration properties object",
                     "additionalProperties": {
-                        "oneOf": [
-                            {
-                                "type": "object"
-                            },
-                            {
+                        "type": "object",
+                        "properties": {
+                            "backgroundColor": {
                                 "type": "string",
-                                "const": "vim"
+                                "description": "CSS styling property that will be applied to the decoration attachment"
+                            },
+                            "color": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
+                            },
+                            "border": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
+                            },
+                            "borderColor": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
+                            },
+                            "textDecoration": {
+                                "type": "string",
+                                "description": "CSS styling property that will be applied to the decoration attachment"
                             }
-                        ]
+                        }
                     },
                     "default": {
                         "IncSearch": {
@@ -1295,10 +1309,11 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "fast-diff": "^1.3.0",
         "async-mutex": "^0.4.0",
+        "fast-diff": "^1.3.0",
+        "grapheme-splitter": "^1.0.4",
         "lodash-es": "^4.17.21",
-        "ts-wcwidth": "^2.0.3",
-        "neovim": "^4.9.0"
+        "neovim": "^4.9.0",
+        "ts-wcwidth": "^2.0.3"
     }
 }

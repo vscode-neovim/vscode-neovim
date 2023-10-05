@@ -106,14 +106,12 @@ function M.highlight_fake_cursor()
     local line = vim.fn.line(".")
     local col = vim.fn.col(".")
     local ch = util.get_char_at(line, col) or " "
-    -- !nvim won't send tab, so we use ❥ instead
-    ch = ch == "\t" and "❥" or ch
     M.fake_cursor = vim.api.nvim_buf_set_extmark(
       0,
       M.fake_ns,
       line - 1,
       col - 1,
-      { virt_text = { { ch, "Cursor" } }, virt_text_pos = "overlay", hl_mode = "combine", priority = 65534 }
+      { virt_text = { { ch, "Cursor" } }, virt_text_pos = "overlay", hl_mode = "replace", priority = 65534 }
     )
   end
 end
