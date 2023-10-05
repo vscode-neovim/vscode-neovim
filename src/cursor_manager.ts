@@ -4,6 +4,7 @@ import {
     commands,
     Disposable,
     Position,
+    Range,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
@@ -120,19 +121,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
                 break;
             }
-            case "visual-edit": {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [append, visualMode, startLine, endLine, startCol, endCol, skipEmpty] = args as any;
-                this.multipleCursorFromVisualMode(
-                    !!append,
-                    new Mode(visualMode),
-                    startLine - 1,
-                    endLine - 1,
-                    startCol,
-                    endCol,
-                    !!skipEmpty,
-                );
-                break;
+            case "start-cursors": {
+                const ranges = args[0] as Range[];
+                if (window.activeTextEditor && ranges.length) {
+                    window.activeTextEditor.selections = ranges.map((r) => new Selection(r.start, r.end));
+                }
             }
         }
     }
@@ -567,39 +560,5 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             e.selections = prevSelections;
         }
         return res;
-    }
-
-    private async multipleCursorFromVisualMode(
-        append: boolean,
-        mode: Mode,
-        startLine: number,
-        endLine: number,
-        startCol: number,
-        endCol: number,
-        skipEmpty: boolean,
-    ): Promise<void> {
-        if (!window.activeTextEditor) return;
-        await this.waitForCursorUpdate(window.activeTextEditor);
-        this.wantInsertCursorUpdate = false;
-
-        this.logger.debug(
-            `${LOG_PREFIX}: Spawning multiple cursors from lines: [${startLine}, ${endLine}], col: [${startCol}, ${endCol}], mode: ${mode.visual}, append: ${append}, skipEmpty: ${skipEmpty}`,
-        );
-        const selections: Selection[] = [];
-        const doc = window.activeTextEditor.document;
-        for (let line = startLine; line <= endLine; line++) {
-            const lineDef = doc.lineAt(line);
-            // always skip empty lines for visual block mode
-            if (lineDef.text.trim() === "" && (skipEmpty || mode.visual === "block")) continue;
-            let char = 0;
-            if (mode.visual === "line") {
-                char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
-            } else {
-                char = append ? Math.max(startCol, endCol) : Math.min(startCol, endCol) - 1;
-            }
-            this.logger.debug(`${LOG_PREFIX}: Multiple cursor at: [${line}, ${char}]`);
-            selections.push(new Selection(line, char, line, char));
-        }
-        window.activeTextEditor.selections = selections;
     }
 }
