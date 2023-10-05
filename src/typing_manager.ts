@@ -50,27 +50,42 @@ export class TypingManager implements Disposable {
      */
     private composingText = "";
 
-    public constructor(private logger: Logger, private client: NeovimClient, private main: MainController) {
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private main: MainController,
+    ) {
+        const warnOnEmptyKey = (method: (key: string) => Promise<void>): typeof method => {
+            return (key: string) => {
+                if (key) {
+                    return method.apply(this, [key]);
+                } else {
+                    const link =
+                        "command:workbench.action.openGlobalKeybindings?" +
+                        encodeURIComponent('["vscode-neovim.send"]');
+                    window.showErrorMessage(
+                        `No args provided to vscode-neovim.send. Please check your [keybinds](${link}) ` +
+                            "to ensure that all send commands include the args parameter.",
+                    );
+                    return Promise.resolve();
+                }
+            };
+        };
         this.registerType();
         this.registerReplacePrevChar();
-        this.disposables.push(commands.registerCommand("vscode-neovim.send", this.onSendCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.send-blocking", this.onSendBlockingCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand));
-        this.disposables.push(commands.registerCommand("vscode-neovim.enable", () => this.onEnableCommand("enable")));
-        this.disposables.push(commands.registerCommand("vscode-neovim.disable", () => this.onEnableCommand("disable")));
-        this.disposables.push(commands.registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle")));
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape1", (key: string) =>
-                this.handleCompositeEscapeFirstKey(key),
-            ),
-        );
-        this.disposables.push(
-            commands.registerCommand("vscode-neovim.compositeEscape2", (key: string) =>
-                this.handleCompositeEscapeSecondKey(key),
-            ),
-        );
-        this.disposables.push(commands.registerCommand("compositionStart", this.onCompositionStart));
-        this.disposables.push(commands.registerCommand("compositionEnd", this.onCompositionEnd));
+        const registerCommand = (cmd: string, cb: (...args: any[]) => any) => {
+            this.disposables.push(commands.registerCommand(cmd, cb, this));
+        };
+        registerCommand("vscode-neovim.send", warnOnEmptyKey(this.onSendCommand));
+        registerCommand("vscode-neovim.send-blocking", warnOnEmptyKey(this.onSendBlockingCommand));
+        registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand);
+        registerCommand("vscode-neovim.enable", () => this.onEnableCommand("enable"));
+        registerCommand("vscode-neovim.disable", () => this.onEnableCommand("disable"));
+        registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle"));
+        registerCommand("vscode-neovim.compositeEscape1", warnOnEmptyKey(this.handleCompositeEscapeFirstKey));
+        registerCommand("vscode-neovim.compositeEscape2", warnOnEmptyKey(this.handleCompositeEscapeSecondKey));
+        registerCommand("compositionStart", this.onCompositionStart);
+        registerCommand("compositionEnd", this.onCompositionEnd);
         this.main.modeManager.onModeChange(this.onModeChange);
     }
 
@@ -113,31 +128,36 @@ export class TypingManager implements Disposable {
         }
     }
 
-    private onModeChange = (): void => {
+    private onModeChange = async (): Promise<void> => {
         if (
             this.main.modeManager.isInsertMode &&
             this.typeHandlerDisposable &&
             !this.main.modeManager.isRecordingInInsertMode
         ) {
-            this.pendingKeysAfterEnter = "";
             const editor = window.activeTextEditor;
-            if (editor && this.main.changeManager.hasDocumentChangeCompletionLock(editor.document)) {
-                this.isEnteringInsertMode = true;
+            const documentPromise = editor && this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+            if (documentPromise) {
                 this.logger.debug(
-                    `${LOG_PREFIX}: Waiting for document completion operation before disposing type handler`,
+                    `${LOG_PREFIX}: Waiting for cursor completion operation before disposing type handler`,
                 );
-                this.main.changeManager.getDocumentChangeCompletionLock(editor.document)?.then(() => {
-                    this.isEnteringInsertMode = false;
+                this.pendingKeysAfterEnter = "";
+                this.isEnteringInsertMode = true;
+                documentPromise.then(async () => {
+                    await this.main.cursorManager.waitForCursorUpdate(editor);
                     if (this.main.modeManager.isInsertMode) {
                         this.disposeType();
                         this.disposeReplacePrevChar();
                     }
                     if (this.pendingKeysAfterEnter) {
-                        commands.executeCommand(this.main.modeManager.isInsertMode ? "default:type" : "type", {
+                        this.logger.debug(
+                            `${LOG_PREFIX}: Replaying pending keys after entering insert mode: ${this.pendingKeysAfterEnter}`,
+                        );
+                        await commands.executeCommand(this.main.modeManager.isInsertMode ? "default:type" : "type", {
                             text: this.pendingKeysAfterEnter,
                         });
                         this.pendingKeysAfterEnter = "";
                     }
+                    this.isEnteringInsertMode = false;
                 });
             } else {
                 this.disposeType();
@@ -178,7 +198,11 @@ export class TypingManager implements Disposable {
             this.logger.debug(`${LOG_PREFIX}: Syncing buffers with neovim (${key})`);
             await this.main.changeManager.documentChangeLock.waitForUnlock();
             if (window.activeTextEditor)
-                await this.main.cursorManager.updateNeovimCursorPosition(window.activeTextEditor, undefined);
+                await this.main.cursorManager.updateNeovimCursorPosition(
+                    window.activeTextEditor,
+                    window.activeTextEditor.selection.active,
+                    false,
+                );
             await this.main.changeManager.syncDotRepeatWithNeovim();
             const keys = normalizeInputString(this.pendingKeysAfterExit);
             this.logger.debug(`${LOG_PREFIX}: Pending keys sent with ${key}: ${keys}`);

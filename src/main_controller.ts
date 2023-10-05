@@ -17,14 +17,13 @@ import { DocumentChangeManager } from "./document_change_manager";
 import {
     NeovimCommandProcessable,
     NeovimExtensionRequestProcessable,
-    NeovimRangeCommandProcessable,
     NeovimRedrawProcessable,
 } from "./neovim_events_processable";
 import { CommandLineManager } from "./command_line_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { HighlightManager } from "./highlight_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
-import { findLastEvent } from "./utils";
+import { EXT_ID, findLastEvent } from "./utils";
 import { MutlilineMessagesManager } from "./multiline_messages_manager";
 import { ViewportManager } from "./viewport_manager";
 
@@ -36,7 +35,6 @@ export interface ControllerSettings {
     neovimPath: string;
     extensionPath: string;
     highlightsConfiguration: HighlightConfiguration;
-    mouseSelection: boolean;
     useWsl: boolean;
     customInitFile: string;
     clean: boolean;
@@ -44,6 +42,7 @@ export interface ControllerSettings {
     neovimViewportWidth: number;
     neovimViewportHeightExtend: number;
     revealCursorScrollLine: boolean;
+    completionDelay: number;
     logConf: {
         level: "none" | "error" | "warn" | "debug";
         logPath: string;
@@ -55,7 +54,7 @@ const LOG_PREFIX = "MainController";
 
 export class MainController implements vscode.Disposable {
     private nvimProc: ChildProcess;
-    private client: NeovimClient;
+    public client: NeovimClient;
 
     private disposables: vscode.Disposable[] = [];
 
@@ -97,18 +96,18 @@ export class MainController implements vscode.Disposable {
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
-        const neovimSupportScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
-        const neovimOptionScriptPath = path.posix.join(extensionPath, "vim", "vscode-options.vim");
+        const neovimPreScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
+        const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode-neovim/force-options.lua");
 
         const args = [
             "-N",
             "--embed",
             // load options after user config
-            "-c",
-            `source ${neovimOptionScriptPath}`,
+            "-S",
+            neovimPostScriptPath,
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
-            `source ${neovimSupportScriptPath}`,
+            `source ${neovimPreScriptPath}`,
         ];
 
         const workspaceFolder = vscode.workspace.workspaceFolders;
@@ -141,6 +140,13 @@ export class MainController implements vscode.Disposable {
         );
         if (settings.NVIM_APPNAME) {
             process.env.NVIM_APPNAME = settings.NVIM_APPNAME;
+            if (settings.useWsl) {
+                /*
+                 * `/u` flag indicates the value should only be included when invoking WSL from Win32.
+                 * https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/#u
+                 */
+                process.env.WSLENV = "NVIM_APPNAME/u";
+            }
         }
         this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
         this.nvimProc.on("close", (code) => {
@@ -161,6 +167,8 @@ export class MainController implements vscode.Disposable {
                 }),
             },
         });
+
+        this.verifyExperimentalAffinity();
     }
 
     public async init(): Promise<void> {
@@ -195,29 +203,25 @@ export class MainController implements vscode.Disposable {
         );
         this.disposables.push(this.viewportManager);
 
-        this.highlightManager = new HighlightManager(this, {
-            highlight: this.settings.highlightsConfiguration,
-        });
+        this.highlightManager = new HighlightManager(this, this.settings.highlightsConfiguration);
         this.disposables.push(this.highlightManager);
 
         this.changeManager = new DocumentChangeManager(this.logger, this.client, this);
         this.disposables.push(this.changeManager);
 
-        this.cursorManager = new CursorManager(this.logger, this.client, this, {
-            mouseSelectionEnabled: this.settings.mouseSelection,
-        });
+        this.cursorManager = new CursorManager(this.logger, this.client, this);
         this.disposables.push(this.cursorManager);
 
         this.typingManager = new TypingManager(this.logger, this.client, this);
         this.disposables.push(this.typingManager);
 
-        this.commandLineManager = new CommandLineManager(this.logger, this.client);
+        this.commandLineManager = new CommandLineManager(this.logger, this.client, this.settings.completionDelay);
         this.disposables.push(this.commandLineManager);
 
         this.statusLineManager = new StatusLineManager(this.logger, this.client);
         this.disposables.push(this.statusLineManager);
 
-        this.customCommandsManager = new CustomCommandsManager(this.logger);
+        this.customCommandsManager = new CustomCommandsManager(this.logger, this);
         this.disposables.push(this.customCommandsManager);
 
         this.multilineMessagesManager = new MutlilineMessagesManager(this.logger);
@@ -256,7 +260,6 @@ export class MainController implements vscode.Disposable {
     private onNeovimNotification = (method: string, events: [string, ...any[]]): void => {
         // order matters here, modeManager should be processed first
         const redrawManagers: NeovimRedrawProcessable[] = [
-            this.modeManager,
             this.bufferManager,
             this.viewportManager,
             this.cursorManager,
@@ -269,13 +272,12 @@ export class MainController implements vscode.Disposable {
             this.modeManager,
             this.changeManager,
             this.commandsController,
+            this.customCommandsManager,
             this.bufferManager,
             this.viewportManager,
-            this.highlightManager,
             this.cursorManager,
         ];
         const vscodeComandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
 
         if (method === "vscode-command") {
             const [vscodeCommand, commandArgs] = events as [string, unknown[]];
@@ -288,29 +290,6 @@ export class MainController implements vscode.Disposable {
                 } catch (e) {
                     this.logger.error(
                         `${vscodeCommand} failed, args: ${JSON.stringify(commandArgs)} error: ${(e as Error).message}`,
-                    );
-                }
-            });
-            return;
-        }
-        if (method === "vscode-range-command") {
-            const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, args] = events;
-            vscodeRangeCommandManagers.forEach((m) => {
-                try {
-                    m.handleVSCodeRangeCommand(
-                        vscodeCommand,
-                        line1,
-                        line2,
-                        pos1,
-                        pos2,
-                        !!leaveSelection,
-                        Array.isArray(args) ? args : [args],
-                    );
-                } catch (e) {
-                    this.logger.error(
-                        `${vscodeCommand} failed, range: [${line1}, ${line2}, ${pos1}, ${pos2}] args: ${JSON.stringify(
-                            args,
-                        )} error: ${(e as Error).message}`,
                     );
                 }
             });
@@ -354,12 +333,11 @@ export class MainController implements vscode.Disposable {
             this.modeManager,
             this.changeManager,
             this.commandsController,
+            this.customCommandsManager,
             this.bufferManager,
-            this.highlightManager,
             this.cursorManager,
         ];
         const vscodeCommandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
         try {
             let result: unknown;
             if (eventName === "vscode-command") {
@@ -367,31 +345,6 @@ export class MainController implements vscode.Disposable {
                 const results = await Promise.all(
                     vscodeCommandManagers.map((m) =>
                         m.handleVSCodeCommand(vscodeCommand, Array.isArray(commandArgs) ? commandArgs : [commandArgs]),
-                    ),
-                );
-                // use first non nullable result
-                result = results.find((r) => r != null);
-            } else if (eventName === "vscode-range-command") {
-                const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, commandArgs] = eventArgs as [
-                    string,
-                    number,
-                    number,
-                    number,
-                    number,
-                    number,
-                    unknown[],
-                ];
-                const results = await Promise.all(
-                    vscodeRangeCommandManagers.map((m) =>
-                        m.handleVSCodeRangeCommand(
-                            vscodeCommand,
-                            line1,
-                            line2,
-                            pos1,
-                            pos2,
-                            !!leaveSelection,
-                            Array.isArray(commandArgs) ? commandArgs : [commandArgs],
-                        ),
                     ),
                 );
                 // use first non nullable result
@@ -419,5 +372,68 @@ export class MainController implements vscode.Disposable {
             vscode.window.showErrorMessage("The extension requires neovim 0.8 or greater");
             return;
         }
+    }
+
+    private async restartExtensionHostPrompt(message: string): Promise<void> {
+        vscode.window.showInformationMessage(message, "Restart").then((value) => {
+            if (value == "Restart") {
+                this.logger.debug("Restarting extension host");
+                vscode.commands.executeCommand("workbench.action.restartExtensionHost");
+            }
+        });
+    }
+
+    private async verifyExperimentalAffinity(): Promise<void> {
+        const extensionsConfiguration = vscode.workspace.getConfiguration("extensions");
+        const affinityConfiguration = extensionsConfiguration.inspect<{ [key: string]: [number] }>(
+            "experimental.affinity",
+        );
+
+        const affinityConfigWorkspaceValue = affinityConfiguration?.workspaceValue;
+        if (affinityConfigWorkspaceValue && EXT_ID in affinityConfigWorkspaceValue) {
+            this.logger.debug(
+                `Extension affinity value ${affinityConfigWorkspaceValue[EXT_ID]} found in Workspace settings`,
+            );
+            return;
+        }
+
+        const affinityConfigGlobalValue = affinityConfiguration?.globalValue;
+        if (affinityConfigGlobalValue && EXT_ID in affinityConfigGlobalValue) {
+            this.logger.debug(`Extension affinity value ${affinityConfigGlobalValue[EXT_ID]} found in User settings`);
+            return;
+        }
+
+        this.logger.debug("Extension affinity value not set in User and Workspace settings");
+
+        const defaultAffinity = 1;
+
+        const setAffinity = (value: number): void => {
+            this.logger.debug(`Setting extension affinity value to ${value} in User settings`);
+            extensionsConfiguration
+                .update("experimental.affinity", { ...affinityConfigGlobalValue, [EXT_ID]: value }, true)
+                .then(
+                    () => {
+                        this.logger.debug(`Successfull set extension affinity value to ${value} in User settings`);
+                    },
+                    (error) => {
+                        this.logger.error(`Error while setting experimental affinity. ${error}`);
+                    },
+                );
+        };
+
+        vscode.window
+            .showWarningMessage(
+                "No affinity assigned to vscode-neovim. It is recommended to assign affinity for major performance improvements. Would you like to set default affinity? [Learn more](https://github.com/vscode-neovim/vscode-neovim#affinity)",
+                "Yes",
+                "Cancel",
+            )
+            .then((value) => {
+                if (value == "Yes") {
+                    setAffinity(defaultAffinity);
+                    this.restartExtensionHostPrompt(
+                        "Requires restart of extension host for changes to take effect. This restarts all extensions.",
+                    );
+                }
+            });
     }
 }

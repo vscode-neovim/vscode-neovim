@@ -11,15 +11,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const neovimPath = getNeovimPath();
     const isWindows = process.platform == "win32";
 
-    const highlightConfIgnore = settings.get("highlightGroups.ignoreHighlights");
     const highlightConfHighlights = settings.get("highlightGroups.highlights");
-    const highlightConfUnknown = settings.get("highlightGroups.unknownHighlight");
-    const mouseVisualSelection = settings.get("mouseSelectionStartVisualMode", false);
     const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
     const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
     const useWsl = isWindows && settings.get("useWSL", false);
     const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
     const neovimWidth = settings.get("neovimWidth", 1000);
+    const completionDelay = settings.get("completionDelay", 1500);
     const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 1);
     const customInit = getNeovimInitPath() ?? "";
     const clean = settings.get("neovimClean", false);
@@ -39,16 +37,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             extensionPath: context.extensionPath.replace(/\\/g, "\\\\"),
             highlightsConfiguration: {
                 highlights: highlightConfHighlights,
-                ignoreHighlights: highlightConfIgnore,
-                unknownHighlight: highlightConfUnknown,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any,
-            mouseSelection: mouseVisualSelection,
             neovimPath: neovimPath,
             useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
             neovimViewportWidth: neovimWidth,
             neovimViewportHeightExtend: neovimViewportHeightExtend,
             revealCursorScrollLine: revealCursorScrollLine,
+            completionDelay: completionDelay,
             logConf: {
                 logPath,
                 outputToConsole,

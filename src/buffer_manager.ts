@@ -12,16 +12,20 @@ import {
     Selection,
     TextDocument,
     TextEditor,
+    TextEditorLineNumbersStyle,
     TextEditorOptionsChangeEvent,
     Uri,
     ViewColumn,
     window,
+    TextDocumentContentProvider,
     workspace,
+    EventEmitter,
+    TextEditorRevealType,
 } from "vscode";
 
 import { Logger } from "./logger";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { calculateEditorColFromVimScreenCol, callAtomic, getNeovimCursorPosFromEditor } from "./utils";
+import { ManualPromise, callAtomic, convertByteNumToCharNum } from "./utils";
 import { MainController } from "./main_controller";
 
 // !Note: document and editors in vscode events and namespace are reference stable
@@ -37,6 +41,8 @@ const LOG_PREFIX = "BufferManager";
 
 const BUFFER_NAME_PREFIX = "__vscode_neovim__-";
 
+const BUFFER_SCHEME = "vscode-neovim";
+
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
  */
@@ -45,14 +51,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     /**
      * Internal sync promise
      */
-    private changeLayoutPromise?: Promise<void>;
-    private changeLayoutPromiseResolve?: () => void;
-    private cancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
-    /**
-     * Currently opened editors
-     * !Note: Order can be any, it doesn't relate to visible order
-     */
-    private openedEditors: TextEditor[] = [];
+    private syncLayoutPromise?: ManualPromise;
+    private syncLayoutCancelTokenSource: CancellationTokenSource = new CancellationTokenSource();
+    private syncActiveEditorPromise?: ManualPromise;
     /**
      * Text documents originated externally, as consequence of neovim command, like :help or :PlugStatus
      */
@@ -77,6 +78,10 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
      * Tab configuration for each editor
      */
     private editorTabConfiguration: WeakMap<TextEditor, { tabSize: number; insertSpaces: boolean }> = new WeakMap();
+    /**
+     * Provider for external buffers' document contents (e.g. `:help`)
+     */
+    private bufferProvider: BufferProvider;
 
     /**
      * Buffer event delegate
@@ -102,6 +107,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
         this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
         this.disposables.push(window.onDidChangeTextEditorOptions(this.onDidChangeEditorOptions));
+
+        this.bufferProvider = new BufferProvider(logger, client, this.receivedBufferEvent);
+        this.disposables.push(workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider));
     }
 
     public dispose(): void {
@@ -110,15 +118,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public async forceResync(): Promise<void> {
         this.logger.debug(`${LOG_PREFIX}: force resyncing layout`);
+        if (!this.syncLayoutPromise) {
+            this.syncLayoutPromise = new ManualPromise();
+        }
         // this.cancelTokenSource will always be cancelled when the visible editors change
-        await this.syncLayout(this.cancelTokenSource.token);
-        await this.syncActiveEditor();
+        await this.syncLayoutDebounced(this.syncLayoutCancelTokenSource.token);
+        await this.syncActiveEditorDebounced();
     }
 
     public async waitForLayoutSync(): Promise<void> {
-        if (this.changeLayoutPromise) {
+        if (this.syncLayoutPromise) {
             this.logger.debug(`${LOG_PREFIX}: Waiting for completing layout resyncing`);
-            await this.changeLayoutPromise;
+            await this.syncLayoutPromise.promise;
             this.logger.debug(`${LOG_PREFIX}: Waiting done`);
         }
     }
@@ -167,8 +178,11 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
     }
 
     public isExternalTextDocument(textDoc: TextDocument): boolean {
+        // !Output should be modifiable, vscode treats it as a regular document.
+        // !When the option "modifiable" is set to false, nvim_buf_set_text will not work. #498
+        // !Don't remove this, cause it's a long time bug
         if (textDoc.uri.scheme === "output") {
-            return true;
+            return false;
         }
         return this.externalTextDocuments.has(textDoc);
     }
@@ -232,14 +246,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
                 const id = parseInt(idStr, 10);
                 if (!(name && this.isVscodeUriName(name))) {
-                    this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: ${name}, id: ${id}`);
+                    this.logger.debug(`${LOG_PREFIX}: Attaching new external buffer: '${name}', id: ${id}`);
                     if (id === 1) {
                         this.logger.debug(`${LOG_PREFIX}: ${id} is the first neovim buffer, skipping`);
                         return;
                     }
                     await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
                 } else if (name) {
-                    const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substr(18) : name;
+                    const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substring(18) : name;
                     this.logger.debug(`${LOG_PREFIX}: Buffer request for ${normalizedName}, bufId: ${idStr}`);
                     try {
                         let doc = this.findDocFromUri(normalizedName);
@@ -285,14 +299,94 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
                 break;
             }
+            case "window-changed": {
+                this.onWindowChangedDebounced(args[0] as number);
+                break;
+            }
         }
     }
+
+    private onWindowChanged = async (winId: number): Promise<void> => {
+        this.logger.debug(`${LOG_PREFIX} onWindowChanged, target window id: ${winId}`);
+
+        const returnToActiveEditor = async () => {
+            if (window.activeTextEditor) {
+                await window.showTextDocument(window.activeTextEditor.document, window.activeTextEditor.viewColumn);
+            }
+        };
+
+        let targetEditor = this.getEditorFromWinId(winId);
+        if (!targetEditor) {
+            this.logger.debug(`${LOG_PREFIX} target editor not found <check 1>, return to active editor`);
+            await returnToActiveEditor();
+            return;
+        }
+        if (window.activeTextEditor === targetEditor) return;
+        // since the event could be triggered by vscode side operations
+        // we need to wait a bit to let vscode finish its internal operations
+        // then check if the target editor is still the same
+        await new Promise((res) => setTimeout(res, 50));
+        this.syncLayoutPromise && (await this.syncLayoutPromise.promise);
+        this.syncActiveEditorPromise && (await this.syncActiveEditorPromise.promise);
+        // triggered by vscode side operations
+        if (window.activeTextEditor === undefined) {
+            // e.g. open settings, open keyboard shortcuts settings which overrides active editor
+            this.logger.debug(`${LOG_PREFIX} activeTextEditor is undefined, skipping`);
+            return;
+        }
+        await this.main.cursorManager.waitForCursorUpdate(window.activeTextEditor);
+        const { id: curwin } = await this.client.getWindow();
+        targetEditor = this.getEditorFromWinId(curwin);
+        if (!targetEditor) {
+            this.logger.debug(`${LOG_PREFIX} target editor not found <check 2>, return to active editor`);
+            returnToActiveEditor();
+            return;
+        }
+        if (window.activeTextEditor === targetEditor) return;
+        await this.main.cursorManager.waitForCursorUpdate(targetEditor);
+        const uri = targetEditor.document.uri;
+        const { scheme } = uri;
+        switch (scheme) {
+            case "output": {
+                await commands.executeCommand("workbench.panel.output.focus");
+                return;
+            }
+
+            case "vscode-notebook-cell": {
+                const targetNotebook = window.visibleNotebookEditors.find((e) => e.notebook.uri.fsPath === uri.fsPath);
+                if (targetNotebook) {
+                    // 1. jump to target notebook
+                    await window.showTextDocument(targetEditor.document, targetNotebook.viewColumn);
+                    // wait a bit to let vscode finish its internal operations
+                    await new Promise((res) => setTimeout(res, 50));
+                    // 2. jump to target cell
+                    await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
+                    return;
+                }
+                break;
+            }
+
+            default: {
+                await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
+                return;
+            }
+        }
+
+        // Should not happen
+        await returnToActiveEditor();
+    };
+
+    private onWindowChangedDebounced = debounce(this.onWindowChanged, 100, { leading: false, trailing: true });
 
     /**
      * !Note when closing text editor with document, vscode sends onDidCloseTextDocument first
      * @param doc
      */
-    private onDidCloseTextDocument = (doc: TextDocument): void => {
+    private onDidCloseTextDocument = (_doc: TextDocument): void => {
+        // Don't need to do anything here
+        // Regardless of whether the document was previously visible or not,
+        // it will always be cleaned up properly in syncLayout.
+        /*
         const hasVisibleEditor = !!this.openedEditors.find((d) => d.document === doc);
         // we'll handle it in onDidChangeVisibleTextEditors()
         if (!hasVisibleEditor) {
@@ -303,6 +397,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             //     this.unloadBuffer(bufId);
             // }
         }
+        */
     };
 
     private onDidChangeVisibleTextEditors = (): void => {
@@ -311,19 +406,22 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         // !we need to wait to complete last call before processing onDidChangeActiveTextEditor
         // !for this init a promise early, then resolve it after processing
         this.logger.debug(`${LOG_PREFIX}: onDidChangeVisibleTextEditors`);
-        if (!this.changeLayoutPromise) {
-            this.changeLayoutPromise = new Promise((res) => (this.changeLayoutPromiseResolve = res));
+        if (!this.syncLayoutPromise) {
+            this.syncLayoutPromise = new ManualPromise();
         }
 
         // Cancel the previous syncLayout call, and then create a new token source for the new
         // syncLayout call
-        this.cancelTokenSource.cancel();
-        this.cancelTokenSource = new CancellationTokenSource();
-        this.syncLayoutDebounced(this.cancelTokenSource.token);
+        this.syncLayoutCancelTokenSource.cancel();
+        this.syncLayoutCancelTokenSource = new CancellationTokenSource();
+        this.syncLayoutDebounced(this.syncLayoutCancelTokenSource.token);
     };
 
     private onDidChangeActiveTextEditor = (): void => {
         this.logger.debug(`${LOG_PREFIX}: onDidChangeActiveTextEditor`);
+        if (!this.syncActiveEditorPromise) {
+            this.syncActiveEditorPromise = new ManualPromise();
+        }
         this.syncActiveEditorDebounced();
     };
 
@@ -331,9 +429,7 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: syncing layout`);
         // store in copy, just in case
         const currentVisibleEditors = [...window.visibleTextEditors];
-        const prevVisibleEditors = this.openedEditors;
 
-        const nvimRequests: [string, unknown[]][] = [];
         // Open/change neovim windows
         this.logger.debug(`${LOG_PREFIX}: new/changed editors/windows`);
         for (const visibleEditor of currentVisibleEditors) {
@@ -379,13 +475,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     winId = await this.createNeovimWindow(editorBufferId);
                     this.logger.debug(`${LOG_PREFIX}: Created new window: ${winId}`);
                     this.logger.debug(`${LOG_PREFIX}: ViewColumn: ${visibleEditor.viewColumn} - WinId: ${winId}`);
-                    const cursor = getNeovimCursorPosFromEditor(visibleEditor);
-                    this.logger.debug(
-                        `${LOG_PREFIX}: Setting buffer: ${editorBufferId} to win: ${winId}, cursor: [${cursor[0]}, ${cursor[1]}]`,
-                    );
-                    await this.client.request("nvim_win_set_cursor", [winId, cursor]);
                     this.textEditorToWinId.set(visibleEditor, winId);
                     this.winIdToEditor.set(winId, visibleEditor);
+                    this.main.cursorManager.updateNeovimCursorPosition(visibleEditor, visibleEditor.selection.active);
                 }
             } catch (e) {
                 this.logger.error(`${LOG_PREFIX}: ${(e as Error).message}`);
@@ -393,46 +485,30 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             }
         }
 
-        this.logger.debug(`${LOG_PREFIX}: Closing non visible editors`);
-        // close any non visible neovim windows
-        for (const prevVisibleEditor of prevVisibleEditors) {
-            // still visible, skip
-            if (currentVisibleEditors.includes(prevVisibleEditor)) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, visibility hasn't changed, skip`,
-                );
-                continue;
+        this.logger.debug(`${LOG_PREFIX}: Clean up windows and buffers`);
+        const unusedWindows: number[] = [];
+        const unusedBuffers: number[] = [];
+        // close windows
+        [...this.textEditorToWinId.entries()].forEach(([editor, winId]) => {
+            if (!currentVisibleEditors.includes(editor)) {
+                this.logger.debug(`${LOG_PREFIX}: Editor viewColumn: ${editor.viewColumn}, winId: ${winId}, closing`);
+                this.textEditorToWinId.delete(editor);
+                this.winIdToEditor.delete(winId);
+                unusedWindows.push(winId);
             }
-            const document = prevVisibleEditor.document;
-            if (!currentVisibleEditors.find((e) => e.document === document) && document.isClosed) {
-                this.logger.debug(
-                    `${LOG_PREFIX}: Document ${document.uri.toString()} is not visible and closed, unloading buffer id: ${this.textDocumentToBufferId.get(
-                        document,
-                    )}`,
-                );
-                const bufId = this.textDocumentToBufferId.get(document);
+        });
+        // delete buffers
+        [...this.textDocumentToBufferId.entries()].forEach(([document, bufId]) => {
+            if (!currentVisibleEditors.some((editor) => editor.document === document) && document.isClosed) {
+                this.logger.debug(`${LOG_PREFIX}: Document: ${document.uri.toString()}, bufId: ${bufId}, deleting`);
                 this.textDocumentToBufferId.delete(document);
-                if (bufId) {
-                    nvimRequests.push(["nvim_command", [`bdelete! ${bufId}`]]);
-                }
+                unusedBuffers.push(bufId);
             }
-            const winId = this.textEditorToWinId.get(prevVisibleEditor);
-
-            if (!winId) {
-                continue;
-            }
-
-            this.logger.debug(
-                `${LOG_PREFIX}: Editor viewColumn: ${prevVisibleEditor.viewColumn}, winId: ${winId}, closing`,
-            );
-            this.textEditorToWinId.delete(prevVisibleEditor);
-            this.winIdToEditor.delete(winId);
-            nvimRequests.push(["nvim_win_close", [winId, true]]);
-        }
-        await callAtomic(this.client, nvimRequests, this.logger, LOG_PREFIX);
-
-        // remember new visible editors
-        this.openedEditors = currentVisibleEditors;
+        });
+        unusedBuffers.length &&
+            (await this.client.executeLua("require'vscode-neovim.api'.delete_buffers(...)", [unusedBuffers]));
+        unusedWindows.length &&
+            (await this.client.executeLua("require'vscode-neovim.api'.close_windows(...)", [unusedWindows]));
 
         if (cancelToken.isCancellationRequested) {
             // If the visible editors has changed since we started, don't resolve the promise,
@@ -441,10 +517,9 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             this.logger.debug(`${LOG_PREFIX}: Cancellation requested in syncLayout, returning`);
             return;
         }
-        if (this.changeLayoutPromiseResolve) {
-            this.changeLayoutPromiseResolve();
-        }
-        this.changeLayoutPromise = undefined;
+
+        this.syncLayoutPromise?.resolve();
+        this.syncLayoutPromise = undefined;
     };
 
     // ! we're interested only in the editor final layout and vscode may call this function few times, e.g. when moving an editor to other group
@@ -455,8 +530,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         this.logger.debug(`${LOG_PREFIX}: syncing active editor`);
         await this.waitForLayoutSync();
 
+        const finish = () => {
+            this.syncActiveEditorPromise?.resolve();
+            this.syncActiveEditorPromise = undefined;
+        };
+
         const activeEditor = window.activeTextEditor;
         if (!activeEditor) {
+            finish();
             return;
         }
         const winId = this.textEditorToWinId.get(activeEditor);
@@ -469,13 +550,21 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     activeEditor.viewColumn
                 }, docUri: ${activeEditor.document.uri.toString()}`,
             );
+
+            finish();
             return;
         }
         this.logger.debug(
             `${LOG_PREFIX}: Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
-        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, undefined);
-        await this.client.request("nvim_set_current_win", [winId]);
+        await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
+        try {
+            await this.client.request("nvim_set_current_win", [winId]);
+        } catch (e) {
+            this.logger.error(`${LOG_PREFIX} ${(e as Error).message}`);
+        }
+
+        finish();
     };
 
     private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 100, { leading: false, trailing: true });
@@ -511,6 +600,16 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         more: boolean,
     ): void => {
         this.onBufferEvent && this.onBufferEvent(buffer.id, tick, firstLine, lastLine, linedata, more);
+        // Ensure the receivedBufferEvent callback finishes before we fire
+        // the event notifying the doc provider of any changes
+        (async () => {
+            const uri = this.buildExternalBufferUri(await buffer.name, buffer.id);
+            this.logger.debug(`${LOG_PREFIX}: received buffer event for ${uri}`);
+            this.bufferProvider.documentDidChange.fire(uri);
+            return uri;
+        })().then(undefined, (e) => {
+            this.logger.error(`${LOG_PREFIX}: failed to notify document change: ${e}`);
+        });
     };
 
     /**
@@ -537,17 +636,21 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             });
         }
 
-        const requests: [string, unknown[]][] = [
+        const tabOptions: [string, unknown[]][] = [
             ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
             ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
             ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
+        ];
+        const number = !!(editor?.options.lineNumbers !== TextEditorLineNumbersStyle.Off);
+        const relativeNumber = !!(editor?.options.lineNumbers === TextEditorLineNumbersStyle.Relative);
+        const requests: [string, unknown[]][] = [
             // fill the buffer
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
-            // make sure to disable syntax (yeah we're doing it neovim files, but better to be safe than not)
-            // !Setting to false breaks filetype detection
-            // ["nvim_buf_set_option", [bufId, "syntax", false]],
+            // used for synchronization of number options
+            ["nvim_buf_set_var", [bufId, "vscode_number", number]],
+            ["nvim_buf_set_var", [bufId, "vscode_relativenumber", relativeNumber]],
             // buffer name = document URI
             ["nvim_buf_set_name", [bufId, BUFFER_NAME_PREFIX + document.uri.toString()]],
             // Turn off modifications for external documents
@@ -556,8 +659,14 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
             ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
             // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
+            // nvim_buf_set_name will do filetype detection
+            // we must override tab options after vim initializes defaults
+            ...tabOptions,
         ];
         await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+        // Debugging through breakpoints reveals that in some cases the indentation options are overridden again.
+        // It is currently possible to work around this issue with a separate request
+        await callAtomic(this.client, tabOptions, this.logger, LOG_PREFIX);
         // Looks like need to be in separate request
         if (!this.isExternalTextDocument(document)) {
             await this.client.callFunction("VSCodeClearUndo", bufId);
@@ -637,29 +746,32 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         return workspace.textDocuments.find((d) => d.uri.toString() === uri);
     }
 
+    private buildExternalBufferUri(name: string, id: number): Uri {
+        // These might not *always* be file names, but they often are (e.g. for :help) so
+        // make sure we properly convert slashes for the path component, especially on Windows
+        return Uri.file(name).with({ scheme: BUFFER_SCHEME, authority: id.toString() });
+    }
+
     private async attachNeovimExternalBuffer(
         name: string,
         id: number,
         expandTab: boolean,
         tabStop: number,
     ): Promise<void> {
-        const buffers = await this.client.buffers;
-        const buf = buffers.find((b) => b.id === id);
-        if (!buf) {
+        const uri = this.buildExternalBufferUri(name, id);
+        this.logger.debug(`${LOG_PREFIX}: opening external buffer ${uri}`);
+
+        let doc: TextDocument;
+        try {
+            doc = await workspace.openTextDocument(uri);
+        } catch (error) {
+            this.logger.debug(`${LOG_PREFIX}: unable to open external buffer: ${error}`);
             return;
         }
-        // don't bother with displaying empty buffer
-        const lines = await buf.lines;
-        if (!lines.length || (lines.length === 1 && !lines[0])) {
-            this.logger.debug(`${LOG_PREFIX}: Skipping empty external buffer ${id}`);
-            return;
-        }
-        const doc = await workspace.openTextDocument({ content: lines.join("\n") });
+
         this.externalTextDocuments.add(doc);
         this.textDocumentToBufferId.set(doc, id);
         this.onBufferInit && this.onBufferInit(id, doc);
-        buf.listen("lines", this.receivedBufferEvent);
-        await buf[ATTACH](true);
 
         const windows = await this.client.windows;
         let closeWinId = 0;
@@ -698,17 +810,15 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                     const finalLine = neovimCursor[0] - 1;
                     let finalCol = neovimCursor[1];
                     try {
-                        finalCol = calculateEditorColFromVimScreenCol(
-                            doc.lineAt(finalLine).text,
-                            neovimCursor[1],
-                            1,
-                            true,
-                        );
+                        finalCol = convertByteNumToCharNum(doc.lineAt(finalLine).text, neovimCursor[1]);
                         this.logger.debug(`${LOG_PREFIX}: Adjusted cursor: [${finalLine}, ${finalCol}]`);
                     } catch (e) {
                         this.logger.warn(`${LOG_PREFIX}: Unable to get cursor pos for external buffer: ${id}`);
                     }
-                    editor.selections = [new Selection(finalLine, finalCol, finalLine, finalCol)];
+
+                    const selection = new Selection(finalLine, finalCol, finalLine, finalCol);
+                    editor.selections = [selection];
+                    editor.revealRange(selection, TextEditorRevealType.AtTop);
                 }
             }, 1000);
 
@@ -727,5 +837,48 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
             }, 5000);
         }
+    }
+}
+
+/**
+ * Implements the VSCode document provider API for external buffers from neovim.
+ */
+class BufferProvider implements TextDocumentContentProvider {
+    /**
+     * Fire this event to update the document contents (i.e. re-evaluate the provider).
+     */
+    public documentDidChange: EventEmitter<Uri> = new EventEmitter();
+
+    onDidChange = this.documentDidChange.event;
+
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private receivedBufferEvent: BufferManager["receivedBufferEvent"],
+    ) {}
+
+    async provideTextDocumentContent(uri: Uri, token: CancellationToken): Promise<string | undefined> {
+        this.logger.debug(`${LOG_PREFIX}: trying to provide content for ${uri}`);
+
+        const id = parseInt(uri.authority, 10);
+
+        const buffers = await this.client.buffers;
+        const buf = buffers.find((b) => b.id === id);
+        if (!buf || token.isCancellationRequested) {
+            this.logger.debug(`${LOG_PREFIX}: external buffer ${id} not found`);
+            return;
+        }
+
+        // don't bother with displaying empty buffer
+        const lines = await buf.lines;
+        if (!lines.length || (lines.length === 1 && !lines[0])) {
+            this.logger.debug(`${LOG_PREFIX}: Skipping empty external buffer ${id}`);
+            return;
+        }
+
+        buf.listen("lines", this.receivedBufferEvent);
+        await buf[ATTACH](true);
+
+        return lines.join("\n");
     }
 }

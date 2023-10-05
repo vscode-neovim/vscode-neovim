@@ -3,5 +3,6 @@ dist
 node_modules
 .vscode-test/
 .DS_Store
+Session.vim
 *.vsix
 *.zip

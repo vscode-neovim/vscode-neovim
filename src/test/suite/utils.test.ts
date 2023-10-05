@@ -81,8 +81,7 @@ describe("utils", () => {
         it("always counts normal characters correctly", () => {
             for (const line of ["abcde", "?xy!", "a1b2c3"]) {
                 for (let i = 1; i < line.length + 1; i++) {
-                    assert.equal(calculateEditorColFromVimScreenCol(line, i, 1, true), i);
-                    assert.equal(calculateEditorColFromVimScreenCol(line, i, 1, false), i);
+                    assert.equal(calculateEditorColFromVimScreenCol(line, i, 1), i);
                 }
             }
         });
@@ -94,9 +93,6 @@ describe("utils", () => {
                     assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 1, tabSize), tabs + 1);
                     assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 2, tabSize), tabs + 2);
                     assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 3, tabSize), tabs + 3);
-                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 1, tabSize, true), tabs + 1);
-                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 2, tabSize, true), tabs + 2);
-                    assert.equal(calculateEditorColFromVimScreenCol(line, tabs * tabSize + 3, tabSize, true), tabs + 3);
                 }
             }
         });

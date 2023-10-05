@@ -17,6 +17,7 @@ describe("Test ext mark", () => {
     };
 
     before(async () => {
+        await closeAllActiveEditors();
         client = await attachTestNvimClient();
     });
 
@@ -27,16 +28,15 @@ describe("Test ext mark", () => {
 
     afterEach(async () => {
         restoreWindow();
-        await closeAllActiveEditors();
     });
 
     it("extmark display overlay", async () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["test ext match", "test ext match", "test ext match"].join("\n"),
         });
-
-        await wait(1000);
+        await wait(500);
         await vscode.window.showTextDocument(doc);
+
         const stubTextEditor = new TextEditorStub();
         const curEditor = vscode.window.activeTextEditor;
         assert.ok(curEditor != null);
@@ -53,7 +53,7 @@ describe("Test ext mark", () => {
         await client.command("hi ExtMarkRed guifg=#ff0000 guibg=#000000");
         await client.call("nvim_win_set_cursor", [0, [1, 1]]);
         const ns_id = await client.call("nvim_create_namespace", ["test"]);
-        await wait(2000);
+        await wait(500);
 
         await client.call("nvim_buf_set_extmark", [
             0,
@@ -66,13 +66,13 @@ describe("Test ext mark", () => {
             },
         ]);
 
-        await wait(4000);
+        await wait(500);
         assert(stubTextEditor.decorationOptionsList.length > 0);
         const decoration = stubTextEditor.decorationOptionsList[0][0] as DecorationOptions;
 
         assert.ok(decoration.renderOptions); // it should have overlay decoration
-        assert.ok(decoration.renderOptions?.after?.contentText == "j");
-        assert.ok(decoration.renderOptions?.after?.color == "#ff0000");
+        assert.ok(decoration.renderOptions?.before?.contentText == "j");
+        assert.ok(decoration.renderOptions?.before?.color == "#ff0000");
     });
 });
 
@@ -89,7 +89,10 @@ class TextEditorStub implements vscode.TextEditor {
 
     decorationOptionsList: Array<vscode.Range[] | vscode.DecorationOptions[]> = [];
 
-    constructor() {}
+    constructor() {
+        this.selection = new vscode.Selection(0, 0, 0, 0);
+        this.selections = [this.selection];
+    }
     async edit(
         callback: (editBuilder: vscode.TextEditorEdit) => void,
         options?: { undoStopBefore: boolean; undoStopAfter: boolean },

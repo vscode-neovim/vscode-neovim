@@ -1,5 +1,206 @@
 # Change Log
 
+## [0.8.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.7.0...v0.8.0) (2023-10-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **highlights:** redesign of highlighting approach ([#1449](https://github.com/vscode-neovim/vscode-neovim/issues/1449))
+
+### Features
+
+* **highlights:** redesign of highlighting approach ([#1449](https://github.com/vscode-neovim/vscode-neovim/issues/1449)) ([f688d23](https://github.com/vscode-neovim/vscode-neovim/commit/f688d23669ac0a86e2cb6200d1970f9da6822634))
+
+## [0.7.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.6.1...v0.7.0) (2023-10-04)
+
+
+### Features
+
+* **buffer:** add external buffer doc provider (de48ee2) ([ba9d0dd](https://github.com/vscode-neovim/vscode-neovim/commit/ba9d0dde18bac45cb8c902360d65273b75eac80e))
+* **command line:** add a configurable completion timer delay ([#1467](https://github.com/vscode-neovim/vscode-neovim/issues/1467)) ([0cb897c](https://github.com/vscode-neovim/vscode-neovim/commit/0cb897c0d7805dafad5967602534a2f8b61ffadf))
+* hide completion widgets when leaving insert mode ([#1478](https://github.com/vscode-neovim/vscode-neovim/issues/1478)) ([6d1dbba](https://github.com/vscode-neovim/vscode-neovim/commit/6d1dbbaa01e21fd71fde1d94ad1a1b504b1fc600))
+* **options:** synchronize editor line numbers ([#1426](https://github.com/vscode-neovim/vscode-neovim/issues/1426)) ([4a13f06](https://github.com/vscode-neovim/vscode-neovim/commit/4a13f06c08ae040ea7811376a4a8dddaf8007a59))
+* warn on empty `vscode-neovim.send` args ([#1455](https://github.com/vscode-neovim/vscode-neovim/issues/1455)) ([d1cbcf9](https://github.com/vscode-neovim/vscode-neovim/commit/d1cbcf977f84df110b5b94d53334b7c9fb98fd01))
+
+
+### Bug Fixes
+
+* **cursor:** ensure normal visual mode for mouse selection ([#1463](https://github.com/vscode-neovim/vscode-neovim/issues/1463)) ([1b0ea63](https://github.com/vscode-neovim/vscode-neovim/commit/1b0ea63c67c5247e8451df8b94af7bdb0ff80f89))
+* **cursor:** update position after exiting insert mode ([#1479](https://github.com/vscode-neovim/vscode-neovim/issues/1479)) ([da787ed](https://github.com/vscode-neovim/vscode-neovim/commit/da787ed0170637f8a9ca19c46d929189527aa7c6))
+* **viewport:** reduce cursor jitter (temporary solution) ([#1459](https://github.com/vscode-neovim/vscode-neovim/issues/1459)) ([237e795](https://github.com/vscode-neovim/vscode-neovim/commit/237e795fb48374fbef8a6a7cb7f40810630ab6ee))
+
+## [0.6.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.6.0...v0.6.1) (2023-09-17)
+
+
+### Bug Fixes
+
+* **buffer, change:** save and restore local marks ([#1439](https://github.com/vscode-neovim/vscode-neovim/issues/1439)) ([9e194a0](https://github.com/vscode-neovim/vscode-neovim/commit/9e194a0ba3534b1e3b3473c625052388f1ba4a32))
+* **cursor, visual:** fix sync mouse selection ([#1451](https://github.com/vscode-neovim/vscode-neovim/issues/1451)) ([bdf3b19](https://github.com/vscode-neovim/vscode-neovim/commit/bdf3b19a49611a9be94c795985cd7de5ff9b1259))
+* **test:** clean up reg '/' after cmdline testing ([#1453](https://github.com/vscode-neovim/vscode-neovim/issues/1453)) ([2bc2a80](https://github.com/vscode-neovim/vscode-neovim/commit/2bc2a807e7d7f3d18a72918fb0d790a564e1eb39))
+
+## [0.6.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.5.0...v0.6.0) (2023-09-11)
+
+
+### Features
+
+* **options:** prompt to enable experimental affinity([#1051](https://github.com/vscode-neovim/vscode-neovim/issues/1051), [#1267](https://github.com/vscode-neovim/vscode-neovim/issues/1267)) ([#1415](https://github.com/vscode-neovim/vscode-neovim/issues/1415)) ([482cfd8](https://github.com/vscode-neovim/vscode-neovim/commit/482cfd8a36c654163314fbbe4816a55bfa062d8e))
+* **statusline:** combine status line items ([#1429](https://github.com/vscode-neovim/vscode-neovim/issues/1429)) ([7f0de58](https://github.com/vscode-neovim/vscode-neovim/commit/7f0de58fd39add25d53d3ff074dc33fce88fa1eb))
+
+
+### Bug Fixes
+
+* **buffer:** Ensure proper cleanup of windows and buffers ([#1438](https://github.com/vscode-neovim/vscode-neovim/issues/1438)) ([7c9dc96](https://github.com/vscode-neovim/vscode-neovim/commit/7c9dc9671ba2010e3607f86fa3c7b3d061a4e808))
+
+## [0.5.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.5...v0.5.0) (2023-09-08)
+
+
+### Features
+
+* handle window change event ([#1417](https://github.com/vscode-neovim/vscode-neovim/issues/1417)) ([325b10f](https://github.com/vscode-neovim/vscode-neovim/commit/325b10f86916a906b6261d6f0fba60d3f6079b38))
+
+
+### Bug Fixes
+
+* clean up buffers properly ([#1428](https://github.com/vscode-neovim/vscode-neovim/issues/1428)) ([48ef8e6](https://github.com/vscode-neovim/vscode-neovim/commit/48ef8e6302f6f3d87897cc1c900af8dc1bca3593))
+* **highlights:** fix highlights when emojis exist ([#1430](https://github.com/vscode-neovim/vscode-neovim/issues/1430)) ([050be0b](https://github.com/vscode-neovim/vscode-neovim/commit/050be0b37728e1aa2be7f74dac311deec896334b))
+
+## [0.4.5](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.4...v0.4.5) (2023-09-06)
+
+
+### Bug Fixes
+
+* **buffer:** avoid sync conflicts during startup ([#1414](https://github.com/vscode-neovim/vscode-neovim/issues/1414)) ([0b3ab8f](https://github.com/vscode-neovim/vscode-neovim/commit/0b3ab8f7d53ba5271dadba54dfa37e90544737b9))
+* **buffer:** the output document should be modifiable ([#1416](https://github.com/vscode-neovim/vscode-neovim/issues/1416)) ([bc7e09b](https://github.com/vscode-neovim/vscode-neovim/commit/bc7e09b5125d9f04f168b9aaf4b017911df9daef))
+
+## [0.4.4](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.3...v0.4.4) (2023-09-03)
+
+
+### Bug Fixes
+
+* **cursor:** optimized cursor synchronization debouncing ([#1406](https://github.com/vscode-neovim/vscode-neovim/issues/1406)) ([7326aae](https://github.com/vscode-neovim/vscode-neovim/commit/7326aaed7f8cd588e02869274f3f1df8c89086fd))
+* **mode:** synchronize mode after startup ([#1411](https://github.com/vscode-neovim/vscode-neovim/issues/1411)) ([3804505](https://github.com/vscode-neovim/vscode-neovim/commit/380450514efadd29074761e039657fd97bfc7008))
+
+## [0.4.3](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.2...v0.4.3) (2023-08-30)
+
+
+### Bug Fixes
+
+* **highlights:** fix misaligned rendering in visual mode ([#1401](https://github.com/vscode-neovim/vscode-neovim/issues/1401)) ([479f525](https://github.com/vscode-neovim/vscode-neovim/commit/479f525efac1b23e4ca146a96f7e7145b69b88d8))
+* **options:** force disable colorcolumn and winblend ([de11cf3](https://github.com/vscode-neovim/vscode-neovim/commit/de11cf32c72f3cc741efc18044ebefd5a12a62dc))
+
+## [0.4.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.1...v0.4.2) (2023-08-18)
+
+
+### Bug Fixes
+
+* **highlight:** remove flash.nvim lag ([#1389](https://github.com/vscode-neovim/vscode-neovim/issues/1389)) ([e38e628](https://github.com/vscode-neovim/vscode-neovim/commit/e38e628b084a716cc5718545016f34cac28713f6))
+
+## [0.4.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.4.0...v0.4.1) (2023-07-30)
+
+
+### Bug Fixes
+
+* **cursor:** re-add new `VSCodeNotifyRange` impl ([368c58d](https://github.com/vscode-neovim/vscode-neovim/commit/368c58db5fe5b6ae2bca37df3d6cfeb2fb98d62e))
+* **cursor:** re-add new VSCodeNotifyRange impl ([#1358](https://github.com/vscode-neovim/vscode-neovim/issues/1358)) ([368c58d](https://github.com/vscode-neovim/vscode-neovim/commit/368c58db5fe5b6ae2bca37df3d6cfeb2fb98d62e))
+* **custom_commands:** wait for cursor update before issuing command ([368c58d](https://github.com/vscode-neovim/vscode-neovim/commit/368c58db5fe5b6ae2bca37df3d6cfeb2fb98d62e))
+* **lua:** rename vscode lua plugin to vscode-neovim ([#1356](https://github.com/vscode-neovim/vscode-neovim/issues/1356)) ([72adf16](https://github.com/vscode-neovim/vscode-neovim/commit/72adf160dcc5bc0066555c33c526140c2f835f95))
+* re-add `VSCodeCommentary` ([368c58d](https://github.com/vscode-neovim/vscode-neovim/commit/368c58db5fe5b6ae2bca37df3d6cfeb2fb98d62e))
+
+## [0.4.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.2...v0.4.0) (2023-07-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **highlight:** remove easymotion support
+* **highlight:** `"vscode-neovim.highlightGroups.ignoreHighlights"` is removed, ignore syntax groups from nvim instead by using `hi MySyntaxGroup NONE`.
+* **cursor:** `VSCodeNotifyVisual` and `VSCodeNotifyRange` is removed, use `VSCodeNotify` instead
+* **cursor:** send vscode selections to neovim, including intuitive mouse selections (remove mouse setting)
+
+### fact
+
+* **highlight:** ignore undesired highlights from vim side instead of vscode side ([#1334](https://github.com/vscode-neovim/vscode-neovim/issues/1334)) ([5ed8081](https://github.com/vscode-neovim/vscode-neovim/commit/5ed80815676217565fbdb759d7e1c26139e11a6c))
+* **highlight:** remove easymotion support ([161371e](https://github.com/vscode-neovim/vscode-neovim/commit/161371ee385b1da0c9f6d0df7db2ef4c98498b62))
+
+
+### Features
+
+* **cursor:** improve performance and flicker ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **cursor:** remove range-based commands ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **cursor:** send vscode selections to neovim, including intuitive mouse selections (remove mouse setting) ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **cursor:** sync visual selections with vscode ([#1258](https://github.com/vscode-neovim/vscode-neovim/issues/1258)) ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **lua:** add lua api ([#1339](https://github.com/vscode-neovim/vscode-neovim/issues/1339)) ([6be0ff3](https://github.com/vscode-neovim/vscode-neovim/commit/6be0ff383be87558a062e09cefb3c41e4e76625a))
+
+
+### Bug Fixes
+
+* **cursor:** cursor promise resolving ([9ed40f3](https://github.com/vscode-neovim/vscode-neovim/commit/9ed40f3db2cfb48f2b5cdea7e26acb35ef901136))
+* **cursor:** don't overwrite cursor promise and wait for document change ([0d334af](https://github.com/vscode-neovim/vscode-neovim/commit/0d334af2c6ac352ccfd6f3cf25ea3b0d3f688e73))
+* **highlight:** fix blank extmarks ([#1143](https://github.com/vscode-neovim/vscode-neovim/issues/1143)) ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **highlight:** fix extmarks beyond end of line ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **highlight:** ignore compound group names, like MatchParenVisual ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **highlight:** wait for document change before creating highlights ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+* **typing:** fix rapid typing after entering insert mode ([c01548e](https://github.com/vscode-neovim/vscode-neovim/commit/c01548e08a2c5edfec8a070a291a64aafc6a7db6))
+
+
+### Miscellaneous Chores
+
+* release 0.4.0 ([ced7306](https://github.com/vscode-neovim/vscode-neovim/commit/ced7306622d0e39f71ede44513482452e35b1a5a))
+
+## [0.3.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.1...v0.3.2) (2023-07-12)
+
+
+### Bug Fixes
+
+* **main:** set `WSLENV` to pass `NVIM_APPNAME` into WSL ([#1310](https://github.com/vscode-neovim/vscode-neovim/issues/1310)) ([2b27081](https://github.com/vscode-neovim/vscode-neovim/commit/2b270812de8d53a282550ec9aeb0176cbc4c0c36))
+* **mode:** allow escaping from replace mode ([#1305](https://github.com/vscode-neovim/vscode-neovim/issues/1305)) ([76d473c](https://github.com/vscode-neovim/vscode-neovim/commit/76d473c6b97bcf582e3a9ee0806ccda8294dc9cf)), closes [#1304](https://github.com/vscode-neovim/vscode-neovim/issues/1304)
+
+## [0.3.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.3.0...v0.3.1) (2023-07-07)
+
+
+### Bug Fixes
+
+* colliding ctrl+w bindings in terminal ([#1300](https://github.com/vscode-neovim/vscode-neovim/issues/1300)) ([f5a25f9](https://github.com/vscode-neovim/vscode-neovim/commit/f5a25f9d73649883af78b1331c8052cecb8e46d4))
+
+## [0.3.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.2.0...v0.3.0) (2023-07-06)
+
+
+### Features
+
+* **bindings:** support &lt;c-t&gt; as navigateBack ([#827](https://github.com/vscode-neovim/vscode-neovim/issues/827)) ([1cd8afb](https://github.com/vscode-neovim/vscode-neovim/commit/1cd8afb8401ee13d398ec836d990a97bee3ec7bc))
+* **bindings:** z fold bindings for lists (incl. files explorer) ([#1250](https://github.com/vscode-neovim/vscode-neovim/issues/1250)) ([a86bd36](https://github.com/vscode-neovim/vscode-neovim/commit/a86bd36a062184be2a8739d88d50053cb53763f4))
+
+
+### Bug Fixes
+
+* **bindings:** {count}gt command not jumping to correct tab [#670](https://github.com/vscode-neovim/vscode-neovim/issues/670) ([a2c9b03](https://github.com/vscode-neovim/vscode-neovim/commit/a2c9b03bd995f941b16278a4f9ea402e8b9c063d))
+* **mode:** cmdline mode bindings [#1298](https://github.com/vscode-neovim/vscode-neovim/issues/1298) ([#1299](https://github.com/vscode-neovim/vscode-neovim/issues/1299)) ([6f4b9a0](https://github.com/vscode-neovim/vscode-neovim/commit/6f4b9a0ecb5a5d53a239c8c398eb41c066e9e44c))
+
+## [0.2.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.1.0...v0.2.0) (2023-07-05)
+
+
+### Features
+
+* **bindings:** global window navigations ([#1248](https://github.com/vscode-neovim/vscode-neovim/issues/1248)) ([88103a8](https://github.com/vscode-neovim/vscode-neovim/commit/88103a83010f57a24acf506610d4a89c7019aa20))
+* **main:** add options.lua ([#1254](https://github.com/vscode-neovim/vscode-neovim/issues/1254)) ([504d462](https://github.com/vscode-neovim/vscode-neovim/commit/504d46249f81351f8131109cb430e70424c0adb3))
+* **mode:** switch to `ModeChanged` for more detailed mode information ([#1255](https://github.com/vscode-neovim/vscode-neovim/issues/1255)) ([97140a7](https://github.com/vscode-neovim/vscode-neovim/commit/97140a735b97d172bfb8c02a95def0d1675a232b))
+
+## [0.1.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.0.96...v0.1.0) (2023-06-27)
+
+### Features
+
+-   add $NVIM_APPNAME option ([#1186](https://github.com/vscode-neovim/vscode-neovim/issues/1186))
+    ([5b54212](https://github.com/vscode-neovim/vscode-neovim/commit/5b5421201701be67fc92d42b39fb049708b4d0f1))
+-   **ci:** add automatic releases ([#1244](https://github.com/vscode-neovim/vscode-neovim/issues/1244))
+    ([0bcee88](https://github.com/vscode-neovim/vscode-neovim/commit/0bcee88bbdb746a64fb58204a605797fdbdd14da))
+-   add Neovim toggle (#1033)
+-   use k instead of i to moveEditorToAboveGroup (vscode-neovim#1119)
+
+### Bug Fixes
+
+-   wrong VSCode selections if cursor is at start of selection
+    [#1180](https://github.com/vscode-neovim/vscode-neovim/issues/1180)
+    ([f9bcd25](https://github.com/vscode-neovim/vscode-neovim/commit/f9bcd2555c01ad238d9eca06f1c051c43ee71b15))
+
 ## [0.0.96]
 
 -   fix issues with tabs creating visual glitches (#1099)

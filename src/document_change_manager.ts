@@ -30,6 +30,7 @@ import {
     isCursorChange,
     normalizeDotRepeatChange,
     prepareEditRangesFromDiff,
+    ManualPromise,
 } from "./utils";
 import { MainController } from "./main_controller";
 
@@ -60,10 +61,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      * ! Since operations are async it's possible we receive other updates (such as cursor, HL) for related editors with document before
      * ! text change will be applied. In this case we need to queue such changes (through .then()) and wait for change operation completion
      */
-    private textDocumentChangePromise: Map<
-        TextDocument,
-        Array<{ promise?: Promise<void>; resolve?: () => void; reject?: () => void }>
-    > = new Map();
+    private textDocumentChangePromise: Map<TextDocument, Array<ManualPromise>> = new Map();
     /**
      * Stores cursor pos after document change in neovim
      */
@@ -91,7 +89,11 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      */
     public documentChangeLock = new Mutex();
 
-    public constructor(private logger: Logger, private client: NeovimClient, private main: MainController) {
+    public constructor(
+        private logger: Logger,
+        private client: NeovimClient,
+        private main: MainController,
+    ) {
         this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
         this.main.bufferManager.onBufferInit = this.onBufferInit;
         this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));
@@ -101,18 +103,18 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public eatDocumentCursorAfterChange(doc: TextDocument): { line: number; character: number } | undefined {
+    public eatDocumentCursorAfterChange(doc: TextDocument): Position | undefined {
         const cursor = this.cursorAfterTextDocumentChange.get(doc);
         this.cursorAfterTextDocumentChange.delete(doc);
         return cursor;
     }
 
-    public getDocumentChangeCompletionLock(doc: TextDocument): Promise<void[]> | undefined {
+    public async getDocumentChangeCompletionLock(doc: TextDocument): Promise<void> {
         const promises = this.textDocumentChangePromise.get(doc);
         if (!promises || !promises.length) {
             return;
         }
-        return Promise.all(promises.map((p) => p.promise).filter(Boolean));
+        await Promise.all(promises.map((p) => p.promise).filter(Boolean));
     }
 
     public hasDocumentChangeCompletionLock(doc: TextDocument): boolean {
@@ -222,17 +224,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         if (!this.textDocumentChangePromise.has(doc)) {
             this.textDocumentChangePromise.set(doc, []);
         }
-        const documentPromises = this.textDocumentChangePromise.get(doc)!;
-        const promiseDesc: { promise?: Promise<void>; resolve?: () => void; reject?: () => void } = {};
-        promiseDesc.promise = new Promise<void>((res, rej) => {
-            promiseDesc.resolve = res;
-            promiseDesc.reject = rej;
-        });
-        // put default catch block so promise reject won't be unhandled
-        promiseDesc.promise.catch((err) => {
-            this.logger.error(err);
-        });
-        documentPromises.push(promiseDesc);
+        this.textDocumentChangePromise.get(doc)!.push(new ManualPromise());
 
         this.pendingEvents.push([bufId, tick, firstLine, lastLine, linedata, more]);
         if (!this.applyingEdits) {
@@ -426,10 +418,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                         this.documentContentInNeovim.set(doc, doc.getText());
                     } else {
                         docPromises.forEach((p) => {
-                            p.promise?.catch(() =>
+                            p.promise.catch(() =>
                                 this.logger.warn(`${LOG_PREFIX}: Edit was canceled for doc: ${doc.uri.toString()}`),
                             );
-                            p.reject && p.reject();
+                            p.reject();
                         });
                         this.logger.warn(`${LOG_PREFIX}: Changes were not applied for ${doc.uri.toString()}`);
                     }
@@ -502,15 +494,15 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             }
         }
 
-        const requests: [string, unknown[]][] = [];
-
-        for (const c of contentChanges) {
-            const start = c.range.start;
-            const end = c.range.end;
-            const text = c.text;
+        const changeArgs = [];
+        for (const change of contentChanges) {
+            const {
+                text,
+                range: { start, end },
+            } = change;
             const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
             const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
-            requests.push(["nvim_buf_set_text", [bufId, start.line, startBytes, end.line, endBytes, text.split(eol)]]);
+            changeArgs.push([start.line, startBytes, end.line, endBytes, text.split(eol)]);
         }
 
         const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
@@ -518,15 +510,13 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             this.logger.warn(`${LOG_PREFIX}: Can't get changed tick for bufId: ${bufId}, deleted?`);
             return;
         }
-        this.logger.debug(
-            `${LOG_PREFIX}: BufId: ${bufId}, lineChanges: ${requests.length}, tick: ${bufTick}, skipTick: ${
-                bufTick + requests.length
-            }`,
-        );
-        this.bufferSkipTicks.set(bufId, bufTick + contentChanges.length);
+
+        this.bufferSkipTicks.set(bufId, bufTick + changeArgs.length);
 
         this.logger.debug(`${LOG_PREFIX}: Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
-        if (requests.length) await callAtomic(this.client, requests, this.logger, LOG_PREFIX);
+
+        const code = "return require('vscode-neovim.api').handle_changes(...)";
+        await this.client.executeLua(code, [bufId, changeArgs]);
     };
 }

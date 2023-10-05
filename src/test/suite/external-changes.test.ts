@@ -2,7 +2,6 @@ import os from "os";
 import path from "path";
 import fs from "fs";
 
-import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
 import {
@@ -12,6 +11,7 @@ import {
     assertContent,
     wait,
     closeActiveEditor,
+    openTextDocument,
 } from "../utils";
 
 describe("External changes in file", () => {
@@ -21,9 +21,6 @@ describe("External changes in file", () => {
     });
     after(async () => {
         await closeNvimClient(client);
-    });
-
-    afterEach(async () => {
         await closeAllActiveEditors();
     });
 
@@ -32,10 +29,7 @@ describe("External changes in file", () => {
         fs.writeFileSync(filePath, ["line 1", "line 2", "line 3", "line 4", "line 5", "line 6", "line 7"].join("\n"), {
             encoding: "utf8",
         });
-
-        const doc = await vscode.workspace.openTextDocument(filePath);
-        await vscode.window.showTextDocument(doc);
-        await wait(1000);
+        await openTextDocument(filePath);
 
         await assertContent(
             {
@@ -58,7 +52,7 @@ describe("External changes in file", () => {
                 "line 8",
             ].join("\n"),
         );
-        await wait(2000);
+        await wait(500);
 
         await assertContent(
             {
@@ -76,8 +70,7 @@ describe("External changes in file", () => {
             },
             client,
         );
-        await closeActiveEditor(true);
-        await wait();
+        await closeActiveEditor();
         fs.unlinkSync(filePath);
     });
 });

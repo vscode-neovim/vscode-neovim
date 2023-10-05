@@ -13,7 +13,12 @@ async function main(): Promise<void> {
         const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
         // Download VS Code, unzip it and run the integration test
-        await runTests({ extensionDevelopmentPath, extensionTestsPath });
+        await runTests({
+            extensionDevelopmentPath,
+            extensionTestsPath,
+            // Tell vscode-neovim to create a debug connection
+            extensionTestsEnv: { NEOVIM_DEBUG: "1" },
+        });
     } catch (err) {
         console.error(err);
         console.error("Failed to run tests");
