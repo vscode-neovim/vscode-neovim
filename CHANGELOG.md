@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.8.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.0...v0.8.1) (2023-10-05)
+
+
+### Bug Fixes
+
+* dot-repeat special symbols handling ([#1167](https://github.com/vscode-neovim/vscode-neovim/issues/1167)) ([5e955d6](https://github.com/vscode-neovim/vscode-neovim/commit/5e955d615b1bbc9257b3d299f48b84dd962062aa))
+
 ## [0.8.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.7.0...v0.8.0) (2023-10-05)
 
 
