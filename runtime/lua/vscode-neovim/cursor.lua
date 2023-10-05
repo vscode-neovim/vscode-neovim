@@ -65,7 +65,6 @@ end
 
 -- ------------------------------ setup ------------------------------ --
 function M.setup()
-  M.setup_multi_cursor()
   M.setup_visual_changed()
   M.setup_fake_cursor()
 end
