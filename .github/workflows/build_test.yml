@@ -75,6 +75,7 @@ jobs:
               with:
                   release-type: node
                   package-name: vscode-neovim
+                  bump-minor-pre-major: true
                   token: ${{ secrets.RELEASE_PLEASE_KEY }}
             - uses: actions/checkout@v3
               if: ${{ steps.release.outputs.release_created }}
