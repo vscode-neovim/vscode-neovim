@@ -229,8 +229,6 @@ export class HighlightProvider {
         const lineChars = segment(lineText);
 
         // Calculates the number of spaces occupied by the tab
-        // There has been improvement in highlighting when tab characters are interspersed,
-        // but there are still issues with updating partial highlights. e.g. fake cursor
         const calcTabCells = (tabCol: number) => {
             let nearestTabIdx = lineChars.slice(0, tabCol).lastIndexOf("\t");
             nearestTabIdx = nearestTabIdx === -1 ? 0 : nearestTabIdx + 1;
@@ -306,7 +304,7 @@ export class HighlightProvider {
             const currChar = filledLineChars[currCharCol];
             const extraCols = currChar ? currChar.length - 1 : 0;
             currCharCol += extraCols;
-            // magic... some emojis have text versions e.g. [..."❤️"] == ['❤', '️']
+            // ... some emojis have text versions e.g. [..."❤️"] == ['❤', '️']
             const hlCol = currCharCol - (currChar ? [...currChar].length - 1 : 0);
 
             do {
@@ -500,7 +498,7 @@ export class HighlightProvider {
         colHighlights = cloneDeep(colHighlights);
 
         // #region
-        // When on a 2-width character,
+        // When on a multi-width character,
         // there may be a cell with a highlight ID of 0 and its content is a space used to hide the cell.
         // However, in vscode, we will ignore the highlighting ID of 0.
         // So, we add the character to the preceding virtual text.
@@ -527,7 +525,6 @@ export class HighlightProvider {
             if (!decorator) return;
             if (!hlId_options.has(hlId)) hlId_options.set(hlId, []);
             const text = virtText.replace(/ /g, "\u200D");
-            // const text = virtText.replace(/ /g, "-");
             const conf = this.getDecoratorOptions(decorator);
             const width = text.length;
             if (col > lineText.length) {
@@ -546,7 +543,6 @@ export class HighlightProvider {
                 },
             });
         });
-        // console.log(JSON.stringify(Array.from(hlId_options.entries()), null, 2));
         return hlId_options;
     }
 }
