@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.8.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.1...v0.8.2) (2023-10-06)
+
+
+### Bug Fixes
+
+* bump min nvim version ([#1495](https://github.com/vscode-neovim/vscode-neovim/issues/1495)) ([653c06f](https://github.com/vscode-neovim/vscode-neovim/commit/653c06f08e876404994d27893efc7d039c6d8f74))
+
 ## [0.8.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.0...v0.8.1) (2023-10-05)
 
 
