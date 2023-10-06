@@ -366,10 +366,10 @@ export class MainController implements vscode.Disposable {
     private async checkNeovimVersion(): Promise<void> {
         const [, info] = await this.client.apiInfo;
         if (
-            (info.version.major === 0 && info.version.minor < 8) ||
+            (info.version.major === 0 && info.version.minor < 9) ||
             !info.ui_events.find((e) => e.name === "win_viewport")
         ) {
-            vscode.window.showErrorMessage("The extension requires neovim 0.8 or greater");
+            vscode.window.showErrorMessage("The extension requires neovim 0.9 or greater");
             return;
         }
     }
