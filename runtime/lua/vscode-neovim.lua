@@ -3,6 +3,7 @@ local defaults = require("vscode-neovim.defaults")
 local cursor = require("vscode-neovim.cursor")
 
 require("vscode-neovim.highlight")
+require("vscode-neovim.filetype")
 
 local M = {}
 
