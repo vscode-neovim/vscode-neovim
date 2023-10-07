@@ -2,6 +2,7 @@
 local M = {}
 
 function M.setup()
+  vim.cmd.syntax("on")
   -- customise statusbar
   vim.opt.shortmess = "filnxtToOFI"
 
