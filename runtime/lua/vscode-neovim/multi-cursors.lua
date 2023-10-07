@@ -160,7 +160,8 @@ local function make_range(start_pos, end_pos)
 end
 
 ---@param motion_type 'char' | 'line' | 'block'
-local function create_cursor(motion_type)
+---@param no_hl boolean Avoid unnecessary highlights and screen flickering when starting multi-cursors from visual mode
+local function create_cursor(motion_type, no_hl)
   local mode = api.nvim_get_mode().mode ---@type string
   if mode == "i" then
     return
@@ -215,7 +216,7 @@ local function create_cursor(motion_type)
       local cursor = {
         type = "char",
         range = make_range(start_pos, end_pos).range,
-        extmarks = {
+        extmarks = no_hl and {} or {
           -- left cursor
           hl_cursor(start_pos[1] - 1, start_pos[2], start_pos[1] - 1, start_pos[2] + 1),
           -- right cursor
@@ -233,7 +234,7 @@ local function create_cursor(motion_type)
           local cursor = {
             type = "line",
             range = make_range({ lnum, 0 }, { lnum, line_width - 1 }).range,
-            extmarks = {
+            extmarks = no_hl and {} or {
               -- left cursor
               hl_cursor(lnum - 1, 0, lnum - 1, 1),
               -- right cursor
@@ -257,7 +258,7 @@ local function create_cursor(motion_type)
           local cursor = {
             type = "block",
             range = make_range({ lnum, safe_start_col }, { lnum, safe_end_col }).range,
-            extmarks = {
+            extmarks = no_hl and {} or {
               -- left cursor
               hl_cursor(lnum - 1, safe_start_col, lnum - 1, safe_start_col + 1),
               -- right cursor
@@ -280,7 +281,7 @@ local function start(right, edge)
   local creating
   if mode:lower() == "v" or mode == "\x16" then
     creating = true
-    create_cursor()
+    create_cursor(nil, true)
   end
 
   if not vim.g.vscode then
