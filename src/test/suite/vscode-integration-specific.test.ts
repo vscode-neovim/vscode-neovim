@@ -425,6 +425,20 @@ describe("VSCode integration specific stuff", () => {
         assert.strictEqual("typescript", type);
     });
 
+    it("Filetype detection (jupyter notebook)", async function () {
+        this.retries(2);
+
+        const note = await vscode.workspace.openNotebookDocument(
+            vscode.Uri.file(path.join(__dirname, "../../../test_fixtures/window-changed.ipynb")),
+        );
+        await vscode.window.showNotebookDocument(note, { viewColumn: vscode.ViewColumn.One });
+        await wait(1000);
+
+        const buf = await client.buffer;
+        const type = await client.request("nvim_buf_get_option", [buf.id, "filetype"]);
+        assert.strictEqual("python", type);
+    });
+
     it("Next search result works", async () => {
         await openTextDocument(path.join(__dirname, "../../../test_fixtures/incsearch-scroll.ts"));
 
