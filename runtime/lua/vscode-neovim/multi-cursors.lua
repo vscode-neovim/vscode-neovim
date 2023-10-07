@@ -17,7 +17,7 @@ local CREATE_CURSOR_DEFER_TIME = 10
 local START_DEFER_TIME = 40
 local NOTIFY_DEFER_TIME = 20
 
-local ns = api.nvim_create_namespace("--- vscode multiple cursors ---")
+local ns = api.nvim_create_namespace("vscode.multicursor")
 local bufnr = 0 ---@type integer
 local cursors = {} ---@type Cursor[]
 
