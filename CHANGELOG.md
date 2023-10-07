@@ -1,5 +1,30 @@
 # Change Log
 
+## [0.8.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.1...v0.8.2) (2023-10-06)
+
+
+### Bug Fixes
+
+* bump min nvim version ([#1495](https://github.com/vscode-neovim/vscode-neovim/issues/1495)) ([653c06f](https://github.com/vscode-neovim/vscode-neovim/commit/653c06f08e876404994d27893efc7d039c6d8f74))
+
+## [0.8.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.0...v0.8.1) (2023-10-05)
+
+
+### Bug Fixes
+
+* dot-repeat special symbols handling ([#1167](https://github.com/vscode-neovim/vscode-neovim/issues/1167)) ([5e955d6](https://github.com/vscode-neovim/vscode-neovim/commit/5e955d615b1bbc9257b3d299f48b84dd962062aa))
+
+## [0.8.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.7.0...v0.8.0) (2023-10-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **highlights:** redesign of highlighting approach ([#1449](https://github.com/vscode-neovim/vscode-neovim/issues/1449))
+
+### Features
+
+* **highlights:** redesign of highlighting approach ([#1449](https://github.com/vscode-neovim/vscode-neovim/issues/1449)) ([f688d23](https://github.com/vscode-neovim/vscode-neovim/commit/f688d23669ac0a86e2cb6200d1970f9da6822634))
+
 ## [0.7.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.6.1...v0.7.0) (2023-10-04)
 
 

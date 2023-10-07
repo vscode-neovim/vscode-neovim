@@ -177,11 +177,12 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                 dotRepeatChange.text = dotRepeatChange.text.slice(dotRepeatChange.eol.length);
             }
         }
+        editStr += dotRepeatChange.text.split(dotRepeatChange.eol).join("\n");
+        edits.push(["nvim_feedkeys", [editStr, "i", false]]);
         if (dotRepeatChange.rangeLength) {
-            editStr += [...new Array(dotRepeatChange.rangeLength).keys()].map(() => "<BS>").join("");
+            const backspaceEdits = [...new Array(dotRepeatChange.rangeLength).keys()].map(() => "<BS>").join("");
+            edits.push(["nvim_input", [backspaceEdits]]);
         }
-        editStr += dotRepeatChange.text.split(dotRepeatChange.eol).join("\n").replace("<", "<LT>");
-        edits.push(["nvim_input", [editStr]]);
         // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
         await callAtomic(this.client, edits, this.logger, LOG_PREFIX);
 
