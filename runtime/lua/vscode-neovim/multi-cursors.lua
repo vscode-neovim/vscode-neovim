@@ -21,6 +21,15 @@ local ns = api.nvim_create_namespace("vscode.multicursor")
 local bufnr = 0 ---@type integer
 local cursors = {} ---@type Cursor[]
 
+---Return the line text and it's width
+---@param lnum number
+---@return string
+---@return number
+local function getline(lnum)
+  local line = fn.getline(lnum)
+  return line, api.nvim_strwidth(line)
+end
+
 local function set_hl()
   api.nvim_set_hl(0, "VSCodeCursor", { bg = "#177cb0", fg = "#ffffff", default = true })
   api.nvim_set_hl(0, "VSCodeCursorRange", { bg = "#48c0a3", fg = "#ffffff", default = true })
@@ -204,8 +213,7 @@ local function create_cursor(motion_type)
       add_cursor(cursor)
     elseif select_type == "line" then
       for lnum = start_pos[1], end_pos[1] do
-        local line = fn.getline(lnum)
-        local line_width = api.nvim_strwidth(line)
+        local _, line_width = getline(lnum)
         if line_width > 0 then
           ---@type Cursor
           local cursor = {
@@ -222,16 +230,16 @@ local function create_cursor(motion_type)
       local start_col = start_pos[2]
       local end_col = end_pos[2]
       for lnum = start_pos[1], end_pos[1] do
-        local line = fn.getline(lnum)
-        local line_width = api.nvim_strwidth(line)
+        local _, line_width = getline(lnum)
         if line_width > 0 then
           local safe_end_col = math.min(line_width - 1, end_col) -- zero indexed
+          local safe_start_col = start_col < safe_end_col and start_col or safe_end_col
           ---@type Cursor
           local cursor = {
-            range = make_range({ lnum, start_col }, { lnum, safe_end_col }).range,
+            range = make_range({ lnum, safe_start_col }, { lnum, safe_end_col }).range,
             extmarks = {
               hl_cursor(lnum - 1, safe_end_col, lnum - 1, safe_end_col + 1),
-              hl_range(lnum - 1, start_col, lnum - 1, safe_end_col + 1),
+              hl_range(lnum - 1, safe_start_col, lnum - 1, safe_end_col + 1),
             },
           }
           add_cursor(cursor)
