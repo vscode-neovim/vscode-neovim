@@ -12,14 +12,17 @@ local fn = vim.fn
 ---@class Cursor
 ---@field range LspRange
 ---@field extmarks number[] cursor hilight and range(selection) highlight
+---@field type 'char'|'line'|'block'
 
-local CREATE_CURSOR_DEFER_TIME = 10
-local START_DEFER_TIME = 40
-local NOTIFY_DEFER_TIME = 20
+local CREATE_CURSOR_DEFER_TIME = 30
+local START_DEFER_TIME = 60
+local NOTIFY_DEFER_TIME = 30
 
-local ns = api.nvim_create_namespace("vscode.multicursor")
-local bufnr = 0 ---@type integer
-local cursors = {} ---@type Cursor[]
+local NS = api.nvim_create_namespace("vscode.multicursor")
+local STATE = {
+  bufnr = 0, ---@type integer
+  cursors = {}, ---@type Cursor[]
+}
 
 ---Return the line text and it's width
 ---@param lnum number
@@ -42,11 +45,11 @@ end
 ---@param is_cursor boolean
 ---@return number
 local function set_extmark(start_row, start_col, end_row, end_col, is_cursor)
-  return api.nvim_buf_set_extmark(bufnr, ns, start_row, start_col, {
+  return api.nvim_buf_set_extmark(STATE.bufnr, NS, start_row, start_col, {
     end_row = end_row,
     end_col = end_col,
     hl_group = is_cursor and "VSCodeCursor" or "VSCodeCursorRange",
-    hl_mode = "replace",
+    hl_mode = "combine",
     priority = is_cursor and 9999 or 9998,
   })
 end
@@ -72,7 +75,7 @@ end
 ---@param extmarks number[]
 local function del_extmarks(extmarks)
   for _, id in ipairs(extmarks) do
-    api.nvim_buf_del_extmark(0, ns, id)
+    api.nvim_buf_del_extmark(0, NS, id)
   end
 end
 
@@ -112,7 +115,7 @@ end
 local function add_cursor(cursor)
   local ignore = false
 
-  cursors = vim.tbl_filter(
+  STATE.cursors = vim.tbl_filter(
     ---@param c Cursor
     function(c)
       if is_intersect(cursor.range, c.range) then
@@ -122,16 +125,16 @@ local function add_cursor(cursor)
       end
       return true
     end,
-    cursors
+    STATE.cursors
   )
 
   if ignore then
     del_extmarks(cursor.extmarks)
   else
-    table.insert(cursors, cursor)
+    table.insert(STATE.cursors, cursor)
   end
 
-  table.sort(cursors, function(a, b)
+  table.sort(STATE.cursors, function(a, b)
     return compare_position(a.range.start, b.range.start) == -1
   end)
 end
@@ -145,15 +148,15 @@ local function goto_cursor(cursor)
 end
 
 local function reset()
-  bufnr = api.nvim_get_current_buf()
-  cursors = {}
-  if bufnr then
-    api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+  STATE.bufnr = api.nvim_get_current_buf()
+  STATE.cursors = {}
+  if STATE.bufnr then
+    api.nvim_buf_clear_namespace(STATE.bufnr, NS, 0, -1)
   end
 end
 
 local function make_range(start_pos, end_pos)
-  return vim.lsp.util.make_given_range_params(start_pos, end_pos, bufnr, "utf-16")
+  return vim.lsp.util.make_given_range_params(start_pos, end_pos, STATE.bufnr, "utf-16")
 end
 
 ---@param motion_type 'char' | 'line' | 'block'
@@ -163,7 +166,7 @@ local function create_cursor(motion_type)
     return
   end
   local curbuf = api.nvim_get_current_buf()
-  if curbuf ~= bufnr then
+  if curbuf ~= STATE.bufnr then
     reset()
   end
 
@@ -202,11 +205,22 @@ local function create_cursor(motion_type)
     end
 
     if select_type == "char" then
+      if start_pos[1] == end_pos[1] then
+        local _, width = getline(start_pos[1])
+        if width == 0 then
+          return
+        end
+      end
       ---@type Cursor
       local cursor = {
+        type = "char",
         range = make_range(start_pos, end_pos).range,
         extmarks = {
+          -- left cursor
+          hl_cursor(start_pos[1] - 1, start_pos[2], start_pos[1] - 1, start_pos[2] + 1),
+          -- right cursor
           hl_cursor(end_pos[1] - 1, end_pos[2], end_pos[1] - 1, end_pos[2] + 1),
+          -- range
           hl_range(start_pos[1] - 1, start_pos[2], end_pos[1] - 1, end_pos[2] + 1),
         },
       }
@@ -217,9 +231,14 @@ local function create_cursor(motion_type)
         if line_width > 0 then
           ---@type Cursor
           local cursor = {
+            type = "line",
             range = make_range({ lnum, 0 }, { lnum, line_width - 1 }).range,
             extmarks = {
+              -- left cursor
+              hl_cursor(lnum - 1, 0, lnum - 1, 1),
+              -- right cursor
               hl_cursor(lnum - 1, line_width - 1, lnum - 1, line_width),
+              -- range
               hl_range(lnum - 1, 0, lnum - 1, line_width),
             },
           }
@@ -236,9 +255,14 @@ local function create_cursor(motion_type)
           local safe_start_col = start_col < safe_end_col and start_col or safe_end_col
           ---@type Cursor
           local cursor = {
+            type = "block",
             range = make_range({ lnum, safe_start_col }, { lnum, safe_end_col }).range,
             extmarks = {
+              -- left cursor
+              hl_cursor(lnum - 1, safe_start_col, lnum - 1, safe_start_col + 1),
+              -- right cursor
               hl_cursor(lnum - 1, safe_end_col, lnum - 1, safe_end_col + 1),
+              -- range
               hl_range(lnum - 1, safe_start_col, lnum - 1, safe_end_col + 1),
             },
           }
@@ -250,7 +274,8 @@ local function create_cursor(motion_type)
 end
 
 ---@param right boolean
-local function start(right)
+---@param edge boolean
+local function start(right, edge)
   local mode = api.nvim_get_mode().mode
   local creating
   if mode:lower() == "v" or mode == "\x16" then
@@ -263,37 +288,26 @@ local function start(right)
   end
 
   vim.defer_fn(function()
-    if #cursors <= 0 then
-      return
+    if #STATE.cursors > 0 then
+      goto_cursor(STATE.cursors[1])
+      local cursors = vim.deepcopy(STATE.cursors)
+      vim.defer_fn(function()
+        api.nvim_input("<ESC>" .. (right and "a" or "i"))
+        vim.defer_fn(function()
+          fn.VSCodeExtensionNotify("multiple-cursors", cursors, right, not not edge)
+        end, NOTIFY_DEFER_TIME)
+      end, 20)
     end
-    local ranges = vim.tbl_map(
-      ---@param c Cursor
-      ---@return LspRange[]
-      function(c)
-        local s = c.range.start
-        local e = c.range["end"]
-        if s.line == e.line and e.character - s.character == 1 then
-          return right and { start = e, ["end"] = e } or { start = s, ["end"] = s }
-        end
-        return c.range
-      end,
-      cursors
-    )
-    goto_cursor(cursors[1])
-    api.nvim_input("<ESC>" .. (right and "a" or "i"))
-    vim.defer_fn(function()
-      fn.VSCodeExtensionNotify("start-cursors", ranges)
-    end, NOTIFY_DEFER_TIME)
   end, creating and START_DEFER_TIME or 0)
 end
 
 ---@param direction -1|1 -1 previous, 1 next
 local function navigate(direction)
-  if #cursors == 0 then
+  if #STATE.cursors == 0 then
     return
   end
-  if #cursors == 1 then
-    goto_cursor(cursors[1])
+  if #STATE.cursors == 1 then
+    goto_cursor(STATE.cursors[1])
   end
 
   local _cursor = api.nvim_win_get_cursor(0)
@@ -302,39 +316,23 @@ local function navigate(direction)
   ---@type Cursor
   local cursor
   if direction == -1 then
-    cursor = cursors[#cursors]
-    for i = #cursors, 1, -1 do
-      if compare_position(cursors[i].range["end"], curr_pos) == -1 then
-        cursor = cursors[i]
+    cursor = STATE.cursors[#STATE.cursors]
+    for i = #STATE.cursors, 1, -1 do
+      if compare_position(STATE.cursors[i].range["end"], curr_pos) == -1 then
+        cursor = STATE.cursors[i]
         break
       end
     end
   else
-    cursor = cursors[1]
-    for i = 1, #cursors do
-      if compare_position(cursors[i].range.start, curr_pos) == 1 then
-        cursor = cursors[i]
+    cursor = STATE.cursors[1]
+    for i = 1, #STATE.cursors do
+      if compare_position(STATE.cursors[i].range.start, curr_pos) == 1 then
+        cursor = STATE.cursors[i]
         break
       end
     end
   end
   goto_cursor(cursor)
-end
-
-local function cancel()
-  reset()
-end
-local function start_left()
-  start(false)
-end
-local function start_right()
-  start(true)
-end
-local function prev_cursor()
-  navigate(-1)
-end
-local function next_cursor()
-  navigate(1)
 end
 
 ----- Auto Commands -----
@@ -343,17 +341,30 @@ api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, { callback = set_hl, grou
 api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "InsertEnter" }, { callback = reset, group = group })
 api.nvim_create_autocmd({ "WinEnter", "BufEnter", "BufWinEnter" }, {
   callback = function()
-    if api.nvim_get_current_buf() ~= bufnr then
+    if api.nvim_get_current_buf() ~= STATE.bufnr then
       reset()
     end
   end,
   group = group,
 })
+
+
+--stylua: ignore start
+local cancel          = function() reset()             end
+local start_left      = function() start(false, false) end
+local start_left_edge = function() start(false, true)  end
+local start_right     = function() start(true, true)   end
+local prev_cursor     = function() navigate(-1)        end
+local next_cursor     = function() navigate(1)         end
+--stylua: ignore end
+
 ----- Default Keymaps ----
 vim.keymap.set({ "n", "x" }, "mc", create_cursor, { expr = true, desc = "Create cursor" })
 vim.keymap.set({ "n" }, "mcc", cancel, { desc = "Cancel/Clear all cursors" })
 vim.keymap.set({ "n", "x" }, "mi", start_left, { desc = "Start cursors on the left" })
+vim.keymap.set({ "n", "x" }, "mI", start_left_edge, { desc = "Start cursors on the left edge" })
 vim.keymap.set({ "n", "x" }, "ma", start_right, { desc = "Start cursors on the right" })
+vim.keymap.set({ "n", "x" }, "mA", start_right, { desc = "Start cursors on the right" })
 vim.keymap.set({ "n" }, "[mc", prev_cursor, { desc = "Goto prev cursor" })
 vim.keymap.set({ "n" }, "]mc", next_cursor, { desc = "Goto next cursor" })
 
@@ -365,6 +376,7 @@ return {
   create_cursor = create_cursor,
   cancel = cancel,
   start_left = start_left,
+  start_left_edge = start_left_edge,
   start_right = start_right,
   prev_cursor = prev_cursor,
   next_cursor = next_cursor,

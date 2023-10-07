@@ -121,11 +121,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                 }
                 break;
             }
-            case "start-cursors": {
-                const ranges = args[0] as Range[];
-                if (window.activeTextEditor && ranges.length) {
-                    window.activeTextEditor.selections = ranges.map((r) => new Selection(r.start, r.end));
-                }
+            case "multiple-cursors": {
+                this.handleMultipleCursors(args[0] as any, args[1] as boolean, args[2] as boolean);
             }
         }
     }
@@ -336,6 +333,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     ): Promise<void> => {
         // reset cursor style if needed
         this.updateCursorStyle(this.main.modeManager.currentMode.name);
+
+        if (this.main.modeManager.isInsertMode) return;
 
         // wait for possible layout updates first
         this.logger.debug(`${LOG_PREFIX}: Waiting for possible layout completion operation`);
@@ -560,5 +559,32 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             e.selections = prevSelections;
         }
         return res;
+    }
+
+    private handleMultipleCursors(
+        cursors: { range: Range; type: "char" | "line" | "block" }[],
+        right: boolean,
+        edge = false,
+    ) {
+        if (!window.activeTextEditor || cursors.length === 0) return;
+        const doc = window.activeTextEditor.document;
+        window.activeTextEditor.selections = cursors.map(({ range, type }) => {
+            if (type === "line" && !edge) {
+                const { start, end } = range;
+                range = new Range(
+                    start.line,
+                    doc.lineAt(start.line).firstNonWhitespaceCharacterIndex,
+                    end.line,
+                    end.character,
+                );
+            }
+
+            const { start, end } = range;
+            if (start.line === end.line && end.character - start.character === 1) {
+                return right ? new Selection(end, end) : new Selection(start, start);
+            } else {
+                return right ? new Selection(start, end) : new Selection(end, start);
+            }
+        });
     }
 }

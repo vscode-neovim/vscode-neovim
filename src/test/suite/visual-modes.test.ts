@@ -12,6 +12,7 @@ import {
     openTextDocument,
     sendInsertKey,
     wait,
+    sendVSCodeSpecialKey,
 } from "../utils";
 
 describe("Visual modes test", () => {
@@ -329,13 +330,15 @@ describe("Visual modes test", () => {
             {
                 mode: "i",
                 vsCodeSelections: [
-                    new vscode.Selection(0, 1, 0, 1),
-                    new vscode.Selection(1, 2, 1, 2),
-                    new vscode.Selection(2, 0, 2, 0),
+                    new vscode.Selection(0, 10, 0, 1),
+                    new vscode.Selection(1, 11, 1, 2),
+                    new vscode.Selection(2, 9, 2, 0),
                 ],
             },
             client,
         );
+
+        sendVSCodeSpecialKey("cursorLeft");
 
         await sendVSCodeKeys("test");
         await sendEscapeKey();
@@ -355,13 +358,15 @@ describe("Visual modes test", () => {
             {
                 mode: "i",
                 vsCodeSelections: [
-                    new vscode.Selection(0, 14, 0, 14),
-                    new vscode.Selection(1, 15, 1, 15),
-                    new vscode.Selection(2, 13, 2, 13),
+                    new vscode.Selection(0, 0, 0, 14),
+                    new vscode.Selection(1, 0, 1, 15),
+                    new vscode.Selection(2, 0, 2, 13),
                 ],
             },
             client,
         );
+
+        await sendVSCodeSpecialKey("cursorRight");
 
         await sendVSCodeKeys("test");
         await sendEscapeKey();
