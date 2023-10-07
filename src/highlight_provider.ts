@@ -240,30 +240,53 @@ export class HighlightProvider {
 
         const validCells: ValidCell[] = [];
         {
-            const maxValidCells = getWidth(lineText) - vimCol;
+            const idealMaxCells = Math.max(0, getWidth(lineText) - vimCol);
+            let currMaxCol = 0;
+            gridHl[row].forEach((_, col) => {
+                if (col > currMaxCol) currMaxCol = col;
+            });
+            const maxValidCells = Math.max(idealMaxCells, currMaxCol);
             const eolCells: ValidCell[] = [];
             let currHlId = 0;
-            loop: for (const [text, _hlId, _repeat] of cells) {
-                if (_hlId != null) {
-                    currHlId = this.visualHighlightIds.includes(_hlId) ? this.visualHighlightId ?? _hlId : _hlId;
+            for (const [text, hlId, repeat] of cells) {
+                if (hlId != null) {
+                    if (this.visualHighlightId && this.visualHighlightIds.includes(hlId)) {
+                        currHlId = this.visualHighlightId;
+                    } else {
+                        currHlId = hlId;
+                    }
                 }
                 if (text === "") continue;
-                for (let i = 0; i < (_repeat ?? 1); i++) {
-                    // If there are additional cells, always keep one, so use LE here.
+                for (let i = 0; i < (repeat ?? 1); i++) {
+                    // specially, always add a eol cell, so use LE here
                     if (validCells.length <= maxValidCells) {
                         validCells.push({ text, hlId: currHlId });
-                        continue;
-                    }
-                    // Need to check if the remaining cells are valid for EOL marks
-                    if (eolCells.length >= 5 && eolCells.slice(-5).every(({ text }) => text === " ")) {
-                        eolCells.splice(-5, 5);
-                        break loop;
                     } else {
                         eolCells.push({ text, hlId: currHlId });
                     }
                 }
             }
-            validCells.push(...eolCells);
+            // combine eol cells that have the same hlId
+            const finalEolCells: ValidCell[] = [];
+            if (eolCells.length > 1) {
+                let hlId = 0;
+                for (const [idx, cell] of eolCells.entries()) {
+                    if (idx > 0 && cell.hlId === hlId) {
+                        finalEolCells[finalEolCells.length - 1].text += cell.text;
+                    } else {
+                        finalEolCells.push(cell);
+                    }
+                    hlId = cell.hlId;
+                }
+            }
+            // Clearing cells without actual function used to fill the screen
+            if (finalEolCells.length) {
+                const last = finalEolCells[finalEolCells.length - 1];
+                if (last.text.length > 100 && last.text.trim().length === 0) {
+                    finalEolCells.pop();
+                }
+            }
+            validCells.push(...finalEolCells);
         }
         const cellIter = new CellIter(validCells);
 
@@ -487,12 +510,6 @@ export class HighlightProvider {
         colHighlights: Highlight[],
         lineText: string,
     ): Map<number, DecorationOptions[]> {
-        // FIXME: Temporarily ignore EOL virt text.
-        // Sometimes strange virtual text occurs, and it's hard to debug.
-        // It could also be related to viewport desync.
-        if (col >= lineText.length + 4) {
-            return new Map();
-        }
         const hlId_options = new Map<number, DecorationOptions[]>();
 
         colHighlights = cloneDeep(colHighlights);
