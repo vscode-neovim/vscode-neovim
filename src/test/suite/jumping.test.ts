@@ -78,12 +78,12 @@ describe("Jumplist & jump actions & marks", () => {
     it("lower-case marks should still exist after changes #543", async function () {
         const editor = await openTextDocument({ content: ["abc", "def", "uvw", "xyz"].join("\n") });
         await wait(300);
-        await sendNeovimKeys(client, "maG");
+        await sendNeovimKeys(client, "mbG");
         editor.edit((builder) => {
             builder.replace(new Position(0, 0), "ABC");
         });
         await wait(300);
-        await sendNeovimKeys(client, "'a");
+        await sendNeovimKeys(client, "'b");
         await wait(300);
         await assertContent({ cursor: [0, 0] }, client, editor);
     });
