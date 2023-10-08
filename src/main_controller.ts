@@ -10,7 +10,6 @@ import { BufferManager } from "./buffer_manager";
 import { CommandLineManager } from "./command_line_manager";
 import { CommandsController } from "./commands_controller";
 import { config } from "./config";
-import { EXT_ID } from "./constants";
 import { CursorManager } from "./cursor_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
 import { DocumentChangeManager } from "./document_change_manager";
@@ -135,8 +134,6 @@ export class MainController implements vscode.Disposable {
                 }),
             },
         });
-
-        this.verifyExperimentalAffinity();
     }
 
     public async init(): Promise<void> {
@@ -331,68 +328,5 @@ export class MainController implements vscode.Disposable {
             vscode.window.showErrorMessage("The extension requires neovim 0.9 or greater");
             return;
         }
-    }
-
-    private async restartExtensionHostPrompt(message: string): Promise<void> {
-        vscode.window.showInformationMessage(message, "Restart").then((value) => {
-            if (value == "Restart") {
-                logger.debug("Restarting extension host");
-                vscode.commands.executeCommand("workbench.action.restartExtensionHost");
-            }
-        });
-    }
-
-    private async verifyExperimentalAffinity(): Promise<void> {
-        const extensionsConfiguration = vscode.workspace.getConfiguration("extensions");
-        const affinityConfiguration = extensionsConfiguration.inspect<{ [key: string]: [number] }>(
-            "experimental.affinity",
-        );
-
-        const affinityConfigWorkspaceValue = affinityConfiguration?.workspaceValue;
-        if (affinityConfigWorkspaceValue && EXT_ID in affinityConfigWorkspaceValue) {
-            logger.debug(
-                `Extension affinity value ${affinityConfigWorkspaceValue[EXT_ID]} found in Workspace settings`,
-            );
-            return;
-        }
-
-        const affinityConfigGlobalValue = affinityConfiguration?.globalValue;
-        if (affinityConfigGlobalValue && EXT_ID in affinityConfigGlobalValue) {
-            logger.debug(`Extension affinity value ${affinityConfigGlobalValue[EXT_ID]} found in User settings`);
-            return;
-        }
-
-        logger.debug("Extension affinity value not set in User and Workspace settings");
-
-        const defaultAffinity = 1;
-
-        const setAffinity = (value: number): void => {
-            logger.debug(`Setting extension affinity value to ${value} in User settings`);
-            extensionsConfiguration
-                .update("experimental.affinity", { ...affinityConfigGlobalValue, [EXT_ID]: value }, true)
-                .then(
-                    () => {
-                        logger.debug(`Successfull set extension affinity value to ${value} in User settings`);
-                    },
-                    (error) => {
-                        logger.error(`Error while setting experimental affinity. ${error}`);
-                    },
-                );
-        };
-
-        vscode.window
-            .showWarningMessage(
-                "No affinity assigned to vscode-neovim. It is recommended to assign affinity for major performance improvements. Would you like to set default affinity? [Learn more](https://github.com/vscode-neovim/vscode-neovim#affinity)",
-                "Yes",
-                "Cancel",
-            )
-            .then((value) => {
-                if (value == "Yes") {
-                    setAffinity(defaultAffinity);
-                    this.restartExtensionHostPrompt(
-                        "Requires restart of extension host for changes to take effect. This restarts all extensions.",
-                    );
-                }
-            });
     }
 }
