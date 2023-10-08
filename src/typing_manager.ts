@@ -50,10 +50,11 @@ export class TypingManager implements Disposable {
      */
     private composingText = "";
 
-    public constructor(
-        private client: NeovimClient,
-        private main: MainController,
-    ) {
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         const warnOnEmptyKey = (method: (key: string) => Promise<void>): typeof method => {
             return (key: string) => {
                 if (key) {

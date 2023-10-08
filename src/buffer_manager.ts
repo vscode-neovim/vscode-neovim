@@ -98,16 +98,17 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
     public onBufferInit?: (bufferId: number, textDocument: TextDocument) => void;
 
-    public constructor(
-        private client: NeovimClient,
-        private main: MainController,
-    ) {
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
         this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
         this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
         this.disposables.push(window.onDidChangeTextEditorOptions(this.onDidChangeEditorOptions));
 
-        this.bufferProvider = new BufferProvider(client, this.receivedBufferEvent);
+        this.bufferProvider = new BufferProvider(this.client, this.receivedBufferEvent);
         this.disposables.push(workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider));
     }
 

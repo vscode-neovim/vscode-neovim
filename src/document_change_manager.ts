@@ -89,10 +89,11 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      */
     public documentChangeLock = new Mutex();
 
-    public constructor(
-        private client: NeovimClient,
-        private main: MainController,
-    ) {
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
         this.main.bufferManager.onBufferInit = this.onBufferInit;
         this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));

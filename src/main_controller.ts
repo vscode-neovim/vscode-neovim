@@ -149,34 +149,34 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.commandsController = new CommandsController(this.client);
+        this.commandsController = new CommandsController(this);
         this.disposables.push(this.commandsController);
 
         this.modeManager = new ModeManager();
         this.disposables.push(this.modeManager);
 
-        this.bufferManager = new BufferManager(this.client, this);
+        this.bufferManager = new BufferManager(this);
         this.disposables.push(this.bufferManager);
 
-        this.viewportManager = new ViewportManager(this.client, this);
+        this.viewportManager = new ViewportManager(this);
         this.disposables.push(this.viewportManager);
 
         this.highlightManager = new HighlightManager(this);
         this.disposables.push(this.highlightManager);
 
-        this.changeManager = new DocumentChangeManager(this.client, this);
+        this.changeManager = new DocumentChangeManager(this);
         this.disposables.push(this.changeManager);
 
-        this.cursorManager = new CursorManager(this.client, this);
+        this.cursorManager = new CursorManager(this);
         this.disposables.push(this.cursorManager);
 
-        this.typingManager = new TypingManager(this.client, this);
+        this.typingManager = new TypingManager(this);
         this.disposables.push(this.typingManager);
 
-        this.commandLineManager = new CommandLineManager(this.client);
+        this.commandLineManager = new CommandLineManager(this);
         this.disposables.push(this.commandLineManager);
 
-        this.statusLineManager = new StatusLineManager(this.client);
+        this.statusLineManager = new StatusLineManager(this);
         this.disposables.push(this.statusLineManager);
 
         this.customCommandsManager = new CustomCommandsManager(this);

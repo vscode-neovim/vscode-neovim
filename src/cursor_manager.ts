@@ -64,10 +64,11 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
     // A flag indicates that func still pending.
     private previousApplyDebounceTime: number | undefined;
 
-    public constructor(
-        private client: NeovimClient,
-        private main: MainController,
-    ) {
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
 
         const updateCursorStyle = () => {

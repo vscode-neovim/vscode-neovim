@@ -6,6 +6,7 @@ import { config } from "./config";
 import { Logger } from "./logger";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { normalizeInputString } from "./utils";
+import { MainController } from "./main_controller";
 
 export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];
@@ -18,7 +19,11 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
      */
     private cmdlineTimer?: NodeJS.Timeout;
 
-    public constructor(private client: NeovimClient) {}
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {}
 
     public dispose(): void {
         if (this.commandLine) {

@@ -27,10 +27,11 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      */
     private gridViewport: Map<number, Viewport> = new Map();
 
-    public constructor(
-        private client: NeovimClient,
-        private main: MainController,
-    ) {
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
     }
 

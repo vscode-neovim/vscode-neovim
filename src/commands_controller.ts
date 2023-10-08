@@ -1,16 +1,17 @@
-import { NeovimClient } from "neovim";
 import vscode, { Disposable } from "vscode";
 
 import { config } from "./config";
+import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 export class CommandsController implements Disposable, NeovimExtensionRequestProcessable {
-    private client: NeovimClient;
-
     private disposables: Disposable[] = [];
 
-    public constructor(client: NeovimClient) {
-        this.client = client;
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         this.disposables.push(
             vscode.commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
         );
