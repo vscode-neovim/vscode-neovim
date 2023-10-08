@@ -142,6 +142,16 @@ export class Config implements Disposable {
     get outputToConsole() {
         return this.cfg.get("logOutputToConsole", false);
     }
+
+    get normalSelectionDebounceTime() {
+        return this.cfg.get("normalSelectionDebounceTime", 50);
+    }
+    get mouseSelectionDebounceTime() {
+        return this.cfg.get("mouseSelectionDebounceTime", 100);
+    }
+    get disableMouseSelection() {
+        return this.mouseSelectionDebounceTime === 0;
+    }
 }
 
 export const config = new Config();

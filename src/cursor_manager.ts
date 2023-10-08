@@ -17,6 +17,7 @@ import { MainController } from "./main_controller";
 import { Mode } from "./mode_manager";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise } from "./utils";
+import { config } from "./config";
 
 const logger = createLogger("CursorManager");
 
@@ -323,9 +324,9 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (this.previousApplyDebounceTime !== undefined) {
             debounceTime = this.previousApplyDebounceTime;
         } else if (kind === TextEditorSelectionChangeKind.Mouse) {
-            debounceTime = 100;
+            debounceTime = config.mouseSelectionDebounceTime;
         } else {
-            debounceTime = 50;
+            debounceTime = config.normalSelectionDebounceTime;
         }
         this.previousApplyDebounceTime = debounceTime;
 
@@ -369,7 +370,8 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
                     await this.client.input("<Esc>");
                 await this.updateNeovimCursorPosition(editor, selection.active);
             } else {
-                await this.updateNeovimVisualSelection(editor, selection);
+                if (kind != TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
+                    await this.updateNeovimVisualSelection(editor, selection);
             }
         }
         this.previousApplyDebounceTime = undefined;
