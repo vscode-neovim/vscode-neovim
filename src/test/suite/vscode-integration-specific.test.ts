@@ -20,6 +20,7 @@ import {
     openTextDocument,
     sendInsertKey,
     sendVSCodeCommand,
+    sendNeovimKeys,
 } from "../utils";
 
 describe("VSCode integration specific stuff", () => {
@@ -518,5 +519,16 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
+    });
+
+    it("cursorMove with wrappedLine should works #1498", async () => {
+        await openTextDocument({ content: "  hello\n\nworld" });
+        await wait(200);
+        await sendNeovimKeys(client, "ll", 200);
+        vscode.commands.executeCommand("cursorMove", { to: "down", by: "wrappedLine" });
+        await wait(200);
+        vscode.commands.executeCommand("cursorMove", { to: "down", by: "wrappedLine" });
+        await wait(200);
+        await assertContent({ cursor: [2, 2] }, client);
     });
 });
