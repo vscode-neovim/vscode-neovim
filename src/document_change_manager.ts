@@ -145,6 +145,8 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         if (typeof buf === "number") {
             return;
         }
+        // The buffer will be cleaned by checking this variable
+        await buf.setVar("_vscode_dotrepeat_buffer", true);
         // create temporary win
         await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
         const win = await this.client.openWindow(buf, true, {
@@ -189,6 +191,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         cleanEdits.push(["nvim_set_current_win", [currWin.id]]);
         cleanEdits.push(["nvim_win_close", [win.id, true]]);
         await callAtomic(this.client, cleanEdits, logger);
+        await this.client.executeLua("require'vscode-neovim.api'.delete_dotrepeat_buffers(...)");
     }
 
     private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {
