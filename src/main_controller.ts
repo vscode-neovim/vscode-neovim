@@ -99,7 +99,8 @@ export class MainController implements vscode.Disposable {
         if (config.clean) {
             args.push("--clean");
         }
-        if (config.neovimInitPath) {
+        // #1162
+        if (!config.clean && config.neovimInitPath) {
             args.push("-u", config.neovimInitPath);
         }
         logger.debug(
