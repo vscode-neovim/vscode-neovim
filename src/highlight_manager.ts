@@ -1,11 +1,9 @@
-import { Disposable, TextEditorLineNumbersStyle } from "vscode";
+import { Disposable } from "vscode";
 
-import { HighlightConfiguration, HighlightProvider } from "./highlight_provider";
+import { HighlightProvider } from "./highlight_provider";
 import { MainController } from "./main_controller";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { GridLineEvent } from "./utils";
-
-// const LOG_PREFIX = "HighlightManager";
 
 export class HighlightManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];
@@ -14,11 +12,8 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
 
     private commandsDisposables: Disposable[] = [];
 
-    public constructor(
-        private main: MainController,
-        private settings: HighlightConfiguration,
-    ) {
-        this.highlightProvider = new HighlightProvider(settings);
+    public constructor(private main: MainController) {
+        this.highlightProvider = new HighlightProvider();
     }
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());

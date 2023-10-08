@@ -1,12 +1,12 @@
-import { NeovimClient } from "neovim";
-import { Disposable, TextEditor, window, TextEditorVisibleRangesChangeEvent, Position, workspace } from "vscode";
 import { DebouncedFunc, debounce } from "lodash-es";
+import { Disposable, Position, TextEditor, TextEditorVisibleRangesChangeEvent, window, workspace } from "vscode";
 
-import { Logger } from "./logger";
+import { config } from "./config";
+import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 
-const LOG_PREFIX = "ViewportManager";
+const logger = createLogger("ViewportManager");
 
 // all 0-indexed
 export class Viewport {
@@ -26,12 +26,11 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
      */
     private gridViewport: Map<number, Viewport> = new Map();
 
-    public constructor(
-        private logger: Logger,
-        private client: NeovimClient,
-        private main: MainController,
-        private neovimViewportHeightExtend: number,
-    ) {
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
     }
 
@@ -86,7 +85,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                 ];
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (!gridId) {
-                    this.logger.warn(`${LOG_PREFIX}: Unable to update scrolled view. No grid for winId: ${winId}`);
+                    logger.warn(`Unable to update scrolled view. No grid for winId: ${winId}`);
                     break;
                 }
                 const view = this.getViewport(gridId);
@@ -169,9 +168,9 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
             return;
         }
-        const startLine = ranges[0].start.line - this.neovimViewportHeightExtend;
+        const startLine = ranges[0].start.line - config.neovimViewportHeightExtend;
         // when it have fold we need get the last range. it need add 1 line on multiple fold
-        const endLine = ranges[ranges.length - 1].end.line + ranges.length + this.neovimViewportHeightExtend;
+        const endLine = ranges[ranges.length - 1].end.line + ranges.length + config.neovimViewportHeightExtend;
         const currentLine = editor.selection.active.line;
 
         const gridId = this.main.bufferManager.getGridIdFromEditor(editor);

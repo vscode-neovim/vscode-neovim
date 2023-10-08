@@ -1,56 +1,20 @@
 import * as vscode from "vscode";
 
+import { config } from "./config";
+import { LogLevel, createLogger, logger as rootLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { getNeovimPath, getNeovimInitPath, EXT_ID, EXT_NAME } from "./utils";
+import { EXT_ID } from "./constants";
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+const logger = createLogger(EXT_ID);
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    const ext = vscode.extensions.getExtension(EXT_ID)!;
-    const settings = vscode.workspace.getConfiguration(EXT_NAME);
-    const neovimPath = getNeovimPath();
-    const isWindows = process.platform == "win32";
+    context.subscriptions.push(config);
+    context.subscriptions.push(rootLogger);
+    rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
 
-    const highlightConfHighlights = settings.get("highlightGroups.highlights");
-    const useCtrlKeysNormalMode = settings.get("useCtrlKeysForNormalMode", true);
-    const useCtrlKeysInsertMode = settings.get("useCtrlKeysForInsertMode", true);
-    const useWsl = isWindows && settings.get("useWSL", false);
-    const revealCursorScrollLine = settings.get("revealCursorScrollLine", false);
-    const neovimWidth = settings.get("neovimWidth", 1000);
-    const completionDelay = settings.get("completionDelay", 1500);
-    const neovimViewportHeightExtend = settings.get("neovimViewportHeightExtend", 1);
-    const customInit = getNeovimInitPath() ?? "";
-    const clean = settings.get("neovimClean", false);
-    const NVIM_APPNAME = settings.get("NVIM_APPNAME", "");
-    const logPath = settings.get("logPath", "");
-    const logLevel = settings.get("logLevel", "none");
-    const outputToConsole = settings.get("logOutputToConsole", false);
-
-    vscode.commands.executeCommand("setContext", "neovim.ctrlKeysNormal", useCtrlKeysNormalMode);
-    vscode.commands.executeCommand("setContext", "neovim.ctrlKeysInsert", useCtrlKeysInsertMode);
-
+    verifyExperimentalAffinity();
     try {
-        const plugin = new MainController({
-            customInitFile: customInit,
-            clean: clean,
-            NVIM_APPNAME: NVIM_APPNAME,
-            extensionPath: context.extensionPath.replace(/\\/g, "\\\\"),
-            highlightsConfiguration: {
-                highlights: highlightConfHighlights,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any,
-            neovimPath: neovimPath,
-            useWsl: ext.extensionKind === vscode.ExtensionKind.Workspace ? false : useWsl,
-            neovimViewportWidth: neovimWidth,
-            neovimViewportHeightExtend: neovimViewportHeightExtend,
-            revealCursorScrollLine: revealCursorScrollLine,
-            completionDelay: completionDelay,
-            logConf: {
-                logPath,
-                outputToConsole,
-                level: logLevel,
-            },
-        });
+        const plugin = new MainController(context.extensionPath.replace(/\\/g, "\\\\"));
         context.subscriptions.push(plugin);
         await plugin.init();
     } catch (e) {
@@ -58,7 +22,63 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
 }
 
-// this method is called when your extension is deactivated
 export function deactivate(): void {
     // ignore
+}
+
+async function verifyExperimentalAffinity(): Promise<void> {
+    const extensionsConfiguration = vscode.workspace.getConfiguration("extensions");
+    const affinityConfiguration = extensionsConfiguration.inspect<{ [key: string]: [number] }>("experimental.affinity");
+
+    const affinityConfigWorkspaceValue = affinityConfiguration?.workspaceValue;
+    if (affinityConfigWorkspaceValue && EXT_ID in affinityConfigWorkspaceValue) {
+        logger.debug(`Extension affinity value ${affinityConfigWorkspaceValue[EXT_ID]} found in Workspace settings`);
+        return;
+    }
+
+    const affinityConfigGlobalValue = affinityConfiguration?.globalValue;
+    if (affinityConfigGlobalValue && EXT_ID in affinityConfigGlobalValue) {
+        logger.debug(`Extension affinity value ${affinityConfigGlobalValue[EXT_ID]} found in User settings`);
+        return;
+    }
+
+    logger.debug("Extension affinity value not set in User and Workspace settings");
+
+    const defaultAffinity = 1;
+
+    const setAffinity = (value: number): void => {
+        logger.debug(`Setting extension affinity value to ${value} in User settings`);
+        extensionsConfiguration
+            .update("experimental.affinity", { ...affinityConfigGlobalValue, [EXT_ID]: value }, true)
+            .then(
+                () => {
+                    logger.debug(`Successfull set extension affinity value to ${value} in User settings`);
+                },
+                (error) => {
+                    logger.error(`Error while setting experimental affinity. ${error}`);
+                },
+            );
+    };
+
+    vscode.window
+        .showWarningMessage(
+            "No affinity assigned to vscode-neovim. It is recommended to assign affinity for major performance improvements. Would you like to set default affinity? [Learn more](https://github.com/vscode-neovim/vscode-neovim#affinity)",
+            "Yes",
+            "Cancel",
+        )
+        .then((value) => {
+            if (value == "Yes") {
+                setAffinity(defaultAffinity);
+                vscode.window
+                    .showInformationMessage(
+                        "Requires restart of extension host for changes to take effect. This restarts all extensions.",
+                        "Restart",
+                    )
+                    .then((value) => {
+                        if (value == "Restart") {
+                            vscode.commands.executeCommand("workbench.action.restartExtensionHost");
+                        }
+                    });
+            }
+        });
 }

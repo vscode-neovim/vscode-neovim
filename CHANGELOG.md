@@ -1,5 +1,23 @@
 # Change Log
 
+## [0.8.3](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.2...v0.8.3) (2023-10-07)
+
+
+### Features
+
+* add filetype module ([#1500](https://github.com/vscode-neovim/vscode-neovim/issues/1500)) ([56fbadc](https://github.com/vscode-neovim/vscode-neovim/commit/56fbadc729fe23d206c798acf61ad03a4c9ec0e5))
+* optimize end-of-line highlighting rendering ([72bc537](https://github.com/vscode-neovim/vscode-neovim/commit/72bc5372c19dda231c20be683c718af0cc042d0c))
+
+
+### Bug Fixes
+
+* **highlight:** avoid leftover highlights ([#1499](https://github.com/vscode-neovim/vscode-neovim/issues/1499)) ([72bc537](https://github.com/vscode-neovim/vscode-neovim/commit/72bc5372c19dda231c20be683c718af0cc042d0c))
+
+
+### Miscellaneous Chores
+
+* release 0.8.3 ([40ac24c](https://github.com/vscode-neovim/vscode-neovim/commit/40ac24cf2af8f97b37eb48a407ccd44f9b662fd3))
+
 ## [0.8.2](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.1...v0.8.2) (2023-10-06)
 
 

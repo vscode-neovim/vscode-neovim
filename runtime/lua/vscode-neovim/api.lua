@@ -79,6 +79,20 @@ function M.delete_buffers(bufs)
   end
 end
 
+---Delete the temporary buffers used for replaying dotrepeat
+function M.delete_dotrepeat_buffers()
+  local bufs = {}
+  for _, buf in ipairs(api.nvim_list_bufs()) do
+    local ok, dotrepeat = pcall(api.nvim_buf_get_var, buf, "_vscode_dotrepeat_buffer")
+    if ok and dotrepeat then
+      table.insert(bufs, buf)
+    end
+  end
+  if #bufs > 0 then
+    M.delete_buffers(bufs)
+  end
+end
+
 ---Handle document changes
 ---@param bufnr number
 ---@param changes (string | integer)[][]
