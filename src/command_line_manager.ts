@@ -1,8 +1,8 @@
-import { NeovimClient } from "neovim";
 import { Disposable } from "vscode";
 
 import { CommandLineController } from "./command_line";
-import { Logger } from "./logger";
+import { config } from "./config";
+import { MainController } from "./main_controller";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { normalizeInputString } from "./utils";
 
@@ -17,11 +17,11 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
      */
     private cmdlineTimer?: NodeJS.Timeout;
 
-    public constructor(
-        private logger: Logger,
-        private client: NeovimClient,
-        private completionDelay: number,
-    ) {}
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {}
 
     public dispose(): void {
         if (this.commandLine) {
@@ -93,14 +93,13 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
     private showCmd = (content: string, firstc: string, prompt: string): void => {
         if (!this.commandLine) {
             this.commandLine = new CommandLineController(
-                this.logger,
                 this.client,
                 {
                     onAccepted: this.onCmdAccept,
                     onCanceled: this.onCmdCancel,
                     onChanged: this.onCmdChange,
                 },
-                this.completionDelay,
+                config.completionDelay,
             );
         }
         this.commandLine.show(content, firstc, prompt);

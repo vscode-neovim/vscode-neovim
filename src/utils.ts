@@ -1,21 +1,17 @@
-import {
-    workspace,
-    TextEditor,
-    TextDocumentContentChangeEvent,
-    Position,
-    TextDocument,
-    EndOfLine,
-    Range,
-    TextEditorEdit,
-} from "vscode";
 import diff, { Diff } from "fast-diff";
 import { NeovimClient } from "neovim";
 import wcwidth from "ts-wcwidth";
+import {
+    EndOfLine,
+    Position,
+    Range,
+    TextDocument,
+    TextDocumentContentChangeEvent,
+    TextEditor,
+    TextEditorEdit,
+} from "vscode";
 
-import { Logger } from "./logger";
-
-export const EXT_NAME = "vscode-neovim";
-export const EXT_ID = `asvetliakov.${EXT_NAME}`;
+import { ILogger } from "./logger";
 
 export interface EditRange {
     start: number;
@@ -315,49 +311,6 @@ export function isCursorChange(change: TextDocumentContentChangeEvent, cursor: P
     return false;
 }
 
-type LegacySettingName = "neovimPath" | "neovimInitPath";
-type SettingPrefix = "neovimExecutablePaths" | "neovimInitVimPaths"; //this needs to be aligned with setting names in package.json
-type Platform = "win32" | "darwin" | "linux";
-
-function getSystemSpecificSetting(
-    settingPrefix: SettingPrefix,
-    legacySetting: { environmentVariableName?: "NEOVIM_PATH"; vscodeSettingName: LegacySettingName },
-): string | undefined {
-    const settings = workspace.getConfiguration(EXT_NAME);
-    const isUseWindowsSubsystemForLinux = settings.get("useWSL");
-
-    //https://github.com/microsoft/vscode/blob/master/src/vs/base/common/platform.ts#L63
-    const platform = process.platform as "win32" | "darwin" | "linux";
-
-    const legacyEnvironmentVariable =
-        legacySetting.environmentVariableName && process.env[legacySetting.environmentVariableName];
-
-    //some system specific settings can be loaded from process.env and value from env will override setting value
-    const legacySettingValue = legacyEnvironmentVariable || settings.get(legacySetting.vscodeSettingName);
-    if (legacySettingValue) {
-        return legacySettingValue;
-    } else if (isUseWindowsSubsystemForLinux && platform === "win32") {
-        return settings.get(`${settingPrefix}.${"linux" as Platform}`);
-    } else {
-        return settings.get(`${settingPrefix}.${platform}`);
-    }
-}
-
-export function getNeovimPath(): string {
-    const legacySettingInfo = {
-        vscodeSettingName: "neovimPath",
-        environmentVariableName: "NEOVIM_PATH",
-    } as const;
-    return getSystemSpecificSetting("neovimExecutablePaths", legacySettingInfo) ?? "nvim";
-}
-
-export function getNeovimInitPath(): string | undefined {
-    const legacySettingInfo = {
-        vscodeSettingName: "neovimInitPath",
-    } as const;
-    return getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
-}
-
 export function normalizeDotRepeatChange(
     change: TextDocumentContentChangeEvent,
     eol: string,
@@ -439,8 +392,7 @@ export function findLastEvent(name: string, batch: [string, ...unknown[]][]): [s
 export async function callAtomic(
     client: NeovimClient,
     requests: [string, unknown[]][],
-    logger: Logger,
-    prefix = "",
+    logger: ILogger,
 ): Promise<void> {
     const res = await client.callAtomic(requests);
     const errors: string[] = [];
@@ -456,7 +408,7 @@ export async function callAtomic(
         });
     }
     if (errors.length) {
-        logger.error(`${prefix}:\n${errors.join("\n")}`);
+        logger.error(`\n${errors.join("\n")}`);
     }
 }
 

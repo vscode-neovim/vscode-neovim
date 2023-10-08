@@ -1,15 +1,14 @@
 import { Disposable, OutputChannel, window } from "vscode";
 
-import { Logger } from "./logger";
+import { EXT_NAME } from "./constants";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
-import { EXT_NAME } from "./utils";
 
 export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];
 
     private channel: OutputChannel;
 
-    public constructor(private logger: Logger) {
+    public constructor() {
         this.channel = window.createOutputChannel(`${EXT_NAME}`);
         this.disposables.push(this.channel);
     }

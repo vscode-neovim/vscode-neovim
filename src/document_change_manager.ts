@@ -1,5 +1,5 @@
+import { Mutex } from "async-mutex";
 import diff from "fast-diff";
-import { NeovimClient } from "neovim";
 import {
     Disposable,
     EndOfLine,
@@ -12,29 +12,28 @@ import {
     window,
     workspace,
 } from "vscode";
-import { Mutex } from "async-mutex";
 
 import { BufferManager } from "./buffer_manager";
-import { Logger } from "./logger";
+import { createLogger } from "./logger";
+import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
+    DotRepeatChange,
+    ManualPromise,
     accumulateDotRepeatChange,
     applyEditorDiffOperations,
     callAtomic,
     computeEditorOperationsFromDiff,
-    diffLineToChars,
     convertCharNumToByteNum,
-    DotRepeatChange,
+    diffLineToChars,
     getDocumentLineArray,
     isChangeSubsequentToChange,
     isCursorChange,
     normalizeDotRepeatChange,
     prepareEditRangesFromDiff,
-    ManualPromise,
 } from "./utils";
-import { MainController } from "./main_controller";
 
-const LOG_PREFIX = "DocumentChangeManager";
+const logger = createLogger("DocumentChangeManager");
 
 export class DocumentChangeManager implements Disposable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
@@ -89,11 +88,11 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
      */
     public documentChangeLock = new Mutex();
 
-    public constructor(
-        private logger: Logger,
-        private client: NeovimClient,
-        private main: MainController,
-    ) {
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
         this.main.bufferManager.onBufferInit = this.onBufferInit;
         this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));
@@ -125,7 +124,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         if (name === "insert-line") {
             const [type] = args as ["before" | "after"];
             this.dotRepeatStartModeInsertHint = type === "before" ? "O" : "o";
-            this.logger.debug(`${LOG_PREFIX}: Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
+            logger.debug(`Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
         }
     }
 
@@ -135,7 +134,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         if (!this.dotRepeatChange) {
             return;
         }
-        this.logger.debug(`${LOG_PREFIX}: Syncing dot repeat`);
+        logger.debug(`Syncing dot repeat`);
         const dotRepeatChange = { ...this.dotRepeatChange };
         this.dotRepeatChange = undefined;
 
@@ -184,16 +183,16 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             edits.push(["nvim_input", [backspaceEdits]]);
         }
         // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
-        await callAtomic(this.client, edits, this.logger, LOG_PREFIX);
+        await callAtomic(this.client, edits, logger);
 
         const cleanEdits: [string, unknown[]][] = [];
         cleanEdits.push(["nvim_set_current_win", [currWin.id]]);
         cleanEdits.push(["nvim_win_close", [win.id, true]]);
-        await callAtomic(this.client, cleanEdits, this.logger, LOG_PREFIX);
+        await callAtomic(this.client, cleanEdits, logger);
     }
 
     private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {
-        this.logger.debug(`${LOG_PREFIX}: Init buffer content for bufId: ${id}, uri: ${doc.uri.toString()}`);
+        logger.debug(`Init buffer content for bufId: ${id}, uri: ${doc.uri.toString()}`);
         this.documentContentInNeovim.set(doc, doc.getText());
     };
 
@@ -205,20 +204,20 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         linedata,
         more,
     ) => {
-        this.logger.debug(`${LOG_PREFIX}: Received neovim buffer changed event for bufId: ${bufId}, tick: ${tick}`);
+        logger.debug(`Received neovim buffer changed event for bufId: ${bufId}, tick: ${tick}`);
         const doc = this.main.bufferManager.getTextDocumentForBufferId(bufId);
         if (!doc) {
-            this.logger.debug(`${LOG_PREFIX}: No text document for buffer: ${bufId}`);
+            logger.debug(`No text document for buffer: ${bufId}`);
             return;
         }
         const skipTick = this.bufferSkipTicks.get(bufId) || 0;
         if (skipTick >= tick) {
-            this.logger.debug(`${LOG_PREFIX}: BufId: ${bufId} skipping tick: ${tick}`);
+            logger.debug(`BufId: ${bufId} skipping tick: ${tick}`);
             return;
         }
         // happens after undo
         if (firstLine === lastLine && linedata.length === 0) {
-            this.logger.debug(`${LOG_PREFIX}: BufId: ${bufId} empty change, skipping`);
+            logger.debug(`BufId: ${bufId} empty change, skipping`);
             return;
         }
         if (!this.textDocumentChangePromise.has(doc)) {
@@ -234,7 +233,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
 
     private applyEdits = async (): Promise<void> => {
         this.applyingEdits = true;
-        this.logger.debug(`${LOG_PREFIX}: Applying neovim edits`);
+        logger.debug(`Applying neovim edits`);
         // const edits = this.pendingEvents.splice(0);
         let resolveProgress: undefined | (() => void);
         const progressTimer = setTimeout(() => {
@@ -253,10 +252,10 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                 const [bufId, _tick, firstLine, lastLine, data, _more] = edit;
                 const doc = this.main.bufferManager.getTextDocumentForBufferId(bufId);
                 if (!doc) {
-                    this.logger.warn(`${LOG_PREFIX}: No document for ${bufId}, skip`);
+                    logger.warn(`No document for ${bufId}, skip`);
                     continue;
                 }
-                this.logger.debug(`${LOG_PREFIX}: Accumulating edits for ${doc.uri.toString()}, bufId: ${bufId}`);
+                logger.debug(`Accumulating edits for ${doc.uri.toString()}, bufId: ${bufId}`);
                 if (!newTextByDoc.get(doc)) {
                     newTextByDoc.set(doc, getDocumentLineArray(doc));
                 }
@@ -311,14 +310,14 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
             for (const [doc, newLines] of newTextByDoc) {
                 const lastPromiseIdx = this.textDocumentChangePromise.get(doc)?.length || 0;
                 try {
-                    this.logger.debug(`${LOG_PREFIX}: Applying edits for ${doc.uri.toString()}`);
+                    logger.debug(`Applying edits for ${doc.uri.toString()}`);
                     if (doc.isClosed) {
-                        this.logger.debug(`${LOG_PREFIX}: Document was closed, skippnig`);
+                        logger.debug(`Document was closed, skippnig`);
                         continue;
                     }
                     const editor = window.visibleTextEditors.find((e) => e.document === doc);
                     if (!editor) {
-                        this.logger.debug(`${LOG_PREFIX}: No visible text editor for document, skipping`);
+                        logger.debug(`No visible text editor for document, skipping`);
                         continue;
                     }
                     let oldText = doc.getText();
@@ -414,19 +413,17 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
                         }
                         this.cursorAfterTextDocumentChange.set(editor.document, editor.selection.active);
                         docPromises.forEach((p) => p.resolve && p.resolve());
-                        this.logger.debug(`${LOG_PREFIX}: Changes succesfully applied for ${doc.uri.toString()}`);
+                        logger.debug(`Changes succesfully applied for ${doc.uri.toString()}`);
                         this.documentContentInNeovim.set(doc, doc.getText());
                     } else {
                         docPromises.forEach((p) => {
-                            p.promise.catch(() =>
-                                this.logger.warn(`${LOG_PREFIX}: Edit was canceled for doc: ${doc.uri.toString()}`),
-                            );
+                            p.promise.catch(() => logger.warn(`Edit was canceled for doc: ${doc.uri.toString()}`));
                             p.reject();
                         });
-                        this.logger.warn(`${LOG_PREFIX}: Changes were not applied for ${doc.uri.toString()}`);
+                        logger.warn(`Changes were not applied for ${doc.uri.toString()}`);
                     }
                 } catch (e) {
-                    this.logger.error(`${LOG_PREFIX}: Error applying neovim edits, error: ${(e as Error).message}`);
+                    logger.error(`Error applying neovim edits, error: ${(e as Error).message}`);
                 }
             }
         }
@@ -450,7 +447,7 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
         const { document: doc } = e;
         const origText = this.documentContentInNeovim.get(doc);
         if (origText == null) {
-            this.logger.warn(`${LOG_PREFIX}: Can't get last known neovim content for ${doc.uri.toString()}, skipping`);
+            logger.warn(`Can't get last known neovim content for ${doc.uri.toString()}, skipping`);
             return;
         }
         this.documentContentInNeovim.set(doc, doc.getText());
@@ -460,18 +457,16 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
     private onChangeTextDocumentLocked = async (e: TextDocumentChangeEvent, origText: string): Promise<void> => {
         const { document: doc, contentChanges } = e;
 
-        this.logger.debug(`${LOG_PREFIX}: Change text document for uri: ${doc.uri.toString()}`);
-        this.logger.debug(
-            `${LOG_PREFIX}: Version: ${doc.version}, skipVersion: ${this.documentSkipVersionOnChange.get(doc)}`,
-        );
+        logger.debug(`Change text document for uri: ${doc.uri.toString()}`);
+        logger.debug(`Version: ${doc.version}, skipVersion: ${this.documentSkipVersionOnChange.get(doc)}`);
         if ((this.documentSkipVersionOnChange.get(doc) ?? 0) >= doc.version) {
-            this.logger.debug(`${LOG_PREFIX}: Skipping a change since versions equals`);
+            logger.debug(`Skipping a change since versions equals`);
             return;
         }
 
         const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
         if (!bufId) {
-            this.logger.warn(`${LOG_PREFIX}: No neovim buffer for ${doc.uri.toString()}`);
+            logger.warn(`No neovim buffer for ${doc.uri.toString()}`);
             return;
         }
 
@@ -507,13 +502,13 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
 
         const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
         if (!bufTick) {
-            this.logger.warn(`${LOG_PREFIX}: Can't get changed tick for bufId: ${bufId}, deleted?`);
+            logger.warn(`Can't get changed tick for bufId: ${bufId}, deleted?`);
             return;
         }
 
         this.bufferSkipTicks.set(bufId, bufTick + changeArgs.length);
 
-        this.logger.debug(`${LOG_PREFIX}: Setting wantInsertCursorUpdate to false`);
+        logger.debug(`Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
 
         const code = "return require('vscode-neovim.api').handle_changes(...)";
