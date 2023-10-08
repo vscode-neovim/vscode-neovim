@@ -8,3 +8,7 @@ vsc-extension-quickstart.md
 **/tsconfig.json
 **/tslint.json
 **/*.ts
+test_fixtures/
+.stylua.toml
+.prettierignore
+.github/
