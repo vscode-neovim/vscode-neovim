@@ -1,19 +1,17 @@
-import {
-    workspace,
-    TextEditor,
-    TextDocumentContentChangeEvent,
-    Position,
-    TextDocument,
-    EndOfLine,
-    Range,
-    TextEditorEdit,
-} from "vscode";
 import diff, { Diff } from "fast-diff";
 import { NeovimClient } from "neovim";
 import wcwidth from "ts-wcwidth";
+import {
+    EndOfLine,
+    Position,
+    Range,
+    TextDocument,
+    TextDocumentContentChangeEvent,
+    TextEditor,
+    TextEditorEdit,
+} from "vscode";
 
-import { Logger } from "./logger";
-import { EXT_NAME } from "./constants";
+import { ILogger } from "./logger";
 
 export interface EditRange {
     start: number;
@@ -394,8 +392,7 @@ export function findLastEvent(name: string, batch: [string, ...unknown[]][]): [s
 export async function callAtomic(
     client: NeovimClient,
     requests: [string, unknown[]][],
-    logger: Logger,
-    prefix = "",
+    logger: ILogger,
 ): Promise<void> {
     const res = await client.callAtomic(requests);
     const errors: string[] = [];
@@ -411,7 +408,7 @@ export async function callAtomic(
         });
     }
     if (errors.length) {
-        logger.error(`${prefix}:\n${errors.join("\n")}`);
+        logger.error(`\n${errors.join("\n")}`);
     }
 }
 

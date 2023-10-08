@@ -1,7 +1,6 @@
 import { NeovimClient } from "neovim";
 import { Disposable } from "vscode";
 
-import { Logger } from "./logger";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { StatusLineController } from "./status_line";
 
@@ -12,10 +11,7 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
      */
     private statusLine: StatusLineController;
 
-    public constructor(
-        private logger: Logger,
-        private client: NeovimClient,
-    ) {
+    public constructor(private client: NeovimClient) {
         this.statusLine = new StatusLineController();
         this.disposables.push(this.statusLine);
     }

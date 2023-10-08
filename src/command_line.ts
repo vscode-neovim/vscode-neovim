@@ -1,10 +1,10 @@
-import { Disposable, window, QuickPick, QuickPickItem, commands } from "vscode";
 import { NeovimClient } from "neovim";
+import { Disposable, QuickPick, QuickPickItem, commands, window } from "vscode";
 
 import { GlyphChars } from "./constants";
-import { Logger } from "./logger";
+import { createLogger } from "./logger";
 
-const LOG_PREFIX = "CmdLine";
+const logger = createLogger("CmdLine");
 
 export interface CommandLineCallbacks {
     onAccepted(): void;
@@ -34,7 +34,6 @@ export class CommandLineController implements Disposable {
     private updatedFromNvim = false; // whether to replace nvim cmdline with new content
 
     public constructor(
-        private logger: Logger,
         private client: NeovimClient,
         private callbacks: CommandLineCallbacks,
         private completionDelay: number,
@@ -86,7 +85,7 @@ export class CommandLineController implements Disposable {
                 this.redrawExpected = false;
                 this.updatedFromNvim = true;
             } else {
-                this.logger.debug(`${LOG_PREFIX}: Ignoring cmdline_show because no redraw expected: ${content}`);
+                logger.debug(`Ignoring cmdline_show because no redraw expected: ${content}`);
             }
         }
     }
@@ -142,9 +141,9 @@ export class CommandLineController implements Disposable {
         }
         if (this.updatedFromNvim) {
             this.updatedFromNvim = false;
-            this.logger.debug(`${LOG_PREFIX}: Skipped updating cmdline because change originates from nvim: ${e}`);
+            logger.debug(`Skipped updating cmdline because change originates from nvim: ${e}`);
         } else {
-            this.logger.debug(`${LOG_PREFIX}: Sending cmdline to nvim: ${e}`);
+            logger.debug(`Sending cmdline to nvim: ${e}`);
             this.callbacks.onChanged(e, useCompletion);
         }
     };

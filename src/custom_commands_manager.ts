@@ -1,18 +1,12 @@
 import { commands, Disposable, TextEditorLineNumbersStyle, window } from "vscode";
 
-import { Logger } from "./logger";
-import { NeovimCommandProcessable, NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import { MainController } from "./main_controller";
-
-const LOG_PREFIX = "CustomCommandsManager";
+import { NeovimCommandProcessable, NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 export class CustomCommandsManager implements Disposable, NeovimCommandProcessable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
 
-    public constructor(
-        private logger: Logger,
-        private main: MainController,
-    ) {}
+    public constructor(private main: MainController) {}
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());

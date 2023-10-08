@@ -3,11 +3,11 @@ import { NeovimClient } from "neovim";
 import { Disposable, Position, TextEditor, TextEditorVisibleRangesChangeEvent, window, workspace } from "vscode";
 
 import { config } from "./config";
-import { Logger } from "./logger";
+import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
 
-const LOG_PREFIX = "ViewportManager";
+const logger = createLogger("ViewportManager");
 
 // all 0-indexed
 export class Viewport {
@@ -28,7 +28,6 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
     private gridViewport: Map<number, Viewport> = new Map();
 
     public constructor(
-        private logger: Logger,
         private client: NeovimClient,
         private main: MainController,
     ) {
@@ -86,7 +85,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                 ];
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (!gridId) {
-                    this.logger.warn(`${LOG_PREFIX}: Unable to update scrolled view. No grid for winId: ${winId}`);
+                    logger.warn(`Unable to update scrolled view. No grid for winId: ${winId}`);
                     break;
                 }
                 const view = this.getViewport(gridId);

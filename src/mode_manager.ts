@@ -2,10 +2,10 @@ import { EventEmitter } from "events";
 
 import { commands, Disposable } from "vscode";
 
-import { Logger } from "./logger";
+import { createLogger } from "./logger";
 import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
-const LOG_PREFIX = "ModeManager";
+const logger = createLogger("ModeManager");
 
 // a representation of the current mode. can be read in different ways using accessors. underlying type is shortname name as returned by `:help mode()`
 export class Mode {
@@ -57,8 +57,6 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
     private isRecording = false;
     private eventEmitter = new EventEmitter();
 
-    public constructor(private logger: Logger) {}
-
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
     }
@@ -91,19 +89,19 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
         switch (name) {
             case "mode-changed": {
                 const [mode] = args as [string];
-                this.logger.debug(`${LOG_PREFIX}: Changing mode to ${mode}`);
+                logger.debug(`Changing mode to ${mode}`);
                 this.mode = new Mode(mode);
                 if (!this.isInsertMode && this.isRecording) {
                     this.isRecording = false;
                     commands.executeCommand("setContext", "neovim.recording", false);
                 }
                 commands.executeCommand("setContext", "neovim.mode", this.mode.name);
-                this.logger.debug(`${LOG_PREFIX}: Setting mode context to ${this.mode.name}`);
+                logger.debug(`Setting mode context to ${this.mode.name}`);
                 this.eventEmitter.emit("neovimModeChanged");
                 break;
             }
             case "notify-recording": {
-                this.logger.debug(`${LOG_PREFIX}: setting recording flag`);
+                logger.debug(`setting recording flag`);
                 this.isRecording = true;
                 commands.executeCommand("setContext", "neovim.recording", true);
                 break;

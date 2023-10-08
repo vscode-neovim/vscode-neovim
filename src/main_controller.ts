@@ -4,7 +4,7 @@ import path from "path";
 import { attach, NeovimClient } from "neovim";
 import vscode from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { createLogger, transports as loggerTransports } from "winston";
+import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
 import { BufferManager } from "./buffer_manager";
 import { CommandLineManager } from "./command_line_manager";
@@ -15,7 +15,7 @@ import { CursorManager } from "./cursor_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
 import { DocumentChangeManager } from "./document_change_manager";
 import { HighlightManager } from "./highlight_manager";
-import { Logger, LogLevel } from "./logger";
+import { createLogger } from "./logger";
 import { ModeManager } from "./mode_manager";
 import { MutlilineMessagesManager } from "./multiline_messages_manager";
 import {
@@ -32,7 +32,7 @@ interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
 }
 
-const LOG_PREFIX = "MainController";
+const logger = createLogger("MainController");
 
 export class MainController implements vscode.Disposable {
     private nvimProc: ChildProcess;
@@ -45,8 +45,6 @@ export class MainController implements vscode.Disposable {
      * Save current batch into temp variable
      */
     private currentRedrawBatch: [string, ...unknown[]][] = [];
-
-    private logger!: Logger;
 
     public modeManager!: ModeManager;
     public bufferManager!: BufferManager;
@@ -62,8 +60,6 @@ export class MainController implements vscode.Disposable {
     public viewportManager!: ViewportManager;
 
     public constructor(extensionPath: string) {
-        this.logger = new Logger(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
-        this.disposables.push(this.logger);
         if (config.useWsl) {
             // execSync returns a newline character at the end
             extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
@@ -107,10 +103,8 @@ export class MainController implements vscode.Disposable {
         if (config.neovimInitPath) {
             args.push("-u", config.neovimInitPath);
         }
-        this.logger.debug(
-            `${LOG_PREFIX}: Spawning nvim, path: ${config.neovimPath}, useWsl: ${config.useWsl}, args: ${JSON.stringify(
-                args,
-            )}`,
+        logger.debug(
+            `Spawning nvim, path: ${config.neovimPath}, useWsl: ${config.useWsl}, args: ${JSON.stringify(args)}`,
         );
         if (config.NVIM_APPNAME) {
             process.env.NVIM_APPNAME = config.NVIM_APPNAME;
@@ -124,17 +118,17 @@ export class MainController implements vscode.Disposable {
         }
         this.nvimProc = spawn(config.useWsl ? "C:\\Windows\\system32\\wsl.exe" : config.neovimPath, args, {});
         this.nvimProc.on("close", (code) => {
-            this.logger.error(`${LOG_PREFIX}: Neovim exited with code: ${code}`);
+            logger.error(`Neovim exited with code: ${code}`);
         });
         this.nvimProc.on("error", (err) => {
-            this.logger.error(`${LOG_PREFIX}: Neovim spawn error: ${err.message}. Check if the path is correct.`);
+            logger.error(`Neovim spawn error: ${err.message}. Check if the path is correct.`);
             vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
         });
-        this.logger.debug(`${LOG_PREFIX}: Attaching to neovim`);
+        logger.debug(`Attaching to neovim`);
         this.client = attach({
             proc: this.nvimProc,
             options: {
-                logger: createLogger({
+                logger: winstonCreateLogger({
                     transports: [new loggerTransports.Console()],
                     level: "error",
                     exitOnError: false,
@@ -146,9 +140,9 @@ export class MainController implements vscode.Disposable {
     }
 
     public async init(): Promise<void> {
-        this.logger.debug(`${LOG_PREFIX}: Init, attaching to neovim notifications`);
+        logger.debug(`Init, attaching to neovim notifications`);
         this.client.on("disconnect", () => {
-            this.logger.error(`${LOG_PREFIX}: Neovim was disconnected`);
+            logger.error(`Neovim was disconnected`);
         });
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.handleCustomRequest);
@@ -161,40 +155,40 @@ export class MainController implements vscode.Disposable {
         this.commandsController = new CommandsController(this.client);
         this.disposables.push(this.commandsController);
 
-        this.modeManager = new ModeManager(this.logger);
+        this.modeManager = new ModeManager();
         this.disposables.push(this.modeManager);
 
-        this.bufferManager = new BufferManager(this.logger, this.client, this);
+        this.bufferManager = new BufferManager(this.client, this);
         this.disposables.push(this.bufferManager);
 
-        this.viewportManager = new ViewportManager(this.logger, this.client, this);
+        this.viewportManager = new ViewportManager(this.client, this);
         this.disposables.push(this.viewportManager);
 
         this.highlightManager = new HighlightManager(this);
         this.disposables.push(this.highlightManager);
 
-        this.changeManager = new DocumentChangeManager(this.logger, this.client, this);
+        this.changeManager = new DocumentChangeManager(this.client, this);
         this.disposables.push(this.changeManager);
 
-        this.cursorManager = new CursorManager(this.logger, this.client, this);
+        this.cursorManager = new CursorManager(this.client, this);
         this.disposables.push(this.cursorManager);
 
-        this.typingManager = new TypingManager(this.logger, this.client, this);
+        this.typingManager = new TypingManager(this.client, this);
         this.disposables.push(this.typingManager);
 
-        this.commandLineManager = new CommandLineManager(this.logger, this.client);
+        this.commandLineManager = new CommandLineManager(this.client);
         this.disposables.push(this.commandLineManager);
 
-        this.statusLineManager = new StatusLineManager(this.logger, this.client);
+        this.statusLineManager = new StatusLineManager(this.client);
         this.disposables.push(this.statusLineManager);
 
-        this.customCommandsManager = new CustomCommandsManager(this.logger, this);
+        this.customCommandsManager = new CustomCommandsManager(this);
         this.disposables.push(this.customCommandsManager);
 
-        this.multilineMessagesManager = new MutlilineMessagesManager(this.logger);
+        this.multilineMessagesManager = new MutlilineMessagesManager();
         this.disposables.push(this.multilineMessagesManager);
 
-        this.logger.debug(`${LOG_PREFIX}: UIAttach`);
+        logger.debug(`UIAttach`);
         // !Attach after setup of notifications, otherwise we can get blocking call and stuck
         await this.client.uiAttach(config.neovimViewportWidth, 100, {
             rgb: true,
@@ -213,7 +207,7 @@ export class MainController implements vscode.Disposable {
         await this.bufferManager.forceResync();
 
         await vscode.commands.executeCommand("setContext", "neovim.init", true);
-        this.logger.debug(`${LOG_PREFIX}: Init completed`);
+        logger.debug(`Init completed`);
     }
 
     public dispose(): void {
@@ -255,7 +249,7 @@ export class MainController implements vscode.Disposable {
                         Array.isArray(commandArgs) ? commandArgs : [commandArgs],
                     );
                 } catch (e) {
-                    this.logger.error(
+                    logger.error(
                         `${vscodeCommand} failed, args: ${JSON.stringify(commandArgs)} error: ${(e as Error).message}`,
                     );
                 }
@@ -268,9 +262,7 @@ export class MainController implements vscode.Disposable {
                 try {
                     m.handleExtensionRequest(command, args);
                 } catch (e) {
-                    this.logger.error(
-                        `${command} failed, args: ${JSON.stringify(args)} error: ${(e as Error).message}`,
-                    );
+                    logger.error(`${command} failed, args: ${JSON.stringify(args)} error: ${(e as Error).message}`);
                 }
             });
             return;
@@ -344,7 +336,7 @@ export class MainController implements vscode.Disposable {
     private async restartExtensionHostPrompt(message: string): Promise<void> {
         vscode.window.showInformationMessage(message, "Restart").then((value) => {
             if (value == "Restart") {
-                this.logger.debug("Restarting extension host");
+                logger.debug("Restarting extension host");
                 vscode.commands.executeCommand("workbench.action.restartExtensionHost");
             }
         });
@@ -358,7 +350,7 @@ export class MainController implements vscode.Disposable {
 
         const affinityConfigWorkspaceValue = affinityConfiguration?.workspaceValue;
         if (affinityConfigWorkspaceValue && EXT_ID in affinityConfigWorkspaceValue) {
-            this.logger.debug(
+            logger.debug(
                 `Extension affinity value ${affinityConfigWorkspaceValue[EXT_ID]} found in Workspace settings`,
             );
             return;
@@ -366,24 +358,24 @@ export class MainController implements vscode.Disposable {
 
         const affinityConfigGlobalValue = affinityConfiguration?.globalValue;
         if (affinityConfigGlobalValue && EXT_ID in affinityConfigGlobalValue) {
-            this.logger.debug(`Extension affinity value ${affinityConfigGlobalValue[EXT_ID]} found in User settings`);
+            logger.debug(`Extension affinity value ${affinityConfigGlobalValue[EXT_ID]} found in User settings`);
             return;
         }
 
-        this.logger.debug("Extension affinity value not set in User and Workspace settings");
+        logger.debug("Extension affinity value not set in User and Workspace settings");
 
         const defaultAffinity = 1;
 
         const setAffinity = (value: number): void => {
-            this.logger.debug(`Setting extension affinity value to ${value} in User settings`);
+            logger.debug(`Setting extension affinity value to ${value} in User settings`);
             extensionsConfiguration
                 .update("experimental.affinity", { ...affinityConfigGlobalValue, [EXT_ID]: value }, true)
                 .then(
                     () => {
-                        this.logger.debug(`Successfull set extension affinity value to ${value} in User settings`);
+                        logger.debug(`Successfull set extension affinity value to ${value} in User settings`);
                     },
                     (error) => {
-                        this.logger.error(`Error while setting experimental affinity. ${error}`);
+                        logger.error(`Error while setting experimental affinity. ${error}`);
                     },
                 );
         };

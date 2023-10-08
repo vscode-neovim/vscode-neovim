@@ -1,4 +1,5 @@
 import fs from "fs";
+import { inspect } from "util";
 
 import { Disposable, window } from "vscode";
 
@@ -9,17 +10,27 @@ export enum LogLevel {
     debug = 3,
 }
 
+export interface ILogger {
+    debug(...args: any[]): void;
+    warn(...args: any[]): void;
+    error(...args: any[]): void;
+}
+
+function getTimestamp(): string {
+    return new Date().toISOString();
+}
+
 export class Logger implements Disposable {
     private disposables: Disposable[] = [];
-
     private fd = 0;
+    private loggers: Map<string, ILogger> = new Map();
+    private level!: LogLevel;
+    private outputToConsole!: boolean;
 
-    public constructor(
-        private logLevel: LogLevel,
-        filePath: string,
-        private outputToConsole = false,
-    ) {
-        if (logLevel !== LogLevel.none) {
+    public init(level: LogLevel, filePath: string, outputToConsole = false) {
+        this.level = level;
+        this.outputToConsole = outputToConsole;
+        if (filePath && level !== LogLevel.none) {
             try {
                 this.fd = fs.openSync(filePath, "w");
             } catch {
@@ -37,44 +48,56 @@ export class Logger implements Disposable {
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public debug(msg: string): void {
-        msg = `${this.getTimestamp()} ${msg}`;
-        if (this.logLevel >= LogLevel.debug) {
-            if (this.fd) {
-                fs.appendFileSync(this.fd, msg + "\n");
+    private log(level: LogLevel, scope: string, args: any[]): void {
+        const msg = args.reduce((p, c, i) => {
+            if (typeof c === "object") {
+                try {
+                    c = inspect(c, false, 2, false);
+                } catch {
+                    // ignore
+                }
             }
-            if (this.outputToConsole) {
-                console.log(msg);
-            }
+            return p + (i > 0 ? " " : "") + c;
+        }, "");
+
+        if (this.fd) {
+            fs.appendFileSync(this.fd, msg + "\n");
+        }
+        if (this.outputToConsole) {
+            console[level == LogLevel.error ? "error" : "log"](`${getTimestamp()} ${scope}: ${msg}`);
+        }
+        if (level === LogLevel.error) {
+            window.showErrorMessage(msg);
         }
     }
 
-    public warn(msg: string): void {
-        msg = `${this.getTimestamp()} ${msg}`;
-        if (this.logLevel >= LogLevel.warn) {
-            if (this.fd) {
-                fs.appendFileSync(this.fd, msg + "\n");
-            }
-            if (this.outputToConsole) {
-                console.log(msg);
-            }
-        }
+    public createLogger(scope: string): ILogger {
+        const logger = this.loggers.has(scope)
+            ? this.loggers.get(scope)!
+            : {
+                  debug: (...args: any[]) => {
+                      if (this.level >= LogLevel.debug) {
+                          this.log(LogLevel.debug, scope, args);
+                      }
+                  },
+                  warn: (...args: any[]) => {
+                      if (this.level >= LogLevel.warn) {
+                          this.log(LogLevel.warn, scope, args);
+                      }
+                  },
+                  error: (...args: any[]) => {
+                      if (this.level >= LogLevel.error) {
+                          this.log(LogLevel.error, scope, args);
+                      }
+                  },
+              };
+        this.loggers.set(scope, logger);
+        return logger;
     }
+}
 
-    public error(msg: string): void {
-        msg = `${this.getTimestamp()} ${msg}`;
-        if (this.logLevel >= LogLevel.error) {
-            if (this.fd) {
-                fs.appendFileSync(this.fd, msg + "\n");
-            }
-            if (this.outputToConsole) {
-                console.log(msg);
-            }
-        }
-        window.showErrorMessage(msg);
-    }
+export const logger = new Logger();
 
-    private getTimestamp(): string {
-        return new Date().toISOString();
-    }
+export function createLogger(scope = "Neovim"): ILogger {
+    return logger.createLogger(scope);
 }

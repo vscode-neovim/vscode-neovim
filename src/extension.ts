@@ -1,10 +1,13 @@
 import * as vscode from "vscode";
 
 import { config } from "./config";
+import { LogLevel, logger } from "./logger";
 import { MainController } from "./main_controller";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     context.subscriptions.push(config);
+    context.subscriptions.push(logger);
+    logger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
     try {
         const plugin = new MainController(context.extensionPath.replace(/\\/g, "\\\\"));
         context.subscriptions.push(plugin);

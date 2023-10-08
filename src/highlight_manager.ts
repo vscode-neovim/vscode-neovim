@@ -5,8 +5,6 @@ import { MainController } from "./main_controller";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { GridLineEvent } from "./utils";
 
-// const LOG_PREFIX = "HighlightManager";
-
 export class HighlightManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];
 
