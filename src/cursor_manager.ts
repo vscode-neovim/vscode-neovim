@@ -285,7 +285,10 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         if (
             // Avoid unnecessary selections updates, or it will disrupt cursor movement related features in vscode
             selections.length !== prevSelections.length ||
-            selections.some((s, idx) => !s.isEqual(prevSelections[idx]))
+            selections.some(
+                (s, idx) =>
+                    !(s.active.isEqual(prevSelections[idx].active) && s.anchor.isEqual(prevSelections[idx].anchor)),
+            )
         ) {
             editor.selections = selections;
         }
