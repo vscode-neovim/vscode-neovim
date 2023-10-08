@@ -1,6 +1,5 @@
 import { Mutex } from "async-mutex";
 import diff from "fast-diff";
-import { NeovimClient } from "neovim";
 import {
     Disposable,
     EndOfLine,

@@ -1,4 +1,3 @@
-import { NeovimClient } from "neovim";
 import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode";
 
 import { createLogger } from "./logger";

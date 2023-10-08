@@ -1,12 +1,10 @@
-import { NeovimClient } from "neovim";
 import { Disposable } from "vscode";
 
 import { CommandLineController } from "./command_line";
 import { config } from "./config";
-import { Logger } from "./logger";
+import { MainController } from "./main_controller";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { normalizeInputString } from "./utils";
-import { MainController } from "./main_controller";
 
 export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];

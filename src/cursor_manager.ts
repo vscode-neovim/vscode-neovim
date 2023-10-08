@@ -1,5 +1,4 @@
 import { debounce, DebouncedFunc } from "lodash-es";
-import { NeovimClient } from "neovim";
 import {
     commands,
     Disposable,

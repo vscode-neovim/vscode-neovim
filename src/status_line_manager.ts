@@ -1,9 +1,8 @@
-import { NeovimClient } from "neovim";
 import { Disposable } from "vscode";
 
+import { MainController } from "./main_controller";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { StatusLineController } from "./status_line";
-import { MainController } from "./main_controller";
 
 export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];

@@ -1,5 +1,4 @@
 import { DebouncedFunc, debounce } from "lodash-es";
-import { NeovimClient } from "neovim";
 import { Disposable, Position, TextEditor, TextEditorVisibleRangesChangeEvent, window, workspace } from "vscode";
 
 import { config } from "./config";
