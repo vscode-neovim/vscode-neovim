@@ -94,7 +94,7 @@ export class Config implements Disposable {
     }
 
     get highlights(): { [key: string]: ThemableDecorationRenderOptions } {
-        return this.cfg.get("highlightGroups.highlights") as any;
+        return this.cfg.get("highlightGroups.highlights")!;
     }
     get useCtrlKeysNormalMode() {
         return this.cfg.get("useCtrlKeysForNormalMode", true);

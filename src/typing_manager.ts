@@ -72,6 +72,7 @@ export class TypingManager implements Disposable {
         };
         this.registerType();
         this.registerReplacePrevChar();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const registerCommand = (cmd: string, cb: (...args: any[]) => any) => {
             this.disposables.push(commands.registerCommand(cmd, cb, this));
         };
