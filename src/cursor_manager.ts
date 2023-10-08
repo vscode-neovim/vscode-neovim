@@ -274,9 +274,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
         const active = convertVimPositionToEditorPosition(editor, bytePos);
 
-        const prev = editor.selection;
-        let selections;
-
+        let selections: Selection[];
         const mode = this.main.modeManager.currentMode;
         if (mode.isVisual) {
             selections = await this.createVisualSelection(editor, mode, active, undefined);
@@ -284,10 +282,19 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
             logger.debug(`Updating cursor in editor pos: [${active.line}, ${active.character}]`);
             selections = [new Selection(active, active)];
         }
-
+        const { selections: prevSelections } = editor;
+        if (
+            // Avoid unnecessary selections updates, or it will disrupt cursor movement related features in vscode
+            selections.length !== prevSelections.length ||
+            selections.some(
+                (s, idx) =>
+                    !(s.active.isEqual(prevSelections[idx].active) && s.anchor.isEqual(prevSelections[idx].anchor)),
+            )
+        ) {
+            editor.selections = selections;
+        }
         this.neovimCursorPosition.set(editor, selections[0]);
-        editor.selections = selections; // always update to clear visual selections
-        if (!selections[0].isEqual(prev)) {
+        if (!selections[0].isEqual(prevSelections[0])) {
             logger.debug(`The selection was changed, scroll view`);
             this.triggerMovementFunctions(editor, active);
         }
