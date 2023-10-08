@@ -21,6 +21,7 @@ type Platform = "win32" | "darwin" | "linux";
 export class Config implements Disposable {
     private disposables: Disposable[] = [];
     private readonly root = EXT_NAME;
+    private cfg!: WorkspaceConfiguration;
     private readonly requireRestartConfigs = [
         "highlightGroups.highlights",
         "neovimClean",
@@ -28,25 +29,22 @@ export class Config implements Disposable {
         "logLevel",
         "logOutputToConsole",
     ].map((c) => `${this.root}.${c}`);
-    private cfg: WorkspaceConfiguration;
 
     dispose() {
         this.disposables.forEach((d) => d.dispose());
     }
 
     constructor() {
-        this.cfg = workspace.getConfiguration(EXT_NAME);
-        commands.executeCommand("setContext", "neovim.ctrlKeysNormal", this.useCtrlKeysNormalMode);
-        commands.executeCommand("setContext", "neovim.ctrlKeysInsert", this.useCtrlKeysInsertMode);
-
+        this.onConfigurationChanged();
         workspace.onDidChangeConfiguration(this.onConfigurationChanged, this, this.disposables);
     }
 
-    private onConfigurationChanged(e: ConfigurationChangeEvent) {
+    private onConfigurationChanged(e?: ConfigurationChangeEvent) {
         this.cfg = workspace.getConfiguration(this.root);
         commands.executeCommand("setContext", "neovim.ctrlKeysNormal", this.useCtrlKeysNormalMode);
         commands.executeCommand("setContext", "neovim.ctrlKeysInsert", this.useCtrlKeysInsertMode);
 
+        if (!e) return;
         const requireRestart = this.requireRestartConfigs.find((c) => e.affectsConfiguration(c));
         if (!requireRestart) return;
 
