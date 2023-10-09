@@ -12,3 +12,4 @@ test_fixtures/
 .stylua.toml
 .prettierignore
 .github/
+scripts/
