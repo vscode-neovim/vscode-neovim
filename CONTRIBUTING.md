@@ -4,6 +4,32 @@ Thank you for your interest in contributing to the project! This project is the 
 many contributors, and we appreciate your help! To get started, please read this document to familiarize yourself with
 the project.
 
+-   [Contributing](#contributing)
+    -   [🔧 Build](#-build)
+        -   [Create and Install Package](#create-and-install-package)
+        -   [Develop](#develop)
+        -   [Run Tests](#run-tests)
+    -   [Design Principles](#design-principles)
+    -   [Getting Started](#getting-started)
+    -   [Project Structure](#project-structure)
+    -   [How it works](#how-it-works)
+    -   [Neovim APIs](#neovim-apis)
+        -   [Node Client](#node-client)
+        -   [Neovim UI Protocol](#neovim-ui-protocol)
+        -   [Autocommands](#autocommands)
+        -   [Neovim Lua API](#neovim-lua-api)
+    -   [Managers](#managers)
+        -   [ModeManager](#modemanager)
+        -   [CommandLineManager](#commandlinemanager)
+        -   [HighlightManager](#highlightmanager)
+        -   [ViewportManager](#viewportmanager)
+        -   [CursorManager](#cursormanager)
+            -   [Neovim -\> VSCode](#neovim---vscode)
+            -   [VSCode -\> Neovim](#vscode---neovim)
+        -   [TypingManager](#typingmanager)
+        -   [DocumentChangeManager](#documentchangemanager)
+        -   [BufferManager](#buffermanager)
+
 ## 🔧 Build
 
 ### Create and Install Package
