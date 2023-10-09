@@ -1330,7 +1330,7 @@
         "mocha": "^10.2.0",
         "prettier": "^3.0.3",
         "source-map-support": "^0.5.19",
-        "ts-loader": "^9.4.4",
+        "ts-loader": "^9.5.0",
         "typescript": "^5.2.2",
         "vsce": "^2.15.0",
         "webpack": "^5.88.2",
