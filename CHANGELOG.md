@@ -1,5 +1,24 @@
 # Change Log
 
+## [0.9.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.3...v0.9.0) (2023-10-10)
+
+
+### Features
+
+* add options to disable or change selection debounce time ([#1504](https://github.com/vscode-neovim/vscode-neovim/issues/1504)) ([2515e46](https://github.com/vscode-neovim/vscode-neovim/commit/2515e466a532ca280c8800d00e786de96cc0b1d9))
+
+
+### Bug Fixes
+
+* cleanup temporary buffers for dotrepeat ([#1506](https://github.com/vscode-neovim/vscode-neovim/issues/1506)) ([7a3d5e9](https://github.com/vscode-neovim/vscode-neovim/commit/7a3d5e953dcd090dbc516a91c005ab76d97d35c2))
+* **config:** ignore init path when nvim running in clean mode ([#1503](https://github.com/vscode-neovim/vscode-neovim/issues/1503)) ([0615b3e](https://github.com/vscode-neovim/vscode-neovim/commit/0615b3e5190bcee9293a206c2c919a5e6b25bd24))
+* **cursor:** avoid unnecessary selections updates ([#1507](https://github.com/vscode-neovim/vscode-neovim/issues/1507)) ([bb0faed](https://github.com/vscode-neovim/vscode-neovim/commit/bb0faed07935c450128c857e154447623dd755f0))
+
+
+### Performance Improvements
+
+* **highlight:** avoid redundant highlight IDs ([#1520](https://github.com/vscode-neovim/vscode-neovim/issues/1520)) ([a7cf325](https://github.com/vscode-neovim/vscode-neovim/commit/a7cf325003a5b1d42daf522491781f144f91c467))
+
 ## [0.8.3](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.2...v0.8.3) (2023-10-07)
 
 
