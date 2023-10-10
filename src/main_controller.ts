@@ -150,6 +150,8 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
+        this.disposables.push(vscode.commands.registerCommand("_getNeovimClient", () => this.client));
+
         this.commandsController = new CommandsController(this);
         this.disposables.push(this.commandsController);
 
