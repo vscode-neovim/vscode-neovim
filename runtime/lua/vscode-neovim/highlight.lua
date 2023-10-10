@@ -9,22 +9,38 @@ vim.opt.conceallevel = 0
 vim.g.html_ignore_conceal = 1
 vim.g.vim_json_conceal = 0
 
+---Link highlights with same values to the same highlight, to avoid performance
+---and rendering issues with vscode decorations caused by a large number of
+---highlight IDs due to highlight merging.
+---Currently, only handle highlights that need to be cleared
+api.nvim_set_hl(0, "VSCodeNone", {})
+
+---@param id number
+---@param name string
+---@param value table
+local function set_hl(id, name, value)
+  if vim.tbl_isempty(value) then
+    return api.nvim_set_hl(id, name, { link = "VSCodeNone" })
+  end
+  return api.nvim_set_hl(id, name, value)
+end
+
 local function setup_globals()
-  api.nvim_set_hl(0, "Normal", {})
-  api.nvim_set_hl(0, "NormalNC", {})
-  api.nvim_set_hl(0, "NormalFloat", {})
-  api.nvim_set_hl(0, "NonText", {})
-  api.nvim_set_hl(0, "Visual", {})
-  api.nvim_set_hl(0, "VisualNOS", {})
-  api.nvim_set_hl(0, "Substitute", {})
-  api.nvim_set_hl(0, "Whitespace", {})
-  api.nvim_set_hl(0, "LineNr", {})
-  api.nvim_set_hl(0, "LineNrAbove", {})
-  api.nvim_set_hl(0, "LineNrBelow", {})
-  api.nvim_set_hl(0, "CursorLine", {})
-  api.nvim_set_hl(0, "CursorLineNr", {})
+  set_hl(0, "Normal", {})
+  set_hl(0, "NormalNC", {})
+  set_hl(0, "NormalFloat", {})
+  set_hl(0, "NonText", {})
+  set_hl(0, "Visual", {})
+  set_hl(0, "VisualNOS", {})
+  set_hl(0, "Substitute", {})
+  set_hl(0, "Whitespace", {})
+  set_hl(0, "LineNr", {})
+  set_hl(0, "LineNrAbove", {})
+  set_hl(0, "LineNrBelow", {})
+  set_hl(0, "CursorLine", {})
+  set_hl(0, "CursorLineNr", {})
   -- make cursor visible for plugins that use fake cursor
-  api.nvim_set_hl(0, "Cursor", { reverse = true })
+  set_hl(0, "Cursor", { reverse = true })
 end
 
 -- stylua: ignore start
@@ -47,7 +63,7 @@ local function setup_overrides()
   for name, attrs in pairs(overrides) do
     if not overridden[name] then
       overridden[name] = true
-      api.nvim_set_hl(NS, name, attrs)
+      set_hl(NS, name, attrs)
     end
   end
 end
@@ -60,7 +76,7 @@ local function setup_syntax_groups()
     local group = item:match([[([%w@%.]+)%s+xxx]])
     if group and not cleared_syntax_groups[group] then
       cleared_syntax_groups[group] = true
-      api.nvim_set_hl(NS, group, {})
+      set_hl(NS, group, {})
     end
   end
 end
@@ -92,6 +108,7 @@ api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "WinNew", "WinS
 api.nvim_create_autocmd({ "VimEnter", "ColorScheme", "Syntax", "FileType" }, {
   group = group,
   callback = function()
+    api.nvim_set_hl(0, "VSCodeNone", {})
     setup_globals()
     -- highlights of custom namespace
     setup_overrides()
