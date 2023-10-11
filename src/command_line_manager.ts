@@ -2,11 +2,11 @@ import { Disposable } from "vscode";
 
 import { CommandLineController } from "./command_line";
 import { config } from "./config";
+import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
 import { normalizeInputString } from "./utils";
 
-export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
+export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Simple command line UI
@@ -21,7 +21,9 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
         return this.main.client;
     }
 
-    public constructor(private main: MainController) {}
+    public constructor(private main: MainController) {
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+    }
 
     public dispose(): void {
         if (this.commandLine) {
@@ -30,21 +32,12 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        for (const [name, ...args] of batch) {
-            const firstArg = args[0] || [];
+    public handleRedraw(data: EventBusData<"redraw">) {
+        for (const { name, args } of data) {
             switch (name) {
                 case "cmdline_show": {
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const [content, pos, firstc, prompt, indent, level] = firstArg as [
-                        // eslint-disable-next-line @typescript-eslint/ban-types
-                        [object, string][],
-                        number,
-                        string,
-                        string,
-                        number,
-                        number,
-                    ];
+                    const [content, pos, firstc, prompt, indent, level] = args[0];
                     const allContent = content.map(([, str]) => str).join("");
                     // !note: neovim can send cmdline_hide followed by cmdline_show events
                     // !since quickpick can be destroyed slightly at later time after handling cmdline_hide we want to create new command line
@@ -69,7 +62,7 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
                     break;
                 }
                 case "wildmenu_show": {
-                    const [items] = firstArg as [string[]];
+                    const [items] = args[0];
                     if (this.commandLine) {
                         this.commandLine.setCompletionItems(items);
                     }

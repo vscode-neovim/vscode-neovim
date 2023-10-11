@@ -2,9 +2,10 @@ import { DebouncedFunc, debounce } from "lodash-es";
 import { Disposable, Position, TextEditor, TextEditorVisibleRangesChangeEvent, window, workspace } from "vscode";
 
 import { config } from "./config";
+import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
+import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 const logger = createLogger("ViewportManager");
 
@@ -18,7 +19,7 @@ export class Viewport {
     skipcol = 0; // skip col (maybe left col)
 }
 
-export class ViewportManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
+export class ViewportManager implements Disposable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
 
     /**
@@ -32,6 +33,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
 
     public constructor(private main: MainController) {
         this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 
     public dispose(): void {
@@ -96,21 +98,11 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
         }
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        for (const [name, ...args] of batch) {
+    public handleRedraw(data: EventBusData<"redraw">) {
+        for (const { name, args } of data) {
             switch (name) {
                 case "win_viewport": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [grid, win, topline, botline, curline, curcol, line_count, scroll_delta] of args as [
-                        number,
-                        Window,
-                        number,
-                        number,
-                        number,
-                        number,
-                        number,
-                        number,
-                    ][]) {
+                    for (const [grid, , topline, botline, curline, curcol] of args) {
                         const view = this.getViewport(grid);
                         view.topline = topline;
                         view.botline = botline;
@@ -120,7 +112,7 @@ export class ViewportManager implements Disposable, NeovimRedrawProcessable, Neo
                     break;
                 }
                 case "grid_destroy": {
-                    for (const [grid] of args as [number][]) {
+                    for (const [grid] of args) {
                         this.gridViewport.delete(grid);
                     }
                     break;

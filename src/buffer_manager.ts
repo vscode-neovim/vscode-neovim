@@ -1,7 +1,7 @@
 import path from "path";
 
 import { debounce } from "lodash-es";
-import { Buffer, NeovimClient, Window } from "neovim";
+import { Buffer, NeovimClient } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
 import {
     CancellationToken,
@@ -24,9 +24,10 @@ import {
 } from "vscode";
 
 import { config } from "./config";
+import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
+import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import { ManualPromise, callAtomic, convertByteNumToCharNum } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
@@ -47,7 +48,7 @@ const BUFFER_SCHEME = "vscode-neovim";
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
  */
-export class BufferManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
+export class BufferManager implements Disposable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
     /**
      * Internal sync promise
@@ -110,6 +111,8 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
 
         this.bufferProvider = new BufferProvider(this.client, this.receivedBufferEvent);
         this.disposables.push(workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider));
+
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 
     public dispose(): void {
@@ -187,19 +190,18 @@ export class BufferManager implements Disposable, NeovimRedrawProcessable, Neovi
         return this.externalTextDocuments.has(textDoc);
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        for (const [name, ...args] of batch) {
-            // const firstArg = args[0] || [];
+    public handleRedraw(data: EventBusData<"redraw">) {
+        for (const { name, args } of data) {
             switch (name) {
                 case "win_external_pos":
                 case "win_pos": {
-                    for (const [grid, win] of args as [number, Window][]) {
+                    for (const [grid, win] of args) {
                         this.grids.set(grid, { winId: win.id });
                     }
                     break;
                 }
                 case "win_close": {
-                    for (const [grid] of args as [number][]) {
+                    for (const [grid] of args) {
                         this.grids.delete(grid);
                     }
                     break;

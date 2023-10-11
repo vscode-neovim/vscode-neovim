@@ -1,9 +1,9 @@
 import { Disposable, OutputChannel, window } from "vscode";
 
 import { EXT_NAME } from "./constants";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
+import { EventBusData, eventBus } from "./eventBus";
 
-export class MultilineMessagesManager implements Disposable, NeovimRedrawProcessable {
+export class MultilineMessagesManager implements Disposable {
     private disposables: Disposable[] = [];
 
     private channel: OutputChannel;
@@ -11,18 +11,19 @@ export class MultilineMessagesManager implements Disposable, NeovimRedrawProcess
     public constructor() {
         this.channel = window.createOutputChannel(`${EXT_NAME}`);
         this.disposables.push(this.channel);
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        for (const [name, ...args] of batch) {
+    public handleRedraw(data: EventBusData<"redraw">): void {
+        for (const { name, args } of data) {
             switch (name) {
                 case "msg_show": {
                     let str = "";
-                    for (const [type, content, clear] of args as [string, [number, string][], boolean][]) {
+                    for (const [type, content, clear] of args) {
                         if (type === "return_prompt") {
                             continue;
                         }
@@ -47,7 +48,7 @@ export class MultilineMessagesManager implements Disposable, NeovimRedrawProcess
                 }
                 case "msg_history_show": {
                     let str = "\n";
-                    for (const arg of args as [string, [number, string][]][][][]) {
+                    for (const arg of args) {
                         for (const list of arg) {
                             for (const [commandName, content] of list) {
                                 let cmdContent = "";
