@@ -224,6 +224,11 @@
                         "200ms"
                     ],
                     "description": "Debounce time for synchronizing mouse selection. Set to 0 to disable synchronization"
+                },
+                "vscode-neovim.statusLineSeparator": {
+                    "type": "string",
+                    "default": "|",
+                    "description": "Separator used by statusline"
                 }
             }
         },
