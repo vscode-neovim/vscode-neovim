@@ -16,7 +16,7 @@ import { DocumentChangeManager } from "./document_change_manager";
 import { HighlightManager } from "./highlight_manager";
 import { createLogger } from "./logger";
 import { ModeManager } from "./mode_manager";
-import { MutlilineMessagesManager } from "./multiline_messages_manager";
+import { MultilineMessagesManager } from "./multiline_messages_manager";
 import {
     NeovimCommandProcessable,
     NeovimExtensionRequestProcessable,
@@ -55,7 +55,7 @@ export class MainController implements vscode.Disposable {
     public statusLineManager!: StatusLineManager;
     public highlightManager!: HighlightManager;
     public customCommandsManager!: CustomCommandsManager;
-    public multilineMessagesManager!: MutlilineMessagesManager;
+    public multilineMessagesManager!: MultilineMessagesManager;
     public viewportManager!: ViewportManager;
 
     public constructor(extensionPath: string) {
@@ -185,7 +185,7 @@ export class MainController implements vscode.Disposable {
         this.customCommandsManager = new CustomCommandsManager(this);
         this.disposables.push(this.customCommandsManager);
 
-        this.multilineMessagesManager = new MutlilineMessagesManager();
+        this.multilineMessagesManager = new MultilineMessagesManager();
         this.disposables.push(this.multilineMessagesManager);
 
         logger.debug(`UIAttach`);

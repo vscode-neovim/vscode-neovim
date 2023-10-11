@@ -3,7 +3,7 @@ import { Disposable, OutputChannel, window } from "vscode";
 import { EXT_NAME } from "./constants";
 import { NeovimRedrawProcessable } from "./neovim_events_processable";
 
-export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcessable {
+export class MultilineMessagesManager implements Disposable, NeovimRedrawProcessable {
     private disposables: Disposable[] = [];
 
     private channel: OutputChannel;
