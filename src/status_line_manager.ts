@@ -25,7 +25,7 @@ export class StatusLineManager implements Disposable {
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public handleRedraw(data: EventBusData<"redraw">) {
+    private handleRedraw(data: EventBusData<"redraw">) {
         let acceptPrompt = false;
 
         // if there is mouse_on event after return prompt, then we don't need automatically accept it

@@ -32,7 +32,7 @@ export class CommandLineManager implements Disposable {
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public handleRedraw(data: EventBusData<"redraw">) {
+    private handleRedraw(data: EventBusData<"redraw">) {
         for (const { name, args } of data) {
             switch (name) {
                 case "cmdline_show": {

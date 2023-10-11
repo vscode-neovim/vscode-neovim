@@ -139,7 +139,7 @@ export class CursorManager implements Disposable, NeovimExtensionRequestProcessa
         }
     }
 
-    public handleRedraw(data: EventBusData<"redraw">): void {
+    private handleRedraw(data: EventBusData<"redraw">): void {
         for (const { name, args } of data) {
             switch (name) {
                 case "grid_cursor_goto": {

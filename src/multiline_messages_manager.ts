@@ -18,7 +18,7 @@ export class MultilineMessagesManager implements Disposable {
         this.disposables.forEach((d) => d.dispose());
     }
 
-    public handleRedraw(data: EventBusData<"redraw">): void {
+    private handleRedraw(data: EventBusData<"redraw">): void {
         for (const { name, args } of data) {
             switch (name) {
                 case "msg_show": {

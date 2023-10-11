@@ -20,7 +20,7 @@ export class HighlightManager implements Disposable {
         this.commandsDisposables.forEach((d) => d.dispose());
     }
 
-    public handleRedraw(data: EventBusData<"redraw">): void {
+    private handleRedraw(data: EventBusData<"redraw">): void {
         const gridHLUpdates: Set<number> = new Set();
 
         for (const { name, args } of data) {

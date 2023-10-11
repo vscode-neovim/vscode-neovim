@@ -98,7 +98,7 @@ export class ViewportManager implements Disposable, NeovimExtensionRequestProces
         }
     }
 
-    public handleRedraw(data: EventBusData<"redraw">) {
+    private handleRedraw(data: EventBusData<"redraw">) {
         for (const { name, args } of data) {
             switch (name) {
                 case "win_viewport": {
