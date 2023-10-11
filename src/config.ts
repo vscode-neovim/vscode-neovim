@@ -142,6 +142,9 @@ export class Config implements Disposable {
     get outputToConsole() {
         return this.cfg.get("logOutputToConsole", false);
     }
+    get statusLineSeparator() {
+        return this.cfg.get("statusLineSeparator", " ");
+    }
 
     get normalSelectionDebounceTime() {
         return this.cfg.get("normalSelectionDebounceTime", 50);
