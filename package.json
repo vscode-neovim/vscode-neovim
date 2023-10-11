@@ -227,7 +227,7 @@
                 },
                 "vscode-neovim.statusLineSeparator": {
                     "type": "string",
-                    "default": " ",
+                    "default": "|",
                     "description": "Separator used by statusline"
                 }
             }
