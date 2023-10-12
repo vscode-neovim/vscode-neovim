@@ -12,7 +12,7 @@ export class StatusLineController implements Disposable {
     private statusBar: StatusBarItem;
 
     public constructor() {
-        this.statusBar = window.createStatusBarItem(StatusBarAlignment.Left, 10);
+        this.statusBar = window.createStatusBarItem(StatusBarAlignment.Left, -1);
         this.statusBar.show();
     }
 
