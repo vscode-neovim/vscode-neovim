@@ -1,4 +1,5 @@
 import { ChildProcess, execSync, spawn } from "child_process";
+import { readFile } from "fs/promises";
 import path from "path";
 
 import { attach, NeovimClient } from "neovim";
@@ -58,10 +59,12 @@ export class MainController implements vscode.Disposable {
     public multilineMessagesManager!: MultilineMessagesManager;
     public viewportManager!: ViewportManager;
 
-    public constructor(extensionPath: string) {
+    public constructor(private extensionPath: string) {
         if (config.useWsl) {
             // execSync returns a newline character at the end
-            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
+            this.extensionPath = extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`)
+                .toString()
+                .trim();
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
@@ -137,6 +140,16 @@ export class MainController implements vscode.Disposable {
         });
     }
 
+    private setClientInfo() {
+        readFile(path.posix.join(this.extensionPath, "package.json"))
+            .then((buffer) => {
+                const versionString = JSON.parse(buffer.toString()).version as string;
+                const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
+                this.client.setClientInfo("vscode-neovim", { major, minor, patch }, "embedder", {}, {});
+            })
+            .catch((err) => console.log(err));
+    }
+
     public async init(): Promise<void> {
         logger.debug(`Init, attaching to neovim notifications`);
         this.client.on("disconnect", () => {
@@ -144,8 +157,7 @@ export class MainController implements vscode.Disposable {
         });
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.handleCustomRequest);
-
-        await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
+        this.setClientInfo();
         await this.checkNeovimVersion();
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
