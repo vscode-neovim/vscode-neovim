@@ -148,20 +148,20 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.disposables.push(vscode.commands.registerCommand("_getNeovimClient", () => this.client));
         this.disposables.push(
-            (this.commandsController = new CommandsController(this)),
+            vscode.commands.registerCommand("_getNeovimClient", () => this.client),
             (this.modeManager = new ModeManager()),
+            (this.typingManager = new TypingManager(this)),
             (this.bufferManager = new BufferManager(this)),
             (this.viewportManager = new ViewportManager(this)),
+            (this.cursorManager = new CursorManager(this)),
+            (this.commandsController = new CommandsController(this)),
             (this.highlightManager = new HighlightManager(this)),
             (this.changeManager = new DocumentChangeManager(this)),
-            (this.cursorManager = new CursorManager(this)),
-            (this.typingManager = new TypingManager(this)),
             (this.commandLineManager = new CommandLineManager(this)),
             (this.statusLineManager = new StatusLineManager(this)),
-            (this.customCommandsManager = new CustomCommandsManager(this)),
             (this.multilineMessagesManager = new MultilineMessagesManager()),
+            (this.customCommandsManager = new CustomCommandsManager(this)),
         );
 
         logger.debug(`UIAttach`);
