@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ChildProcess, execSync, spawn } from "child_process";
 import { readFile } from "fs/promises";
 import path from "path";
@@ -14,15 +15,12 @@ import { config } from "./config";
 import { CursorManager } from "./cursor_manager";
 import { CustomCommandsManager } from "./custom_commands_manager";
 import { DocumentChangeManager } from "./document_change_manager";
+import { eventBus } from "./eventBus";
 import { HighlightManager } from "./highlight_manager";
 import { createLogger } from "./logger";
 import { ModeManager } from "./mode_manager";
 import { MultilineMessagesManager } from "./multiline_messages_manager";
-import {
-    NeovimCommandProcessable,
-    NeovimExtensionRequestProcessable,
-    NeovimRedrawProcessable,
-} from "./neovim_events_processable";
+import { NeovimCommandProcessable, NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
 import { findLastEvent } from "./utils";
@@ -162,43 +160,21 @@ export class MainController implements vscode.Disposable {
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.disposables.push(vscode.commands.registerCommand("_getNeovimClient", () => this.client));
-
-        this.commandsController = new CommandsController(this);
-        this.disposables.push(this.commandsController);
-
-        this.modeManager = new ModeManager();
-        this.disposables.push(this.modeManager);
-
-        this.bufferManager = new BufferManager(this);
-        this.disposables.push(this.bufferManager);
-
-        this.viewportManager = new ViewportManager(this);
-        this.disposables.push(this.viewportManager);
-
-        this.highlightManager = new HighlightManager(this);
-        this.disposables.push(this.highlightManager);
-
-        this.changeManager = new DocumentChangeManager(this);
-        this.disposables.push(this.changeManager);
-
-        this.cursorManager = new CursorManager(this);
-        this.disposables.push(this.cursorManager);
-
-        this.typingManager = new TypingManager(this);
-        this.disposables.push(this.typingManager);
-
-        this.commandLineManager = new CommandLineManager(this);
-        this.disposables.push(this.commandLineManager);
-
-        this.statusLineManager = new StatusLineManager(this);
-        this.disposables.push(this.statusLineManager);
-
-        this.customCommandsManager = new CustomCommandsManager(this);
-        this.disposables.push(this.customCommandsManager);
-
-        this.multilineMessagesManager = new MultilineMessagesManager();
-        this.disposables.push(this.multilineMessagesManager);
+        this.disposables.push(
+            vscode.commands.registerCommand("_getNeovimClient", () => this.client),
+            (this.modeManager = new ModeManager()),
+            (this.typingManager = new TypingManager(this)),
+            (this.bufferManager = new BufferManager(this)),
+            (this.viewportManager = new ViewportManager(this)),
+            (this.cursorManager = new CursorManager(this)),
+            (this.commandsController = new CommandsController(this)),
+            (this.highlightManager = new HighlightManager(this)),
+            (this.changeManager = new DocumentChangeManager(this)),
+            (this.commandLineManager = new CommandLineManager(this)),
+            (this.statusLineManager = new StatusLineManager(this)),
+            (this.multilineMessagesManager = new MultilineMessagesManager()),
+            (this.customCommandsManager = new CustomCommandsManager(this)),
+        );
 
         logger.debug(`UIAttach`);
         // !Attach after setup of notifications, otherwise we can get blocking call and stuck
@@ -213,8 +189,7 @@ export class MainController implements vscode.Disposable {
             ext_popupmenu: true,
             ext_tabline: true,
             ext_wildmenu: true,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
+        });
 
         await this.bufferManager.forceResync();
 
@@ -222,25 +197,7 @@ export class MainController implements vscode.Disposable {
         logger.debug(`Init completed`);
     }
 
-    public dispose(): void {
-        for (const d of this.disposables) {
-            d.dispose();
-        }
-        this.client.quit();
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private onNeovimNotification = (method: string, events: [string, ...any[]]): void => {
-        // order matters here, modeManager should be processed first
-        const redrawManagers: NeovimRedrawProcessable[] = [
-            this.bufferManager,
-            this.viewportManager,
-            this.cursorManager,
-            this.commandLineManager,
-            this.statusLineManager,
-            this.highlightManager,
-            this.multilineMessagesManager,
-        ];
         const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
             this.modeManager,
             this.changeManager,
@@ -279,19 +236,28 @@ export class MainController implements vscode.Disposable {
             });
             return;
         }
-        if (method !== "redraw") {
-            return;
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const redrawEvents = events as [string, ...any[]][];
-        const hasFlush = findLastEvent("flush", events);
-
-        if (hasFlush) {
-            const batch = [...this.currentRedrawBatch.splice(0), ...redrawEvents];
-            redrawManagers.forEach((m) => m.handleRedrawBatch(batch));
-        } else {
-            this.currentRedrawBatch.push(...redrawEvents);
+        if (method === "redraw") {
+            const redrawEvents = events as [string, ...any[]][];
+            const hasFlush = findLastEvent("flush", events);
+            if (hasFlush) {
+                const batch = [...this.currentRedrawBatch.splice(0), ...redrawEvents];
+                const eventData = batch.map(
+                    (b) =>
+                        ({
+                            name: b[0],
+                            args: b.slice(1),
+                            get firstArg() {
+                                return this.args[0];
+                            },
+                            get lastArg() {
+                                return this.args[this.args.length - 1];
+                            },
+                        }) as any,
+                );
+                eventBus.fire("redraw", eventData);
+            } else {
+                this.currentRedrawBatch.push(...redrawEvents);
+            }
         }
     };
 
@@ -361,5 +327,12 @@ export class MainController implements vscode.Disposable {
                 `The extension requires Neovim version ${minVersion} or higher, preferably the latest stable release.`,
             );
         }
+    }
+
+    public dispose(): void {
+        for (const d of this.disposables) {
+            d.dispose();
+        }
+        this.client.quit();
     }
 }

@@ -12,12 +12,13 @@ import {
     window,
 } from "vscode";
 
+import { config } from "./config";
+import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { Mode } from "./mode_manager";
-import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
+import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise } from "./utils";
-import { config } from "./config";
 
 const logger = createLogger("CursorManager");
 
@@ -25,7 +26,7 @@ interface CursorInfo {
     cursorShape: "block" | "horizontal" | "vertical";
 }
 
-export class CursorManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
+export class CursorManager implements Disposable, NeovimExtensionRequestProcessable {
     private disposables: Disposable[] = [];
     /**
      * Vim cursor mode mappings
@@ -79,6 +80,7 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         };
         this.disposables.push(window.onDidChangeVisibleTextEditors(updateCursorStyle));
         this.disposables.push(window.onDidChangeActiveTextEditor(updateCursorStyle));
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 
     public dispose(): void {
@@ -137,51 +139,32 @@ export class CursorManager implements Disposable, NeovimRedrawProcessable, Neovi
         }
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        for (const [name, ...args] of batch) {
-            const firstArg = args[0] || [];
+    private handleRedraw(data: EventBusData<"redraw">): void {
+        for (const { name, args } of data) {
             switch (name) {
                 case "grid_cursor_goto": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [grid, row, col] of args as [number, number, number][]) {
-                        this.gridCursorUpdates.add(grid);
-                    }
+                    args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
                     break;
                 }
                 // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
                 // If we received it we must shift current cursor position by given rows
                 case "grid_scroll": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [grid, top, bot, left, right, rows, cols] of args as [
-                        number,
-                        number,
-                        number,
-                        null,
-                        number,
-                        number,
-                        number,
-                    ][]) {
-                        this.gridCursorUpdates.add(grid);
-                    }
+                    args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
                     break;
                 }
                 case "mode_info_set": {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [, modes] = firstArg as [string, any[]];
-                    for (const mode of modes) {
-                        if (!mode.name || !mode.cursor_shape) {
-                            continue;
-                        }
-                        this.cursorModes.set(mode.name, {
-                            cursorShape: mode.cursor_shape,
-                        });
-                    }
+                    args.forEach((arg) =>
+                        arg[1].forEach((mode) => {
+                            if (mode.name && mode.cursor_shape) {
+                                this.cursorModes.set(mode.name, { cursorShape: mode.cursor_shape });
+                            }
+                        }),
+                    );
                     break;
                 }
                 case "mode_change": {
-                    const [newModeName] = firstArg as [string, never];
                     if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
-                    this.updateCursorStyle(newModeName);
+                    args.forEach((arg) => this.updateCursorStyle(arg[0]));
                     break;
                 }
             }

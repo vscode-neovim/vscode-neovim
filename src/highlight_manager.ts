@@ -1,11 +1,10 @@
 import { Disposable } from "vscode";
 
+import { EventBusData, eventBus } from "./eventBus";
 import { HighlightProvider } from "./highlight_provider";
 import { MainController } from "./main_controller";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
-import { GridLineEvent } from "./utils";
 
-export class HighlightManager implements Disposable, NeovimRedrawProcessable {
+export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
 
     private highlightProvider: HighlightProvider;
@@ -14,25 +13,20 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
 
     public constructor(private main: MainController) {
         this.highlightProvider = new HighlightProvider();
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
         this.commandsDisposables.forEach((d) => d.dispose());
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
+    private handleRedraw(data: EventBusData<"redraw">): void {
         const gridHLUpdates: Set<number> = new Set();
 
-        for (const [name, ...args] of batch) {
+        for (const { name, args } of data) {
             switch (name) {
                 case "hl_attr_define": {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    for (const [id, uiAttrs, , info] of args as [
-                        number,
-                        never,
-                        never,
-                        [{ kind: "ui" | "syntax" | "terminal"; ui_name: string; hi_name: string }],
-                    ][]) {
+                    for (const [id, uiAttrs, , info] of args) {
                         this.highlightProvider.addHighlightGroup(
                             id,
                             uiAttrs,
@@ -43,31 +37,19 @@ export class HighlightManager implements Disposable, NeovimRedrawProcessable {
                 }
                 // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
                 case "grid_scroll": {
-                    for (const [grid, top, , , , by] of args as [
-                        number,
-                        number,
-                        number,
-                        null,
-                        number,
-                        number,
-                        number,
-                    ][]) {
-                        if (grid === 1) {
-                            continue;
+                    for (const [grid, top, , , , by] of args) {
+                        if (grid !== 1) {
+                            // by > 0 - scroll down, must remove existing elements from first and shift row hl left
+                            // by < 0 - scroll up, must remove existing elements from right shift row hl right
+                            this.highlightProvider.shiftGridHighlights(grid, by, top);
+                            gridHLUpdates.add(grid);
                         }
-                        // by > 0 - scroll down, must remove existing elements from first and shift row hl left
-                        // by < 0 - scroll up, must remove existing elements from right shift row hl right
-                        this.highlightProvider.shiftGridHighlights(grid, by, top);
-                        gridHLUpdates.add(grid);
                     }
                     break;
                 }
                 case "grid_line": {
-                    // [grid, row, colStart, cells: [text, hlId, repeat]]
-                    const gridEvents = args as GridLineEvent[];
-
                     // eslint-disable-next-line prefer-const
-                    for (let [grid, row, col, cells] of gridEvents) {
+                    for (let [grid, row, col, cells] of args) {
                         const gridOffset = this.main.viewportManager.getGridOffset(grid);
                         if (!gridOffset) {
                             continue;

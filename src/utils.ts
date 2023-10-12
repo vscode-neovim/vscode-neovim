@@ -21,8 +21,6 @@ export interface EditRange {
     type: "changed" | "removed" | "added";
 }
 
-export type GridLineEvent = [number, number, number, [string, number, number][]];
-
 /**
  * Stores last changes information for dot repeat
  */
