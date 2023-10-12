@@ -1,9 +1,9 @@
-import { EventEmitter, Disposable } from "vscode";
 import neovim from "neovim";
+import { Disposable, EventEmitter } from "vscode";
 
-interface IRedrawEventArg<N, A> {
+interface IRedrawEventArg<N, A extends unknown[]> {
     name: N;
-    args: A[];
+    args: A["length"] extends 0 ? undefined : A[];
     get firstArg(): A;
     get lastArg(): A;
 }
@@ -123,12 +123,12 @@ class EventBus implements Disposable {
     on<T extends keyof EventsMapping>(
         name: T,
         handler: (data: Event<T>["data"]) => void,
-        thisArgs?: unknown,
+        thisArg?: unknown,
         disposables?: Disposable[],
     ) {
         return this.emitter.event(
-            (e) => name === e.name && handler.call(thisArgs, e.data as Event<T>["data"]),
-            thisArgs,
+            (e) => name === e.name && handler.call(thisArg, e.data as Event<T>["data"]),
+            thisArg,
             disposables,
         );
     }
