@@ -116,10 +116,25 @@ class EventBus implements Disposable {
         this.emitter.dispose();
     }
 
+    /**
+     * Fires an event with the specified name and data.
+     *
+     * @param name - The name of the event.
+     * @param data - The data associated with the event.
+     */
     fire<T extends keyof EventsMapping>(name: T, data: EventsMapping[T]) {
         this.emitter.fire({ name, data });
     }
 
+    /**
+     * Registers a handler for the specified event name.
+     *
+     * @param name - The name of the event.
+     * @param handler - The handler function for the event.
+     * @param thisArg - The `this` context used when invoking the handler function.
+     * @param disposables - An array to which a disposable will be added.
+     * @return — Disposable which unregisters this event handler on disposal.
+     */
     on<T extends keyof EventsMapping>(
         name: T,
         handler: (data: Event<T>["data"]) => void,
@@ -134,4 +149,7 @@ class EventBus implements Disposable {
     }
 }
 
+/**
+ * Handle all nvim events and custom events
+ */
 export const eventBus = new EventBus();
