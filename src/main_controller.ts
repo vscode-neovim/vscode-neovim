@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ChildProcess, execSync, spawn } from "child_process";
+import { readFile } from "fs/promises";
 import path from "path";
 
 import { attach, NeovimClient } from "neovim";
@@ -56,10 +57,12 @@ export class MainController implements vscode.Disposable {
     public multilineMessagesManager!: MultilineMessagesManager;
     public viewportManager!: ViewportManager;
 
-    public constructor(extensionPath: string) {
+    public constructor(private extensionPath: string) {
         if (config.useWsl) {
             // execSync returns a newline character at the end
-            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
+            this.extensionPath = extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`)
+                .toString()
+                .trim();
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
@@ -135,6 +138,16 @@ export class MainController implements vscode.Disposable {
         });
     }
 
+    private setClientInfo() {
+        readFile(path.posix.join(this.extensionPath, "package.json"))
+            .then((buffer) => {
+                const versionString = JSON.parse(buffer.toString()).version as string;
+                const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
+                this.client.setClientInfo("vscode-neovim", { major, minor, patch }, "embedder", {}, {});
+            })
+            .catch((err) => console.log(err));
+    }
+
     public async init(): Promise<void> {
         logger.debug(`Init, attaching to neovim notifications`);
         this.client.on("disconnect", () => {
@@ -142,8 +155,7 @@ export class MainController implements vscode.Disposable {
         });
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.handleCustomRequest);
-
-        await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
+        this.setClientInfo();
         await this.checkNeovimVersion();
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
@@ -289,13 +301,31 @@ export class MainController implements vscode.Disposable {
     };
 
     private async checkNeovimVersion(): Promise<void> {
+        const minVersion = "0.9.2";
+
+        const [minMajor, minMinor, minPatch] = minVersion.split(".").map((n) => +n);
         const [, info] = await this.client.apiInfo;
-        if (
-            (info.version.major === 0 && info.version.minor < 9) ||
-            !info.ui_events.find((e) => e.name === "win_viewport")
-        ) {
-            vscode.window.showErrorMessage("The extension requires neovim 0.9 or greater");
-            return;
+        const { major, minor, patch } = info.version;
+
+        let outdated = false;
+        if (!info.ui_events.find((e) => e.name === "win_viewport")) {
+            outdated = true;
+        } else if (major < minMajor) {
+            outdated = true;
+        } else if (major === minMajor) {
+            if (minor < minMinor) {
+                outdated = true;
+            } else if (minor === minMinor) {
+                if (patch < minPatch) {
+                    outdated = true;
+                }
+            }
+        }
+
+        if (outdated) {
+            vscode.window.showErrorMessage(
+                `The extension requires Neovim version ${minVersion} or higher, preferably the latest stable release.`,
+            );
         }
     }
 
