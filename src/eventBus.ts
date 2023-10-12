@@ -1,7 +1,7 @@
 import neovim from "neovim";
 import { Disposable, EventEmitter } from "vscode";
 
-interface IRedrawEventArg<N, A extends unknown[]> {
+interface IRedrawEventArg<N, A extends unknown[] = []> {
     name: N;
     args: A["length"] extends 0 ? undefined : A[];
     get firstArg(): A;
@@ -84,17 +84,17 @@ type RedrawEventArgs = (
     // ["msg_history_show", entries]
     | IRedrawEventArg<"msg_history_show", [string, [number, string][]][][]>
     // ["msg_clear"]
-    | IRedrawEventArg<"msg_clear", []>
+    | IRedrawEventArg<"msg_clear">
     // ["mode_change", mode, mode_idx]
     | IRedrawEventArg<"mode_change", [string, number]>
     // ["cmdline_show", content, pos, firstc, prompt, indent, level]
     | IRedrawEventArg<"cmdline_show", [[object, string][], number, string, string, number, number]>
     // ["cmdline_hide"]
-    | IRedrawEventArg<"cmdline_hide", []>
+    | IRedrawEventArg<"cmdline_hide">
     // ["mouse_on"]
-    | IRedrawEventArg<"mouse_on", []>
+    | IRedrawEventArg<"mouse_on">
     // ["mouse_off"]
-    | IRedrawEventArg<"mouse_off", []>
+    | IRedrawEventArg<"mouse_off">
     | IRedrawEventArg<"wildmenu_show", [string[]]>
 )[];
 
