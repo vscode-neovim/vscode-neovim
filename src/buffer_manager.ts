@@ -113,7 +113,7 @@ export class BufferManager implements Disposable {
             eventBus.on("redraw", this.handleRedraw, this),
             eventBus.on("open-file", this.handleOpenFile, this),
             eventBus.on("external-buffer", this.handleExternalBuffer, this),
-            eventBus.on("window-changed", (data) => this.onWindowChangedDebounced(data[0])),
+            eventBus.on("window-changed", ([winId]) => this.handleWindowChangedDebounced(winId)),
         );
     }
 
@@ -297,7 +297,7 @@ export class BufferManager implements Disposable {
         }
     }
 
-    private onWindowChanged = async (winId: number): Promise<void> => {
+    private handleWindowChanged = async (winId: number): Promise<void> => {
         logger.debug(`onWindowChanged, target window id: ${winId}`);
 
         const returnToActiveEditor = async () => {
@@ -367,7 +367,7 @@ export class BufferManager implements Disposable {
         await returnToActiveEditor();
     };
 
-    private onWindowChangedDebounced = debounce(this.onWindowChanged, 100, { leading: false, trailing: true });
+    private handleWindowChangedDebounced = debounce(this.handleWindowChanged, 100, { leading: false, trailing: true });
 
     /**
      * !Note when closing text editor with document, vscode sends onDidCloseTextDocument first

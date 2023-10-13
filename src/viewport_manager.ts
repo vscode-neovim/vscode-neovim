@@ -43,7 +43,6 @@ export class ViewportManager implements Disposable {
                 const view = this.getViewport(gridId);
                 view.leftcol = saveView.leftcol;
                 view.skipcol = saveView.skipcol;
-                return;
             }),
         );
     }

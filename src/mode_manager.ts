@@ -1,9 +1,7 @@
-import { EventEmitter } from "events";
-
-import { commands, Disposable } from "vscode";
+import { commands, Disposable, EventEmitter } from "vscode";
 
 import { createLogger } from "./logger";
-import { eventBus } from "./eventBus";
+import { eventBus, EventBusData } from "./eventBus";
 
 const logger = createLogger("ModeManager");
 
@@ -58,36 +56,18 @@ export class ModeManager implements Disposable {
     private eventEmitter = new EventEmitter();
 
     constructor() {
-        eventBus.on(
-            "mode-changed",
-            ([mode]) => {
-                logger.debug(`Changing mode to ${mode}`);
-                this.mode = new Mode(mode);
-                if (!this.isInsertMode && this.isRecording) {
-                    this.isRecording = false;
-                    commands.executeCommand("setContext", "neovim.recording", false);
-                }
-                commands.executeCommand("setContext", "neovim.mode", this.mode.name);
-                logger.debug(`Setting mode context to ${this.mode.name}`);
-                this.eventEmitter.emit("neovimModeChanged");
-            },
-            this,
-            this.disposables,
+        this.disposables.push(
+            eventBus.on("mode-changed", this.handleModeChanged, this),
+            eventBus.on(
+                "notify-recording",
+                () => {
+                    logger.debug(`setting recording flag`);
+                    this.isRecording = true;
+                    commands.executeCommand("setContext", "neovim.recording", true);
+                },
+                this,
+            ),
         );
-        eventBus.on(
-            "notify-recording",
-            () => {
-                logger.debug(`setting recording flag`);
-                this.isRecording = true;
-                commands.executeCommand("setContext", "neovim.recording", true);
-            },
-            this,
-            this.disposables,
-        );
-    }
-
-    public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
     }
 
     public get currentMode(): Mode {
@@ -110,7 +90,23 @@ export class ModeManager implements Disposable {
         return this.isRecording;
     }
 
-    public onModeChange(callback: () => void): void {
-        this.eventEmitter.on("neovimModeChanged", callback);
+    public onModeChange(callback: () => void): Disposable {
+        return this.eventEmitter.event(callback);
+    }
+
+    private handleModeChanged([mode]: EventBusData<"mode-changed">) {
+        logger.debug(`Changing mode to ${mode}`);
+        this.mode = new Mode(mode);
+        if (!this.isInsertMode && this.isRecording) {
+            this.isRecording = false;
+            commands.executeCommand("setContext", "neovim.recording", false);
+        }
+        commands.executeCommand("setContext", "neovim.mode", this.mode.name);
+        logger.debug(`Setting mode context to ${this.mode.name}`);
+        this.eventEmitter.fire(null);
+    }
+
+    dispose() {
+        this.disposables.forEach((d) => d.dispose());
     }
 }

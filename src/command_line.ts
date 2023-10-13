@@ -41,15 +41,15 @@ export class CommandLineController implements Disposable {
         this.callbacks = callbacks;
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;
-        this.disposables.push(this.input.onDidAccept(this.onAccept));
-        this.disposables.push(this.input.onDidChangeValue(this.onChange));
-        this.disposables.push(this.input.onDidHide(this.onHide));
-        this.disposables.push(commands.registerCommand("vscode-neovim.commit-cmdline", this.onAccept));
         this.disposables.push(
+            this.input.onDidAccept(this.onAccept),
+            this.input.onDidChangeValue(this.onChange),
+            this.input.onDidHide(this.onHide),
+            commands.registerCommand("vscode-neovim.commit-cmdline", this.onAccept),
             commands.registerCommand("vscode-neovim.complete-selection-cmdline", this.acceptSelection),
+            commands.registerCommand("vscode-neovim.send-cmdline", this.sendRedraw),
+            commands.registerCommand("vscode-neovim.test-cmdline", this.testCmdline),
         );
-        this.disposables.push(commands.registerCommand("vscode-neovim.send-cmdline", this.sendRedraw));
-        this.disposables.push(commands.registerCommand("vscode-neovim.test-cmdline", this.testCmdline));
     }
 
     public show(content = "", mode: string, prompt = ""): void {
