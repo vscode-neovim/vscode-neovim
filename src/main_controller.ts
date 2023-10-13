@@ -301,31 +301,51 @@ export class MainController implements vscode.Disposable {
     };
 
     private async checkNeovimVersion(): Promise<void> {
-        const minVersion = "0.9.2";
-
-        const [minMajor, minMinor, minPatch] = minVersion.split(".").map((n) => +n);
-        const [, info] = await this.client.apiInfo;
-        const { major, minor, patch } = info.version;
-
-        let outdated = false;
-        if (!info.ui_events.find((e) => e.name === "win_viewport")) {
-            outdated = true;
-        } else if (major < minMajor) {
-            outdated = true;
-        } else if (major === minMajor) {
-            if (minor < minMinor) {
-                outdated = true;
-            } else if (minor === minMinor) {
-                if (patch < minPatch) {
-                    outdated = true;
-                }
+        const minVersion = [0, 9, 0];
+        // It is necessary to check the functionalities added in the minimum version
+        // because users might be using the development version with incomplete functionalities.
+        const requirements = {
+            options: ["statuscolumn"],
+            functions: ["nvim_exec2"],
+        };
+        // check version
+        {
+            const [, info] = await this.client.apiInfo;
+            const { major, minor, patch } = info.version;
+            const currVersion = [major, minor, patch];
+            if (minVersion.some((v, i) => v > currVersion[i])) {
+                vscode.window.showErrorMessage(
+                    `The extension requires Neovim version ${minVersion} or higher, preferably the [latest stable release](https://github.com/neovim/neovim/releases/tag/stable)`,
+                );
+                return;
             }
         }
-
-        if (outdated) {
-            vscode.window.showErrorMessage(
-                `The extension requires Neovim version ${minVersion} or higher, preferably the latest stable release.`,
-            );
+        // check nvim features
+        const exprs = [...requirements.options.map((o) => `&${o}`), ...requirements.functions.map((f) => `*${f}`)];
+        const rets: number[] = [];
+        for (const e of exprs) {
+            // this.client.callAtomic is not usefull
+            rets.push(await this.client.call("exists", [e]));
+        }
+        const missOptions: string[] = [];
+        const missFunctions: string[] = [];
+        rets.forEach((r, i) => {
+            if (!r) {
+                const expr = exprs[i];
+                if (expr.startsWith("&")) {
+                    missOptions.push(expr.substring(1));
+                } else if (expr.startsWith("*")) {
+                    missFunctions.push(expr.substring(1));
+                }
+            }
+        });
+        const errMsgs = [
+            "Your nvim does not support the following features. Please check and update your nvim to the [latest stable version](https://github.com/neovim/neovim/releases/tag/stable). ",
+        ];
+        if (missOptions.length) errMsgs.push("Miss options: " + missOptions.join(", ") + ". ");
+        if (missFunctions.length) errMsgs.push("Miss functions: " + missFunctions.join(", ") + ". ");
+        if (errMsgs.length > 1) {
+            vscode.window.showErrorMessage(errMsgs.join(" "));
         }
     }
 
