@@ -3,6 +3,7 @@ import { cloneDeep } from "lodash-es";
 import wcswidth from "ts-wcwidth";
 import {
     DecorationOptions,
+    DecorationRangeBehavior,
     Range,
     TextEditor,
     TextEditorDecorationType,
@@ -160,7 +161,10 @@ export class HighlightProvider {
     }
 
     private createDecoratorForHighlightId(id: number, options: ThemableDecorationRenderOptions): void {
-        const decorator = window.createTextEditorDecorationType(options);
+        const decorator = window.createTextEditorDecorationType({
+            ...options,
+            rangeBehavior: DecorationRangeBehavior.ClosedClosed,
+        });
         this.decoratorConfigurations.set(decorator, options);
         this.highlighIdToDecorator.set(id, decorator);
     }
