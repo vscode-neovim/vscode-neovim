@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import neovim from "neovim";
 import { Disposable, EventEmitter } from "vscode";
 
+// #region RedrawEventArgs
 interface IRedrawEventArg<N, A extends unknown[] = []> {
     name: N;
     args: A["length"] extends 0 ? undefined : A[];
@@ -97,9 +99,39 @@ type RedrawEventArgs = (
     | IRedrawEventArg<"mouse_off">
     | IRedrawEventArg<"wildmenu_show", [string[]]>
 )[];
+// #endregion
 
 type EventsMapping = {
+    // nvim
     redraw: RedrawEventArgs;
+    // custom
+    ["open-file"]: [string, 1 | 0 | "all"];
+    ["external-buffer"]: [string, string, number, number, number];
+    ["window-changed"]: [number];
+    ["mode-changed"]: [string];
+    ["notify-recording"]: undefined;
+    ["insert-line"]: ["before" | "after"];
+    reveal: ["center" | "top" | "bottom", boolean];
+    ["move-cursor"]: ["top" | "middle" | "bottom"];
+    scroll: ["page" | "halfPage", "up" | "down"];
+    ["scroll-line"]: ["up" | "down"];
+    ["window-scroll"]: [
+        number,
+        {
+            lnum: number;
+            col: number;
+            coladd: number;
+            curswant: number;
+            topline: number;
+            topfill: number;
+            leftcol: number;
+            skipcol: number;
+        },
+    ];
+    ["visual-changed"]: [number];
+    ["range-command"]: any;
+    ["visual-edit"]: [boolean, string, number, number, number, number, boolean];
+    ["change-number"]: [number, "off" | "on" | "relative"];
 };
 
 export interface Event<T extends keyof EventsMapping = keyof EventsMapping> {
@@ -110,6 +142,10 @@ export interface Event<T extends keyof EventsMapping = keyof EventsMapping> {
 export type EventBusData<T extends keyof EventsMapping> = EventsMapping[T];
 
 class EventBus implements Disposable {
+    /**
+     * All Nvim events are dispatched by this single EventEmitter.
+     * Components can subscribe to event broadcasts using `EventBus.on()`.
+     */
     private readonly emitter = new EventEmitter<Event>();
 
     dispose() {
@@ -136,13 +172,17 @@ class EventBus implements Disposable {
      * @return — Disposable which unregisters this event handler on disposal.
      */
     on<T extends keyof EventsMapping>(
-        name: T,
+        name: T | T[],
         handler: (data: Event<T>["data"]) => void,
         thisArg?: unknown,
         disposables?: Disposable[],
     ) {
         return this.emitter.event(
-            (e) => name === e.name && handler.call(thisArg, e.data as Event<T>["data"]),
+            (e) => {
+                if (name === e.name || (Array.isArray(name) && name.includes(e.name as T))) {
+                    handler.call(thisArg, e.data as Event<T>["data"]);
+                }
+            },
             thisArg,
             disposables,
         );

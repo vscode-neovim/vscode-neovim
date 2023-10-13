@@ -27,7 +27,6 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import { ManualPromise, callAtomic, convertByteNumToCharNum } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
@@ -48,7 +47,7 @@ const BUFFER_SCHEME = "vscode-neovim";
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
  */
-export class BufferManager implements Disposable, NeovimExtensionRequestProcessable {
+export class BufferManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Internal sync promise
@@ -104,15 +103,18 @@ export class BufferManager implements Disposable, NeovimExtensionRequestProcessa
     }
 
     public constructor(private main: MainController) {
-        this.disposables.push(window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors));
-        this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
-        this.disposables.push(workspace.onDidCloseTextDocument(this.onDidCloseTextDocument));
-        this.disposables.push(window.onDidChangeTextEditorOptions(this.onDidChangeEditorOptions));
-
         this.bufferProvider = new BufferProvider(this.client, this.receivedBufferEvent);
-        this.disposables.push(workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider));
-
-        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+        this.disposables.push(
+            window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors),
+            window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor),
+            window.onDidChangeTextEditorOptions(this.onDidChangeEditorOptions),
+            workspace.onDidCloseTextDocument(this.onDidCloseTextDocument),
+            workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider),
+            eventBus.on("redraw", this.handleRedraw, this),
+            eventBus.on("open-file", this.handleOpenFile, this),
+            eventBus.on("external-buffer", this.handleExternalBuffer, this),
+            eventBus.on("window-changed", (data) => this.onWindowChangedDebounced(data[0])),
+        );
     }
 
     public dispose(): void {
@@ -210,98 +212,87 @@ export class BufferManager implements Disposable, NeovimExtensionRequestProcessa
         }
     }
 
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        switch (name) {
-            case "open-file": {
-                const [fileName, close] = args as [string, number | "all"];
-                const currEditor = window.activeTextEditor;
-                let doc: TextDocument | undefined;
-                try {
-                    if (fileName === "__vscode_new__") {
-                        doc = await workspace.openTextDocument();
-                    } else {
-                        const normalizedName = fileName.trim();
-                        const filePath = this.findPathFromFileName(normalizedName);
-                        doc = await workspace.openTextDocument(filePath);
-                    }
-                } catch (error) {
-                    logger.error(`Error opening file ${fileName}, ${error}`);
-                }
+    private async handleOpenFile(data: EventBusData<"open-file">) {
+        const [fileName, close] = data;
+        const currEditor = window.activeTextEditor;
+        let doc: TextDocument | undefined;
+        try {
+            if (fileName === "__vscode_new__") {
+                doc = await workspace.openTextDocument();
+            } else {
+                const normalizedName = fileName.trim();
+                const filePath = this.findPathFromFileName(normalizedName);
+                doc = await workspace.openTextDocument(filePath);
+            }
+        } catch (error) {
+            logger.error(`Error opening file ${fileName}, ${error}`);
+        }
+        if (!doc) {
+            return;
+        }
+        let viewColumn: ViewColumn | undefined;
+        if (close && close !== "all" && currEditor) {
+            viewColumn = currEditor.viewColumn;
+            await commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
+        }
+        await window.showTextDocument(doc, viewColumn);
+        if (close === "all") {
+            await commands.executeCommand("workbench.action.closeOtherEditors");
+        }
+    }
+
+    private async handleExternalBuffer(data: EventBusData<"external-buffer">) {
+        const [name, idStr, expandTab, tabStop] = data;
+        if (name.startsWith(`${BUFFER_NAME_PREFIX}output:`)) {
+            return;
+        }
+        const id = parseInt(idStr, 10);
+        if (!(name && this.isVscodeUriName(name))) {
+            logger.debug(`Attaching new external buffer: '${name}', id: ${id}`);
+            if (id === 1) {
+                logger.debug(`${id} is the first neovim buffer, skipping`);
+                return;
+            }
+            await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
+        } else if (name) {
+            const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substring(18) : name;
+            logger.debug(`Buffer request for ${normalizedName}, bufId: ${idStr}`);
+            try {
+                let doc = this.findDocFromUri(normalizedName);
                 if (!doc) {
-                    return;
+                    logger.debug(`Opening a doc: ${normalizedName}`);
+                    doc = await workspace.openTextDocument(Uri.parse(normalizedName, true));
                 }
-                let viewColumn: ViewColumn | undefined;
-                if (close && close !== "all" && currEditor) {
-                    viewColumn = currEditor.viewColumn;
-                    await commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
-                }
-                await window.showTextDocument(doc, viewColumn);
-                if (close === "all") {
-                    await commands.executeCommand("workbench.action.closeOtherEditors");
-                }
-                break;
-            }
-            case "external-buffer": {
-                const [name, idStr, expandTab, tabStop] = args as [string, string, number, number, number];
-                if (name.startsWith(`${BUFFER_NAME_PREFIX}output:`)) {
-                    break;
-                }
-                const id = parseInt(idStr, 10);
-                if (!(name && this.isVscodeUriName(name))) {
-                    logger.debug(`Attaching new external buffer: '${name}', id: ${id}`);
-                    if (id === 1) {
-                        logger.debug(`${id} is the first neovim buffer, skipping`);
-                        return;
+                let forceTabOptions = false;
+                if (!this.textDocumentToBufferId.has(doc)) {
+                    logger.debug(`No doc -> buffer mapping exists, assigning mapping and init buffer options`);
+                    const buffers = await this.client.buffers;
+                    const buf = buffers.find((b) => b.id === id);
+                    if (buf) {
+                        forceTabOptions = true;
+                        await this.initBufferForDocument(doc, buf);
                     }
-                    await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
-                } else if (name) {
-                    const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substring(18) : name;
-                    logger.debug(`Buffer request for ${normalizedName}, bufId: ${idStr}`);
-                    try {
-                        let doc = this.findDocFromUri(normalizedName);
-                        if (!doc) {
-                            logger.debug(`Opening a doc: ${normalizedName}`);
-                            doc = await workspace.openTextDocument(Uri.parse(normalizedName, true));
-                        }
-                        let forceTabOptions = false;
-                        if (!this.textDocumentToBufferId.has(doc)) {
-                            logger.debug(`No doc -> buffer mapping exists, assigning mapping and init buffer options`);
-                            const buffers = await this.client.buffers;
-                            const buf = buffers.find((b) => b.id === id);
-                            if (buf) {
-                                forceTabOptions = true;
-                                await this.initBufferForDocument(doc, buf);
-                            }
-                            this.textDocumentToBufferId.set(doc, id);
-                        }
-                        if (window.activeTextEditor?.document !== doc) {
-                            // this.skipJumpsForUris.set(normalizedNamee, true);
-                            const editor = await window.showTextDocument(doc, {
-                                // viewColumn: vscode.ViewColumn.Active,
-                                // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
-                                viewColumn: window.activeTextEditor
-                                    ? window.activeTextEditor.viewColumn
-                                    : ViewColumn.Active,
-                                preserveFocus: false,
-                                preview: false,
-                            });
-                            this.editorTabConfiguration.set(editor, {
-                                insertSpaces: editor.options.insertSpaces as boolean,
-                                tabSize: editor.options.tabSize as number,
-                            });
-                            if (forceTabOptions) {
-                                await this.resyncBufferTabOptions(editor, id);
-                            }
-                        }
-                    } catch {
-                        // todo: show error
+                    this.textDocumentToBufferId.set(doc, id);
+                }
+                if (window.activeTextEditor?.document !== doc) {
+                    // this.skipJumpsForUris.set(normalizedNamee, true);
+                    const editor = await window.showTextDocument(doc, {
+                        // viewColumn: vscode.ViewColumn.Active,
+                        // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
+                        viewColumn: window.activeTextEditor ? window.activeTextEditor.viewColumn : ViewColumn.Active,
+                        preserveFocus: false,
+                        preview: false,
+                    });
+                    this.editorTabConfiguration.set(editor, {
+                        insertSpaces: editor.options.insertSpaces as boolean,
+                        tabSize: editor.options.tabSize as number,
+                    });
+                    if (forceTabOptions) {
+                        await this.resyncBufferTabOptions(editor, id);
                     }
                 }
-                break;
-            }
-            case "window-changed": {
-                this.onWindowChangedDebounced(args[0] as number);
-                break;
+            } catch {
+                // todo: show error
             }
         }
     }

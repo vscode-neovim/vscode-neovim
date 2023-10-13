@@ -17,7 +17,6 @@ import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { Mode } from "./mode_manager";
-import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise } from "./utils";
 
 const logger = createLogger("CursorManager");
@@ -26,7 +25,7 @@ interface CursorInfo {
     cursorShape: "block" | "horizontal" | "vertical";
 }
 
-export class CursorManager implements Disposable, NeovimExtensionRequestProcessable {
+export class CursorManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Vim cursor mode mappings
@@ -70,61 +69,45 @@ export class CursorManager implements Disposable, NeovimExtensionRequestProcessa
     }
 
     public constructor(private main: MainController) {
-        this.disposables.push(window.onDidChangeTextEditorSelection(this.onSelectionChanged));
-
         const updateCursorStyle = () => {
             this.updateCursorStyle();
             // Sometimes the cursor is reset to the default style.
             // Currently, can reproduce this issue when jumping between cells in Notebook.
             setTimeout(() => this.updateCursorStyle(), 100);
         };
-        this.disposables.push(window.onDidChangeVisibleTextEditors(updateCursorStyle));
-        this.disposables.push(window.onDidChangeActiveTextEditor(updateCursorStyle));
-        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
-    }
-
-    public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
-    }
-
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        switch (name) {
-            case "window-scroll":
-            case "visual-changed": {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [winId] = args as [number, any];
+        this.disposables.push(
+            window.onDidChangeTextEditorSelection(this.onSelectionChanged),
+            window.onDidChangeVisibleTextEditors(updateCursorStyle),
+            window.onDidChangeActiveTextEditor(updateCursorStyle),
+            eventBus.on("redraw", this.handleRedraw, this),
+            eventBus.on(["window-scroll", "visual-changed"], ([winId]) => {
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
-                if (gridId) {
-                    this.gridCursorUpdates.add(gridId);
-                }
-                break;
-            }
-            case "range-command": {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [vscodeCommand, mode, line1, line2, pos1, pos2, leaveSelection, inargs] = args as any;
-                try {
-                    await this.handleRangeCommand(
-                        vscodeCommand,
-                        mode,
-                        line1,
-                        line2,
-                        pos1,
-                        pos2,
-                        !!leaveSelection,
-                        Array.isArray(inargs) ? inargs : [inargs],
-                    );
-                } catch (e) {
-                    logger.error(
-                        `${vscodeCommand} failed, range: [${line1}, ${line2}, ${pos1}, ${pos2}] args: ${JSON.stringify(
-                            inargs,
-                        )} error: ${(e as Error).message}`,
-                    );
-                }
-                break;
-            }
-            case "visual-edit": {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [append, visualMode, startLine, endLine, startCol, endCol, skipEmpty] = args as any;
+                if (gridId) this.gridCursorUpdates.add(gridId);
+            }),
+            eventBus.on(
+                "range-command",
+                async ([vscodeCommand, mode, line1, line2, pos1, pos2, leaveSelection, inargs]) => {
+                    try {
+                        await this.handleRangeCommand(
+                            vscodeCommand,
+                            mode,
+                            line1,
+                            line2,
+                            pos1,
+                            pos2,
+                            !!leaveSelection,
+                            Array.isArray(inargs) ? inargs : [inargs],
+                        );
+                    } catch (e) {
+                        logger.error(
+                            `${vscodeCommand} failed, range: [${line1}, ${line2}, ${pos1}, ${pos2}] args: ${JSON.stringify(
+                                inargs,
+                            )} error: ${(e as Error).message}`,
+                        );
+                    }
+                },
+            ),
+            eventBus.on("visual-edit", ([append, visualMode, startLine, endLine, startCol, endCol, skipEmpty]) => {
                 this.multipleCursorFromVisualMode(
                     !!append,
                     new Mode(visualMode),
@@ -134,9 +117,8 @@ export class CursorManager implements Disposable, NeovimExtensionRequestProcessa
                     endCol,
                     !!skipEmpty,
                 );
-                break;
-            }
-        }
+            }),
+        );
     }
 
     private handleRedraw(data: EventBusData<"redraw">): void {
@@ -588,5 +570,9 @@ export class CursorManager implements Disposable, NeovimExtensionRequestProcessa
             selections.push(new Selection(line, char, line, char));
         }
         window.activeTextEditor.selections = selections;
+    }
+
+    public dispose(): void {
+        this.disposables.forEach((d) => d.dispose());
     }
 }

@@ -3,7 +3,7 @@ import { EventEmitter } from "events";
 import { commands, Disposable } from "vscode";
 
 import { createLogger } from "./logger";
-import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
+import { eventBus } from "./eventBus";
 
 const logger = createLogger("ModeManager");
 
@@ -45,7 +45,7 @@ export class Mode {
         return this.name === "normal";
     }
 }
-export class ModeManager implements Disposable, NeovimExtensionRequestProcessable {
+export class ModeManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Current neovim mode
@@ -56,6 +56,35 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
      */
     private isRecording = false;
     private eventEmitter = new EventEmitter();
+
+    constructor() {
+        eventBus.on(
+            "mode-changed",
+            ([mode]) => {
+                logger.debug(`Changing mode to ${mode}`);
+                this.mode = new Mode(mode);
+                if (!this.isInsertMode && this.isRecording) {
+                    this.isRecording = false;
+                    commands.executeCommand("setContext", "neovim.recording", false);
+                }
+                commands.executeCommand("setContext", "neovim.mode", this.mode.name);
+                logger.debug(`Setting mode context to ${this.mode.name}`);
+                this.eventEmitter.emit("neovimModeChanged");
+            },
+            this,
+            this.disposables,
+        );
+        eventBus.on(
+            "notify-recording",
+            () => {
+                logger.debug(`setting recording flag`);
+                this.isRecording = true;
+                commands.executeCommand("setContext", "neovim.recording", true);
+            },
+            this,
+            this.disposables,
+        );
+    }
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -83,29 +112,5 @@ export class ModeManager implements Disposable, NeovimExtensionRequestProcessabl
 
     public onModeChange(callback: () => void): void {
         this.eventEmitter.on("neovimModeChanged", callback);
-    }
-
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        switch (name) {
-            case "mode-changed": {
-                const [mode] = args as [string];
-                logger.debug(`Changing mode to ${mode}`);
-                this.mode = new Mode(mode);
-                if (!this.isInsertMode && this.isRecording) {
-                    this.isRecording = false;
-                    commands.executeCommand("setContext", "neovim.recording", false);
-                }
-                commands.executeCommand("setContext", "neovim.mode", this.mode.name);
-                logger.debug(`Setting mode context to ${this.mode.name}`);
-                this.eventEmitter.emit("neovimModeChanged");
-                break;
-            }
-            case "notify-recording": {
-                logger.debug(`setting recording flag`);
-                this.isRecording = true;
-                commands.executeCommand("setContext", "neovim.recording", true);
-                break;
-            }
-        }
     }
 }

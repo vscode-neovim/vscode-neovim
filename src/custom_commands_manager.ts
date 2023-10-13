@@ -1,12 +1,30 @@
 import { commands, Disposable, TextEditorLineNumbersStyle, window } from "vscode";
 
+import { eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { NeovimCommandProcessable, NeovimExtensionRequestProcessable } from "./neovim_events_processable";
+import { NeovimCommandProcessable } from "./neovim_events_processable";
 
-export class CustomCommandsManager implements Disposable, NeovimCommandProcessable, NeovimExtensionRequestProcessable {
+export class CustomCommandsManager implements Disposable, NeovimCommandProcessable {
     private disposables: Disposable[] = [];
 
-    public constructor(private main: MainController) {}
+    public constructor(private main: MainController) {
+        eventBus.on(
+            "change-number",
+            ([winId, style]) => {
+                const editor = this.main.bufferManager.getEditorFromWinId(winId);
+                if (editor) {
+                    editor.options.lineNumbers =
+                        style === "off"
+                            ? TextEditorLineNumbersStyle.Off
+                            : style === "on"
+                            ? TextEditorLineNumbersStyle.On
+                            : TextEditorLineNumbersStyle.Relative;
+                }
+            },
+            null,
+            this.disposables,
+        );
+    }
 
     public dispose(): void {
         this.disposables.forEach((d) => d.dispose());
@@ -18,23 +36,5 @@ export class CustomCommandsManager implements Disposable, NeovimCommandProcessab
         await this.main.cursorManager.waitForCursorUpdate(editor);
         const res = await commands.executeCommand(command, ...args);
         return res;
-    }
-
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        switch (name) {
-            case "change-number": {
-                const [winId, style] = args as [number, "off" | "on" | "relative"];
-                const editor = this.main.bufferManager.getEditorFromWinId(winId);
-                if (editor) {
-                    editor.options.lineNumbers =
-                        style === "off"
-                            ? TextEditorLineNumbersStyle.Off
-                            : style === "on"
-                            ? TextEditorLineNumbersStyle.On
-                            : TextEditorLineNumbersStyle.Relative;
-                }
-                break;
-            }
-        }
     }
 }

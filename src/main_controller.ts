@@ -20,7 +20,7 @@ import { HighlightManager } from "./highlight_manager";
 import { createLogger } from "./logger";
 import { ModeManager } from "./mode_manager";
 import { MultilineMessagesManager } from "./multiline_messages_manager";
-import { NeovimCommandProcessable, NeovimExtensionRequestProcessable } from "./neovim_events_processable";
+import { NeovimCommandProcessable } from "./neovim_events_processable";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
 import { findLastEvent } from "./utils";
@@ -198,15 +198,6 @@ export class MainController implements vscode.Disposable {
     }
 
     private onNeovimNotification = (method: string, events: [string, ...any[]]): void => {
-        const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
-            this.modeManager,
-            this.changeManager,
-            this.commandsController,
-            this.customCommandsManager,
-            this.bufferManager,
-            this.viewportManager,
-            this.cursorManager,
-        ];
         const vscodeComandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
 
         if (method === "vscode-command") {
@@ -227,13 +218,7 @@ export class MainController implements vscode.Disposable {
         }
         if (method === "vscode-neovim") {
             const [command, args] = events;
-            extensionCommandManagers.forEach((m) => {
-                try {
-                    m.handleExtensionRequest(command, args);
-                } catch (e) {
-                    logger.error(`${command} failed, args: ${JSON.stringify(args)} error: ${(e as Error).message}`);
-                }
-            });
+            eventBus.fire(command as any, args);
             return;
         }
         if (method === "redraw") {
@@ -266,14 +251,6 @@ export class MainController implements vscode.Disposable {
         eventArgs: [string, ...unknown[]],
         response: RequestResponse,
     ): Promise<void> => {
-        const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
-            this.modeManager,
-            this.changeManager,
-            this.commandsController,
-            this.customCommandsManager,
-            this.bufferManager,
-            this.cursorManager,
-        ];
         const vscodeCommandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
         try {
             let result: unknown;
@@ -286,15 +263,8 @@ export class MainController implements vscode.Disposable {
                 );
                 // use first non nullable result
                 result = results.find((r) => r != null);
-            } else if (eventName === "vscode-neovim") {
-                const [command, commandArgs] = eventArgs as [string, unknown[]];
-                const results = await Promise.all(
-                    extensionCommandManagers.map((m) => m.handleExtensionRequest(command, commandArgs)),
-                );
-                // use first non nullable result
-                result = results.find((r) => r != null);
+                response.send(result || "", false);
             }
-            response.send(result || "", false);
         } catch (e) {
             response.send((e as Error).message, true);
         }
