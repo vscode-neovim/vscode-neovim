@@ -16,7 +16,6 @@ import {
 import { BufferManager } from "./buffer_manager";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 import {
     DotRepeatChange,
     ManualPromise,
@@ -32,10 +31,11 @@ import {
     normalizeDotRepeatChange,
     prepareEditRangesFromDiff,
 } from "./utils";
+import { eventBus } from "./eventBus";
 
 const logger = createLogger("DocumentChangeManager");
 
-export class DocumentChangeManager implements Disposable, NeovimExtensionRequestProcessable {
+export class DocumentChangeManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Array of pending events to apply in batch
@@ -95,7 +95,13 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
     public constructor(private main: MainController) {
         this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
         this.main.bufferManager.onBufferInit = this.onBufferInit;
-        this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));
+        this.disposables.push(
+            workspace.onDidChangeTextDocument(this.onChangeTextDocument),
+            eventBus.on("insert-line", ([type]) => {
+                this.dotRepeatStartModeInsertHint = type === "before" ? "O" : "o";
+                logger.debug(`Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
+            }),
+        );
     }
 
     public dispose(): void {
@@ -118,14 +124,6 @@ export class DocumentChangeManager implements Disposable, NeovimExtensionRequest
 
     public hasDocumentChangeCompletionLock(doc: TextDocument): boolean {
         return (this.textDocumentChangePromise.get(doc)?.length || 0) > 0;
-    }
-
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        if (name === "insert-line") {
-            const [type] = args as ["before" | "after"];
-            this.dotRepeatStartModeInsertHint = type === "before" ? "O" : "o";
-            logger.debug(`Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
-        }
     }
 
     public async syncDotRepeatWithNeovim(): Promise<void> {

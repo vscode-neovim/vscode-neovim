@@ -5,7 +5,6 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
 
 const logger = createLogger("ViewportManager");
 
@@ -19,7 +18,7 @@ export class Viewport {
     skipcol = 0; // skip col (maybe left col)
 }
 
-export class ViewportManager implements Disposable, NeovimExtensionRequestProcessable {
+export class ViewportManager implements Disposable {
     private disposables: Disposable[] = [];
 
     /**
@@ -32,12 +31,20 @@ export class ViewportManager implements Disposable, NeovimExtensionRequestProces
     }
 
     public constructor(private main: MainController) {
-        this.disposables.push(window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange));
-        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
-    }
-
-    public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        this.disposables.push(
+            window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange),
+            eventBus.on("redraw", this.handleRedraw, this),
+            eventBus.on("window-scroll", ([winId, saveView]) => {
+                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
+                if (!gridId) {
+                    logger.warn(`Unable to update scrolled view. No grid for winId: ${winId}`);
+                    return;
+                }
+                const view = this.getViewport(gridId);
+                view.leftcol = saveView.leftcol;
+                view.skipcol = saveView.skipcol;
+            }),
+        );
     }
 
     /**
@@ -66,36 +73,6 @@ export class ViewportManager implements Disposable, NeovimExtensionRequestProces
     public getGridOffset(gridId: number): Position {
         const view = this.getViewport(gridId);
         return new Position(view.topline, view.leftcol);
-    }
-
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        switch (name) {
-            case "window-scroll": {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const [winId, saveView] = args as [
-                    number,
-                    {
-                        lnum: number;
-                        col: number;
-                        coladd: number;
-                        curswant: number;
-                        topline: number;
-                        topfill: number;
-                        leftcol: number;
-                        skipcol: number;
-                    },
-                ];
-                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
-                if (!gridId) {
-                    logger.warn(`Unable to update scrolled view. No grid for winId: ${winId}`);
-                    break;
-                }
-                const view = this.getViewport(gridId);
-                view.leftcol = saveView.leftcol;
-                view.skipcol = saveView.skipcol;
-                break;
-            }
-        }
     }
 
     private handleRedraw(data: EventBusData<"redraw">) {
@@ -173,5 +150,9 @@ export class ViewportManager implements Disposable, NeovimExtensionRequestProces
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.line) {
             this.client.lua("require('vscode-neovim.api').scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
         }
+    }
+
+    dispose() {
+        this.disposables.forEach((d) => d.dispose());
     }
 }

@@ -15,10 +15,6 @@ export class HighlightManager implements Disposable {
         this.highlightProvider = new HighlightProvider();
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
-    public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
-        this.commandsDisposables.forEach((d) => d.dispose());
-    }
 
     private handleRedraw(data: EventBusData<"redraw">): void {
         const gridHLUpdates: Set<number> = new Set();
@@ -123,4 +119,9 @@ export class HighlightManager implements Disposable {
             });
         }
     };
+
+    public dispose(): void {
+        this.disposables.forEach((d) => d.dispose());
+        this.commandsDisposables.forEach((d) => d.dispose());
+    }
 }
