@@ -313,7 +313,17 @@ export class MainController implements vscode.Disposable {
             const [, info] = await this.client.apiInfo;
             const { major, minor, patch } = info.version;
             const currVersion = [major, minor, patch];
-            if (minVersion.some((v, i) => v > currVersion[i])) {
+            let outdated = false;
+            for (let i = 0; i < 3; i++) {
+                if (currVersion[i] < minVersion[i]) {
+                    outdated = true;
+                    break;
+                }
+                if (currVersion[i] > minVersion[i]) {
+                    break;
+                }
+            }
+            if (outdated) {
                 vscode.window.showErrorMessage(
                     `The extension requires Neovim version ${minVersion} or higher, preferably the [latest stable release](https://github.com/neovim/neovim/releases/tag/stable)`,
                 );
@@ -327,23 +337,23 @@ export class MainController implements vscode.Disposable {
             // this.client.callAtomic is not usefull
             rets.push(await this.client.call("exists", [e]));
         }
-        const missOptions: string[] = [];
-        const missFunctions: string[] = [];
+        const missingOptions: string[] = [];
+        const missingFunctions: string[] = [];
         rets.forEach((r, i) => {
             if (!r) {
                 const expr = exprs[i];
                 if (expr.startsWith("&")) {
-                    missOptions.push(expr.substring(1));
+                    missingOptions.push(expr.substring(1));
                 } else if (expr.startsWith("*")) {
-                    missFunctions.push(expr.substring(1));
+                    missingFunctions.push(expr.substring(1));
                 }
             }
         });
         const errMsgs = [
             "Your nvim does not support the following features. Please check and update your nvim to the [latest stable version](https://github.com/neovim/neovim/releases/tag/stable). ",
         ];
-        if (missOptions.length) errMsgs.push("Miss options: " + missOptions.join(", ") + ". ");
-        if (missFunctions.length) errMsgs.push("Miss functions: " + missFunctions.join(", ") + ". ");
+        if (missingOptions.length) errMsgs.push("Missing options: " + missingOptions.join(", ") + ". ");
+        if (missingFunctions.length) errMsgs.push("Missing functions: " + missingFunctions.join(", ") + ". ");
         if (errMsgs.length > 1) {
             vscode.window.showErrorMessage(errMsgs.join(" "));
         }
