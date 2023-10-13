@@ -57,10 +57,10 @@ mode and editor commands, making the best use of both editors.
 -   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim)
     extension.
 -   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.9.0** or greater.
-    -   Set the Neovim path in the extension settings. You must specify full path to Neovim, like
+    -   Set the Neovim path in the extension settings. You must specify the full path to Neovim, like
         "`C:\Neovim\bin\nvim.exe`" or "`/usr/local/bin/nvim`".
     -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
--   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify Linux path to nvim binary.
+-   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to the nvim binary.
     `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available through
     `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
 -   Assign [affinity](#affinity) value for performance improvement.
@@ -116,7 +116,7 @@ have built-in support for `cond = vim.g.vscode`. See
 -   On a Mac, the <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd> and <kbd>l</kbd> movement keys may not repeat when held, to
     fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
--   To fix remapped escape key not working in Linux, set `"keyboard.dispatch": "keyCode"`
+-   To fix the remapped escape key not working in Linux, set `"keyboard.dispatch": "keyCode"`
 
 ### Adding keybindings
 
@@ -157,18 +157,18 @@ The VSCode keybindings editor provides a good way to delete keybindings.
     scripts/keybindings, they won't work. If you're using them in some custom commands/mappings, you might need to
     rebind them to call VSCode commands from Neovim with `VSCodeCall/VSCodeNotify`
     ([see below](#invoking-vscode-actions-from-neovim)).
--   When you type some commands they may be substituted for the another, like `:write` will be replaced by `:Write`.
+-   When you type some commands they may be substituted for another, like `:write` will be replaced by `:Write`.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
 -   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat.
-    sequence. In Neovim, if you type `abc<cursor>` in insert mode, then move cursor to `a<cursor>bc` and type `1` here
-    the repeat sequence would be `1`. However in VSCode it would be `a1bc`. Another difference is that when you delete
-    some text in insert mode, dot repeat only works from right-to-left, meaning it will treat <kbd>Del</kbd> key as
+    sequence. In Neovim, if you type `abc<cursor>` in insert mode, then move the cursor to `a<cursor>bc` and type `1` here
+    the repeat sequence would be `1`. However, in VSCode, it would be `a1bc`. Another difference is that when you delete
+    some text in insert mode, dot repeat only works from right to left, meaning it will treat <kbd>Del</kbd> key as
     <kbd>BS</kbd> keys when running dot repeat.
 
 ### Troubleshooting
 
-If you get "Unable to init vscode-neovim: command 'type' already exists" message, uninstall other VSCode extensions that
+If you get the "Unable to init vscode-neovim: command 'type' already exists" message, uninstall other VSCode extensions that
 register the `type` command (like [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
 [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 
@@ -179,10 +179,10 @@ register the `type` command (like [VSCodeVim](https://marketplace.visualstudio.c
 Make sure you have the extension running in its own thread using affinity (see [installation](#installation)).
 
 Extensions that share the same affinity value are associated with a shared extension host (extension manager from
-VSCode). Performance issues arise when a number of extensions have the same host. On going operations of one extension
+VSCode). Performance issues arise when a number of extensions have the same host. On-going operations of one extension
 may slow down the operations of another. However, if an extension is assigned an affinity, its extension host runs in a
-separate worker thread. The operations of extension with host in one thread doesn't directly affect the operations of
-extension with its host running in another.
+separate worker thread. The operations of an extension with the host in one thread don't directly affect the operations of
+the extension with its host running in another.
 
 ##### Other Extensions
 
