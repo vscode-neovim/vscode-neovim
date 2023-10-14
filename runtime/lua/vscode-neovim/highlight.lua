@@ -99,24 +99,28 @@ local function set_win_hl_ns()
   end
 end
 
--- {{{ autocmds
-local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
-api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "WinNew", "WinScrolled" }, {
-  group = group,
-  callback = set_win_hl_ns,
-})
-api.nvim_create_autocmd({ "VimEnter", "ColorScheme", "Syntax", "FileType" }, {
-  group = group,
-  callback = function()
-    api.nvim_set_hl(0, "VSCodeNone", {})
-    setup_globals()
-    -- highlights of custom namespace
-    setup_overrides()
-    vim.defer_fn(setup_syntax_groups, 200) -- wait syntax things done
-  end,
-})
--- }}}
+local function setup()
+  -- {{{ autocmds
+  local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
+  api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "WinNew", "WinScrolled" }, {
+    group = group,
+    callback = set_win_hl_ns,
+  })
+  api.nvim_create_autocmd({ "VimEnter", "ColorScheme", "Syntax", "FileType" }, {
+    group = group,
+    callback = function()
+      api.nvim_set_hl(0, "VSCodeNone", {})
+      setup_globals()
+      -- highlights of custom namespace
+      setup_overrides()
+      vim.defer_fn(setup_syntax_groups, 200) -- wait syntax things done
+    end,
+  })
+  -- }}}
 
-setup_globals()
-setup_overrides()
-setup_syntax_groups()
+  setup_globals()
+  setup_overrides()
+  setup_syntax_groups()
+end
+
+return { setup = setup }

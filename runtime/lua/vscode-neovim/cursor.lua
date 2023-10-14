@@ -128,6 +128,4 @@ function M.setup()
   M.setup_fake_cursor()
 end
 
-M.setup()
-
 return M

@@ -1,4 +1,5 @@
 --- Synchronize Line Number Style ---
+local M = {}
 
 local api = vim.api
 
@@ -27,26 +28,30 @@ local check_number = (function()
   end
 end)()
 
-api.nvim_create_autocmd("OptionSet", {
-  pattern = { "number", "relativenumber" },
-  callback = check_number,
-})
+function M.setup()
+  api.nvim_create_autocmd("OptionSet", {
+    pattern = { "number", "relativenumber" },
+    callback = check_number,
+  })
 
-api.nvim_create_autocmd({
-  "CursorMoved",
-  "BufLeave",
-  "BufEnter",
-  "InsertLeave",
-  "InsertEnter",
-}, {
-  callback = function()
-    if not vim.b.vscode_loaded_default_number then
-      vim.wo.number = not not vim.b.vscode_number
-      vim.wo.relativenumber = not not vim.b.vscode_relativenumber
-      ---@diagnostic disable-next-line: inject-field
-      vim.b.vscode_loaded_default_number = true
-    else
-      check_number()
-    end
-  end,
-})
+  api.nvim_create_autocmd({
+    "CursorMoved",
+    "BufLeave",
+    "BufEnter",
+    "InsertLeave",
+    "InsertEnter",
+  }, {
+    callback = function()
+      if not vim.b.vscode_loaded_default_number then
+        vim.wo.number = not not vim.b.vscode_number
+        vim.wo.relativenumber = not not vim.b.vscode_relativenumber
+        ---@diagnostic disable-next-line: inject-field
+        vim.b.vscode_loaded_default_number = true
+      else
+        check_number()
+      end
+    end,
+  })
+end
+
+return M

@@ -1,11 +1,18 @@
 local api = require("vscode-neovim.api")
 
-require("vscode-neovim.default-options")
-require("vscode-neovim.cursor")
-require("vscode-neovim.highlight")
-require("vscode-neovim.filetype")
-require("vscode-neovim.numbers")
-require("vscode-neovim.autocmds")
+local default_optons = require("vscode-neovim.default-options")
+local cursor = require("vscode-neovim.cursor")
+local highlight = require("vscode-neovim.highlight")
+local filetype = require("vscode-neovim.filetype")
+local numbers = require("vscode-neovim.numbers")
+local autocmds = require("vscode-neovim.autocmds")
+
+default_optons.setup()
+cursor.setup()
+highlight.setup()
+filetype.setup()
+numbers.setup()
+autocmds.setup()
 
 local vscode = {
   action = api.action,
