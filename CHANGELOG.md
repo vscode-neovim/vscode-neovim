@@ -1,5 +1,27 @@
 # Change Log
 
+## [0.9.1](https://github.com/vscode-neovim/vscode-neovim/compare/v0.9.0...v0.9.1) (2023-10-14)
+
+
+### Features
+
+* Add option `statusLineSeparator` ([#1521](https://github.com/vscode-neovim/vscode-neovim/issues/1521)) ([374d72f](https://github.com/vscode-neovim/vscode-neovim/commit/374d72f106ad685a63dc63709355778a2aeacc5b))
+* improved the nvim version check ([#1527](https://github.com/vscode-neovim/vscode-neovim/issues/1527)) ([a42a60e](https://github.com/vscode-neovim/vscode-neovim/commit/a42a60e9e5ed9f958c4deaaa57d009067b14c1a9))
+
+
+### Bug Fixes
+
+* [#1531](https://github.com/vscode-neovim/vscode-neovim/issues/1531) ([deb41d4](https://github.com/vscode-neovim/vscode-neovim/commit/deb41d463de8d04453f1ca5e2b8acf6393e7464a))
+* fix semver comparison ([d22850c](https://github.com/vscode-neovim/vscode-neovim/commit/d22850c42223c07571bdb40cb2ac48e8c232f8a7))
+* **highlight:** do not widen the decoration's range ([deb41d4](https://github.com/vscode-neovim/vscode-neovim/commit/deb41d463de8d04453f1ca5e2b8acf6393e7464a)), closes [#1531](https://github.com/vscode-neovim/vscode-neovim/issues/1531)
+* **keybinds:** Ctrl+n and Ctrl+p in cmdline ([#1533](https://github.com/vscode-neovim/vscode-neovim/issues/1533)) ([305bc1a](https://github.com/vscode-neovim/vscode-neovim/commit/305bc1aae7e444ee67ba5d5fe6438c9cda36f99f))
+* properly set the client info ([c0422ef](https://github.com/vscode-neovim/vscode-neovim/commit/c0422efbf9cb0ee59989f7e7d52435019b8182a5))
+
+
+### Miscellaneous Chores
+
+* release 0.9.1 ([11e7705](https://github.com/vscode-neovim/vscode-neovim/commit/11e77056d6d19af810b24401efa4d5ef16fc19f1))
+
 ## [0.9.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.8.3...v0.9.0) (2023-10-10)
 
 
