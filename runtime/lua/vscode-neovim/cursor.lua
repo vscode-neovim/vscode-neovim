@@ -41,8 +41,9 @@ function M.notify_multi_cursor()
   )
 end
 
-function M.setup_multi_cursor()
+function M.setup_multi_cursor(group)
   vim.api.nvim_create_autocmd({ "InsertEnter" }, {
+    group = group,
     callback = M.notify_multi_cursor,
   })
 
@@ -66,24 +67,28 @@ function M.visual_changed()
   vim.fn.VSCodeExtensionNotify("visual-changed", vim.fn.win_getid())
 end
 
-function M.setup_visual_changed()
+function M.setup_visual_changed(group)
   -- simulate VisualChanged event to update visual selection
   vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+    group = group,
     pattern = "[vV\x16]*:[vV\x16]*",
     callback = M.visual_changed,
   })
 
   vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+    group = group,
     pattern = "[vV\x16]*:[^vv\x16]*",
     callback = M.visual_changed,
   })
 
   vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+    group = group,
     pattern = "[^vV\x16]*:[vV\x16]*",
     callback = M.visual_changed,
   })
 
   vim.api.nvim_create_autocmd({ "CursorHold", "TextChanged" }, {
+    group = group,
     callback = function()
       if util.is_visual_mode() then
         M.visual_changed()
@@ -115,17 +120,19 @@ function M.highlight_fake_cursor()
   end
 end
 
-function M.setup_fake_cursor()
+function M.setup_fake_cursor(group)
   vim.api.nvim_create_autocmd({ "ModeChanged", "CursorMoved" }, {
+    group = group,
     callback = M.highlight_fake_cursor,
   })
 end
 
 -- ------------------------------ setup ------------------------------ --
 function M.setup()
-  M.setup_multi_cursor()
-  M.setup_visual_changed()
-  M.setup_fake_cursor()
+  local group = vim.api.nvim_create_augroup("VSCodeCursorIntegration", { clear = true })
+  M.setup_multi_cursor(group)
+  M.setup_visual_changed(group)
+  M.setup_fake_cursor(group)
 end
 
 return M

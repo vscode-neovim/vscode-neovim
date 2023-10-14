@@ -50,8 +50,10 @@ end
 -- force global options on startup
 forceoptions(vim.opt)
 
+local group = api.nvim_create_augroup("VSCodeForceOptions", { clear = true })
 -- force local options on buffer load
 api.nvim_create_autocmd({ "BufEnter", "FileType" }, {
+  group = group,
   callback = function()
     forceoptions(vim.opt_local)
   end,

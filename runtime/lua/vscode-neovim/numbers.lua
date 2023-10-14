@@ -29,7 +29,9 @@ local check_number = (function()
 end)()
 
 function M.setup()
+  local group = api.nvim_create_augroup("VSCodeSynchronizeNumberStyle", { clear = true })
   api.nvim_create_autocmd("OptionSet", {
+    group = group,
     pattern = { "number", "relativenumber" },
     callback = check_number,
   })
@@ -41,6 +43,7 @@ function M.setup()
     "InsertLeave",
     "InsertEnter",
   }, {
+    group = group,
     callback = function()
       if not vim.b.vscode_loaded_default_number then
         vim.wo.number = not not vim.b.vscode_number
