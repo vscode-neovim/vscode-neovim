@@ -1,3 +1,5 @@
+import { NeovimClient } from "neovim";
+import { VimValue } from "neovim/lib/types/VimValue";
 import { ConfigurationTarget, Disposable, commands, workspace } from "vscode";
 
 function getActionName(action: string) {
@@ -7,6 +9,7 @@ function getActionName(action: string) {
 class ActionManager implements Disposable {
     private disposables: Disposable[] = [];
     private actions: string[] = [];
+    private client!: NeovimClient;
 
     constructor() {
         // testing actions
@@ -72,6 +75,17 @@ class ActionManager implements Disposable {
     async run(action: string, ...args: any[]): Promise<any> {
         const command = this.actions.includes(action) ? getActionName(action) : action;
         return commands.executeCommand(command, ...args);
+    }
+
+    // There is no suitable place to define this method.
+    // Although it has nothing to do with Action, it is defined in actions for convenience.
+    /**
+     * Fire nvim event(hook)
+     * @param event event name
+     * @param args arguments for the event
+     */
+    public fireNvimEvent(event: string, ...args: VimValue[]): void {
+        this.client.executeLua('require"vscode-neovim.api".fire_event(...)', [event, ...args]);
     }
 }
 

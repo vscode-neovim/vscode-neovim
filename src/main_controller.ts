@@ -137,10 +137,8 @@ export class MainController implements vscode.Disposable {
                 }),
             },
         });
-    }
-
-    public fireNvimEvent(event: string, ...args: VimValue[]): void {
-        this.client.executeLua('require"vscode-neovim.api".fire_event(...)', [event, ...args]);
+        // This is an exception. Should avoid doing this.
+        Object.defineProperty(actions, "client", { get: () => this.client });
     }
 
     public async init(): Promise<void> {
@@ -187,7 +185,7 @@ export class MainController implements vscode.Disposable {
         await this.bufferManager.forceResync();
 
         await vscode.commands.executeCommand("setContext", "neovim.init", true);
-        this.fireNvimEvent("init");
+        actions.fireNvimEvent("init");
         logger.debug(`Init completed`);
     }
 
