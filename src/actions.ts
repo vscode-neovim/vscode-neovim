@@ -1,4 +1,4 @@
-import { Disposable, commands } from "vscode";
+import { ConfigurationTarget, Disposable, commands, workspace } from "vscode";
 
 function getActionName(action: string) {
     return `neovim-action.${action}`;
@@ -14,6 +14,34 @@ class ActionManager implements Disposable {
         this.add("_wait", async (ms = 1000) => {
             await new Promise((resolve) => setTimeout(resolve, ms));
             return "ok";
+        });
+        this.add("has_config", (names: string | string[]): boolean | boolean[] => {
+            const config = workspace.getConfiguration();
+            if (Array.isArray(names)) {
+                return names.map((name) => config.has(name));
+            } else {
+                return config.has(names);
+            }
+        });
+        this.add("get_config", (names: string | string[]) => {
+            const config = workspace.getConfiguration();
+            if (Array.isArray(names)) {
+                return names.map((name) => config.get(name));
+            } else {
+                return config.get(names);
+            }
+        });
+        this.add("update_config", async (names: string | string[], value: any, target?: "global" | "workspace") => {
+            const config = workspace.getConfiguration();
+            let targetConfig = null;
+            if (target) targetConfig = target === "global" ? ConfigurationTarget.Global : ConfigurationTarget.Workspace;
+            if (Array.isArray(names)) {
+                for (const name of names) {
+                    await config.update(name, value, targetConfig);
+                }
+            } else {
+                await config.update(names, value);
+            }
         });
     }
 

@@ -2,15 +2,15 @@ local M = {}
 
 ------- Requests -------
 
-local REQUEST_SATE = {
+local REQUEST_STATE = {
   id = 0,
   callbacks = {},
 }
 
 local function add_callback(callback)
-  REQUEST_SATE.id = REQUEST_SATE.id + 1
-  REQUEST_SATE.callbacks[REQUEST_SATE.id] = callback
-  return REQUEST_SATE.id
+  REQUEST_STATE.id = REQUEST_STATE.id + 1
+  REQUEST_STATE.callbacks[REQUEST_STATE.id] = callback
+  return REQUEST_STATE.id
 end
 
 ---Invoke the callback, called by vscode
@@ -19,8 +19,8 @@ end
 ---@param is_error boolean is error
 function M.invoke_callback(id, result, is_error)
   vim.schedule(function()
-    local callback = REQUEST_SATE.callbacks[id]
-    REQUEST_SATE.callbacks[id] = nil
+    local callback = REQUEST_STATE.callbacks[id]
+    REQUEST_STATE.callbacks[id] = nil
     if callback then
       if is_error then
         callback(result, nil)
@@ -56,7 +56,6 @@ function M.action(name, opts)
     ["opts.line_range"] = { opts.lien_range, "t", true },
     ["opts.leave_selection"] = { opts.leave_selection, "b", true },
   })
-  opts._ = 1
   if opts.range and opts.line_range then
     error([[Cannot specify both "range" and "line_range"]])
   end
@@ -93,7 +92,6 @@ function M.call(name, opts, timeout)
     ["opts.line_range"] = { opts.line_range, "t", true },
     ["opts.leave_selection"] = { opts.leave_selection, "b", true },
   })
-  opts._ = 1
   timeout = timeout or -1
 
   if opts.range and opts.line_range then
@@ -164,7 +162,44 @@ function M.fire_event(event, ...)
 end
 
 ------- VSCode settings integration -------
-function M.get_config() end
-function M.update_config() end
+
+---Check if configuration has a certain value.
+---@param name string|string[] The configuration name or an array of configuration names.
+---@return boolean|boolean[] Returns true if the configuration has a certain value, false otherwise.
+---                          If name is an array, returns an array of booleans indicating whether each configuration
+---                          has a certain value or not.
+function M.has_config(name)
+  vim.validate({ name = { name, { "s", "t" } } })
+  return M.call("has_config", { args = { name } })
+end
+
+---Get configuration value
+---@param name string|string[] The configuration name or an array of configuration names.
+---@return unknown|unknown[] The value of the configuration. If name is an array,
+---                          returns an array of values corresponding to each configuration.
+function M.get_config(name)
+  vim.validate({ name = { name, { "s", "t" } } })
+  return M.call("get_config", { args = { name } })
+end
+
+---Update configuration value
+---@param name string|string[] The configuration name or an array of configuration names.
+---@param value unknown|unknown[]  The new value for the configuration.
+---@param target "global"|"workspace" The configuration target
+function M.update_config(name, value, target)
+  vim.validate({ name = { name, { "s", "t" } } })
+  local name_is_table = type(name) == "table"
+  local value_is_table = type(value) == "table"
+  if name_is_table and not value_is_table then
+    error([[The "name" is a table, but the "value" is not]])
+  elseif value_is_table and not name_is_table then
+    error([[The "value" is a table, but the "name" is not]])
+  end
+  assert(
+    target == nil or target == "global" or target == "workspace",
+    [["target" can only be nil or one from "global" and "workspace"]]
+  )
+  return M.call("update_config", { args = { name, value, target } })
+end
 
 return M

@@ -227,16 +227,18 @@ export class MainController implements vscode.Disposable {
     private onNeovimNotification = async (method: string, events: [string, ...any[]]) => {
         switch (method) {
             case "vscode-action": {
-                const [action, options] = [...events, {}] as [
-                    string,
-                    {
-                        args?: any[];
-                        range?: vscode.Range;
-                        line_range?: [number, number];
-                        callback?: string;
-                        leave_selection?: boolean;
-                    },
-                ];
+                const action = events[0] as string;
+                let options = events[1] as
+                    | {
+                          args?: any[];
+                          range?: vscode.Range;
+                          line_range?: [number, number];
+                          callback?: string;
+                          leave_selection?: boolean;
+                      }
+                    | [];
+                if (Array.isArray(options)) options = {}; // empty lua table
+
                 const callbackId = options.callback;
                 if (callbackId) {
                     this.client.handleRequest("vscode-action", events, {
@@ -308,15 +310,17 @@ export class MainController implements vscode.Disposable {
     ): Promise<void> => {
         switch (method) {
             case "vscode-action": {
-                const [action, options] = [...requestArgs, {}] as [
-                    string,
-                    {
-                        args?: any[];
-                        range?: vscode.Range;
-                        line_range?: [number, number];
-                        leave_selection?: boolean;
-                    },
-                ];
+                const action = requestArgs[0] as string;
+                let options = requestArgs[1] as
+                    | {
+                          args?: any[];
+                          range?: vscode.Range;
+                          line_range?: [number, number];
+                          leave_selection?: boolean;
+                      }
+                    | [];
+                if (Array.isArray(options)) options = {}; // empty lua table
+
                 try {
                     const res = await this.runAction(action, options);
                     response.send(res);
