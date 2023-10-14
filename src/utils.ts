@@ -509,3 +509,11 @@ export class ManualPromise {
         });
     }
 }
+
+/**
+ * Wait for a given number of milliseconds
+ * @param ms Number of milliseconds
+ */
+export async function wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}

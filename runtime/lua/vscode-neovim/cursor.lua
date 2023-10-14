@@ -1,5 +1,4 @@
 local util = require("vscode-neovim.util")
-local api = require("vscode-neovim.api")
 
 -- this module is responsible for creating multiple cursors, triggering a visual update, and displaying the fake visual cursor
 local M = {}
@@ -30,7 +29,7 @@ function M.notify_multi_cursor()
   M.should_notify_multi_cursor = nil
   local startPos = vim.fn.getcharpos("'<")
   local endPos = vim.fn.getcharpos("'>")
-  api.notify_extension(
+  vim.fn.VSCodeExtensionNotify(
     "visual-edit",
     M.multi_cursor_append,
     M.multi_cursor_visual_mode,
@@ -64,7 +63,7 @@ end
 
 -- ----------------------- forced visual cursor updates ----------------------- --
 function M.visual_changed()
-  api.notify_extension("visual-changed", vim.fn.win_getid())
+  vim.fn.VSCodeExtensionNotify("visual-changed", vim.fn.win_getid())
 end
 
 function M.setup_visual_changed()
@@ -128,5 +127,7 @@ function M.setup()
   M.setup_visual_changed()
   M.setup_fake_cursor()
 end
+
+M.setup()
 
 return M
