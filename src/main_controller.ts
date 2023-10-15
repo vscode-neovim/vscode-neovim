@@ -4,10 +4,9 @@ import { readFile } from "fs/promises";
 import path from "path";
 
 import { attach, NeovimClient } from "neovim";
-import vscode from "vscode";
+import vscode, { Range } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
-import { VimValue } from "neovim/lib/types/VimValue";
 
 import actions from "./actions";
 import { BufferManager } from "./buffer_manager";
@@ -24,7 +23,7 @@ import { ModeManager } from "./mode_manager";
 import { MultilineMessagesManager } from "./multiline_messages_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
-import { findLastEvent, wait } from "./utils";
+import { findLastEvent } from "./utils";
 import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
@@ -32,6 +31,13 @@ interface RequestResponse {
 }
 
 const logger = createLogger("MainController");
+
+interface VSCodeActionOptions {
+    args?: any[];
+    range?: Range | [number, number] | [number, number, number, number];
+    leave_selection?: boolean;
+    callback?: string;
+}
 
 export class MainController implements vscode.Disposable {
     private nvimProc: ChildProcess;
@@ -189,30 +195,27 @@ export class MainController implements vscode.Disposable {
         logger.debug(`Init completed`);
     }
 
-    private async runAction(
-        action: string,
-        options: {
-            args?: any[];
-            range?: vscode.Range;
-            line_range?: [number, number];
-            leave_selection?: boolean;
-        },
-    ): Promise<any> {
+    private async runAction(action: string, options: Omit<VSCodeActionOptions, "callback">): Promise<any> {
         const editor = vscode.window.activeTextEditor;
         if (editor) await this.cursorManager.waitForCursorUpdate(editor);
-        if (editor && (options.range != null || options.line_range != null)) {
+        if (editor && options.range) {
+            const doc = editor.document;
             const prevSelections = editor.selections;
-            let selections: vscode.Selection[];
-            if (options.range) {
-                selections = [new vscode.Selection(options.range.start, options.range.end)];
+            const range = options.range;
+            let targetRange: Range;
+            if (Array.isArray(range)) {
+                if (range.length == 2) {
+                    const startLine = Math.max(0, range[0]);
+                    const endLine = Math.min(editor.document.lineCount - 1, range[1]);
+                    targetRange = new Range(doc.lineAt(startLine).range.start, doc.lineAt(endLine).range.end);
+                } else {
+                    targetRange = new Range(...range);
+                }
             } else {
-                let [startLine, endLine] = options.line_range!;
-                startLine = Math.max(0, startLine);
-                endLine = Math.min(editor.document.lineCount - 1, endLine);
-                const doc = editor.document;
-                selections = [new vscode.Selection(doc.lineAt(startLine).range.start, doc.lineAt(endLine).range.end)];
+                targetRange = new Range(range.start.line, range.start.character, range.end.line, range.end.character);
             }
-            editor.selections = selections;
+            targetRange = doc.validateRange(targetRange);
+            editor.selections = [new vscode.Selection(targetRange.start, targetRange.end)];
             const res = await actions.run(action, ...(options.args || []));
             if (!options.leave_selection) {
                 editor.selections = prevSelections;
@@ -226,15 +229,7 @@ export class MainController implements vscode.Disposable {
         switch (method) {
             case "vscode-action": {
                 const action = events[0] as string;
-                let options = events[1] as
-                    | {
-                          args?: any[];
-                          range?: vscode.Range;
-                          line_range?: [number, number];
-                          callback?: string;
-                          leave_selection?: boolean;
-                      }
-                    | [];
+                let options = events[1] as VSCodeActionOptions | [];
                 if (Array.isArray(options)) options = {}; // empty lua table
 
                 const callbackId = options.callback;
@@ -309,14 +304,7 @@ export class MainController implements vscode.Disposable {
         switch (method) {
             case "vscode-action": {
                 const action = requestArgs[0] as string;
-                let options = requestArgs[1] as
-                    | {
-                          args?: any[];
-                          range?: vscode.Range;
-                          line_range?: [number, number];
-                          leave_selection?: boolean;
-                      }
-                    | [];
+                let options = requestArgs[1] as Omit<VSCodeActionOptions, "callback"> | [];
                 if (Array.isArray(options)) options = {}; // empty lua table
 
                 try {

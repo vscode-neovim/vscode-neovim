@@ -35,30 +35,47 @@ end
 ---@param name string The action name, generally a vscode command
 ---@param opts? table Optional options table, all fields are optional
 ---            - args: (table) Optional arguments for the action
----            - range: (table) Specific range for the action. In visual mode, this parameter is generally not required.
----                     The format is consistent with the LSP Protocol.
----            - line_range: (table) An array [start_line, end_line], which has the same effect as range. Lines are zero indexed
+---            - range: (table) Specific range for the action. In visual mode, this parameter is generally not needed.
+---                     Three formats supported (All values are 0-indexed):
+---                        - [start_line, end_line]
+---                        - [start_line, start_character, end_line, end_character]
+---                        - {start = { line = $start_line , character = $start_character}, end = { line = $end_line , character = $end_character}}
 ---            - leave_selection: (boolean) Whether to preserve the selected range, only valid when range or line_range is specified
 ---            - callback: (function(err: string|nil, ret: any))
 ---                        Optional callback function to handle the action result.
 ---                        The first argument is the error message, and the second is the result.
 ---                        If no callback is provided, any error message will be shown as a notification in VSCode.
 function M.action(name, opts)
+  opts = opts or {}
   vim.validate({
     name = { name, "string" },
     opts = { opts, "table", true },
   })
-  opts = opts or {}
   vim.validate({
     ["opts.callback"] = { opts.callback, "f", true },
     ["opts.args"] = { opts.args, "t", true },
-    ["opts.range"] = { opts.range, "t", true },
-    ["opts.line_range"] = { opts.lien_range, "t", true },
+    ["opts.range"] = {
+      opts.range,
+      function(range)
+        if range == nil then
+          return true
+        end
+        if type(range) ~= "table" then
+          return false
+        end
+        if vim.tbl_islist(opts.range) then
+          return #opts.range == 2 or #opts.range == 4
+        end
+        return range.start
+          and range.start.line
+          and range.start.character
+          and range["end"]
+          and range["end"].line
+          and range["end"].character
+      end,
+    },
     ["opts.leave_selection"] = { opts.leave_selection, "b", true },
   })
-  if opts.range and opts.line_range then
-    error([[Cannot specify both "range" and "line_range"]])
-  end
   if opts.callback then
     opts.callback = add_callback(opts.callback)
   end
@@ -71,32 +88,48 @@ end
 ---@param name string The action name, generally a vscode command
 ---@param opts? table Optional options table, all fields are optional
 ---            - args: (table) Optional arguments for the action
----            - range: (table) Specific range for the action. In visual mode, this parameter is generally not required.
----                     The format is consistent with the LSP Protocol.
----            - line_range: (table) An array [start_line, end_line], which has the same effect as range. Lines are zero indexed
+---            - range: (table) Specific range for the action. In visual mode, this parameter is generally not needed.
+---                     Three formats supported (All values are 0-indexed):
+---                        - [start_line, end_line]
+---                        - [start_line, start_character, end_line, end_character]
+---                        - {start = { line = $start_line , character = $start_character}, end = { line = $end_line , character = $end_character}}
 ---            - leave_selection: (boolean) Whether to preserve the selected range, only valid when range or line_range is specified
 ---@param timeout? number Timeout in milliseconds. The default value is -1, which means no timeout.
 ---
 ---@return any: result
 function M.call(name, opts, timeout)
+  opts = opts or {}
+  timeout = timeout or -1
   vim.validate({
     name = { name, "string" },
     opts = { opts, "table", true },
     timeout = { timeout, "number", true },
   })
-  opts = opts or {}
   vim.validate({
     ["opts.callback"] = { opts.callback, "nil" },
     ["opts.args"] = { opts.args, "t", true },
-    ["opts.range"] = { opts.range, "t", true },
-    ["opts.line_range"] = { opts.line_range, "t", true },
+    ["opts.range"] = {
+      opts.range,
+      function(range)
+        if range == nil then
+          return true
+        end
+        if type(range) ~= "table" then
+          return false
+        end
+        if vim.tbl_islist(opts.range) then
+          return #opts.range == 2 or #opts.range == 4
+        end
+        return range.start
+          and range.start.line
+          and range.start.character
+          and range["end"]
+          and range["end"].line
+          and range["end"].character
+      end,
+    },
     ["opts.leave_selection"] = { opts.leave_selection, "b", true },
   })
-  timeout = timeout or -1
-
-  if opts.range and opts.line_range then
-    error([[Cannot specify both "range" and "line_range"]])
-  end
 
   if timeout <= 0 then
     return vim.rpcrequest(vim.g.vscode_channel, "vscode-action", name, opts)
