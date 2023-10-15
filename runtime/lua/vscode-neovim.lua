@@ -15,12 +15,18 @@ numbers.setup()
 autocmds.setup()
 
 local vscode = {
+  -- actions
   action = api.action,
   call = api.call,
+  -- hooks
   on = api.on,
+  -- vscode settings
   has_config = api.has_config,
   get_config = api.get_config,
   update_config = api.update_config,
+  -- notifications
+  notify = api.notify,
+  notify_once = api.notify_once,
 }
 
 _G._vscode = vscode

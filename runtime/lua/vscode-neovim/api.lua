@@ -1,6 +1,8 @@
 local M = {}
 
+------------------------
 ------- Requests -------
+------------------------
 
 local REQUEST_STATE = {
   id = 0,
@@ -157,7 +159,9 @@ function M.call(name, opts, timeout)
   end
 end
 
+---------------------------
 ------- Event Hooks -------
+---------------------------
 
 local EVENT_STATE = {}
 
@@ -194,7 +198,9 @@ function M.fire_event(event, ...)
   end)
 end
 
+-------------------------------------------
 ------- VSCode settings integration -------
+-------------------------------------------
 
 ---Check if configuration has a certain value.
 ---@param name string|string[] The configuration name or an array of configuration names.
@@ -233,6 +239,52 @@ function M.update_config(name, value, target)
     [["target" can only be nil or one from "global" and "workspace"]]
   )
   return M.call("update_config", { args = { name, value, target } })
+end
+
+---------------------------
+------ Notifications ------
+---------------------------
+
+--- Display a notification to the user.
+---
+---@param msg string Content of the notification to show to the user.
+---@param level integer|nil One of the values from |vim.log.levels|.
+---@param opts table|nil Optional parameters. Unused by default.
+---@diagnostic disable-next-line: unused-local
+function M.notify(msg, level, opts)
+  local level_name
+  local levels = vim.log.levels
+  level = level or vim.log.levels.INFO
+  if level >= levels.ERROR then
+    level_name = "error"
+  elseif level >= levels.WARN then
+    level_name = "warn"
+  else
+    level_name = "info"
+  end
+  M.action("notify", { args = { msg, level_name } })
+end
+
+do
+  local notified = {}
+
+  --- Display a notification only one time.
+  ---
+  --- Like |vscode.notify()|, but subsequent calls with the same message will not
+  --- display a notification.
+  ---
+  ---@param msg string Content of the notification to show to the user.
+  ---@param level integer|nil One of the values from |vim.log.levels|.
+  ---@param opts table|nil Optional parameters. Unused by default.
+  ---@return boolean true if message was displayed, else false
+  function M.notify_once(msg, level, opts)
+    if not notified[msg] then
+      M.notify(msg, level, opts)
+      notified[msg] = true
+      return true
+    end
+    return false
+  end
 end
 
 return M
