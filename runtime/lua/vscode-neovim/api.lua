@@ -254,7 +254,19 @@ end
 function M.notify(msg, level, opts)
   local level_name
   local levels = vim.log.levels
-  level = level or vim.log.levels.INFO
+  level = level or levels.INFO
+
+  -- legacy
+  if type(level) == "string" then
+    if level == "error" then
+      level = levels.ERROR
+    elseif level == "warn" then
+      level = levels.WARN
+    else
+      level = levels.INFO
+    end
+  end
+
   if level >= levels.ERROR then
     level_name = "error"
   elseif level >= levels.WARN then
