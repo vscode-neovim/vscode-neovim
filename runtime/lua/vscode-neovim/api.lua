@@ -41,7 +41,7 @@ end
 ---                     Three formats supported (All values are 0-indexed):
 ---                        - [start_line, end_line]
 ---                        - [start_line, start_character, end_line, end_character]
----                        - {start = { line = $start_line , character = $start_character}, end = { line = $end_line , character = $end_character}}
+---                        - {start = { line = start_line , character = start_character}, end = { line = end_line , character = end_character}}
 ---            - leave_selection: (boolean) Whether to preserve the selected range, only valid when range or line_range is specified
 ---            - callback: (function(err: string|nil, ret: any))
 ---                        Optional callback function to handle the action result.
@@ -94,7 +94,7 @@ end
 ---                     Three formats supported (All values are 0-indexed):
 ---                        - [start_line, end_line]
 ---                        - [start_line, start_character, end_line, end_character]
----                        - {start = { line = $start_line , character = $start_character}, end = { line = $end_line , character = $end_character}}
+---                        - {start = { line = start_line , character = start_character}, end = { line = end_line , character = end_character}}
 ---            - leave_selection: (boolean) Whether to preserve the selected range, only valid when range or line_range is specified
 ---@param timeout? number Timeout in milliseconds. The default value is -1, which means no timeout.
 ---
