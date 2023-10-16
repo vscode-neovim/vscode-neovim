@@ -3,7 +3,7 @@
 -- Copy global highlights and overrides highlights to the custom namespace, only external buffers use global namespace
 local api = vim.api
 
-local NS = api.nvim_create_namespace("-- vscode buffer highlights --")
+local NS = api.nvim_create_namespace("vscode-neovim-highlight")
 
 vim.opt.conceallevel = 0
 vim.g.html_ignore_conceal = 1
