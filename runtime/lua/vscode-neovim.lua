@@ -29,6 +29,4 @@ local vscode = {
   notify_once = api.notify_once,
 }
 
-_G._vscode = vscode
-
 return vscode
