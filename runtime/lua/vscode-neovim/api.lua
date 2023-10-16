@@ -42,13 +42,14 @@ end
 ---                        - [start_line, end_line]
 ---                        - [start_line, start_character, end_line, end_character]
 ---                        - {start = { line = start_line , character = start_character}, end = { line = end_line , character = end_character}}
----            - leave_selection: (boolean) Whether to preserve the selected range, only valid when range or line_range is specified
+---            - restore_selection: (boolean) Whether to preserve the current selection, only valid when `range` is specified. Defaults to `true`
 ---            - callback: (function(err: string|nil, ret: any))
 ---                        Optional callback function to handle the action result.
 ---                        The first argument is the error message, and the second is the result.
 ---                        If no callback is provided, any error message will be shown as a notification in VSCode.
 function M.action(name, opts)
   opts = opts or {}
+  opts.restore_selection = opts.restore_selection ~= false
   vim.validate({
     name = { name, "string" },
     opts = { opts, "table", true },
@@ -76,7 +77,7 @@ function M.action(name, opts)
           and range["end"].character
       end,
     },
-    ["opts.leave_selection"] = { opts.leave_selection, "b", true },
+    ["opts.restore_selection"] = { opts.restore_selection, "b", true },
   })
   if opts.callback then
     opts.callback = add_callback(opts.callback)
@@ -95,12 +96,13 @@ end
 ---                        - [start_line, end_line]
 ---                        - [start_line, start_character, end_line, end_character]
 ---                        - {start = { line = start_line , character = start_character}, end = { line = end_line , character = end_character}}
----            - leave_selection: (boolean) Whether to preserve the selected range, only valid when range or line_range is specified
+---            - restore_selection: (boolean) Whether to preserve the current selection, only valid when `range` is specified. Defaults to `true`
 ---@param timeout? number Timeout in milliseconds. The default value is -1, which means no timeout.
 ---
 ---@return any: result
 function M.call(name, opts, timeout)
   opts = opts or {}
+  opts.restore_selection = opts.restore_selection ~= false
   timeout = timeout or -1
   vim.validate({
     name = { name, "string" },
@@ -130,7 +132,7 @@ function M.call(name, opts, timeout)
           and range["end"].character
       end,
     },
-    ["opts.leave_selection"] = { opts.leave_selection, "b", true },
+    ["opts.restore_selection"] = { opts.restore_selection, "b", true },
   })
 
   if timeout <= 0 then

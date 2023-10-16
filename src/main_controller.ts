@@ -35,7 +35,7 @@ const logger = createLogger("MainController");
 interface VSCodeActionOptions {
     args?: any[];
     range?: Range | [number, number] | [number, number, number, number];
-    leave_selection?: boolean;
+    restore_selection?: boolean;
     callback?: string;
 }
 
@@ -217,7 +217,7 @@ export class MainController implements vscode.Disposable {
             targetRange = doc.validateRange(targetRange);
             editor.selections = [new vscode.Selection(targetRange.start, targetRange.end)];
             const res = await actions.run(action, ...(options.args || []));
-            if (!options.leave_selection) {
+            if (options.restore_selection !== false) {
                 editor.selections = prevSelections;
             }
             return res;
