@@ -31,7 +31,7 @@ mode and editor commands, making the best use of both editors.
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
-    -   [API](#API)
+-   [⚡️ API](#API)
 -   [⌨️ Bindings](#️-bindings)
     -   [VSCode specific bindings](#vscode-specific-bindings)
         -   [Editor command](#editor-command)
@@ -267,24 +267,26 @@ See gif in action:
 
 ![multicursors](/images/multicursor.gif)
 
-### API
+## API
 
-#### VimScript
+### VimScript
 
 There are a few helper functions that are used to invoke VSCode commands from Neovim.
 
--   `VSCodeNotify(command, ...)` Invoke VSCode command with optional arguments.
--   `VSCodeNotifyRange(command, line1, line2, leaveSelection, ...)` Produce linewise VSCode selection from `line1` to
+-   `VSCodeNotify(command, ...)` `VSCodeCall(command, ...)` Invoke VSCode command with optional arguments.
+-   `VSCodeNotifyRange(command, line1, line2, leaveSelection, ...)`
+    `VSCodeCallRange(command, line1, line2, leaveSelection, ...)` Produce linewise VSCode selection from `line1` to
     `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after invoking the
     command. Line is 1-based.
--   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` Produce characterwise VSCode
+-   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`
+    `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` Produce characterwise VSCode
     selection from `line1.pos1` to `line2.pos2` and invoke VSCode command. Pos is (1, 1)-based.
 
 > 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
 > unless you really need a blocking call. One example of a blocking call is wanting VSCode to process a visual selection
 > when running a command before exiting visual mode.
 
-##### Examples
+#### Examples
 
 Format selection (default binding):
 
@@ -308,7 +310,7 @@ nnoremap ? <Cmd>call VSCodeNotify('workbench.action.findInFiles', { 'query': exp
 
 More advanced examples can be found [here](https://github.com/vscode-neovim/vscode-neovim/tree/master/vim).
 
-#### Lua
+### Lua
 
 Load module: `local vscode = require("vscode-neovim")`
 
@@ -320,9 +322,9 @@ Load module: `local vscode = require("vscode-neovim")`
 6. `vscode.update_config` update a configuration
 7. `vscode.notify` like `vim.notify`, but use vscode notification to show the message
 
-##### Actions
+#### Actions
 
-###### `vscode.action(name, opts)`
+##### `vscode.action(name, opts)`
 
 This function is used to run an action asynchronously.
 
@@ -342,7 +344,7 @@ Parameters:
         following signature: `function(err: string|nil, ret: any)`. The first argument is the error message, and the
         second is the result. If no callback is provided, any error message will be shown as a notification in VSCode.
 
-###### `vscode.call(name, opts, timeout)`
+##### `vscode.call(name, opts, timeout)`
 
 This function is used to run an action synchronously.
 
@@ -362,7 +364,7 @@ Parameters:
 
 Returns: the result of the action
 
-###### Examples
+##### Examples
 
 Currently, two built-in actions are provided for testing purposes:
 
@@ -384,10 +386,20 @@ end
 vscode.action("editor.action.formatDocument")
 
 do -- Comment the three lines below the cursor
-  local lnum = vim.fn.line(".")
+  local curr_line = vim.fn.line(".") - 1  -- 0-indexed
   vscode.action("editor.action.commentLine", {
-    range = { lnum, lnum + 2 },
+    range = { curr_line + 1, curr_line + 3 },
   })
+end
+
+do -- Comment the previous line
+  local curr_line = vim.fn.line(".") - 1 -- 0-indexed
+  local prev_line = curr_line - 1
+  if prev_line >= 0 then
+    vscode.action("editor.action.commentLine", {
+      range = { prev_line , prev_line },
+    })
+  end
 end
 
 do -- Find in files for word under cursor
@@ -406,9 +418,9 @@ print(vscode.call("_wait", { args = { 2000 } }), 1000)
 -- error: Call '_wait' timed out
 ```
 
-##### Hooks
+#### Hooks
 
-###### `vscode.on(event, callback)`
+##### `vscode.on(event, callback)`
 
 Currently no available events for user use.
 
@@ -427,7 +439,7 @@ Returns:
 -   `boolean|boolean[]`: Returns `true` if the configuration has a certain value, `false` otherwise. If `name` is an
     array, returns an array of booleans indicating whether each configuration has a certain value or not.
 
-###### `vscode.get_config(name)`
+##### `vscode.get_config(name)`
 
 Get configuration value.
 
@@ -440,7 +452,7 @@ Returns:
 -   `unknown|unknown[]`: The value of the configuration. If `name` is an array, returns an array of values corresponding
     to each configuration.
 
-###### `vscode.update_config(name, value, target)`
+##### `vscode.update_config(name, value, target)`
 
 Update configuration value.
 
@@ -487,7 +499,7 @@ vscode.update_config("editor.tabSize", 16, "global")
 vscode.update_config({ "editor.fontFamily", "editor.tabSize" }, { "Fira Code", 14 })
 ```
 
-##### Notifications
+#### Notifications
 
 Show a vscode notification
 
