@@ -336,6 +336,37 @@ local function navigate(direction)
   goto_cursor(cursor)
 end
 
+---Create cursor using flash
+local flash_jump
+flash_jump = function()
+  local ok, flash = pcall(require, "flash")
+  if not ok then
+    vim.notify("Can't load flash, make sure you have installed flash.nvim")
+    return
+  end
+  flash.jump({
+    search = { multi_window = false },
+    action = function(match, state)
+      local pos = match.pos
+      local _, width = getline(pos[1])
+      if width == 0 then
+        return
+      end
+      ---@type Cursor
+      local cursor = {
+        type = "char",
+        range = make_range(pos, pos).range,
+        extmarks = {
+          hl_cursor(pos[1] - 1, pos[2], pos[1] - 1, pos[2] + 1),
+        },
+      }
+      add_cursor(cursor)
+      state:restore()
+      flash_jump()
+    end,
+  })
+end
+
 ----- Auto Commands -----
 local group = api.nvim_create_augroup("vscode-multiple-cursors", {})
 api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, { callback = set_hl, group = group })
@@ -368,6 +399,7 @@ vim.keymap.set({ "n", "x" }, "ma", start_right, { desc = "Start cursors on the r
 vim.keymap.set({ "n", "x" }, "mA", start_right, { desc = "Start cursors on the right" })
 vim.keymap.set({ "n" }, "[mc", prev_cursor, { desc = "Goto prev cursor" })
 vim.keymap.set({ "n" }, "]mc", next_cursor, { desc = "Goto next cursor" })
+vim.keymap.set({ "n" }, "mcs", flash_jump, { desc = "Create cursor using flash" })
 
 _G.vscode_create_cursor = create_cursor
 
