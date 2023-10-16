@@ -171,6 +171,7 @@ List of events:
 event -> args
 -------------
 init -> ()
+window_state_changed -> (focused: boolean)
 ]]
 
 ---@param event string
