@@ -33,7 +33,7 @@ function M.invoke_callback(id, result, is_error)
   end)
 end
 
----Run action, this function is asynchronous
+---- Run an action asynchronously
 ---@param name string The action name, generally a vscode command
 ---@param opts? table Optional options table, all fields are optional
 ---            - args: (table) Optional arguments for the action
@@ -87,7 +87,7 @@ function M.action(name, opts)
   end)
 end
 
---- Run action, this function is synchronous and blocking
+--- Run an action synchronously
 ---@param name string The action name, generally a vscode command
 ---@param opts? table Optional options table, all fields are optional
 ---            - args: (table) Optional arguments for the action
