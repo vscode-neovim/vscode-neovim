@@ -111,7 +111,9 @@ class ActionManager implements Disposable {
 
     private initHooks() {
         this.disposables.push(
-            window.onDidChangeWindowState((e) => this.fireNvimEvent("window_state_changed", e.focused)),
+            window.onDidChangeWindowState((e) =>
+                this.client.command(`doautocmd ${e.focused ? "FocusGained" : "FocusLost"}`),
+            ),
         );
     }
 }

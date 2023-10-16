@@ -191,7 +191,6 @@ export class MainController implements vscode.Disposable {
         await this.bufferManager.forceResync();
 
         await vscode.commands.executeCommand("setContext", "neovim.init", true);
-        actions.fireNvimEvent("init");
         logger.debug(`Init completed`);
     }
 
