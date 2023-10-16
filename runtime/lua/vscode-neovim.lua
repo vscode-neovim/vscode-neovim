@@ -26,7 +26,6 @@ local vscode = {
   update_config = api.update_config,
   -- notifications
   notify = api.notify,
-  notify_once = api.notify_once,
 }
 
 return vscode

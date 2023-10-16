@@ -280,26 +280,4 @@ function M.notify(msg, level, opts)
   M.action("notify", { args = { msg, level_name } })
 end
 
-do
-  local notified = {}
-
-  --- Display a notification only one time.
-  ---
-  --- Like |vscode.notify()|, but subsequent calls with the same message will not
-  --- display a notification.
-  ---
-  ---@param msg string Content of the notification to show to the user.
-  ---@param level integer|nil One of the values from |vim.log.levels|.
-  ---@param opts table|nil Optional parameters. Unused by default.
-  ---@return boolean true if message was displayed, else false
-  function M.notify_once(msg, level, opts)
-    if not notified[msg] then
-      M.notify(msg, level, opts)
-      notified[msg] = true
-      return true
-    end
-    return false
-  end
-end
-
 return M
