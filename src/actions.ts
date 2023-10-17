@@ -95,16 +95,16 @@ class ActionManager implements Disposable {
         });
         this.add("notify", (msg: string, level: "info" | "warn" | "error") => {
             switch (level) {
-                case "info": {
-                    window.showInformationMessage(msg);
-                    break;
-                }
                 case "warn": {
                     window.showWarningMessage(msg);
                     break;
                 }
                 case "error": {
                     window.showErrorMessage(msg);
+                    break;
+                }
+                default: {
+                    window.showInformationMessage(msg);
                     break;
                 }
             }
