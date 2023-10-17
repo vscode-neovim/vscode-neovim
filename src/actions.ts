@@ -79,16 +79,18 @@ class ActionManager implements Disposable {
                 return config.get(names);
             }
         });
-        this.add("update_config", async (names: string | string[], value: any, target?: "global" | "workspace") => {
+        this.add("update_config", async (names: string | string[], values: any, target?: "global" | "workspace") => {
             const config = workspace.getConfiguration();
             let targetConfig = null;
-            if (target) targetConfig = target === "global" ? ConfigurationTarget.Global : ConfigurationTarget.Workspace;
-            if (Array.isArray(names)) {
-                for (const name of names) {
-                    await config.update(name, value, targetConfig);
-                }
-            } else {
-                await config.update(names, value);
+            if (target) {
+                targetConfig = target === "global" ? ConfigurationTarget.Global : ConfigurationTarget.Workspace;
+            }
+            if (!Array.isArray(names)) {
+                names = [names];
+                values = [values];
+            }
+            for (const [idx, name] of names.entries()) {
+                await config.update(name, values[idx], targetConfig);
             }
         });
         this.add("notify", (msg: string, level: "info" | "warn" | "error") => {
