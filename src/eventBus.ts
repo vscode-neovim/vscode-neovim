@@ -98,6 +98,7 @@ type RedrawEventArgs = (
     // ["mouse_off"]
     | IRedrawEventArg<"mouse_off">
     | IRedrawEventArg<"wildmenu_show", [string[]]>
+    | IRedrawEventArg<"wildmenu_hide">
 )[];
 // #endregion
 
