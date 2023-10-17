@@ -17,7 +17,8 @@ import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { Mode } from "./mode_manager";
-import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise } from "./utils";
+import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise, wait } from "./utils";
+import actions from "./actions";
 
 const logger = createLogger("CursorManager");
 
@@ -87,6 +88,8 @@ export class CursorManager implements Disposable {
             eventBus.on("range-command", this.handleRangeCommand, this),
             eventBus.on("visual-edit", this.handleMultipleCursors, this),
         );
+        actions.add("editor.action.addSelectionToPreviousFindMatch", () => this.addSelectionToFindMatch("prev"));
+        actions.add("editor.action.addSelectionToNextFindMatch", () => this.addSelectionToFindMatch("next"));
     }
 
     private handleRedraw(data: EventBusData<"redraw">): void {
@@ -526,6 +529,36 @@ export class CursorManager implements Disposable {
             selections.push(new Selection(line, char, line, char));
         }
         window.activeTextEditor.selections = selections;
+    }
+
+    private async addSelectionToFindMatch(type: "prev" | "next") {
+        const editor = window.activeTextEditor;
+        if (!editor) return;
+        await this.main.cursorManager.waitForCursorUpdate(editor);
+        const run = () =>
+            commands.executeCommand(`editor.action.addSelectionTo${type == "prev" ? "Previous" : "Next"}FindMatch`);
+
+        if (this.main.modeManager.isInsertMode) {
+            await run();
+            return;
+        }
+
+        if (editor.selection.isEmpty) {
+            await run();
+            const selections = editor.selections;
+            this.main.client.input("<Esc>");
+            await wait(50);
+            editor.selections = selections;
+        } else {
+            const selections = editor.selections;
+            this.main.client.input("<Esc>");
+            await wait(50);
+            this.main.client.input("a");
+            await wait(50);
+            editor.selections = selections;
+            await wait(50);
+            await run();
+        }
     }
 
     public dispose(): void {
