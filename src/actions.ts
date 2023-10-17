@@ -3,7 +3,7 @@ import { VimValue } from "neovim/lib/types/VimValue";
 import { ConfigurationTarget, Disposable, commands, window, workspace } from "vscode";
 
 function getActionName(action: string) {
-    return `neovim-action.${action}`;
+    return `neovim:${action}`;
 }
 
 class ActionManager implements Disposable {
