@@ -267,7 +267,7 @@ See gif in action:
 
 ![multicursors](/images/multicursor.gif)
 
-## API
+## ⚡️ API
 
 ### VimScript
 
