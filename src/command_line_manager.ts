@@ -62,10 +62,11 @@ export class CommandLineManager implements Disposable {
                     break;
                 }
                 case "wildmenu_show": {
-                    const [items] = args[0];
-                    if (this.commandLine) {
-                        this.commandLine.setCompletionItems(items);
-                    }
+                    this.commandLine?.setCompletionItems(args[0][0]);
+                    break;
+                }
+                case "wildmenu_hide": {
+                    this.commandLine?.setCompletionItems([]);
                     break;
                 }
                 case "cmdline_hide": {

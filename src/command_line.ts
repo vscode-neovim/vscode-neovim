@@ -33,6 +33,8 @@ export class CommandLineController implements Disposable {
 
     private updatedFromNvim = false; // whether to replace nvim cmdline with new content
 
+    private wildMenuVisible = false; // indicates if the wildmenu is visible
+
     public constructor(
         private client: NeovimClient,
         private callbacks: CommandLineCallbacks,
@@ -94,6 +96,14 @@ export class CommandLineController implements Disposable {
         this.completionItems = items.map((i) => ({ label: i, alwaysShow: true }));
         if (this.completionAllowed) {
             this.input.items = this.completionItems;
+            // When deleting the input text to empty, the wildmenu displays all the candidate commands.
+            // However, the wildmenu is not actually useful in this situation, so it is forced to be invisible.
+            // This allows Ctrl+n and Ctrl+p to input normally(navigating history) instead of selecting candidates in quickOpen.
+            const wildMenuVisible = this.input.value.length > 0 && this.completionItems.length > 0;
+            if (this.wildMenuVisible !== wildMenuVisible) {
+                this.wildMenuVisible = wildMenuVisible;
+                commands.executeCommand("setContext", "neovim.wildMenuVisible", this.wildMenuVisible);
+            }
         }
     }
 

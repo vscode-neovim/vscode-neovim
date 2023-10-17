@@ -187,12 +187,12 @@ const keybinds = [
     {
         command: "workbench.action.quickOpenSelectNext",
         key: "ctrl+n",
-        when: "inQuickOpen && neovim.mode != cmdline",
+        when: "inQuickOpen && (neovim.mode != cmdline || neovim.wildMenuVisible)",
     },
     {
         command: "workbench.action.quickOpenSelectPrevious",
         key: "ctrl+p",
-        when: "inQuickOpen && neovim.mode != cmdline",
+        when: "inQuickOpen && (neovim.mode != cmdline || neovim.wildMenuVisible)",
     },
     {
         key: "ctrl+n",
