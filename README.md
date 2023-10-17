@@ -26,18 +26,15 @@ mode and editor commands, making the best use of both editors.
 -   [💡 Tips and Features](#-tips-and-features)
     -   [VSCode specific differences](#vscode-specific-differences)
     -   [Troubleshooting](#troubleshooting)
-        -   [Performance problems](#performance-problems)
     -   [Composite escape keys](#composite-escape-keys)
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
-    -   [Invoking VSCode actions from neovim](#invoking-vscode-actions-from-neovim)
-        -   [Examples](#examples)
+-   [⚡️ API](#️-api)
+    -   [VimScript](#vimscript)
+    -   [Lua](#lua)
 -   [⌨️ Bindings](#️-bindings)
     -   [VSCode specific bindings](#vscode-specific-bindings)
-        -   [Editor command](#editor-command)
-        -   [Explorer/list navigation](#explorerlist-navigation)
-        -   [Explorer file manipulation](#explorer-file-manipulation)
     -   [File management](#file-management)
     -   [Tab management](#tab-management)
     -   [Buffer/window management](#bufferwindow-management)
@@ -60,9 +57,9 @@ mode and editor commands, making the best use of both editors.
     -   Set the Neovim path in the extension settings. You must specify the full path to Neovim, like
         "`C:\Neovim\bin\nvim.exe`" or "`/usr/local/bin/nvim`".
     -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
--   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to the nvim binary.
-    `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available through
-    `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
+-   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to the nvim
+    binary. `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available
+    through `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
 -   Assign [affinity](#affinity) value for performance improvement.
 
     -   Go to Settings > Features > Extensions > Experimental Affinity.
@@ -96,7 +93,7 @@ else
 endif
 ```
 
-Or to your `init.lua`:
+In lua:
 
 ```lua
 if vim.g.vscode then
@@ -161,15 +158,15 @@ The VSCode keybindings editor provides a good way to delete keybindings.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
 -   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat.
-    sequence. In Neovim, if you type `abc<cursor>` in insert mode, then move the cursor to `a<cursor>bc` and type `1` here
-    the repeat sequence would be `1`. However, in VSCode, it would be `a1bc`. Another difference is that when you delete
-    some text in insert mode, dot repeat only works from right to left, meaning it will treat <kbd>Del</kbd> key as
-    <kbd>BS</kbd> keys when running dot repeat.
+    sequence. In Neovim, if you type `abc<cursor>` in insert mode, then move the cursor to `a<cursor>bc` and type `1`
+    here the repeat sequence would be `1`. However, in VSCode, it would be `a1bc`. Another difference is that when you
+    delete some text in insert mode, dot repeat only works from right to left, meaning it will treat <kbd>Del</kbd> key
+    as <kbd>BS</kbd> keys when running dot repeat.
 
 ### Troubleshooting
 
-If you get the "Unable to init vscode-neovim: command 'type' already exists" message, uninstall other VSCode extensions that
-register the `type` command (like [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
+If you get the "Unable to init vscode-neovim: command 'type' already exists" message, uninstall other VSCode extensions
+that register the `type` command (like [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
 [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 
 #### Performance problems
@@ -181,8 +178,8 @@ Make sure you have the extension running in its own thread using affinity (see [
 Extensions that share the same affinity value are associated with a shared extension host (extension manager from
 VSCode). Performance issues arise when a number of extensions have the same host. On-going operations of one extension
 may slow down the operations of another. However, if an extension is assigned an affinity, its extension host runs in a
-separate worker thread. The operations of an extension with the host in one thread don't directly affect the operations of
-the extension with its host running in another.
+separate worker thread. The operations of an extension with the host in one thread don't directly affect the operations
+of the extension with its host running in another.
 
 ##### Other Extensions
 
@@ -268,18 +265,18 @@ See gif in action:
 
 ![multicursors](/images/multicursor.gif)
 
-### Invoking VSCode actions from neovim
+## ⚡️ API
 
-There are a
-[few helper functions](https://github.com/vscode-neovim/vscode-neovim/blob/master/vim/vscode-neovim.vim#L17-L39) that
-are used to invoke VSCode commands from Neovim. Note that the commands that start with `require("vscode-neovim")` are
-lua variants.
+### VimScript
 
-| Command                                                                                                                                                                                                                             | Description                                                                                                                                                                                   |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <ul><li>`VSCodeNotify(command, ...)`</li><li>`VSCodeCall`</li><li>`require("vscode-neovim").notify`</li> <li>`require("vscode-neovim").call`</li></ul>                                                                              | Invoke VSCode command with optional arguments.                                                                                                                                                |
-| <ul><li>`VSCodeNotifyRange(command, line1, line2, leaveSelection, ...)` </li><li>`VSCodeCallRange`</li><li>`require("vscode-neovim").notify_range`</li><li>`require("vscode-neovim").call_range`</li></ul>                          | Produce linewise VSCode selection from `line1` to `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after invoking the command. Line is 1-based. |
-| <ul><li>`VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`</li><li>`VSCodeCallRangePos`</li><li>`require("vscode-neovim").notify_range_pos`</li><li>`require("vscode-neovim").call_range_pos`</li></ul> | Produce characterwise VSCode selection from `line1.pos1` to `line2.pos2` and invoke VSCode command. Pos is \[1,1\]-based.                                                                     |
+There are a few helper functions that are used to invoke VSCode commands from Neovim.
+
+-   `VSCodeNotify(command, ...)`/`VSCodeCall`: Invoke VSCode command with optional arguments.
+-   `VSCodeNotifyRange(command, line1, line2, leaveSelection, ...)`/`VSCodeCallRange`: Produce linewise VSCode selection
+    from `line1` to `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after
+    invoking the command. Line is 1-based.
+-   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`/`VSCodeCallRangePos`: Produce
+    characterwise VSCode selection from `line1.pos1` to `line2.pos2` and invoke VSCode command. Pos is (1, 1)-based.
 
 > 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
 > unless you really need a blocking call. One example of a blocking call is wanting VSCode to process a visual selection
@@ -308,6 +305,205 @@ nnoremap ? <Cmd>call VSCodeNotify('workbench.action.findInFiles', { 'query': exp
 ```
 
 More advanced examples can be found [here](https://github.com/vscode-neovim/vscode-neovim/tree/master/vim).
+
+### Lua
+
+Load module: `local vscode = require("vscode-neovim")`
+
+1. `vscode.action` for asynchronous execution of actions.
+2. `vscode.call` for synchronous execution of actions.
+3. `vscode.on` for adding hook functions.
+4. `vscode.has_config` check if a configuration exists
+5. `vscode.get_config` get a configuration value
+6. `vscode.update_config` update a configuration
+7. `vscode.notify` like `vim.notify`, but use vscode notification to show the message
+
+#### Actions
+
+##### `vscode.action(name, opts)`
+
+This function is used to run an action asynchronously.
+
+Parameters:
+
+-   `name` (string): The name of the action, generally a vscode command.
+-   `opts` (table): Optional table of options. All fields in the table are optional.
+    -   `args` (table): Optional arguments for the action.
+    -   `range` (table): Specific range for the action. In visual mode, this parameter is generally not needed. There
+        are three supported formats for defining the range (all values are 0-indexed):
+        -   `[start_line, end_line]`
+        -   `[start_line, start_character, end_line, end_character]`
+        -   `{start = { line = start_line, character = start_character}, end = { line = end_line, character = end_character}}`
+    -   `restore_selection` (boolean): Whether to preserve the current selection. Only valid when `range` is specified.
+        Defaults to `true`.
+    -   `callback`: Optional callback function to handle the action result. The callback function should have the
+        following signature: `function(err: string|nil, ret: any)`. The first argument is the error message, and the
+        second is the result. If no callback is provided, any error message will be shown as a notification in VSCode.
+
+##### `vscode.call(name, opts, timeout)`
+
+This function is used to run an action synchronously.
+
+Parameters:
+
+-   `name` (string): The name of the action, generally a vscode command.
+-   `opts` (table): Optional table of options. All fields in the table are optional.
+    -   `args` (table): Optional arguments for the action.
+    -   `range` (table): Specific range for the action. In visual mode, this parameter is generally not needed. There
+        are three supported formats for defining the range (all values are 0-indexed):
+        -   `[start_line, end_line]`
+        -   `[start_line, start_character, end_line, end_character]`
+        -   `{start = { line = start_line, character = start_character}, end = { line = end_line, character = end_character}}`
+    -   `restore_selection` (boolean): Whether to preserve the current selection. Only valid when `range` is specified.
+        Defaults to `true`.
+-   `timeout` (number): Timeout in milliseconds. The default value is -1, which means there is no timeout.
+
+Returns: the result of the action
+
+##### Examples
+
+Currently, two built-in actions are provided for testing purposes:
+
+1. `_ping` returns `"pong"`
+2. `_wait` waits for the specified milliseconds and then returns `"ok"`
+
+```lua
+do -- Execute _ping asynchronously and print the result
+  vscode.action("_ping", {
+    callback = function(err, res)
+      if err == nil then
+        print(res) -- outputs: pong
+      end
+    end,
+  })
+end
+
+-- Format current document
+vscode.action("editor.action.formatDocument")
+
+do -- Comment the three lines below the cursor
+  local curr_line = vim.fn.line(".") - 1  -- 0-indexed
+  vscode.action("editor.action.commentLine", {
+    range = { curr_line + 1, curr_line + 3 },
+  })
+end
+
+do -- Comment the previous line
+  local curr_line = vim.fn.line(".") - 1 -- 0-indexed
+  local prev_line = curr_line - 1
+  if prev_line >= 0 then
+    vscode.action("editor.action.commentLine", {
+      range = { prev_line , prev_line },
+    })
+  end
+end
+
+do -- Find in files for word under cursor
+  local arg = { query = vim.fn.expand('<cword>') }
+  vscode.action("workbench.action.findInFiles", { args = { arg } })
+end
+
+-- Execute _ping synchronously and print the result
+print(vscode.call("_ping")) -- outputs: pong
+
+-- Wait for 1 second and print the return value 'ok'
+print(vscode.call("_wait", { args = { 1000 } })) -- outputs: ok
+
+-- Wait for 2 seconds with a timeout of 1 second
+print(vscode.call("_wait", { args = { 2000 } }), 1000)
+-- error: Call '_wait' timed out
+```
+
+#### Hooks
+
+##### `vscode.on(event, callback)`
+
+Currently no available events for user use.
+
+#### VSCode settings integration
+
+##### `vscode.has_config(name)`
+
+Check if configuration has a certain value.
+
+Parameters:
+
+-   `name` (string|string[]): The configuration name or an array of configuration names.
+
+Returns:
+
+-   `boolean|boolean[]`: Returns `true` if the configuration has a certain value, `false` otherwise. If `name` is an
+    array, returns an array of booleans indicating whether each configuration has a certain value or not.
+
+##### `vscode.get_config(name)`
+
+Get configuration value.
+
+Parameters:
+
+-   `name` (string|string[]): The configuration name or an array of configuration names.
+
+Returns:
+
+-   `unknown|unknown[]`: The value of the configuration. If `name` is an array, returns an array of values corresponding
+    to each configuration.
+
+##### `vscode.update_config(name, value, target)`
+
+Update configuration value.
+
+Parameters:
+
+-   `name` (string|string[]): The configuration name or an array of configuration names.
+-   `value` (unknown|unknown[]): The new value for the configuration.
+-   `target` ("global"|"workspace"): The configuration target. Optional
+
+Examples:
+
+```lua
+------------------
+--- has_config ---
+------------------
+
+-- Check if the configuration "not.exist" exists
+print(vscode.has_config("not.exist"))
+-- Should return: false
+
+-- Check multiple configurations
+vim.print(vscode.has_config({ "not.exist", "existing.config" }))
+-- Should return: { false, true }
+
+------------------
+--- get_config ---
+------------------
+
+-- Get the value of "editor.tabSize"
+print(vscode.get_config("editor.tabSize")) -- a number
+
+-- Get multiple configurations
+vim.print(vscode.get_config({ "editor.fontFamily", "editor.tabSize" }))
+-- Should return: { "the font family", "the editor tabSizse" }
+
+---------------------
+--- update_config ---
+---------------------
+
+-- Update the value of "editor.tabSize"
+vscode.update_config("editor.tabSize", 16, "global")
+
+-- Update multiple configurations
+vscode.update_config({ "editor.fontFamily", "editor.tabSize" }, { "Fira Code", 14 })
+```
+
+#### Notifications
+
+Show a vscode notification
+
+You can set `vscode.notify` as your default notify functions.
+
+```lua
+vim.notify = vscode.notify
+```
 
 ## ⌨️ Bindings
 

@@ -189,7 +189,7 @@ export class DocumentChangeManager implements Disposable {
         cleanEdits.push(["nvim_set_current_win", [currWin.id]]);
         cleanEdits.push(["nvim_win_close", [win.id, true]]);
         await callAtomic(this.client, cleanEdits, logger);
-        await this.client.executeLua("require'vscode-neovim.api'.delete_dotrepeat_buffers(...)");
+        await this.client.executeLua("require'vscode-neovim.internal'.delete_dotrepeat_buffers(...)");
     }
 
     private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {
@@ -512,7 +512,7 @@ export class DocumentChangeManager implements Disposable {
         logger.debug(`Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
 
-        const code = "return require('vscode-neovim.api').handle_changes(...)";
+        const code = "return require('vscode-neovim.internal').handle_changes(...)";
         await this.client.executeLua(code, [bufId, changeArgs]);
     };
 }

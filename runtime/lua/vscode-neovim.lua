@@ -1,30 +1,31 @@
 local api = require("vscode-neovim.api")
-local defaults = require("vscode-neovim.defaults")
+
+local default_optons = require("vscode-neovim.default-options")
 local cursor = require("vscode-neovim.cursor")
+local highlight = require("vscode-neovim.highlight")
+local filetype = require("vscode-neovim.filetype")
+local numbers = require("vscode-neovim.numbers")
+local autocmds = require("vscode-neovim.autocmds")
 
-require("vscode-neovim.highlight")
-require("vscode-neovim.filetype")
+default_optons.setup()
+cursor.setup()
+highlight.setup()
+filetype.setup()
+numbers.setup()
+autocmds.setup()
 
-local M = {}
+local vscode = {
+  -- actions
+  action = api.action,
+  call = api.call,
+  -- hooks
+  on = api.on,
+  -- vscode settings
+  has_config = api.has_config,
+  get_config = api.get_config,
+  update_config = api.update_config,
+  -- notifications
+  notify = api.notify,
+}
 
-M.notify = api.notify
-M.call = api.call
-M.call_range = api.call_range
-M.notify_range = api.notify_range
-M.call_range_pos = api.call_range_pos
-M.notify_range_pos = api.notify_range_pos
-
-M.setup = function()
-  defaults.setup()
-  cursor.setup()
-end
-
-vim.api.nvim_create_autocmd("InsertLeave", {
-  callback = function()
-    vim.fn.VSCodeNotify("hideSuggestWidget")
-    vim.fn.VSCodeNotify("closeParameterHints")
-    vim.fn.VSCodeNotify("editor.action.inlineSuggest.hide")
-  end,
-})
-
-return M
+return vscode

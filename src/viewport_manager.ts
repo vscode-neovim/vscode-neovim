@@ -148,7 +148,10 @@ export class ViewportManager implements Disposable {
         }
         const viewport = this.gridViewport.get(gridId);
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.line) {
-            this.client.lua("require('vscode-neovim.api').scroll_viewport(...)", [Math.max(startLine, 0), endLine]);
+            this.client.lua("require('vscode-neovim.internal').scroll_viewport(...)", [
+                Math.max(startLine, 0),
+                endLine,
+            ]);
         }
     }
 

@@ -1,16 +1,17 @@
 import * as vscode from "vscode";
 
+import actions from "./actions";
 import { config } from "./config";
-import { LogLevel, createLogger, logger as rootLogger } from "./logger";
-import { MainController } from "./main_controller";
 import { EXT_ID } from "./constants";
 import { eventBus } from "./eventBus";
+import { LogLevel, createLogger, logger as rootLogger } from "./logger";
+import { MainController } from "./main_controller";
 
 const logger = createLogger(EXT_ID);
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
-    context.subscriptions.push(config, rootLogger, eventBus);
+    context.subscriptions.push(config, rootLogger, eventBus, actions);
 
     verifyExperimentalAffinity();
     try {

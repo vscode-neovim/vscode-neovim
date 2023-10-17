@@ -1,7 +1,4 @@
--- this module is responsible for setting default vim options
-local M = {}
-
-function M.setup()
+local function setup()
   vim.cmd.syntax("on")
   -- customise statusbar
   vim.opt.shortmess = "filnxtToOFI"
@@ -17,4 +14,4 @@ function M.setup()
   vim.g.loaded_matchparen = 1
 end
 
-return M
+return { setup = setup }
