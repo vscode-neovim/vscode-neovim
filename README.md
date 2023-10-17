@@ -273,14 +273,12 @@ See gif in action:
 
 There are a few helper functions that are used to invoke VSCode commands from Neovim.
 
--   `VSCodeNotify(command, ...)` `VSCodeCall(command, ...)` Invoke VSCode command with optional arguments.
--   `VSCodeNotifyRange(command, line1, line2, leaveSelection, ...)`
-    `VSCodeCallRange(command, line1, line2, leaveSelection, ...)` Produce linewise VSCode selection from `line1` to
-    `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after invoking the
-    command. Line is 1-based.
--   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`
-    `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)` Produce characterwise VSCode
-    selection from `line1.pos1` to `line2.pos2` and invoke VSCode command. Pos is (1, 1)-based.
+-   `VSCodeNotify(command, ...)`/`VSCodeCall`: Invoke VSCode command with optional arguments.
+-   `VSCodeNotifyRange(command, line1, line2, leaveSelection, ...)`/`VSCodeCallRange`: Produce linewise VSCode selection
+    from `line1` to `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after
+    invoking the command. Line is 1-based.
+-   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`/`VSCodeCallRangePos`: Produce
+    characterwise VSCode selection from `line1.pos1` to `line2.pos2` and invoke VSCode command. Pos is (1, 1)-based.
 
 > 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
 > unless you really need a blocking call. One example of a blocking call is wanting VSCode to process a visual selection
