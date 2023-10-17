@@ -31,7 +31,7 @@ mode and editor commands, making the best use of both editors.
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
--   [⚡️ API](#API)
+-   [⚡️ API](#-api)
 -   [⌨️ Bindings](#️-bindings)
     -   [VSCode specific bindings](#vscode-specific-bindings)
         -   [Editor command](#editor-command)
@@ -422,9 +422,9 @@ print(vscode.call("_wait", { args = { 2000 } }), 1000)
 
 Currently no available events for user use.
 
-##### VSCode settings integration
+#### VSCode settings integration
 
-###### `vscode.has_config(name)`
+##### `vscode.has_config(name)`
 
 Check if configuration has a certain value.
 
