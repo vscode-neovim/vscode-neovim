@@ -1,6 +1,6 @@
 import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
-import { ConfigurationTarget, Disposable, Range, Selection, commands, window, workspace } from "vscode";
+import { ConfigurationTarget, Disposable, Position, Range, Selection, commands, window, workspace } from "vscode";
 
 function getActionName(action: string) {
     return `neovim:${action}`;
@@ -113,9 +113,13 @@ class ActionManager implements Disposable {
             if (!window.activeTextEditor || ranges.length === 0) return;
             const doc = window.activeTextEditor.document;
             window.activeTextEditor.selections = ranges.map((range) => {
-                const { start, end } = range;
-                range = doc.validateRange(new Range(start.line, start.character, end.line, end.character));
-                return new Selection(range.start, range.end);
+                const start = new Position(range.start.line, range.start.character);
+                const end = new Position(range.end.line, range.end.character);
+                const reversed = start.isAfter(end);
+                range = doc.validateRange(new Range(start, end));
+                return range.start.isBefore(range.end) && reversed
+                    ? new Selection(range.end, range.start)
+                    : new Selection(range.start, range.end);
             });
         });
     }
