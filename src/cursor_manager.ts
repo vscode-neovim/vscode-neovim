@@ -88,8 +88,11 @@ export class CursorManager implements Disposable {
             eventBus.on("range-command", this.handleRangeCommand, this),
             eventBus.on("visual-edit", this.handleMultipleCursors, this),
         );
+        // Wrap VSCode multiple cursor commands
         actions.add("editor.action.addSelectionToPreviousFindMatch", () => this.addSelectionToFindMatch("prev"));
         actions.add("editor.action.addSelectionToNextFindMatch", () => this.addSelectionToFindMatch("next"));
+        actions.add("editor.action.selectHighlights", () => this.selectAllOccurrences("all"));
+        actions.add("selectAllSearchEditorMatches", () => this.selectAllOccurrences("search"));
     }
 
     private handleRedraw(data: EventBusData<"redraw">): void {
@@ -546,7 +549,7 @@ export class CursorManager implements Disposable {
         if (editor.selection.isEmpty) {
             await run();
             const selections = editor.selections;
-            this.main.client.input("<Esc>");
+            this.main.client.input("<Esc>"); // Correcting the position
             await wait(50);
             editor.selections = selections;
         } else {
@@ -554,11 +557,33 @@ export class CursorManager implements Disposable {
             this.main.client.input("<Esc>");
             await wait(50);
             this.main.client.input("a");
-            await wait(50);
+            await wait(100);
             editor.selections = selections;
             await wait(50);
             await run();
         }
+    }
+
+    private async selectAllOccurrences(type: "all" | "search") {
+        const editor = window.activeTextEditor;
+        if (!editor) return;
+        await this.main.cursorManager.waitForCursorUpdate(editor);
+
+        await commands.executeCommand(
+            type === "all" ? "editor.action.selectHighlights" : "selectAllSearchEditorMatches",
+        );
+
+        if (this.main.modeManager.isInsertMode) {
+            return;
+        }
+
+        await wait(50);
+        const selections = editor.selections;
+        this.main.client.input("<Esc>");
+        await wait(50);
+        this.main.client.input("a");
+        await wait(100);
+        editor.selections = selections;
     }
 
     public dispose(): void {
