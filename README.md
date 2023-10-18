@@ -245,6 +245,55 @@ write `:w` or `:noh`). <kbd>Up</kbd>/<kbd>Down</kbd> selects the option and <kbd
 
 ### Multiple cursors
 
+#### VSCode multi-cursor commands
+
+The following vscode commands are wrapped so that they can work properly:
+
+-   `editor.action.addSelectionToNextFindMatch`
+-   `editor.action.addSelectionToPreviousFindMatch`
+-   `editor.action.selectHighlights`
+-   `selectAllSearchEditorMatches`
+
+You can invoke action in nvim: `require('vscode-neovim').action('editor.action.addSelectionToNextFindMatch')` Or execute
+command in vscode: `neovim:editor.action.addSelectionToNextFindMatch`
+
+Example that use `Ctrl+d` to select next find match:
+
+1. Way 1: Invoke action in nvim
+
+`keybindings.json`
+
+```json
+{
+    "key": "ctrl+d",
+    "command": "vscode-neovim.send",
+    "when": "editorFocus && neovim.init",
+    "args": "<C-d>"
+}
+```
+
+lua config
+
+```lua
+vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
+  require("vscode-neovim").action("editor.action.addSelectionToNextFindMatch")
+end)
+```
+
+2. Way 2: Execute command in vscode
+
+`keybindings.json`
+
+```json
+{
+    "key": "ctrl+d",
+    "command": "neovim:editor.action.addSelectionToNextFindMatch",
+    "when": "editorFocus && neovim.init"
+}
+```
+
+#### Spawn multiple cursors
+
 Multiple cursors work in:
 
 1. Insert mode
