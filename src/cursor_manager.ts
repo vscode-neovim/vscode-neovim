@@ -18,7 +18,7 @@ import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { Mode } from "./mode_manager";
-import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise } from "./utils";
+import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise, wait } from "./utils";
 
 const logger = createLogger("CursorManager");
 
@@ -516,6 +516,7 @@ export class CursorManager implements Disposable {
             await run();
             const selections = editor.selections;
             await this.main.client.input("<Esc>"); // Correcting the position
+            await wait(100); // Compensate for debounce time
             await cursorReady();
             editor.selections = selections;
         } else {
