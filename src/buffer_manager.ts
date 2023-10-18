@@ -14,7 +14,7 @@ import {
     TextDocumentContentProvider,
     TextEditor,
     TextEditorLineNumbersStyle,
-    TextEditorOptionsChangeEvent,
+    TextEditorOptions,
     TextEditorRevealType,
     Uri,
     ViewColumn,
@@ -23,6 +23,7 @@ import {
     workspace,
 } from "vscode";
 
+import actions from "./actions";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
@@ -43,6 +44,19 @@ const logger = createLogger("BufferManager");
 const BUFFER_NAME_PREFIX = "__vscode_neovim__-";
 
 const BUFFER_SCHEME = "vscode-neovim";
+
+function makeEditorOptionsVariable(options: TextEditorOptions) {
+    const { tabSize, insertSpaces, lineNumbers } = options;
+    return {
+        tabSize,
+        insertSpaces,
+        lineNumbers: {
+            [TextEditorLineNumbersStyle.On]: "on",
+            [TextEditorLineNumbersStyle.Off]: "off",
+            [TextEditorLineNumbersStyle.Relative]: "relative",
+        }[lineNumbers as TextEditorLineNumbersStyle],
+    };
+}
 
 /**
  * Manages neovim buffers and windows and maps them to vscode editors & documents
@@ -76,13 +90,11 @@ export class BufferManager implements Disposable {
      */
     private grids: Map<number, { winId: number }> = new Map();
     /**
-     * Tab configuration for each editor
-     */
-    private editorTabConfiguration: WeakMap<TextEditor, { tabSize: number; insertSpaces: boolean }> = new WeakMap();
-    /**
      * Provider for external buffers' document contents (e.g. `:help`)
      */
     private bufferProvider: BufferProvider;
+
+    private editorOptionsChangedTimers: WeakMap<TextEditor, NodeJS.Timeout> = new WeakMap();
 
     /**
      * Buffer event delegate
@@ -107,13 +119,37 @@ export class BufferManager implements Disposable {
         this.disposables.push(
             window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors),
             window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor),
-            window.onDidChangeTextEditorOptions(this.onDidChangeEditorOptions),
+            window.onDidChangeTextEditorOptions((e) => this.onDidChangeEditorOptions(e.textEditor)),
             workspace.onDidCloseTextDocument(this.onDidCloseTextDocument),
             workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider),
             eventBus.on("redraw", this.handleRedraw, this),
             eventBus.on("open-file", this.handleOpenFile, this),
             eventBus.on("external-buffer", this.handleExternalBuffer, this),
             eventBus.on("window-changed", ([winId]) => this.handleWindowChangedDebounced(winId)),
+        );
+        actions.add(
+            "set_editor_options",
+            (
+                bufId: number,
+                options: {
+                    tabSize: number;
+                    insertSpaces: boolean;
+                    lineNumbers: "on" | "off" | "relative";
+                },
+            ) => {
+                const [doc] = [...this.textDocumentToBufferId.entries()].find(([_, id]) => id === bufId) || [];
+                if (!doc) return;
+                const editor = window.visibleTextEditors.find((e) => e.document == doc);
+                if (!editor) return;
+                const { tabSize, insertSpaces, lineNumbers: numbers } = options;
+                const lineNumbers =
+                    numbers === "off"
+                        ? TextEditorLineNumbersStyle.Off
+                        : numbers === "on"
+                        ? TextEditorLineNumbersStyle.On
+                        : TextEditorLineNumbersStyle.Relative;
+                editor.options = { tabSize, insertSpaces, lineNumbers };
+            },
         );
     }
 
@@ -263,13 +299,11 @@ export class BufferManager implements Disposable {
                     logger.debug(`Opening a doc: ${normalizedName}`);
                     doc = await workspace.openTextDocument(Uri.parse(normalizedName, true));
                 }
-                let forceTabOptions = false;
                 if (!this.textDocumentToBufferId.has(doc)) {
                     logger.debug(`No doc -> buffer mapping exists, assigning mapping and init buffer options`);
                     const buffers = await this.client.buffers;
                     const buf = buffers.find((b) => b.id === id);
                     if (buf) {
-                        forceTabOptions = true;
                         await this.initBufferForDocument(doc, buf);
                     }
                     this.textDocumentToBufferId.set(doc, id);
@@ -283,13 +317,8 @@ export class BufferManager implements Disposable {
                         preserveFocus: false,
                         preview: false,
                     });
-                    this.editorTabConfiguration.set(editor, {
-                        insertSpaces: editor.options.insertSpaces as boolean,
-                        tabSize: editor.options.tabSize as number,
-                    });
-                    if (forceTabOptions) {
-                        await this.resyncBufferTabOptions(editor, id);
-                    }
+                    // force resync
+                    this.onDidChangeEditorOptions(editor);
                 }
             } catch {
                 // todo: show error
@@ -556,26 +585,17 @@ export class BufferManager implements Disposable {
 
     private syncActiveEditorDebounced = debounce(this.syncActiveEditor, 100, { leading: false, trailing: true });
 
-    private onDidChangeEditorOptions = (e: TextEditorOptionsChangeEvent): void => {
-        logger.debug(`Received onDidChangeEditorOptions`);
-        const bufId = this.textDocumentToBufferId.get(e.textEditor.document);
-        if (!bufId) {
-            logger.warn(`No buffer for onDidChangeEditorOptions, skipping`);
-            return;
-        }
-        const prevOptions = this.editorTabConfiguration.get(e.textEditor);
-        if (
-            !prevOptions ||
-            prevOptions.insertSpaces !== e.options.insertSpaces ||
-            prevOptions.tabSize !== e.options.tabSize
-        ) {
-            logger.debug(`Updating tab options for bufferId: ${bufId}`);
-            this.editorTabConfiguration.set(e.textEditor, {
-                insertSpaces: e.options.insertSpaces as boolean,
-                tabSize: e.options.tabSize as number,
-            });
-            this.resyncBufferTabOptions(e.textEditor, bufId);
-        }
+    private onDidChangeEditorOptions = (editor: TextEditor): void => {
+        // Debounce, ensure sending the latest options.
+        let timer = this.editorOptionsChangedTimers.get(editor);
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            const bufId = this.textDocumentToBufferId.get(editor.document);
+            if (bufId) {
+                actions.fireNvimEvent("editor_options_changed", bufId, makeEditorOptionsVariable(editor.options));
+            }
+        }, 50);
+        this.editorOptionsChangedTimers.set(editor, timer);
     };
 
     private receivedBufferEvent = (
@@ -610,34 +630,22 @@ export class BufferManager implements Disposable {
         // !In vscode same document can have different insertSpaces/tabSize settings per editor
         // !however in neovim it's per buffer. We make assumption here that these settings are same for all editors
         // !It's possible to set expandtab/tabstop/shiftwidth when switching editors, but rare case
-        const {
-            options: { insertSpaces, tabSize },
-        } = editor || { options: { insertSpaces: true, tabSize: 4 } };
+        const { options: editorOptions } = editor || {
+            options: {
+                insertSpaces: true,
+                tabSize: 4,
+                lineNumbers: TextEditorLineNumbersStyle.On,
+            },
+        };
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
 
-        if (editor) {
-            this.editorTabConfiguration.set(editor, {
-                tabSize: tabSize as number,
-                insertSpaces: insertSpaces as boolean,
-            });
-        }
-
-        const tabOptions: [string, unknown[]][] = [
-            ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
-            ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
-            ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
-        ];
-        const number = !!(editor?.options.lineNumbers !== TextEditorLineNumbersStyle.Off);
-        const relativeNumber = !!(editor?.options.lineNumbers === TextEditorLineNumbersStyle.Relative);
         const requests: [string, unknown[]][] = [
             // fill the buffer
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
-            // used for synchronization of number options
-            ["nvim_buf_set_var", [bufId, "vscode_number", number]],
-            ["nvim_buf_set_var", [bufId, "vscode_relativenumber", relativeNumber]],
+            ["nvim_buf_set_var", [bufId, "vscode_editor_options", makeEditorOptionsVariable(editorOptions)]],
             // buffer name = document URI
             ["nvim_buf_set_name", [bufId, BUFFER_NAME_PREFIX + document.uri.toString()]],
             // Turn off modifications for external documents
@@ -646,36 +654,15 @@ export class BufferManager implements Disposable {
             ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
             // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
-            // nvim_buf_set_name will do filetype detection
-            // we must override tab options after vim initializes defaults
-            ...tabOptions,
         ];
         await callAtomic(this.client, requests, logger);
-        // Debugging through breakpoints reveals that in some cases the indentation options are overridden again.
-        // It is currently possible to work around this issue with a separate request
-        await callAtomic(this.client, tabOptions, logger);
         // Looks like need to be in separate request
         if (!this.isExternalTextDocument(document)) {
             await this.client.callFunction("VSCodeClearUndo", bufId);
         }
-        if (this.onBufferInit) {
-            this.onBufferInit(bufId, document);
-        }
-        // start listen for buffer changes
+        this.onBufferInit?.(bufId, document);
         buffer.listen("lines", this.receivedBufferEvent);
-    }
-
-    private async resyncBufferTabOptions(editor: TextEditor, bufId: number): Promise<void> {
-        const {
-            options: { insertSpaces, tabSize },
-        } = editor;
-
-        const requests: [string, unknown[]][] = [
-            ["nvim_buf_set_option", [bufId, "expandtab", insertSpaces]],
-            ["nvim_buf_set_option", [bufId, "tabstop", tabSize]],
-            ["nvim_buf_set_option", [bufId, "shiftwidth", tabSize]],
-        ];
-        await callAtomic(this.client, requests, logger);
+        actions.fireNvimEvent("document_buffer_init", bufId);
     }
 
     /**
@@ -781,7 +768,6 @@ export class BufferManager implements Disposable {
             preview: true,
             viewColumn: ViewColumn.Active,
         });
-        this.editorTabConfiguration.set(editor, { tabSize: tabStop, insertSpaces: expandTab });
         editor.options.insertSpaces = expandTab;
         editor.options.tabSize = tabStop;
 

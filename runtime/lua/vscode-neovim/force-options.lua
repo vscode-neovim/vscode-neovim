@@ -22,10 +22,6 @@ vim.opt.laststatus = 0
 vim.opt.ruler = false
 vim.opt.colorcolumn = nil
 
---- Disable modeline processing. It's being used for tab related settings usually and we don't want to override ours
-vim.opt.modeline = false
-vim.opt.modelines = 0
-
 -- --------------------- forced global and local critical options -------------------- --
 local function forceoptions(opt)
   opt.wrap = false
