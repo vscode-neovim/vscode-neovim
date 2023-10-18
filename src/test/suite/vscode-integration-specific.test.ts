@@ -531,4 +531,37 @@ describe("VSCode integration specific stuff", () => {
         await wait(200);
         await assertContent({ cursor: [2, 2] }, client);
     });
+
+    it("multi-cursor commands #1546", async () => {
+        const editor = await openTextDocument({
+            content: "hello world\na hello world\naa hello world\naaa hello world",
+        });
+        await wait(100);
+        await sendNeovimKeys(client, "viw", 100);
+        await vscode.commands.executeCommand("neovim:editor.action.addSelectionToNextFindMatch");
+        await wait(100);
+        await client.lua("require'vscode-neovim'.action('editor.action.addSelectionToNextFindMatch')");
+        await wait(100);
+        await sendVSCodeKeys("olleh", 100);
+        await assertContent(
+            {
+                content: "olleh world\na olleh world\naa olleh world\naaa hello world".split("\n"),
+            },
+            client,
+            editor,
+        );
+
+        await setCursor(0, 8, 100, editor);
+
+        await client.lua("require'vscode-neovim'.action('editor.action.selectHighlights')");
+        await wait(100);
+        await sendVSCodeKeys("dlrow", 100);
+        await assertContent(
+            {
+                content: "olleh dlrow\na olleh dlrow\naa olleh dlrow\naaa hello dlrow".split("\n"),
+            },
+            client,
+            editor,
+        );
+    });
 });
