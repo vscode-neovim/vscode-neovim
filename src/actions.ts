@@ -1,6 +1,6 @@
 import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
-import { ConfigurationTarget, Disposable, commands, window, workspace } from "vscode";
+import { ConfigurationTarget, Disposable, Range, Selection, commands, window, workspace } from "vscode";
 
 function getActionName(action: string) {
     return `neovim:${action}`;
@@ -108,6 +108,15 @@ class ActionManager implements Disposable {
                     break;
                 }
             }
+        });
+        this.add("start-multiple-cursors", (ranges: Range[]) => {
+            if (!window.activeTextEditor || ranges.length === 0) return;
+            const doc = window.activeTextEditor.document;
+            window.activeTextEditor.selections = ranges.map((range) => {
+                const { start, end } = range;
+                range = doc.validateRange(new Range(start.line, start.character, end.line, end.character));
+                return new Selection(range.start, range.end);
+            });
         });
     }
 

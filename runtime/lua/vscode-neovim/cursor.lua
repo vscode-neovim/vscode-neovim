@@ -1,64 +1,82 @@
+local api = vim.api
+
+local vscode = require("vscode-neovim.api")
 local util = require("vscode-neovim.util")
 
 -- this module is responsible for creating multiple cursors, triggering a visual update, and displaying the fake visual cursor
 local M = {}
 
 -- ------------------------------ multi cursor ------------------------------ --
-M.should_notify_multi_cursor = nil
-M.multi_cursor_visual_mode = nil
-M.multi_cursor_append = nil
-M.multi_cursor_skip_empty = nil
+local multi_cursor_task
 
-function M.prepare_multi_cursor(append, skip_empty)
-  local m = vim.fn.mode()
-  if m == "V" or m == "\x16" then
-    M.should_notify_multi_cursor = true
-    M.multi_cursor_visual_mode = m
-    M.multi_cursor_append = append
-    M.multi_cursor_skip_empty = skip_empty
-    -- We need to start insert, then spawn cursors otherwise they'll be destroyed
-    -- using feedkeys() here because :startinsert is being delayed
-    vim.cmd([[ call feedkeys("\<Esc>i", 'n') ]])
-  end
-end
-
-function M.notify_multi_cursor()
-  if not M.should_notify_multi_cursor then
+local function start_multi_cursor(right, skip_empty)
+  multi_cursor_task = nil
+  local mode = api.nvim_get_mode().mode
+  local is_line = mode == "V"
+  local is_block = mode == "\x16"
+  if not is_line and not is_block then
     return
   end
-  M.should_notify_multi_cursor = nil
-  local startPos = vim.fn.getcharpos("'<")
-  local endPos = vim.fn.getcharpos("'>")
-  vim.fn.VSCodeExtensionNotify(
-    "visual-edit",
-    M.multi_cursor_append,
-    M.multi_cursor_visual_mode,
-    startPos[2],
-    endPos[2],
-    startPos[3],
-    endPos[3],
-    M.multi_cursor_skip_empty
-  )
+
+  api.nvim_feedkeys(api.nvim_replace_termcodes("<ESC>" .. (right and "a" or "i"), true, true, true), "n", true)
+
+  multi_cursor_task = function()
+    multi_cursor_task = nil
+    local ranges = {} ---@type lsp.Range[]
+    local start_pos = api.nvim_buf_get_mark(0, "<") ---@type number[]
+    local end_pos = api.nvim_buf_get_mark(0, ">") ---@type number[]
+    for row = start_pos[1], end_pos[1] do
+      local line = vim.fn.getline(row)
+      local width = api.nvim_strwidth(line)
+      if width == 0 and (skip_empty or is_block) then
+      else
+        local max_col = math.max(0, width - 1)
+        -- (row, col) is (1, 0)-indexed
+        local s_col, e_col
+        if is_line then
+          s_col = api.nvim_strwidth(line:match("^%s*") or "")
+          e_col = max_col
+        else
+          e_col = math.min(max_col, end_pos[2])
+          s_col = math.min(e_col, start_pos[2])
+        end
+        local range = vim.lsp.util.make_given_range_params({ row, s_col }, { row, e_col }, 0, "utf-16").range
+        if right then
+          range = { start = range["end"], ["end"] = range["end"] }
+        else
+          range = { start = range.start, ["end"] = range.start }
+        end
+        table.insert(ranges, range)
+      end
+    end
+    if #ranges > 0 then
+      vscode.action("start-multiple-cursors", { args = { ranges } })
+    end
+  end
 end
 
 function M.setup_multi_cursor(group)
   vim.api.nvim_create_autocmd({ "InsertEnter" }, {
     group = group,
-    callback = M.notify_multi_cursor,
+    callback = function()
+      if multi_cursor_task then
+        vim.schedule(multi_cursor_task)
+      end
+    end,
   })
 
   -- Multiple cursors support for visual line/block modes
   vim.keymap.set("x", "ma", function()
-    M.prepare_multi_cursor(true, true)
+    start_multi_cursor(true, true)
   end)
   vim.keymap.set("x", "mi", function()
-    M.prepare_multi_cursor(false, true)
+    start_multi_cursor(false, true)
   end)
   vim.keymap.set("x", "mA", function()
-    M.prepare_multi_cursor(true, false)
+    start_multi_cursor(true, false)
   end)
   vim.keymap.set("x", "mI", function()
-    M.prepare_multi_cursor(false, false)
+    start_multi_cursor(false, false)
   end)
 end
 

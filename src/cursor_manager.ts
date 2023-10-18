@@ -85,7 +85,6 @@ export class CursorManager implements Disposable {
                 if (gridId) this.gridCursorUpdates.add(gridId);
             }),
             eventBus.on("range-command", this.handleRangeCommand, this),
-            eventBus.on("visual-edit", this.handleMultipleCursors, this),
         );
     }
 
@@ -494,38 +493,6 @@ export class CursorManager implements Disposable {
                 )} error: ${(e as Error).message}`,
             );
         }
-    }
-
-    private async handleMultipleCursors(data: EventBusData<"visual-edit">): Promise<void> {
-        // eslint-disable-next-line prefer-const
-        let [append, visualMode, startLine, endLine, startCol, endCol, skipEmpty] = data;
-        const mode = new Mode(visualMode);
-        startLine--;
-        endLine--;
-
-        if (!window.activeTextEditor) return;
-        await this.waitForCursorUpdate(window.activeTextEditor);
-        this.wantInsertCursorUpdate = false;
-
-        logger.debug(
-            `Spawning multiple cursors from lines: [${startLine}, ${endLine}], col: [${startCol}, ${endCol}], mode: ${mode.visual}, append: ${append}, skipEmpty: ${skipEmpty}`,
-        );
-        const selections: Selection[] = [];
-        const doc = window.activeTextEditor.document;
-        for (let line = startLine; line <= endLine; line++) {
-            const lineDef = doc.lineAt(line);
-            // always skip empty lines for visual block mode
-            if (lineDef.text.trim() === "" && (skipEmpty || mode.visual === "block")) continue;
-            let char = 0;
-            if (mode.visual === "line") {
-                char = append ? lineDef.range.end.character : lineDef.firstNonWhitespaceCharacterIndex;
-            } else {
-                char = append ? Math.max(startCol, endCol) : Math.min(startCol, endCol) - 1;
-            }
-            logger.debug(`Multiple cursor at: [${line}, ${char}]`);
-            selections.push(new Selection(line, char, line, char));
-        }
-        window.activeTextEditor.selections = selections;
     }
 
     public dispose(): void {

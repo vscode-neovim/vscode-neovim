@@ -131,7 +131,6 @@ type EventsMapping = {
     ];
     ["visual-changed"]: [number];
     ["range-command"]: any;
-    ["visual-edit"]: [boolean, string, number, number, number, number, boolean];
     ["change-number"]: [number, "off" | "on" | "relative"];
 };
 
