@@ -14,7 +14,6 @@ import { CommandLineManager } from "./command_line_manager";
 import { CommandsController } from "./commands_controller";
 import { config } from "./config";
 import { CursorManager } from "./cursor_manager";
-import { CustomCommandsManager } from "./custom_commands_manager";
 import { DocumentChangeManager } from "./document_change_manager";
 import { eventBus } from "./eventBus";
 import { HighlightManager } from "./highlight_manager";
@@ -60,7 +59,6 @@ export class MainController implements vscode.Disposable {
     public commandLineManager!: CommandLineManager;
     public statusLineManager!: StatusLineManager;
     public highlightManager!: HighlightManager;
-    public customCommandsManager!: CustomCommandsManager;
     public multilineMessagesManager!: MultilineMessagesManager;
     public viewportManager!: ViewportManager;
 
@@ -170,7 +168,6 @@ export class MainController implements vscode.Disposable {
             (this.commandLineManager = new CommandLineManager(this)),
             (this.statusLineManager = new StatusLineManager(this)),
             (this.multilineMessagesManager = new MultilineMessagesManager()),
-            (this.customCommandsManager = new CustomCommandsManager(this)),
         );
 
         logger.debug(`UIAttach`);
