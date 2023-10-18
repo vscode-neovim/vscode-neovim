@@ -12,13 +12,13 @@ import {
     window,
 } from "vscode";
 
+import actions from "./actions";
 import { config } from "./config";
 import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { Mode } from "./mode_manager";
-import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise, wait } from "./utils";
-import actions from "./actions";
+import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise } from "./utils";
 
 const logger = createLogger("CursorManager");
 
@@ -504,29 +504,28 @@ export class CursorManager implements Disposable {
     private async addSelectionToFindMatch(type: "prev" | "next") {
         const editor = window.activeTextEditor;
         if (!editor) return;
-        await this.main.cursorManager.waitForCursorUpdate(editor);
+        const cursorReady = () => this.main.cursorManager.waitForCursorUpdate(editor);
         const run = () =>
             commands.executeCommand(`editor.action.addSelectionTo${type == "prev" ? "Previous" : "Next"}FindMatch`);
 
-        if (this.main.modeManager.isInsertMode) {
-            await run();
-            return;
-        }
+        await cursorReady();
+
+        if (this.main.modeManager.isInsertMode) return run();
 
         if (editor.selection.isEmpty) {
             await run();
             const selections = editor.selections;
-            this.main.client.input("<Esc>"); // Correcting the position
-            await wait(50);
+            await this.main.client.input("<Esc>"); // Correcting the position
+            await cursorReady();
             editor.selections = selections;
         } else {
             const selections = editor.selections;
-            this.main.client.input("<Esc>");
-            await wait(50);
-            this.main.client.input("a");
-            await wait(100);
+            await this.main.client.input("<Esc>");
+            await cursorReady();
+            await this.main.client.input("a");
+            await cursorReady();
             editor.selections = selections;
-            await wait(50);
+            await cursorReady();
             await run();
         }
     }
@@ -534,22 +533,21 @@ export class CursorManager implements Disposable {
     private async selectAllOccurrences(type: "all" | "search") {
         const editor = window.activeTextEditor;
         if (!editor) return;
-        await this.main.cursorManager.waitForCursorUpdate(editor);
+        const cursorReady = () => this.main.cursorManager.waitForCursorUpdate(editor);
 
+        await cursorReady();
         await commands.executeCommand(
             type === "all" ? "editor.action.selectHighlights" : "selectAllSearchEditorMatches",
         );
 
-        if (this.main.modeManager.isInsertMode) {
-            return;
-        }
+        if (this.main.modeManager.isInsertMode) return;
 
-        await wait(50);
+        await cursorReady();
         const selections = editor.selections;
-        this.main.client.input("<Esc>");
-        await wait(50);
-        this.main.client.input("a");
-        await wait(100);
+        await this.main.client.input("<Esc>");
+        await cursorReady();
+        await this.main.client.input("a");
+        await cursorReady();
         editor.selections = selections;
     }
 
