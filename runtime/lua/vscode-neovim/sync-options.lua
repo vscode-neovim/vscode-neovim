@@ -73,7 +73,7 @@ end
 local function _check_options()
   ---@type EditorOptions?
   local opts = vim.b.vscode_editor_options
-  if not opts then -- should not happend
+  if not opts then -- should not happen
     return
   end
   if not vim.b.vscode_editor_options_first_checked then -- load the defaults
@@ -130,10 +130,11 @@ function M.setup()
     local has, opts = pcall(api.nvim_buf_get_var, buf, "vscode_editor_options")
     if has then
       set_options(buf, opts)
+      vim.defer_fn(process_modeline, 100)
     end
   end)
 
-  local group = api.nvim_create_augroup("VSCodeModeLineOperations", { clear = true })
+  local group = api.nvim_create_augroup("VSCodeSyncEditorOptions", { clear = true })
   -- options
   api.nvim_create_autocmd({ "OptionSet" }, {
     group = group,
