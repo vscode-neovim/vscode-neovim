@@ -379,6 +379,7 @@ export class CursorManager implements Disposable {
         } else {
             anchor = new Position(anchor.line, Math.max(anchor.character - 1, 0));
         }
+        if (this.main.modeManager.isInsertMode) return;
         logger.debug(
             `Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
