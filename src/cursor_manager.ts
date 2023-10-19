@@ -260,7 +260,17 @@ export class CursorManager implements Disposable {
             this.updateCursorStyle("visual");
         }
 
-        if (!this.applySelectionChangedPromise.has(textEditor))
+        // Why don't wait when selection is empty?
+        // 1. Waiting during cursor movement leads to significant lag,
+        //    especially when using the "cursorMove" command in nvim.
+        // 2. In most cases, issues may arise only when there are changes in the selected region
+        //    and there is a need to synchronize the visual selection in nvim.
+        //    For example, if entering insert mode coincides with the synchronization of the visual region
+        //    and causes confusion due to simulated input.
+        // In theory, waiting is necessary but it can result in other problems.
+        // However, before adding the waiting mechanism, most things work fine without it.
+        // Therefore, no waiting is performed when the selection is empty.
+        if (!textEditor.selection.isEmpty && !this.applySelectionChangedPromise.has(textEditor))
             this.applySelectionChangedPromise.set(textEditor, new ManualPromise());
         this.getDebouncedApplySelectionChanged(kind)(textEditor, kind);
     };
