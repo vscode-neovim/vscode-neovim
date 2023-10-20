@@ -265,6 +265,9 @@ See gif in action:
 
 ![multicursors](/images/multicursor.gif)
 
+The built-in multi-cursor support may not meet your needs. Please refer to the plugin
+[vscode-multi-cursor.nvim](https://github.com/vscode-neovim/vscode-multi-cursor.nvim) for more multi-cursor features
+
 ## ⚡️ API
 
 ### VimScript
