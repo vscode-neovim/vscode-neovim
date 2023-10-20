@@ -117,31 +117,31 @@ end
 
 -- --------------------------- fake visual cursor --------------------------- --
 -- in visual mode, decorate a fake cursor so that vscode can use the primary cursor for selection
-M.fake_ns = vim.api.nvim_create_namespace("vscode-fake-visual-cursor")
-M.fake_cursor = nil
-
-function M.highlight_fake_cursor()
-  if M.fake_cursor then
-    vim.api.nvim_buf_del_extmark(0, M.fake_ns, M.fake_cursor)
+local fake_cursor_ns = api.nvim_create_namespace("vscode-fake-visual-cursor")
+local fake_cursor = nil
+local function highlight_fake_cursor()
+  if fake_cursor then
+    fake_cursor = nil
+    for _, buf in ipairs(api.nvim_list_bufs()) do
+      api.nvim_buf_clear_namespace(buf, fake_cursor_ns, 0, -1)
+    end
   end
   if util.is_visual_mode() then
     local line = vim.fn.line(".")
     local col = vim.fn.col(".")
     local ch = util.get_char_at(line, col) or " "
-    M.fake_cursor = vim.api.nvim_buf_set_extmark(
-      0,
-      M.fake_ns,
-      line - 1,
-      col - 1,
-      { virt_text = { { ch, "Cursor" } }, virt_text_pos = "overlay", hl_mode = "replace", priority = 65534 }
-    )
+    fake_cursor = api.nvim_buf_set_extmark(0, fake_cursor_ns, line - 1, col - 1, {
+      virt_text = { { ch, "Cursor" } },
+      virt_text_pos = "overlay",
+      priority = 65534,
+    })
   end
 end
 
 function M.setup_fake_cursor(group)
-  vim.api.nvim_create_autocmd({ "ModeChanged", "CursorMoved" }, {
+  api.nvim_create_autocmd({ "ModeChanged", "CursorMoved" }, {
     group = group,
-    callback = M.highlight_fake_cursor,
+    callback = highlight_fake_cursor,
   })
 end
 
