@@ -294,7 +294,7 @@ export class MainController implements vscode.Disposable {
 
     private onNeovimRequest = async (
         method: string,
-        requestArgs: [string, ...unknown[]],
+        requestArgs: [string, ...any[]],
         response: RequestResponse,
     ): Promise<void> => {
         switch (method) {
@@ -317,7 +317,8 @@ export class MainController implements vscode.Disposable {
                 try {
                     const editor = vscode.window.activeTextEditor;
                     if (editor) await this.cursorManager.waitForCursorUpdate(editor);
-                    const res = await actions.run(...requestArgs);
+                    const [action, args] = requestArgs;
+                    const res = await actions.run(action, ...args);
                     response.send(res);
                 } catch (err) {
                     const errMsg = err instanceof Error ? err.message : err;

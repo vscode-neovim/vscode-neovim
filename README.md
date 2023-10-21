@@ -41,6 +41,7 @@ mode and editor commands, making the best use of both editors.
     -   [Insert mode special keys](#insert-mode-special-keys)
     -   [Normal mode control keys](#normal-mode-control-keys)
     -   [Cmdline special keys](#cmdline-special-keys)
+-   [🎨 Highlights](#-highlights)
 -   [🔧 Build](#-build)
 -   [📑 How it works](#-how-it-works)
 -   [❤️ Credits \& External Resources](#️-credits--external-resources)
@@ -264,6 +265,9 @@ To spawn multiple cursors from visual line/block modes type <kbd>ma</kbd>/<kbd>m
 See gif in action:
 
 ![multicursors](/images/multicursor.gif)
+
+The built-in multi-cursor support may not meet your needs. Please refer to the plugin
+[vscode-multi-cursor.nvim](https://github.com/vscode-neovim/vscode-multi-cursor.nvim) for more multi-cursor features
 
 ## ⚡️ API
 
@@ -713,6 +717,22 @@ Refer to VIM's manual for their use.
 -   <kbd>C-g</kbd>
 -   <kbd>C-t</kbd>
 -   <kbd>Tab</kbd>
+
+## 🎨 Highlights
+
+There are two ways to customize colors:
+
+1. Set colors in nvim
+
+Note: Due to the support for the `syntax` option requiring processing of syntax highlights, all built-in highlight
+groups may be overridden or cleared. Therefore, please do not link any highlights to the built-in highlight groups.
+
+2. Set colors in vscode
+
+    References:
+
+    - [vscode-neovim.highlightGroups.highlights](https://github.com/vscode-neovim/vscode-neovim/blob/2657c4506b3dffe0d069db2891e30cebd963c2be/package.json#L160C1-L202C19)
+    - [ThemeColor](https://code.visualstudio.com/api/references/theme-color)
 
 ## 🔧 Build
 
