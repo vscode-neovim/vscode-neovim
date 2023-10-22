@@ -977,133 +977,9 @@
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+a",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-a>"
-            },
-            {
-                "command": "cursorHome",
-                "key": "ctrl+b",
-                "when": "neovim.mode == cmdline"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+c",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-c>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+d",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-d>"
-            },
-            {
-                "command": "cursorEnd",
-                "key": "ctrl+e",
-                "when": "neovim.mode == cmdline"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+f",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-f>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+g",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-g>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+h",
                 "when": "neovim.mode == cmdline",
                 "args": "<C-h>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+i",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-i>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+j",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-j>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+k",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-k>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+l",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-l>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+m",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-m>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+n",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-n>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+o",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-o>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+p",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-p>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+q",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-q>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-r>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+s",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-s>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+t",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-t>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+u",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-u>"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+v",
-                "when": "neovim.mode == cmdline",
-                "args": "<C-v>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
@@ -1113,33 +989,39 @@
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+x",
+                "key": "ctrl+u",
                 "when": "neovim.mode == cmdline",
-                "args": "<C-x>"
+                "args": "<C-u>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+y",
+                "key": "ctrl+n",
                 "when": "neovim.mode == cmdline",
-                "args": "<C-y>"
+                "args": "<Down>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+z",
+                "key": "ctrl+p",
                 "when": "neovim.mode == cmdline",
-                "args": "<C-z>"
+                "args": "<Up>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+/",
+                "key": "ctrl+l",
                 "when": "neovim.mode == cmdline",
-                "args": "<C-/>"
+                "args": "<C-l>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+]",
+                "key": "ctrl+g",
                 "when": "neovim.mode == cmdline",
-                "args": "<C-]>"
+                "args": "<C-g>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "ctrl+t",
+                "when": "neovim.mode == cmdline",
+                "args": "<C-t>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",

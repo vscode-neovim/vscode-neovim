@@ -5,21 +5,31 @@ const [_add, keybinds] = addKeybinds();
 const add = (key, args, cmd = "vscode-neovim.send-cmdline") => _add(key, "neovim.mode == cmdline", args, cmd);
 
 // ctrl keys
-[..."abcdefghijklmnopqrstuvwxyz/]", "up", "down"].forEach((k) => {
+[..."hwunplgt", "up", "down"].forEach((k) => {
     let key = `ctrl+${k}`;
     let args = key2arg(key);
     let cmd = "vscode-neovim.send-cmdline";
 
-    if (k === "b") {
-        args = null;
-        cmd = "cursorHome";
-    } else if (k === "e") {
-        args = null;
-        cmd = "cursorEnd";
+    switch (k) {
+        case "b": {
+            args = null;
+            cmd = "cursorHome";
+            break;
+        }
+        case "e": {
+            args = null;
+            cmd = "cursorEnd";
+            break;
+        }
+        case "n": {
+            args = "<Down>";
+            break;
+        }
+        case "p": {
+            args = "<Up>";
+            break;
+        }
     }
-
-    // n =>  <Down>
-    // p => <Up>
 
     add(key, args, cmd);
 });
