@@ -3,6 +3,7 @@ import { Disposable, QuickPick, QuickPickItem, commands, window } from "vscode";
 
 import { GlyphChars } from "./constants";
 import { createLogger } from "./logger";
+import { VSCodeContext } from "./utils";
 
 const logger = createLogger("CmdLine");
 
@@ -102,7 +103,7 @@ export class CommandLineController implements Disposable {
             const wildMenuVisible = this.input.value.length > 0 && this.completionItems.length > 0;
             if (this.wildMenuVisible !== wildMenuVisible) {
                 this.wildMenuVisible = wildMenuVisible;
-                commands.executeCommand("setContext", "neovim.wildMenuVisible", this.wildMenuVisible);
+                VSCodeContext.set("neovim.wildMenuVisible", this.wildMenuVisible);
             }
         }
     }

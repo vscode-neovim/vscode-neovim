@@ -22,7 +22,7 @@ import { ModeManager } from "./mode_manager";
 import { MultilineMessagesManager } from "./multiline_messages_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
-import { findLastEvent } from "./utils";
+import { findLastEvent, VSCodeContext } from "./utils";
 import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
@@ -187,7 +187,7 @@ export class MainController implements vscode.Disposable {
 
         await this.bufferManager.forceResync();
 
-        await vscode.commands.executeCommand("setContext", "neovim.init", true);
+        await VSCodeContext.set("neovim.init", true);
         logger.debug(`Init completed`);
     }
 
