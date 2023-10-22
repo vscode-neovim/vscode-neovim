@@ -13,7 +13,7 @@ const [add, keybinds] = addKeybinds();
         "neovim.init",
         "neovim.mode == insert",
         `neovim.ctrlKeysInsert.${k}`,
-        "editorLangId not in neovim.editorIdBlacklist",
+        "editorLangId not in neovim.editorLangIdExclusions",
     );
 
     if (k === "o") {

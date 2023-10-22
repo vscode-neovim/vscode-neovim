@@ -3,7 +3,7 @@ const { key2arg, and, addKeybinds, or } = require("./util.cjs");
 const [add, keybinds] = addKeybinds();
 
 const when = or(
-    and("editorTextFocus", "neovim.init", "neovim.mode != insert", "editorLangId not in neovim.editorIdBlacklist"),
+    and("editorTextFocus", "neovim.init", "neovim.mode != insert", "editorLangId not in neovim.editorLangIdExclusions"),
     "neovim.recording",
 );
 [
@@ -37,7 +37,7 @@ ctrlKeys.forEach((k) => {
         "neovim.init",
         "neovim.mode != insert",
         `neovim.ctrlKeysNormal.${k}`,
-        "editorLangId not in neovim.editorIdBlacklist",
+        "editorLangId not in neovim.editorLangIdExclusions",
     );
 
     // scrolling

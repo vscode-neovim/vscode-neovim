@@ -480,499 +480,499 @@
             {
                 "command": "vscode-neovim.send",
                 "key": "backspace",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<BS>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+backspace",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<S-BS>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "delete",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<Del>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+delete",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<S-Del>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "tab",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<tab>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+tab",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<S-tab>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "down",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<down>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "up",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<up>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "left",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<left>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "right",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<right>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+down",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<S-down>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+up",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<S-up>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+left",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<S-left>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+right",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<S-right>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "home",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<home>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "end",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorIdBlacklist || neovim.recording",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
                 "args": "<end>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+a",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.a && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.a && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-a>"
             },
             {
                 "command": "vscode-neovim.ctrl-b",
                 "key": "ctrl+b",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.b && editorLangId not in neovim.editorIdBlacklist"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.b && editorLangId not in neovim.editorLangIdExclusions"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.c && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.c && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-c>"
             },
             {
                 "command": "vscode-neovim.ctrl-d",
                 "key": "ctrl+d",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.d && editorLangId not in neovim.editorIdBlacklist"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.d && editorLangId not in neovim.editorLangIdExclusions"
             },
             {
                 "command": "vscode-neovim.ctrl-e",
                 "key": "ctrl+e",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.e && editorLangId not in neovim.editorIdBlacklist"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.e && editorLangId not in neovim.editorLangIdExclusions"
             },
             {
                 "command": "vscode-neovim.ctrl-f",
                 "key": "ctrl+f",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.f && editorLangId not in neovim.editorIdBlacklist"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.f && editorLangId not in neovim.editorLangIdExclusions"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+g",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.g && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.g && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-g>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+h",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.h && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.h && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-h>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+i",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.i && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.i && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-i>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+j",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.j && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.j && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-j>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+k",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.k && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.k && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-k>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+l",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.l && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.l && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-l>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+m",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.m && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.m && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-m>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+n",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.n && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.n && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-n>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+o",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.o && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.o && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-o>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+p",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.p && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.p && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-p>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+q",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.q && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.q && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-q>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+r",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.r && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.r && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-r>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+s",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.s && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.s && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-s>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+t",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.t && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.t && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-t>"
             },
             {
                 "command": "vscode-neovim.ctrl-u",
                 "key": "ctrl+u",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.u && editorLangId not in neovim.editorIdBlacklist"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.u && editorLangId not in neovim.editorLangIdExclusions"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+v",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.v && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.v && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-v>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+w",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.w && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.w && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-w>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+x",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.x && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.x && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-x>"
             },
             {
                 "command": "vscode-neovim.ctrl-y",
                 "key": "ctrl+y",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.y && editorLangId not in neovim.editorIdBlacklist"
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.y && editorLangId not in neovim.editorLangIdExclusions"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+z",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.z && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.z && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-z>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+/",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal./ && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal./ && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-/>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+]",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.] && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.] && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-]>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+right",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.right && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.right && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-right>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+left",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.left && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.left && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-left>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+up",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.up && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.up && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-up>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+down",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.down && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.down && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-down>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+backspace",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.backspace && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.backspace && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-BS>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+delete",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.delete && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.delete && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-Del>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+a",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.a && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.a && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-a>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+b",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.b && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.b && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-b>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.c && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.c && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-c>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+d",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.d && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.d && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-d>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+e",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.e && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.e && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-e>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+f",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.f && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.f && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-f>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+g",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.g && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.g && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-g>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+h",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.h && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.h && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-h>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+i",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.i && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.i && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-i>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+j",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.j && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.j && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-j>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+k",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.k && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.k && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-k>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+l",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.l && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.l && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-l>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+m",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.m && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.m && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-m>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+n",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.n && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.n && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-n>"
             },
             {
                 "command": "vscode-neovim.escape",
                 "key": "ctrl+o",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.o && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.o && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-o>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+p",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.p && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.p && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-p>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+q",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.q && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.q && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-q>"
             },
             {
                 "command": "vscode-neovim.send-blocking",
                 "key": "ctrl+r",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.r && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.r && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-r>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+s",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.s && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.s && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-s>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+t",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.t && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.t && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-t>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+u",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.u && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.u && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-u>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+v",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.v && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.v && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-v>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+w",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.w && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.w && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-w>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+x",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.x && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.x && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-x>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+y",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.y && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.y && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-y>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+z",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.z && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.z && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-z>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+/",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert./ && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert./ && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-/>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+]",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.] && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.] && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-]>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+right",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.right && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.right && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-right>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+left",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.left && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.left && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-left>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+up",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.up && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.up && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-up>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+down",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.down && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.down && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-down>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+backspace",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.backspace && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.backspace && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-BS>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "ctrl+delete",
-                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.delete && editorLangId not in neovim.editorIdBlacklist",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.delete && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-Del>"
             },
             {
