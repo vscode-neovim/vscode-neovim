@@ -658,11 +658,11 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 
 ### Insert mode special keys
 
-Enabled by `useCtrlKeysForInsertMode` (default true).
+Enabled by `ctrlKeysForInsertMode` (default `["a", "d", "h", "j", "o", "r", "t", "u", "w"]`).
 
 Refer to VIM's manual for their use.
 
--   <kbd>C-c</kbd>
+-   <kbd>C-c</kbd> (bind to command `vscode-neovim.escape`)
 -   <kbd>C-o</kbd>
 -   <kbd>C-u</kbd>
 -   <kbd>C-w</kbd>
@@ -675,19 +675,21 @@ Refer to VIM's manual for their use.
 
 ### Normal mode control keys
 
-Enabled by `useCtrlKeysForNormalMode` (default true).
+Enabled by `ctrlKeysForNormalMode` (default
+`["a", "b", "d", "e", "f", "h", "i", "j", "k", "l", "o", "r", "t", "u", "v", "w", "x", "y", "z", "/", "]"]`).
 
 Refer to VIM's manual for their use.
 
 -   <kbd>C-a</kbd>
 -   <kbd>C-b</kbd>
--   <kbd>C-c</kbd>
+-   <kbd>C-c</kbd> (bind to command `vscode-neovim.escape`)
 -   <kbd>C-d</kbd>
 -   <kbd>C-e</kbd>
 -   <kbd>C-f</kbd>
 -   <kbd>C-i</kbd>
 -   <kbd>C-o</kbd>
 -   <kbd>C-r</kbd>
+-   <kbd>C-t</kbd>
 -   <kbd>C-u</kbd>
 -   <kbd>C-v</kbd>
 -   <kbd>C-w</kbd>
