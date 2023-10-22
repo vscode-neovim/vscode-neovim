@@ -160,7 +160,7 @@
                 "vscode-neovim.highlightGroups.highlights": {
                     "type": "object",
                     "title": "Highlight Groups Configuration",
-                    "description": "Define colors for various VIM highlight groups. Values may be 'vim' to use colors from vim or text decoration properties object",
+                    "description": "Define colors for various VIM highlight groups. Values are text decoration properties object",
                     "additionalProperties": {
                         "type": "object",
                         "properties": {
@@ -188,6 +188,10 @@
                     },
                     "default": {
                         "IncSearch": {
+                            "backgroundColor": "theme.editor.findMatchBackground",
+                            "borderColor": "theme.editor.findMatchBorder"
+                        },
+                        "CurSearch": {
                             "backgroundColor": "theme.editor.findMatchBackground",
                             "borderColor": "theme.editor.findMatchBorder"
                         },
