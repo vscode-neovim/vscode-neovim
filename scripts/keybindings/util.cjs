@@ -26,7 +26,7 @@ function and(...clauses) {
 }
 
 function or(...clauses) {
-    return clauses.join(" || ");
+    return `(${clauses.join(" || ")})`;
 }
 
 function addKeybinds() {
