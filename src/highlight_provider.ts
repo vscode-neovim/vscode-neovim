@@ -161,6 +161,9 @@ export class HighlightProvider {
     }
 
     private createDecoratorForHighlightId(id: number, options: ThemableDecorationRenderOptions): void {
+        if (options.borderColor != null && options.border == null) {
+            options.border = "1px solid";
+        }
         const decorator = window.createTextEditorDecorationType({
             ...options,
             rangeBehavior: DecorationRangeBehavior.ClosedClosed,
