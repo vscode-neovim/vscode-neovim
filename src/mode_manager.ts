@@ -1,7 +1,8 @@
 import { commands, Disposable, EventEmitter } from "vscode";
 
-import { createLogger } from "./logger";
 import { eventBus, EventBusData } from "./eventBus";
+import { createLogger } from "./logger";
+import { VSCodeContext } from "./utils";
 
 const logger = createLogger("ModeManager");
 
@@ -63,7 +64,7 @@ export class ModeManager implements Disposable {
                 () => {
                     logger.debug(`setting recording flag`);
                     this.isRecording = true;
-                    commands.executeCommand("setContext", "neovim.recording", true);
+                    VSCodeContext.set("neovim.recording", true);
                 },
                 this,
             ),
@@ -99,9 +100,9 @@ export class ModeManager implements Disposable {
         this.mode = new Mode(mode);
         if (!this.isInsertMode && this.isRecording) {
             this.isRecording = false;
-            commands.executeCommand("setContext", "neovim.recording", false);
+            VSCodeContext.set("neovim.recording", false);
         }
-        commands.executeCommand("setContext", "neovim.mode", this.mode.name);
+        VSCodeContext.set("neovim.mode", this.mode.name);
         logger.debug(`Setting mode context to ${this.mode.name}`);
         this.eventEmitter.fire(null);
     }
