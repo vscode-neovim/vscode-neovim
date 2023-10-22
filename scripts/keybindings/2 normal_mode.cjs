@@ -1,11 +1,10 @@
-const { key2arg, and, addKeybinds, or } = require("./util.cjs");
+const { key2arg, and, addKeybinds } = require("./util.cjs");
 
 const [add, keybinds] = addKeybinds();
 
-const when = or(
-    and("editorTextFocus", "neovim.init", "neovim.mode != insert", "editorLangId not in neovim.editorLangIdExclusions"),
-    "neovim.recording",
-);
+const when =
+    "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording";
+
 [
     "backspace",
     "shift+backspace",
