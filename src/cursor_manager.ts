@@ -43,6 +43,11 @@ export class CursorManager implements Disposable {
      */
     private cursorUpdatePromise: Map<TextEditor, ManualPromise> = new Map();
     /**
+     * Pending apply selection changed promise.
+     * This promise is used by typing_manager to know when to unbind type handler.
+     */
+    private applySelectionChangedPromise: Map<TextEditor, ManualPromise> = new Map();
+    /**
      * In insert mode, cursor updates can be sent due to document changes. We should ignore them to
      * avoid interfering with vscode typing. However, they are important for various actions, such as
      * cursor updates while entering insert mode and insert mode commands. Thus, when those events occur,
@@ -121,11 +126,11 @@ export class CursorManager implements Disposable {
         this.processCursorMoved();
     }
 
-    public async waitForCursorUpdate(editor: TextEditor): Promise<void> {
-        const promise = this.cursorUpdatePromise.get(editor);
-        if (promise) {
-            return promise.promise;
-        }
+    public async waitForCursorUpdate(editor: TextEditor): Promise<unknown> {
+        return Promise.all([
+            Promise.resolve(this.cursorUpdatePromise.get(editor)?.promise),
+            Promise.resolve(this.applySelectionChangedPromise.get(editor)?.promise),
+        ]);
     }
 
     private updateCursorStyle(modeName: string = this.main.modeManager.currentMode.name): void {
@@ -249,6 +254,15 @@ export class CursorManager implements Disposable {
             this.updateCursorStyle("visual");
         }
 
+        // Why no wait when selection is empty?
+        // 1. Waiting during cursor movement causes lag, especially in nvim with "cursorMove" command.
+        // 2. Issues may arise only when selected region changes, needing visual selection sync in nvim.
+        //    e.g. confusion from simultaneous insert mode entry and visual region sync due to simulated input.
+        // Waiting theoretically necessary but can lead to other problems.
+        // However, most things work fine without waiting before adding the mechanism.
+        // Thus, no wait when selection is empty.
+        if (!textEditor.selection.isEmpty && !this.applySelectionChangedPromise.has(textEditor))
+            this.applySelectionChangedPromise.set(textEditor, new ManualPromise());
         this.getDebouncedApplySelectionChanged(kind)(textEditor, kind);
     };
 
@@ -313,7 +327,10 @@ export class CursorManager implements Disposable {
                     await this.updateNeovimVisualSelection(editor, selection);
             }
         }
+
         this.previousApplyDebounceTime = undefined;
+        this.applySelectionChangedPromise.get(editor)?.resolve();
+        this.applySelectionChangedPromise.delete(editor);
     };
 
     /**
@@ -359,6 +376,7 @@ export class CursorManager implements Disposable {
         } else {
             anchor = new Position(anchor.line, Math.max(anchor.character - 1, 0));
         }
+        if (this.main.modeManager.isInsertMode) return;
         logger.debug(
             `Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
         );
