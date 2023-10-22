@@ -250,7 +250,7 @@
                     ],
                     "description": "Enabled Ctrl keys in insert mode"
                 },
-                "vscode-neovim.keybindings.editorLangIdExclusions": {
+                "vscode-neovim.editorLangIdExclusions": {
                     "type": "array",
                     "uniqueItems": true,
                     "items": {
