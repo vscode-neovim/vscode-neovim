@@ -6,7 +6,7 @@ async function main() {
 
     const keybindings = [];
     fs.readdirSync(__dirname)
-        .filter((f) => /^\d+.*?\.cjs$/.test(f))
+        .filter((f) => /^\d+_.*?\.cjs$/.test(f))
         .sort((a, b) => +a.match(/\d+/)[0] - +b.match(/\d+/)[0])
         .map((m) => keybindings.push(...require(path.join(__dirname, m))));
     packageJson.contributes.keybindings = keybindings;
