@@ -21,14 +21,6 @@ function key2arg(key) {
     }
 }
 
-function and(...clauses) {
-    return clauses.join(" && ");
-}
-
-function or(...clauses) {
-    return `(${clauses.join(" || ")})`;
-}
-
 function addKeybinds() {
     const keybinds = [];
     const add = (key, when, args, command = "vscode-neovim.send") => {
@@ -41,4 +33,4 @@ function addKeybinds() {
     return [add, keybinds];
 }
 
-module.exports = { key2arg, and, or, addKeybinds };
+module.exports = { key2arg, addKeybinds };

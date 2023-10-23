@@ -1,4 +1,4 @@
-const { key2arg, and, addKeybinds } = require("./util.cjs");
+const { key2arg, addKeybinds } = require("./util.cjs");
 
 const [add, keybinds] = addKeybinds();
 
@@ -8,13 +8,13 @@ const [add, keybinds] = addKeybinds();
     let cmd = "vscode-neovim.send";
     let key = `ctrl+${k}`;
     let args = key2arg(key);
-    let when = and(
+    let when = [
         "editorTextFocus",
         "neovim.init",
         "neovim.mode == insert",
         `neovim.ctrlKeysInsert.${k}`,
         "editorLangId not in neovim.editorLangIdExclusions",
-    );
+    ].join(" && ");
 
     if (k === "o") {
         cmd = "vscode-neovim.escape";

@@ -1,4 +1,4 @@
-const { key2arg, and, addKeybinds } = require("./util.cjs");
+const { key2arg, addKeybinds } = require("./util.cjs");
 
 const [add, keybinds] = addKeybinds();
 
@@ -31,13 +31,13 @@ ctrlKeys.forEach((k) => {
     let cmd = "vscode-neovim.send";
     let key = `ctrl+${k}`;
     let args = key2arg(key);
-    let when = and(
+    let when = [
         "editorTextFocus",
         "neovim.init",
         "neovim.mode != insert",
         `neovim.ctrlKeysNormal.${k}`,
         "editorLangId not in neovim.editorLangIdExclusions",
-    );
+    ].join(" && ");
 
     // scrolling
     if (["b", "d", "e", "f", "u", "y"].includes(k)) {
