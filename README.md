@@ -678,7 +678,7 @@ Always enabled.
 
 -   Tab
 -   Ctrl keys: `<C-h>` `<C-w>` `<C-u>` `<C-n>` `<C-p>` `<C-l>` `<C-g>` `<C-t>`
--   All <C-r> keys
+-   All `<C-r>` prefixed keys
 
 Refer to VIM's manual for their use.
 
