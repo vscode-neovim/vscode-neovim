@@ -480,97 +480,97 @@
             {
                 "command": "vscode-neovim.send",
                 "key": "backspace",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<BS>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+backspace",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<S-BS>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "delete",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<Del>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+delete",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<S-Del>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "tab",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<tab>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+tab",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<S-tab>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "down",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<down>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "up",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<up>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "left",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<left>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "right",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<right>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+down",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<S-down>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+up",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<S-up>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+left",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<S-left>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "shift+right",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<S-right>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "home",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<home>"
             },
             {
                 "command": "vscode-neovim.send",
                 "key": "end",
-                "when": "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording",
+                "when": "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)",
                 "args": "<end>"
             },
             {
@@ -978,445 +978,445 @@
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+h",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-h>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+w",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-w>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+u",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-u>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+n",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<Down>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+p",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<Up>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+l",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-l>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+g",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-g>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+t",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-t>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+up",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-up>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+down",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-down>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 0",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>0"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 1",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>1"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 2",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>2"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 3",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>3"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 4",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>4"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 5",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>5"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 6",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>6"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 7",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>7"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 8",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>8"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r 9",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>9"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+0",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>)"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+1",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>!"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+2",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>@"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+3",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>#"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+4",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>$"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+5",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>%"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+6",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>^"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+7",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>&"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+8",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>*"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+9",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>("
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+'",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>\""
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift++",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>="
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+-",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>_"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+=",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>+"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+;",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>:"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+,",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r><"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+.",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+/",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>?"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+`",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>~"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+[",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>{"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+]",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>}"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+a",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-a>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+b",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-b>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+c",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-c>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+d",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-d>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+e",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-e>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+f",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-f>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+g",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-g>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+h",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-h>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+i",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-i>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+j",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-j>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+k",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-k>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+l",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-l>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+m",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-m>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+n",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-n>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+o",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-o>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+p",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-p>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+q",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-q>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+r",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-r>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+s",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-s>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+t",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-t>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+u",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-u>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+v",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-v>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+w",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-w>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+x",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-x>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+y",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-y>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+z",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-z>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+]",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r> <C-]>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r /",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>/"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r -",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>-"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r .",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>."
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r =",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>="
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+\\ e",
-                "when": "neovim.mode == cmdline",
+                "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-\\>e"
             },
             {
                 "command": "vscode-neovim.complete-selection-cmdline",
                 "key": "tab",
-                "when": "neovim.mode == cmdline"
+                "when": "neovim.init && neovim.mode == cmdline"
             },
             {
                 "key": "j",

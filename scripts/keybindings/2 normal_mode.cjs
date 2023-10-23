@@ -3,7 +3,7 @@ const { key2arg, addKeybinds } = require("./util.cjs");
 const [add, keybinds] = addKeybinds();
 
 const when =
-    "editorTextFocus && neovim.init && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording";
+    "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)";
 
 [
     "backspace",
