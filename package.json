@@ -191,7 +191,13 @@
                         "y",
                         "z",
                         "/",
-                        "]"
+                        "]",
+                        "right",
+                        "left",
+                        "up",
+                        "down",
+                        "backspace",
+                        "delete"
                     ],
                     "description": "Enabled Ctrl keys in normal/visual/etc...(except insert) modes"
                 },
