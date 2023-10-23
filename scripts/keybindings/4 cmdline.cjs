@@ -72,7 +72,7 @@ for (const key in shifts) {
 [..."abcdefghijklmnopqrstuvwxyz]"].forEach((k) => {
     let key = `ctrl+${k}`;
     let args = key2arg(key);
-    add(`ctrl+r ${key}`, `<C-r> ${args}`);
+    add(`ctrl+r ${key}`, `<C-r>${args}`);
 });
 add("ctrl+r /", "<C-r>/");
 add("ctrl+r -", "<C-r>-");
