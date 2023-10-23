@@ -682,6 +682,12 @@ Always enabled.
 
 Refer to VIM's manual for their use.
 
+### Disable keybindings
+
+To disable keybindings defined by this extension in certain filetypes, you can use the `editorLangIdExclusions`
+configuration. Please note that this will not affect all keybindings. If you find that this option is not working, you
+can manually modify the keybindings in VSCode.
+
 ## 🎨 Highlights
 
 There are two ways to customize colors:
