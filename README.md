@@ -658,65 +658,35 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 
 ### Insert mode special keys
 
-Enabled by `useCtrlKeysForInsertMode` (default true).
+Enabled by `ctrlKeysForInsertMode`
+
+Default: `["a", "d", "h", "j", "o", "r", "t", "u", "w"]`
 
 Refer to VIM's manual for their use.
-
--   <kbd>C-c</kbd>
--   <kbd>C-o</kbd>
--   <kbd>C-u</kbd>
--   <kbd>C-w</kbd>
--   <kbd>C-h</kbd>
--   <kbd>C-t</kbd>
--   <kbd>C-d</kbd>
--   <kbd>C-j</kbd>
--   <kbd>C-a</kbd>
--   <kbd>C-r</kbd>
 
 ### Normal mode control keys
 
-Enabled by `useCtrlKeysForNormalMode` (default true).
+Enabled by `ctrlKeysForNormalMode`
+
+Default: `["a", "b", "d", "e", "f", "h", "i", "j", "k", "l", "o", "r", "t", "u", "v", "w", "x", "y", "z", "/", "]"]`
 
 Refer to VIM's manual for their use.
-
--   <kbd>C-a</kbd>
--   <kbd>C-b</kbd>
--   <kbd>C-c</kbd>
--   <kbd>C-d</kbd>
--   <kbd>C-e</kbd>
--   <kbd>C-f</kbd>
--   <kbd>C-i</kbd>
--   <kbd>C-o</kbd>
--   <kbd>C-r</kbd>
--   <kbd>C-u</kbd>
--   <kbd>C-v</kbd>
--   <kbd>C-w</kbd>
--   <kbd>C-x</kbd>
--   <kbd>C-y</kbd>
--   <kbd>C-z</kbd>
--   <kbd>C-]</kbd>
--   <kbd>C-j</kbd>
--   <kbd>C-k</kbd>
--   <kbd>C-l</kbd>
--   <kbd>C-h</kbd>
--   <kbd>C-/</kbd>
 
 ### Cmdline special keys
 
 Always enabled.
 
+-   Tab
+-   Ctrl keys: `<C-h>` `<C-w>` `<C-u>` `<C-n>` `<C-p>` `<C-l>` `<C-g>` `<C-t>`
+-   All `<C-r>` prefixed keys
+
 Refer to VIM's manual for their use.
 
--   <kbd>C-h</kbd>
--   <kbd>C-w</kbd>
--   <kbd>C-u</kbd>
--   <kbd>C-r</kbd> (including <kbd>C-r</kbd><kbd>C-w</kbd> and others)
--   <kbd>C-n</kbd>
--   <kbd>C-p</kbd>
--   <kbd>C-l</kbd>
--   <kbd>C-g</kbd>
--   <kbd>C-t</kbd>
--   <kbd>Tab</kbd>
+### Disable keybindings
+
+To disable keybindings defined by this extension in certain filetypes, you can use the `editorLangIdExclusions`
+configuration. Please note that this will not affect all keybindings. If you find that this option is not working, you
+can manually modify the keybindings in VSCode.
 
 ## 🎨 Highlights
 

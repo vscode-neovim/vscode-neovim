@@ -10,7 +10,7 @@ import {
     workspace,
 } from "vscode";
 
-import { EXT_ID, EXT_NAME } from "./constants";
+import { CTRL_KEYS, EXT_ID, EXT_NAME } from "./constants";
 import { VSCodeContext } from "./utils";
 
 const isWindows = process.platform == "win32";
@@ -42,8 +42,13 @@ export class Config implements Disposable {
 
     private onConfigurationChanged(e?: ConfigurationChangeEvent) {
         this.cfg = workspace.getConfiguration(this.root);
-        VSCodeContext.set("neovim.ctrlKeysNormal", this.useCtrlKeysNormalMode);
-        VSCodeContext.set("neovim.ctrlKeysInsert", this.useCtrlKeysInsertMode);
+        VSCodeContext.set(`neovim.editorLangIdExclusions`, this.editorLangIdExclusions);
+        const ctrlKeysNormalMode = this.ctrlKeysNormalMode;
+        const ctrlKeysInsertMode = this.ctrlKeysInsertMode;
+        CTRL_KEYS.forEach((k) => {
+            VSCodeContext.set(`neovim.ctrlKeysNormal.${k}`, ctrlKeysNormalMode.includes(k));
+            VSCodeContext.set(`neovim.ctrlKeysInsert.${k}`, ctrlKeysInsertMode.includes(k));
+        });
 
         if (!e) return;
         const requireRestart = this.requireRestartConfigs.find((c) => e.affectsConfiguration(c));
@@ -97,12 +102,20 @@ export class Config implements Disposable {
     get highlights(): { [key: string]: ThemableDecorationRenderOptions } {
         return this.cfg.get("highlightGroups.highlights")!;
     }
-    get useCtrlKeysNormalMode() {
-        return this.cfg.get("useCtrlKeysForNormalMode", true);
+    // #region Keybindings
+    get ctrlKeysNormalMode(): string[] {
+        // deprecated
+        if (!this.cfg.get("useCtrlKeysForNormalMode", true)) return [];
+        return this.cfg.get<string[]>("ctrlKeysForNormalMode")!;
     }
-    get useCtrlKeysInsertMode() {
-        return this.cfg.get("useCtrlKeysForInsertMode", true);
+    get ctrlKeysInsertMode(): string[] {
+        if (!this.cfg.get("useCtrlKeysForInsertMode", true)) return [];
+        return this.cfg.get<string[]>("ctrlKeysForInsertMode")!;
     }
+    get editorLangIdExclusions(): string[] {
+        return this.cfg.get<string[]>("editorLangIdExclusions")!;
+    }
+    // #endregion
     get useWsl() {
         const ext = extensions.getExtension(EXT_ID)!;
         return ext.extensionKind !== ExtensionKind.Workspace && isWindows && this.cfg.get("useWSL", false);
