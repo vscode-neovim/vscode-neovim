@@ -1,4 +1,4 @@
-import { commands, Disposable, EventEmitter } from "vscode";
+import { Disposable, EventEmitter } from "vscode";
 
 import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
