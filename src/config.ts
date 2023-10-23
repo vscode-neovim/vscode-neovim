@@ -11,6 +11,7 @@ import {
 } from "vscode";
 
 import { EXT_ID, EXT_NAME } from "./constants";
+import { VSCodeContext } from "./utils";
 
 const isWindows = process.platform == "win32";
 
@@ -41,8 +42,8 @@ export class Config implements Disposable {
 
     private onConfigurationChanged(e?: ConfigurationChangeEvent) {
         this.cfg = workspace.getConfiguration(this.root);
-        commands.executeCommand("setContext", "neovim.ctrlKeysNormal", this.useCtrlKeysNormalMode);
-        commands.executeCommand("setContext", "neovim.ctrlKeysInsert", this.useCtrlKeysInsertMode);
+        VSCodeContext.set("neovim.ctrlKeysNormal", this.useCtrlKeysNormalMode);
+        VSCodeContext.set("neovim.ctrlKeysInsert", this.useCtrlKeysInsertMode);
 
         if (!e) return;
         const requireRestart = this.requireRestartConfigs.find((c) => e.affectsConfiguration(c));

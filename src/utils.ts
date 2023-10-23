@@ -9,6 +9,7 @@ import {
     TextDocumentContentChangeEvent,
     TextEditor,
     TextEditorEdit,
+    commands,
 } from "vscode";
 
 import { ILogger } from "./logger";
@@ -516,4 +517,27 @@ export class ManualPromise {
  */
 export async function wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Credit: https://github.com/VSCodeVim/Vim/blob/5dc9fbf9e7c31a523a348066e61605ed6caf62da/src/util/vscodeContext.ts
+type VSCodeContextValue = boolean | string | string[];
+/**
+ * Wrapper around VS Code's `setContext`.
+ * The API call takes several milliseconds to seconds to complete,
+ * so let's cache the values and only call the API when necessary.
+ */
+export abstract class VSCodeContext {
+    private static readonly cache: Map<string, VSCodeContextValue> = new Map();
+
+    public static async set(key: string, value: VSCodeContextValue): Promise<void> {
+        const prev = this.get(key);
+        if (prev !== value) {
+            this.cache.set(key, value);
+            await commands.executeCommand("setContext", key, value);
+        }
+    }
+
+    public static get(key: string): VSCodeContextValue | undefined {
+        return this.cache.get(key);
+    }
 }
