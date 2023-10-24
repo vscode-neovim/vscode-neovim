@@ -16,7 +16,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     if (!isRestart) verifyExperimentalAffinity();
 
     config.init();
-    rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
+    rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole, config.outputToChannel);
     eventBus.init();
     actions.init();
     context.subscriptions.push(config, rootLogger, eventBus, actions);

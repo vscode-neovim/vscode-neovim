@@ -296,7 +296,7 @@
                     "default": false,
                     "description": "When on, print log messages to vscode developer console (not output channel!)"
                 },
-                "vscode-neovim.logOutput": {
+                "vscode-neovim.logOutputToChannel": {
                     "type": "boolean",
                     "default": false,
                     "description": "When on, print log messages to vscode output channel"

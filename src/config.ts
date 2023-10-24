@@ -156,6 +156,9 @@ export class Config implements Disposable {
     get outputToConsole() {
         return this.cfg.get("logOutputToConsole", false);
     }
+    get outputToChannel() {
+        return this.cfg.get("logOutputToChannel", false);
+    }
     get statusLineSeparator() {
         return this.cfg.get("statusLineSeparator", "|");
     }

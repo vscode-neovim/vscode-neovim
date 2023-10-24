@@ -2,10 +2,9 @@
 import fs from "fs";
 import { inspect } from "util";
 
-import { Disposable, window, OutputChannel } from "vscode";
+import { Disposable, OutputChannel, window } from "vscode";
 
-import { EXT_NAME } from "./utils";
-
+import { EXT_NAME } from "./constants";
 import { disposeAll } from "./utils";
 
 export enum LogLevel {
@@ -31,8 +30,9 @@ export class Logger implements Disposable {
     private loggers: Map<string, ILogger> = new Map();
     private level!: LogLevel;
     private outputToConsole!: boolean;
+    private channel!: OutputChannel;
 
-    public init(level: LogLevel, filePath: string, outputToConsole = false) {
+    public init(level: LogLevel, filePath: string, outputToConsole = false, outputToChannel = false) {
         this.level = level;
         this.outputToConsole = outputToConsole;
         if (filePath && level !== LogLevel.none) {
@@ -45,8 +45,8 @@ export class Logger implements Disposable {
                 // ignore
             }
         }
-        if (logToOutputChannel) {
-            this.channel = window.createOutputChannel(EXT_NAME);
+        if (outputToChannel) {
+            this.channel = window.createOutputChannel(EXT_NAME + "-log");
             this.disposables.push(this.channel);
         }
     }
@@ -72,6 +72,9 @@ export class Logger implements Disposable {
         }
         if (this.outputToConsole) {
             console[level == LogLevel.error ? "error" : "log"](`${getTimestamp()} ${scope}: ${msg}`);
+        }
+        if (this.channel) {
+            this.channel.appendLine(`${getTimestamp()} ${scope}: ${msg}`);
         }
         if (level === LogLevel.error) {
             window.showErrorMessage(msg);
