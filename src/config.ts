@@ -11,7 +11,7 @@ import {
 } from "vscode";
 
 import { CTRL_KEYS, EXT_ID, EXT_NAME } from "./constants";
-import { VSCodeContext } from "./utils";
+import { VSCodeContext, disposeAll } from "./utils";
 
 const isWindows = process.platform == "win32";
 
@@ -32,10 +32,10 @@ export class Config implements Disposable {
     ].map((c) => `${this.root}.${c}`);
 
     dispose() {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
-    constructor() {
+    public init() {
         this.onConfigurationChanged();
         workspace.onDidChangeConfiguration(this.onConfigurationChanged, this, this.disposables);
     }

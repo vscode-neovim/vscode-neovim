@@ -4,7 +4,7 @@ import { CommandLineController } from "./command_line";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { normalizeInputString } from "./utils";
+import { disposeAll, normalizeInputString } from "./utils";
 
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -25,11 +25,9 @@ export class CommandLineManager implements Disposable {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 
-    public dispose(): void {
-        if (this.commandLine) {
-            this.commandLine.dispose();
-        }
-        this.disposables.forEach((d) => d.dispose());
+    public dispose() {
+        this.commandLine?.dispose();
+        disposeAll(this.disposables);
     }
 
     private handleRedraw(data: EventBusData<"redraw">) {

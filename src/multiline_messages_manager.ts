@@ -2,6 +2,7 @@ import { Disposable, OutputChannel, window } from "vscode";
 
 import { EXT_NAME } from "./constants";
 import { EventBusData, eventBus } from "./eventBus";
+import { disposeAll } from "./utils";
 
 export class MultilineMessagesManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -15,7 +16,7 @@ export class MultilineMessagesManager implements Disposable {
     }
 
     public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
     private handleRedraw(data: EventBusData<"redraw">): void {

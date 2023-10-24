@@ -2,7 +2,7 @@ import { Disposable, EventEmitter } from "vscode";
 
 import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
-import { VSCodeContext } from "./utils";
+import { disposeAll, VSCodeContext } from "./utils";
 
 const logger = createLogger("ModeManager");
 
@@ -108,6 +108,6 @@ export class ModeManager implements Disposable {
     }
 
     dispose() {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 }

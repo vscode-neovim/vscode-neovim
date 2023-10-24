@@ -2,7 +2,7 @@ import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode
 
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { normalizeInputString } from "./utils";
+import { disposeAll, normalizeInputString } from "./utils";
 
 const logger = createLogger("TypingManager");
 
@@ -79,9 +79,6 @@ export class TypingManager implements Disposable {
         registerCommand("vscode-neovim.send", warnOnEmptyKey(this.onSendCommand));
         registerCommand("vscode-neovim.send-blocking", warnOnEmptyKey(this.onSendBlockingCommand));
         registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand);
-        registerCommand("vscode-neovim.enable", () => this.onEnableCommand("enable"));
-        registerCommand("vscode-neovim.disable", () => this.onEnableCommand("disable"));
-        registerCommand("vscode-neovim.toggle", () => this.onEnableCommand("toggle"));
         registerCommand("vscode-neovim.compositeEscape1", warnOnEmptyKey(this.handleCompositeEscapeFirstKey));
         registerCommand("vscode-neovim.compositeEscape2", warnOnEmptyKey(this.handleCompositeEscapeSecondKey));
         registerCommand("compositionStart", this.onCompositionStart);
@@ -92,7 +89,7 @@ export class TypingManager implements Disposable {
     public dispose(): void {
         this.typeHandlerDisposable?.dispose();
         this.replacePrevCharHandlerDisposable?.dispose();
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
     public registerType(): void {
@@ -218,33 +215,11 @@ export class TypingManager implements Disposable {
         await this.onSendCommand(key);
     };
 
-    public onEnableCommand = (mode: "enable" | "disable" | "toggle"): void => {
-        switch (mode) {
-            case "enable":
-                this.neovimEnable = true;
-                break;
-            case "disable":
-                this.neovimEnable = false;
-                break;
-            case "toggle":
-                this.neovimEnable = !this.neovimEnable;
-                break;
-        }
-
-        if (this.neovimEnable) {
-            this.client.command("stopinsert");
-        } else {
-            this.client.command("startinsert");
-        }
-    };
-
     private onEscapeKeyCommand = async (key = "<Esc>"): Promise<void> => {
         // rebind early to store fast pressed keys which may happen between sending changes to neovim and exiting insert mode
         // see https://github.com/asvetliakov/vscode-neovim/issues/324
-        if (this.neovimEnable || key !== "<Esc>") {
-            this.isExitingInsertMode = true;
-            await this.onSendBlockingCommand(key);
-        }
+        this.isExitingInsertMode = true;
+        await this.onSendBlockingCommand(key);
     };
 
     private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {

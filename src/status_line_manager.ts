@@ -3,6 +3,7 @@ import { Disposable } from "vscode";
 import { MainController } from "./main_controller";
 import { StatusLineController } from "./status_line";
 import { EventBusData, eventBus } from "./eventBus";
+import { disposeAll } from "./utils";
 
 export class StatusLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -22,7 +23,7 @@ export class StatusLineManager implements Disposable {
     }
 
     public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
     private handleRedraw(data: EventBusData<"redraw">) {

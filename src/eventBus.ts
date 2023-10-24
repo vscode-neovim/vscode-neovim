@@ -145,10 +145,14 @@ class EventBus implements Disposable {
      * All Nvim events are dispatched by this single EventEmitter.
      * Components can subscribe to event broadcasts using `EventBus.on()`.
      */
-    private readonly emitter = new EventEmitter<Event>();
+    private emitter!: EventEmitter<Event>;
 
     dispose() {
         this.emitter.dispose();
+    }
+
+    init() {
+        this.emitter = new EventEmitter<Event>();
     }
 
     /**

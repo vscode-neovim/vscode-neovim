@@ -2,6 +2,7 @@ import diff, { Diff } from "fast-diff";
 import { NeovimClient } from "neovim";
 import wcwidth from "ts-wcwidth";
 import {
+    Disposable,
     EndOfLine,
     Position,
     Range,
@@ -529,15 +530,29 @@ type VSCodeContextValue = boolean | string | string[];
 export abstract class VSCodeContext {
     private static readonly cache: Map<string, VSCodeContextValue> = new Map();
 
-    public static async set(key: string, value: VSCodeContextValue): Promise<void> {
+    public static async set(key: string, value?: VSCodeContextValue): Promise<void> {
         const prev = this.get(key);
         if (prev !== value) {
-            this.cache.set(key, value);
+            if (value === undefined) {
+                this.cache.delete(key);
+            } else {
+                this.cache.set(key, value);
+            }
             await commands.executeCommand("setContext", key, value);
         }
     }
 
     public static get(key: string): VSCodeContextValue | undefined {
         return this.cache.get(key);
+    }
+}
+
+export function disposeAll(disposables: Disposable[]): void {
+    while (disposables.length) {
+        try {
+            disposables.pop()?.dispose();
+        } catch (e) {
+            console.warn(e);
+        }
     }
 }

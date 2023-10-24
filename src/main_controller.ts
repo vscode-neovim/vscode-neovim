@@ -22,7 +22,7 @@ import { ModeManager } from "./mode_manager";
 import { MultilineMessagesManager } from "./multiline_messages_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
-import { findLastEvent, VSCodeContext } from "./utils";
+import { disposeAll, findLastEvent, VSCodeContext } from "./utils";
 import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
@@ -142,7 +142,7 @@ export class MainController implements vscode.Disposable {
             },
         });
         // This is an exception. Should avoid doing this.
-        Object.defineProperty(actions, "client", { get: () => this.client });
+        Object.defineProperty(actions, "client", { get: () => this.client, configurable: true });
     }
 
     public async init(): Promise<void> {
@@ -399,10 +399,10 @@ export class MainController implements vscode.Disposable {
         }
     }
 
-    public dispose(): void {
-        for (const d of this.disposables) {
-            d.dispose();
-        }
+    dispose() {
+        disposeAll(this.disposables);
+        this.nvimProc.removeAllListeners();
+        this.client.removeAllListeners();
         this.client.quit();
     }
 }

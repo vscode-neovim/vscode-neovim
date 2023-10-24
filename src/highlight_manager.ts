@@ -3,17 +3,17 @@ import { Disposable } from "vscode";
 import { EventBusData, eventBus } from "./eventBus";
 import { HighlightProvider } from "./highlight_provider";
 import { MainController } from "./main_controller";
+import { disposeAll } from "./utils";
 
 export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
 
     private highlightProvider: HighlightProvider;
 
-    private commandsDisposables: Disposable[] = [];
-
     public constructor(private main: MainController) {
         this.highlightProvider = new HighlightProvider();
-        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+        this.disposables.push(this.highlightProvider);
+        this.disposables.push(eventBus.on("redraw", this.handleRedraw, this));
     }
 
     private handleRedraw(data: EventBusData<"redraw">): void {
@@ -121,7 +121,6 @@ export class HighlightManager implements Disposable {
     };
 
     public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
-        this.commandsDisposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 }

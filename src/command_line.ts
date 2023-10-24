@@ -3,7 +3,7 @@ import { Disposable, QuickPick, QuickPickItem, commands, window } from "vscode";
 
 import { GlyphChars } from "./constants";
 import { createLogger } from "./logger";
-import { VSCodeContext } from "./utils";
+import { VSCodeContext, disposeAll } from "./utils";
 
 const logger = createLogger("CmdLine");
 
@@ -45,6 +45,7 @@ export class CommandLineController implements Disposable {
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;
         this.disposables.push(
+            this.input,
             this.input.onDidAccept(this.onAccept),
             this.input.onDidChangeValue(this.onChange),
             this.input.onDidHide(this.onHide),
@@ -114,10 +115,7 @@ export class CommandLineController implements Disposable {
     }
 
     public dispose(): void {
-        for (const d of this.disposables) {
-            d.dispose();
-        }
-        this.input.dispose();
+        disposeAll(this.disposables);
     }
 
     private onAccept = (): void => {

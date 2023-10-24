@@ -3,6 +3,7 @@ import vscode, { Disposable, commands } from "vscode";
 import { config } from "./config";
 import { eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
+import { disposeAll } from "./utils";
 
 export class CommandsController implements Disposable {
     private disposables: Disposable[] = [];
@@ -33,9 +34,7 @@ export class CommandsController implements Disposable {
     }
 
     public dispose(): void {
-        for (const d of this.disposables) {
-            d.dispose();
-        }
+        disposeAll(this.disposables);
     }
 
     /// SCROLL COMMANDS ///
