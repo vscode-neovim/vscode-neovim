@@ -4,6 +4,8 @@ import { inspect } from "util";
 
 import { Disposable, window } from "vscode";
 
+import { disposeAll } from "./utils";
+
 export enum LogLevel {
     none = 0,
     error = 1,
@@ -34,6 +36,9 @@ export class Logger implements Disposable {
         if (filePath && level !== LogLevel.none) {
             try {
                 this.fd = fs.openSync(filePath, "w");
+                this.disposables.push({
+                    dispose: () => fs.closeSync(this.fd),
+                });
             } catch {
                 // ignore
             }
@@ -43,10 +48,7 @@ export class Logger implements Disposable {
     }
 
     public dispose(): void {
-        if (this.fd) {
-            fs.closeSync(this.fd);
-        }
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
     private log(level: LogLevel, scope: string, args: any[]): void {

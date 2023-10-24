@@ -25,6 +25,7 @@ import {
     computeEditorOperationsFromDiff,
     convertCharNumToByteNum,
     diffLineToChars,
+    disposeAll,
     getDocumentLineArray,
     isChangeSubsequentToChange,
     isCursorChange,
@@ -105,7 +106,7 @@ export class DocumentChangeManager implements Disposable {
     }
 
     public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
     public eatDocumentCursorAfterChange(doc: TextDocument): Position | undefined {

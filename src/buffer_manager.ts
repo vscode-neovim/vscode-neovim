@@ -28,7 +28,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, callAtomic, convertByteNumToCharNum } from "./utils";
+import { ManualPromise, callAtomic, convertByteNumToCharNum, disposeAll } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -154,7 +154,7 @@ export class BufferManager implements Disposable {
     }
 
     public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
     public async forceResync(): Promise<void> {

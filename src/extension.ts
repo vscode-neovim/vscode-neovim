@@ -6,14 +6,21 @@ import { EXT_ID } from "./constants";
 import { eventBus } from "./eventBus";
 import { LogLevel, createLogger, logger as rootLogger } from "./logger";
 import { MainController } from "./main_controller";
+import { VSCodeContext, disposeAll } from "./utils";
 
 const logger = createLogger(EXT_ID);
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+let restartCommandDisposable: vscode.Disposable | undefined = undefined;
+
+export async function activate(context: vscode.ExtensionContext, isRestart = false): Promise<void> {
+    if (!isRestart) verifyExperimentalAffinity();
+
+    config.init();
     rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
+    eventBus.init();
+    actions.init();
     context.subscriptions.push(config, rootLogger, eventBus, actions);
 
-    verifyExperimentalAffinity();
     try {
         const plugin = new MainController(context.extensionPath.replace(/\\/g, "\\\\"));
         context.subscriptions.push(plugin);
@@ -21,10 +28,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     } catch (e) {
         vscode.window.showErrorMessage(`Unable to init vscode-neovim: ${(e as Error).message}`);
     }
+
+    if (!isRestart) {
+        restartCommandDisposable = vscode.commands.registerCommand("vscode-neovim.restart", async () => {
+            deactivate(true);
+            disposeAll(context.subscriptions);
+            await activate(context, true);
+        });
+    }
+    context.subscriptions.push(
+        vscode.commands.registerCommand("vscode-neovim.stop", () => disposeAll(context.subscriptions)),
+    );
 }
 
-export function deactivate(): void {
-    // ignore
+export function deactivate(isRestart = false) {
+    // Reset all when clause contexts that impact the keybindings
+    VSCodeContext.set("neovim.init");
+    VSCodeContext.set("neovim.mode");
+    VSCodeContext.set("neovim.recording");
+    if (!isRestart) restartCommandDisposable?.dispose();
 }
 
 async function verifyExperimentalAffinity(): Promise<void> {

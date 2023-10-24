@@ -5,6 +5,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
+import { disposeAll } from "./utils";
 
 const logger = createLogger("ViewportManager");
 
@@ -156,6 +157,6 @@ export class ViewportManager implements Disposable {
     }
 
     dispose() {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 }

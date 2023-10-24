@@ -2,6 +2,8 @@ import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
 import { ConfigurationTarget, Disposable, Position, Range, Selection, commands, window, workspace } from "vscode";
 
+import { disposeAll } from "./utils";
+
 function getActionName(action: string) {
     return `neovim:${action}`;
 }
@@ -11,13 +13,14 @@ class ActionManager implements Disposable {
     private actions: string[] = [];
     private client!: NeovimClient;
 
-    constructor() {
+    init() {
         this.initActions();
         this.initHooks();
     }
 
     dispose() {
-        this.disposables.forEach((d) => d.dispose());
+        this.actions = [];
+        disposeAll(this.disposables);
     }
 
     /**

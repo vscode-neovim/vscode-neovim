@@ -10,6 +10,7 @@ import {
     TextEditorSelectionChangeEvent,
     TextEditorSelectionChangeKind,
     window,
+    workspace,
 } from "vscode";
 
 import { config } from "./config";
@@ -17,7 +18,12 @@ import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { Mode } from "./mode_manager";
-import { convertEditorPositionToVimPosition, convertVimPositionToEditorPosition, ManualPromise } from "./utils";
+import {
+    convertEditorPositionToVimPosition,
+    convertVimPositionToEditorPosition,
+    disposeAll,
+    ManualPromise,
+} from "./utils";
 
 const logger = createLogger("CursorManager");
 
@@ -90,6 +96,19 @@ export class CursorManager implements Disposable {
                 if (gridId) this.gridCursorUpdates.add(gridId);
             }),
             eventBus.on("range-command", this.handleRangeCommand, this),
+            {
+                dispose() {
+                    // reset cursor style
+                    const styleName = workspace
+                        .getConfiguration("editor")
+                        .get("cursorStyle", "line")
+                        .split("-")
+                        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+                        .join("");
+                    const style = TextEditorCursorStyle[styleName as any] as any as TextEditorCursorStyle;
+                    window.visibleTextEditors.forEach((e) => (e.options.cursorStyle = style));
+                },
+            },
         );
     }
 
@@ -514,6 +533,6 @@ export class CursorManager implements Disposable {
     }
 
     public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 }

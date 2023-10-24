@@ -4,6 +4,7 @@ import wcswidth from "ts-wcwidth";
 import {
     DecorationOptions,
     DecorationRangeBehavior,
+    Disposable,
     Range,
     TextEditor,
     TextEditorDecorationType,
@@ -130,7 +131,7 @@ class CellIter {
     }
 }
 
-export class HighlightProvider {
+export class HighlightProvider implements Disposable {
     /**
      * key is the grid id and values is a three-dimensional array representing rows and columns.
      * Each column can contain multiple highlights. e.g. double-width character, tab
@@ -158,6 +159,12 @@ export class HighlightProvider {
             highlights[key] = normalizeDecorationConfig(opts);
         }
         this.configuration = { highlights };
+    }
+
+    dispose() {
+        for (const decoration of this.highlighIdToDecorator.values()) {
+            decoration.dispose();
+        }
     }
 
     private createDecoratorForHighlightId(id: number, options: ThemableDecorationRenderOptions): void {

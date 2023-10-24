@@ -377,16 +377,12 @@
         },
         "commands": [
             {
-                "command": "vscode-neovim.enable",
-                "title": "Neovim: Enable vscode-neovim extension"
+                "command": "vscode-neovim.restart",
+                "title": "Neovim: Restart Extension"
             },
             {
-                "command": "vscode-neovim.disable",
-                "title": "Neovim: Disable vscode-neovim extension"
-            },
-            {
-                "command": "vscode-neovim.toggle",
-                "title": "Neovim: Turn on/off vscode-neovim extension"
+                "command": "vscode-neovim.stop",
+                "title": "Neovim: Stop Extension"
             },
             {
                 "command": "vscode-neovim.send",
