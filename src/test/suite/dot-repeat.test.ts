@@ -1,11 +1,10 @@
-import vscode from "vscode";
 import { NeovimClient } from "neovim";
+import { Selection } from "vscode";
 
 import {
     attachTestNvimClient,
     closeNvimClient,
     closeAllActiveEditors,
-    wait,
     sendVSCodeKeys,
     sendEscapeKey,
     assertContent,
@@ -13,6 +12,9 @@ import {
     pasteVSCode,
     setSelection,
     copyVSCodeSelection,
+    openTextDocument,
+    sendInsertKey,
+    sendVSCodeKeysAtomic,
 } from "../utils";
 
 describe("Dot-repeat", () => {
@@ -22,25 +24,17 @@ describe("Dot-repeat", () => {
     });
     after(async () => {
         await closeNvimClient(client);
-    });
-
-    afterEach(async () => {
         await closeAllActiveEditors();
     });
 
     it("Adding - simple", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "abc",
-        });
+        await openTextDocument({ content: "abc" });
 
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
-
-        await sendVSCodeKeys("I");
+        await sendInsertKey("I");
         await sendVSCodeKeys("123");
         await sendEscapeKey();
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["123123abc"],
@@ -50,18 +44,12 @@ describe("Dot-repeat", () => {
     });
 
     it("Adding - with newline", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "abc",
-        });
+        await openTextDocument({ content: "abc" });
 
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
-
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("12\n3");
         await sendEscapeKey();
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["abc12", "312", "3"],
@@ -71,18 +59,12 @@ describe("Dot-repeat", () => {
     });
 
     it("Adding - after newline", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "abc",
-        });
+        await openTextDocument({ content: "abc" });
 
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
-
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("\n123");
         await sendEscapeKey();
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["abc", "123", "123"],
@@ -92,20 +74,14 @@ describe("Dot-repeat", () => {
     });
 
     it("Adding and deleting", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "abc",
-        });
+        await openTextDocument({ content: "abc" });
 
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
-
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("123");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
         await sendEscapeKey();
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["abc11"],
@@ -114,20 +90,33 @@ describe("Dot-repeat", () => {
         );
     });
 
+    it("Entering special keycodes", async () => {
+        const originalContent = "abc";
+        await openTextDocument({ content: originalContent });
+
+        await sendInsertKey("A");
+        const textToType = "<BS><Cmd><LT><BS><BS><Right><Return>hello<Enter>";
+        for (const char of textToType) {
+            await sendVSCodeKeysAtomic(char, 50);
+        }
+        await sendEscapeKey();
+        await sendVSCodeKeys(".");
+        await assertContent(
+            {
+                content: [`${originalContent}${textToType.repeat(2)}`],
+            },
+            client,
+        );
+    });
+
     it("Deleting", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "abcabc",
-        });
+        await openTextDocument({ content: "abcabc" });
 
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
-
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
         await sendEscapeKey();
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["ab"],
@@ -137,21 +126,15 @@ describe("Dot-repeat", () => {
     });
 
     it("Deleting - full change", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "abc",
-        });
+        await openTextDocument({ content: "abc" });
 
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
-
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("123");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
         await sendEscapeKey();
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["abc"],
@@ -161,20 +144,14 @@ describe("Dot-repeat", () => {
     });
 
     it("Deleting - with newline", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["1abc", "2abc", "3abc"].join("\n"),
-        });
-
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["1abc", "2abc", "3abc"].join("\n") });
 
         await sendVSCodeKeys("jjli");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
         await sendEscapeKey();
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["1abcbabc"],
@@ -184,22 +161,16 @@ describe("Dot-repeat", () => {
     });
 
     it("Paste", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "abc",
-        });
-
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
-        await sendVSCodeKeys("I");
-        await setSelection([{ anchorPos: [0, 0], cursorPos: [0, 3] }]);
+        await openTextDocument({ content: "abc" });
+        await sendInsertKey("I");
+        await setSelection(new Selection(0, 0, 0, 3));
         await copyVSCodeSelection();
 
-        await setSelection([{ anchorPos: [0, 3], cursorPos: [0, 3] }]);
+        await setSelection(new Selection(0, 3, 0, 3));
         await pasteVSCode();
         await sendVSCodeSpecialKey("backspace");
         await sendEscapeKey();
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["ababcab"],
@@ -209,22 +180,16 @@ describe("Dot-repeat", () => {
     });
 
     it("Multiline paste", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["1abc", "2abc"].join("\n"),
-        });
-
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
-        await sendVSCodeKeys("I");
-        await setSelection([{ anchorPos: [0, 0], cursorPos: [1, 4] }]);
+        await openTextDocument({ content: ["1abc", "2abc"].join("\n") });
+        await sendInsertKey("I");
+        await setSelection(new Selection(0, 0, 1, 4));
         await copyVSCodeSelection();
 
-        await setSelection([{ anchorPos: [1, 4], cursorPos: [1, 4] }]);
+        await setSelection(new Selection(1, 4, 1, 4));
         await pasteVSCode();
         await sendVSCodeSpecialKey("backspace");
         await sendEscapeKey();
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["1abc", "2abc1abc", "1abc", "2ab2ab"],
@@ -234,19 +199,14 @@ describe("Dot-repeat", () => {
     });
 
     it("O and o", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2", "test3"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2", "test3"].join("\n") });
         await sendVSCodeKeys("jl");
-        await sendVSCodeKeys("o");
+        await sendInsertKey("o");
         await sendVSCodeKeys("blah");
         await sendEscapeKey();
 
         await sendVSCodeKeys("0ggll");
-        await sendVSCodeKeys(".");
-
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1", "blah", "test2", "blah", "test3"],
@@ -254,12 +214,13 @@ describe("Dot-repeat", () => {
             client,
         );
 
-        await sendVSCodeKeys("0ggjO");
+        await sendVSCodeKeys("0ggj");
+        await sendInsertKey("O", 500); // delay to fix flaky test
         await sendVSCodeKeys("blah2");
         await sendEscapeKey();
 
         await sendVSCodeKeys("0ggll");
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["blah2", "test1", "blah2", "blah", "test2", "blah", "test3"],
@@ -269,18 +230,15 @@ describe("Dot-repeat", () => {
     });
 
     it("inew word inside line", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0ll");
-        await sendVSCodeKeys("inew word");
+        await sendInsertKey("i");
+        await sendVSCodeKeys("new word");
         await sendEscapeKey();
         await sendVSCodeKeys("0jll");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["tenew wordst1", "tenew wordst2"],
@@ -290,17 +248,13 @@ describe("Dot-repeat", () => {
     });
 
     it("Single brackets", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A(");
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1()", "test2()"],
@@ -310,17 +264,13 @@ describe("Dot-repeat", () => {
     });
 
     it("Brackets with a text inside", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A(blah");
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1(blah)", "test2(blah)"],
@@ -330,17 +280,13 @@ describe("Dot-repeat", () => {
     });
 
     it("Inner brackets", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A(blah{blah2");
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1(blah{blah2})", "test2(blah{blah2})"],
@@ -350,17 +296,13 @@ describe("Dot-repeat", () => {
     });
 
     it("Inner brackets 2", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A((blah");
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1((blah))", "test2((blah))"],
@@ -370,17 +312,13 @@ describe("Dot-repeat", () => {
     });
 
     it("Inner brackets 3", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A({blah");
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1({blah})", "test2({blah})"],
@@ -390,11 +328,7 @@ describe("Dot-repeat", () => {
     });
 
     it("Deleting single brackets - 1", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A(");
         await sendVSCodeSpecialKey("backspace");
@@ -402,7 +336,7 @@ describe("Dot-repeat", () => {
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1blah", "test2blah"],
@@ -412,11 +346,7 @@ describe("Dot-repeat", () => {
     });
 
     it("Deleting single brackets - 2", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A(ab");
         await sendVSCodeSpecialKey("backspace");
@@ -426,7 +356,7 @@ describe("Dot-repeat", () => {
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1blah", "test2blah"],
@@ -436,11 +366,7 @@ describe("Dot-repeat", () => {
     });
 
     it("Deleting inner brackets - 1", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A({");
         await sendVSCodeSpecialKey("backspace");
@@ -449,7 +375,7 @@ describe("Dot-repeat", () => {
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1blah", "test2blah"],
@@ -459,11 +385,7 @@ describe("Dot-repeat", () => {
     });
 
     it("Deleting inner brackets - 2", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A({ab");
         await sendVSCodeSpecialKey("backspace");
@@ -474,7 +396,7 @@ describe("Dot-repeat", () => {
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1blah", "test2blah"],
@@ -484,11 +406,7 @@ describe("Dot-repeat", () => {
     });
 
     it("Deleting inner brackets - 3", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A(ab{c");
         await sendVSCodeSpecialKey("backspace");
@@ -497,7 +415,7 @@ describe("Dot-repeat", () => {
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1(abblah)", "test2(abblah)"],
@@ -507,11 +425,7 @@ describe("Dot-repeat", () => {
     });
 
     it("Deleting inner brackets - 4", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2"].join("\n") });
 
         await sendVSCodeKeys("gg0A(ab{c");
         await sendVSCodeSpecialKey("backspace");
@@ -523,7 +437,7 @@ describe("Dot-repeat", () => {
         await sendEscapeKey();
         await sendVSCodeKeys("0j");
 
-        await sendVSCodeKeys(".");
+        await sendVSCodeKeys(".", 300);
         await assertContent(
             {
                 content: ["test1blah", "test2blah"],
@@ -533,13 +447,10 @@ describe("Dot-repeat", () => {
     });
 
     it("With o and undo", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["test1", "test2", "test3"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: ["test1", "test2", "test3"].join("\n") });
 
-        await sendVSCodeKeys("o\n\n\n");
+        await sendInsertKey("o");
+        await sendVSCodeKeys("\n\n\n");
         await sendEscapeKey();
 
         await sendVSCodeKeys("j.");

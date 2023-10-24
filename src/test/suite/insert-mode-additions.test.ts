@@ -5,10 +5,14 @@ import {
     attachTestNvimClient,
     closeNvimClient,
     closeAllActiveEditors,
-    wait,
     sendVSCodeKeys,
     sendEscapeKey,
+    sendVSCodeSpecialKey,
     assertContent,
+    setCursor,
+    openTextDocument,
+    sendInsertKey,
+    sendVSCodeCommand,
 } from "../utils";
 
 describe("Simulated insert keys", () => {
@@ -18,24 +22,52 @@ describe("Simulated insert keys", () => {
     });
     after(async () => {
         await closeNvimClient(client);
-    });
-
-    afterEach(async () => {
         await closeAllActiveEditors();
     });
 
-    it("Ctrl-a", async () => {
-        const doc = await vscode.workspace.openTextDocument({ content: "" });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+    it("Handles nvim cursor movement commands after sending ctrl+o key", async () => {
+        await openTextDocument({ content: "test" });
+        await setCursor(0, 2);
+        await sendVSCodeKeys("i123");
+        await sendVSCodeCommand("vscode-neovim.send", "<C-o>");
+        await sendVSCodeKeys("h");
+        await assertContent(
+            {
+                mode: "i",
+                cursor: [0, 4],
+                content: ["te123st"],
+            },
+            client,
+        );
+    });
 
-        await sendVSCodeKeys("i");
+    it("Handles nvim editing commands after sending ctrl+o key", async () => {
+        await openTextDocument({ content: "test" });
+        await setCursor(0, 2);
+        await sendVSCodeKeys("i123");
+        await sendVSCodeSpecialKey("cursorLeft");
+        await sendVSCodeSpecialKey("cursorLeft");
+        await sendVSCodeCommand("vscode-neovim.send", "<C-o>");
+        await sendVSCodeKeys("x");
+        await assertContent(
+            {
+                mode: "i",
+                cursor: [0, 3],
+                content: ["te13st"],
+            },
+            client,
+        );
+    });
+
+    it("Ctrl-a", async () => {
+        await openTextDocument({ content: "" });
+
+        await sendInsertKey();
         await sendVSCodeKeys("blah blah");
         await sendEscapeKey();
 
-        await sendVSCodeKeys("o");
-        await vscode.commands.executeCommand("vscode-neovim.ctrl-a-insert");
-        await wait();
+        await sendInsertKey("o");
+        await sendVSCodeCommand("vscode-neovim.send", "<C-a>", 500);
 
         await sendEscapeKey();
         await assertContent(
@@ -48,21 +80,82 @@ describe("Simulated insert keys", () => {
     });
 
     it("Ctrl-r <reg>", async () => {
-        const doc = await vscode.workspace.openTextDocument({ content: "blah blah" });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+        await openTextDocument({ content: "blah blah" });
 
-        await sendVSCodeKeys('"+yy');
-        await sendVSCodeKeys("o", 500);
+        await sendVSCodeKeys('"yyy');
+        await sendInsertKey("o");
 
-        await vscode.commands.executeCommand("vscode-neovim.paste-register", "+");
-        await wait();
+        await sendVSCodeCommand("vscode-neovim.send-blocking", "<C-r>");
+        await sendVSCodeKeys("y", 200);
 
         await sendEscapeKey();
         await assertContent(
             {
                 content: ["blah blah", "blah blah", ""],
                 cursor: [2, 0],
+            },
+            client,
+        );
+    });
+
+    it("Ctrl-r <esc>", async () => {
+        await openTextDocument({ content: "blah blah" });
+
+        await sendInsertKey("I");
+        await sendVSCodeCommand("vscode-neovim.send-blocking", "<C-r>");
+        await vscode.commands.executeCommand("vscode-neovim.escape");
+        await sendVSCodeKeys("l");
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["lblah blah"],
+                cursor: [0, 0],
+            },
+            client,
+        );
+    });
+
+    it("Ctrl-w/Ctrl-h", async () => {
+        await openTextDocument({ content: "blah blah" });
+
+        await sendVSCodeKeys("wi");
+        await sendVSCodeCommand("vscode-neovim.send", "<C-w>");
+
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["blah"],
+                cursor: [0, 0],
+            },
+            client,
+        );
+
+        await sendVSCodeKeys("ea");
+        await sendVSCodeCommand("vscode-neovim.send", "<C-h>");
+
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["bla"],
+                cursor: [0, 2],
+            },
+            client,
+        );
+    });
+
+    it("Ctrl-u", async () => {
+        await openTextDocument({ content: "blah blah" });
+
+        await sendVSCodeKeys("wi");
+        await sendVSCodeKeys("blah blah");
+        await sendVSCodeCommand("vscode-neovim.send", "<C-u>");
+
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["blah blah"],
+                cursor: [0, 4],
             },
             client,
         );

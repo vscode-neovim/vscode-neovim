@@ -1,12 +1,19 @@
-import { workspace, TextEditor, TextDocumentContentChangeEvent, Position, TextDocument, EndOfLine } from "vscode";
-import { Diff } from "fast-diff";
-import wcwidth from "ts-wcwidth";
+import diff, { Diff } from "fast-diff";
 import { NeovimClient } from "neovim";
+import wcwidth from "ts-wcwidth";
+import {
+    Disposable,
+    EndOfLine,
+    Position,
+    Range,
+    TextDocument,
+    TextDocumentContentChangeEvent,
+    TextEditor,
+    TextEditorEdit,
+    commands,
+} from "vscode";
 
-import { Logger } from "./logger";
-
-export const EXT_NAME = "vscode-neovim";
-export const EXT_ID = `asvetliakov.${EXT_NAME}`;
+import { ILogger } from "./logger";
 
 export interface EditRange {
     start: number;
@@ -15,18 +22,6 @@ export interface EditRange {
     newEnd: number;
     type: "changed" | "removed" | "added";
 }
-
-export interface GridConf {
-    winId: number;
-    cursorLine: number;
-    cursorPos: number;
-    screenLine: number;
-    screenPos: number;
-    topScreenLineStr: string;
-    bottomScreenLineStr: string;
-}
-
-export type GridLineEvent = [number, number, number, [string, number, number][]];
 
 /**
  * Stores last changes information for dot repeat
@@ -52,43 +47,6 @@ export interface DotRepeatChange {
      * Text eol
      */
     eol: string;
-}
-
-export function processLineNumberStringFromEvent(
-    event: GridLineEvent,
-    lineNumberHlId: number,
-    prevString: string,
-): string {
-    const [, , colStart, cells] = event;
-    if (!cells.length || cells[0][1] !== lineNumberHlId) {
-        return prevString;
-    }
-
-    let lineNumStr = "";
-    for (const [text, hlId, repeat] of cells) {
-        if (hlId != null && hlId !== lineNumberHlId) {
-            break;
-        }
-        for (let i = 0; i < (repeat || 1); i++) {
-            lineNumStr += text;
-        }
-    }
-    const newStr = prevString.slice(0, colStart) + lineNumStr + prevString.slice(colStart + lineNumStr.length);
-    return newStr;
-}
-
-export function getLineFromLineNumberString(lineStr: string): number {
-    const num = parseInt(lineStr.trim(), 10);
-    return isNaN(num) ? 0 : num - 1;
-}
-
-export function convertLineNumberToString(line: number): string {
-    let lineNumStr = line.toString(10);
-    // prepend " " for empty lines
-    for (let i = lineNumStr.length; i < 7; i++) {
-        lineNumStr = " " + lineNumStr;
-    }
-    return lineNumStr + " ";
 }
 
 // Copied from https://github.com/google/diff-match-patch/blob/master/javascript/diff_match_patch_uncompressed.js
@@ -228,26 +186,6 @@ export function prepareEditRangesFromDiff(diffs: Diff[]): EditRange[] {
     return ranges;
 }
 
-function getBytesFromCodePoint(point?: number): number {
-    if (point == null) {
-        return 0;
-    }
-    if (point <= 0x7f) {
-        return 1;
-    }
-    if (point <= 0x7ff) {
-        return 2;
-    }
-    if (point >= 0xd800 && point <= 0xdfff) {
-        // Surrogate pair: These take 4 bytes in UTF-8 and 2 chars in UCS-2
-        return 4;
-    }
-    if (point < 0xffff) {
-        return 3;
-    }
-    return 4;
-}
-
 export function convertCharNumToByteNum(line: string, col: number): number {
     if (col === 0 || !line) {
         return 0;
@@ -260,7 +198,7 @@ export function convertCharNumToByteNum(line: string, col: number): number {
         // but for setting cursor we must use original byte length
         const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
         totalBytes += bytes;
-        currCharNum++;
+        currCharNum += bytes === 4 ? 2 : 1;
         if (currCharNum >= line.length) {
             return totalBytes;
         }
@@ -275,55 +213,64 @@ export function convertByteNumToCharNum(line: string, col: number): number {
         if (currCharNum >= line.length) {
             return currCharNum + (col - totalBytes);
         }
-        totalBytes += getBytesFromCodePoint(line.codePointAt(currCharNum));
-        currCharNum++;
+        const bytes = getBytesFromCodePoint(line.codePointAt(currCharNum));
+        totalBytes += bytes;
+        currCharNum += bytes === 4 ? 2 : 1;
     }
     return currCharNum;
 }
 
-export function calculateEditorColFromVimScreenCol(
-    line: string,
-    screenCol: number,
-    tabSize = 1,
-    useBytes = false,
-): number {
+export function convertVimPositionToEditorPosition(editor: TextEditor, vimPos: Position): Position {
+    const line = editor.document.lineAt(vimPos.line).text;
+    const character = convertByteNumToCharNum(line, vimPos.character);
+    return new Position(vimPos.line, character);
+}
+export function convertEditorPositionToVimPosition(editor: TextEditor, editorPos: Position): Position {
+    const line = editor.document.lineAt(editorPos.line).text;
+    const byte = convertCharNumToByteNum(line, editorPos.character);
+    return new Position(editorPos.line, byte);
+}
+
+function getBytesFromCodePoint(point?: number): number {
+    if (point == null) {
+        return 0;
+    }
+    if (point <= 0x7f) {
+        return 1;
+    }
+    if (point <= 0x7ff) {
+        return 2;
+    }
+    if (point >= 0xd800 && point <= 0xdfff) {
+        // Surrogate pair: These take 4 bytes in UTF-8/UTF-16 and 2 chars in UTF-16 (JS strings)
+        return 4;
+    }
+    if (point < 0xffff) {
+        return 3;
+    }
+    return 4;
+}
+
+export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize: number): number {
     if (screenCol === 0 || !line) {
         return 0;
     }
     let currentCharIdx = 0;
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
-        currentVimCol +=
-            line[currentCharIdx] === "\t"
-                ? tabSize - (currentVimCol % tabSize)
-                : useBytes
-                ? getBytesFromCodePoint(line.codePointAt(currentCharIdx))
-                : wcwidth(line[currentCharIdx]);
+        if (line[currentCharIdx] === "\t") {
+            currentVimCol += tabSize - (currentVimCol % tabSize);
+            currentCharIdx++;
+        } else {
+            currentVimCol += wcwidth(line[currentCharIdx]);
+            currentCharIdx++;
+        }
 
-        currentCharIdx++;
         if (currentCharIdx >= line.length) {
             return currentCharIdx;
         }
     }
     return currentCharIdx;
-}
-
-export function getEditorCursorPos(editor: TextEditor, conf: GridConf): { line: number; col: number } {
-    const topScreenLine = getLineFromLineNumberString(conf.topScreenLineStr);
-    const cursorLine = topScreenLine + conf.screenLine;
-    if (cursorLine >= editor.document.lineCount) {
-        // rarely happens, but could, usually for external help files when text is not available now (due to async edit or so)
-        return {
-            col: conf.screenPos,
-            line: cursorLine,
-        };
-    }
-    const line = editor.document.lineAt(cursorLine).text;
-    const col = calculateEditorColFromVimScreenCol(line, conf.screenPos);
-    return {
-        line: cursorLine,
-        col,
-    };
 }
 
 export function isChangeSubsequentToChange(
@@ -362,49 +309,6 @@ export function isCursorChange(change: TextDocumentContentChangeEvent, cursor: P
         }
     }
     return false;
-}
-
-type LegacySettingName = "neovimPath" | "neovimInitPath";
-type SettingPrefix = "neovimExecutablePaths" | "neovimInitVimPaths"; //this needs to be aligned with setting names in package.json
-type Platform = "win32" | "darwin" | "linux";
-
-function getSystemSpecificSetting(
-    settingPrefix: SettingPrefix,
-    legacySetting: { environmentVariableName?: "NEOVIM_PATH"; vscodeSettingName: LegacySettingName },
-): string | undefined {
-    const settings = workspace.getConfiguration(EXT_NAME);
-    const isUseWindowsSubsystemForLinux = settings.get("useWSL");
-
-    //https://github.com/microsoft/vscode/blob/master/src/vs/base/common/platform.ts#L63
-    const platform = process.platform as "win32" | "darwin" | "linux";
-
-    const legacyEnvironmentVariable =
-        legacySetting.environmentVariableName && process.env[legacySetting.environmentVariableName];
-
-    //some system specific settings can be loaded from process.env and value from env will override setting value
-    const legacySettingValue = legacyEnvironmentVariable || settings.get(legacySetting.vscodeSettingName);
-    if (legacySettingValue) {
-        return legacySettingValue;
-    } else if (isUseWindowsSubsystemForLinux && platform === "win32") {
-        return settings.get(`${settingPrefix}.${"linux" as Platform}`);
-    } else {
-        return settings.get(`${settingPrefix}.${platform}`);
-    }
-}
-
-export function getNeovimPath(): string | undefined {
-    const legacySettingInfo = {
-        vscodeSettingName: "neovimPath",
-        environmentVariableName: "NEOVIM_PATH",
-    } as const;
-    return getSystemSpecificSetting("neovimExecutablePaths", legacySettingInfo);
-}
-
-export function getNeovimInitPath(): string | undefined {
-    const legacySettingInfo = {
-        vscodeSettingName: "neovimInitPath",
-    } as const;
-    return getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
 }
 
 export function normalizeDotRepeatChange(
@@ -456,20 +360,6 @@ export function accumulateDotRepeatChange(
     return newLastChange;
 }
 
-export function editorPositionToNeovimPosition(editor: TextEditor, position: Position): [number, number] {
-    const lineText = editor.document.lineAt(position.line).text;
-    const byteCol = convertCharNumToByteNum(lineText, position.character);
-    return [position.line + 1, byteCol];
-}
-
-export function getNeovimCursorPosFromEditor(editor: TextEditor): [number, number] {
-    try {
-        return editorPositionToNeovimPosition(editor, editor.selection.active);
-    } catch {
-        return [1, 0];
-    }
-}
-
 export function getDocumentLineArray(doc: TextDocument): string[] {
     const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
     return doc.getText().split(eol);
@@ -502,8 +392,7 @@ export function findLastEvent(name: string, batch: [string, ...unknown[]][]): [s
 export async function callAtomic(
     client: NeovimClient,
     requests: [string, unknown[]][],
-    logger: Logger,
-    prefix = "",
+    logger: ILogger,
 ): Promise<void> {
     const res = await client.callAtomic(requests);
     const errors: string[] = [];
@@ -519,6 +408,151 @@ export async function callAtomic(
         });
     }
     if (errors.length) {
-        logger.error(`${prefix}:\n${errors.join("\n")}`);
+        logger.error(`\n${errors.join("\n")}`);
+    }
+}
+
+type EditorDiffOperation = { op: -1 | 0 | 1; range: [number, number]; chars: string | null };
+
+export function computeEditorOperationsFromDiff(diffs: diff.Diff[]): EditorDiffOperation[] {
+    let curCol = 0;
+    return diffs
+        .map(([op, chars]: diff.Diff) => {
+            let editorOp: EditorDiffOperation | null = null;
+
+            switch (op) {
+                // -1
+                case diff.DELETE:
+                    editorOp = {
+                        op,
+                        range: [curCol, curCol + chars.length],
+                        chars: null,
+                    };
+                    curCol += chars.length;
+                    break;
+
+                // 0
+                case diff.EQUAL:
+                    curCol += chars.length;
+                    break;
+
+                // +1
+                case diff.INSERT:
+                    editorOp = {
+                        op,
+                        range: [curCol, curCol],
+                        chars,
+                    };
+                    curCol += 0; // NOP
+                    break;
+
+                default:
+                    throw new Error("Operation not supported");
+            }
+
+            return editorOp;
+        })
+        .filter(isNotNull);
+
+    // User-Defined Type Guard
+    // https://stackoverflow.com/a/54318054
+    function isNotNull<T>(argument: T | null): argument is T {
+        return argument !== null;
+    }
+}
+
+export function applyEditorDiffOperations(
+    builder: TextEditorEdit,
+    { editorOps, line }: { editorOps: EditorDiffOperation[]; line: number },
+): void {
+    editorOps.forEach((editorOp) => {
+        const {
+            op,
+            range: [from, to],
+            chars,
+        } = editorOp;
+
+        switch (op) {
+            case diff.DELETE:
+                builder.delete(new Range(new Position(line, from), new Position(line, to)));
+                break;
+
+            case diff.INSERT:
+                if (chars) {
+                    builder.insert(new Position(line, from), chars);
+                }
+                break;
+
+            default:
+                break;
+        }
+    });
+}
+
+/**
+ * Manual promise that can be resolved/rejected from outside. Used in document and cursor managers to indicate pending update.
+ */
+export class ManualPromise {
+    public promise: Promise<void>;
+    public resolve: () => void = () => {
+        // noop
+    };
+    public reject: () => void = () => {
+        // noop
+    };
+
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+        this.promise.catch((_err) => {
+            // noop
+        });
+    }
+}
+
+/**
+ * Wait for a given number of milliseconds
+ * @param ms Number of milliseconds
+ */
+export async function wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Credit: https://github.com/VSCodeVim/Vim/blob/5dc9fbf9e7c31a523a348066e61605ed6caf62da/src/util/vscodeContext.ts
+type VSCodeContextValue = boolean | string | string[];
+/**
+ * Wrapper around VS Code's `setContext`.
+ * The API call takes several milliseconds to seconds to complete,
+ * so let's cache the values and only call the API when necessary.
+ */
+export abstract class VSCodeContext {
+    private static readonly cache: Map<string, VSCodeContextValue> = new Map();
+
+    public static async set(key: string, value?: VSCodeContextValue): Promise<void> {
+        const prev = this.get(key);
+        if (prev !== value) {
+            if (value === undefined) {
+                this.cache.delete(key);
+            } else {
+                this.cache.set(key, value);
+            }
+            await commands.executeCommand("setContext", key, value);
+        }
+    }
+
+    public static get(key: string): VSCodeContextValue | undefined {
+        return this.cache.get(key);
+    }
+}
+
+export function disposeAll(disposables: Disposable[]): void {
+    while (disposables.length) {
+        try {
+            disposables.pop()?.dispose();
+        } catch (e) {
+            console.warn(e);
+        }
     }
 }

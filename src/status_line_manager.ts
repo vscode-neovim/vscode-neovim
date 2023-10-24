@@ -1,39 +1,41 @@
-import { NeovimClient } from "neovim";
 import { Disposable } from "vscode";
 
-import { Logger } from "./logger";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
+import { MainController } from "./main_controller";
 import { StatusLineController } from "./status_line";
+import { EventBusData, eventBus } from "./eventBus";
+import { disposeAll } from "./utils";
 
-export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
+export class StatusLineManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Status var UI
      */
     private statusLine: StatusLineController;
 
-    public constructor(private logger: Logger, private client: NeovimClient) {
+    private get client() {
+        return this.main.client;
+    }
+
+    public constructor(private main: MainController) {
         this.statusLine = new StatusLineController();
         this.disposables.push(this.statusLine);
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 
     public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
+    private handleRedraw(data: EventBusData<"redraw">) {
         let acceptPrompt = false;
+
         // if there is mouse_on event after return prompt, then we don't need automatically accept it
         // use case: easymotion search with jumping
         let hasMouseOnAfterReturnPrompt = false;
-        batch.forEach(([name, ...args], idx) => {
-            // for (const [name, ...args] of batch) {
-            const firstArg = args[0] || [];
-            const lastArg = args[args.length - 1] || [];
+        data.forEach(({ name, args, lastArg, firstArg }, idx) => {
             switch (name) {
                 case "msg_showcmd": {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [content] = firstArg as [string, any[]];
+                    const [content] = firstArg;
                     let str = "";
                     if (content) {
                         for (const c of content) {
@@ -48,14 +50,13 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
                 }
                 case "msg_show": {
                     let str = "";
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    for (const [type, content] of args as [string, any[], never][]) {
+                    for (const [type, content] of args) {
                         // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
                         //     this.nextInputBlocking = true;
                         // }
                         if (type === "return_prompt") {
                             acceptPrompt = true;
-                            hasMouseOnAfterReturnPrompt = !!batch.slice(idx).find(([name]) => name === "mouse_on");
+                            hasMouseOnAfterReturnPrompt = !!data.slice(idx).find(({ name }) => name === "mouse_on");
                         }
                         if (content) {
                             for (const c of content) {
@@ -70,8 +71,7 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
                     break;
                 }
                 case "msg_showmode": {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [content] = lastArg as [any[]];
+                    const [content] = lastArg;
                     let str = "";
                     if (content) {
                         for (const c of content) {

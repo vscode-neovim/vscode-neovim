@@ -1,6 +1,6 @@
 import * as path from "path";
 
-import { runTests } from "vscode-test";
+import { runTests } from "@vscode/test-electron";
 
 async function main(): Promise<void> {
     try {
@@ -8,13 +8,19 @@ async function main(): Promise<void> {
         // Passed to `--extensionDevelopmentPath`
         const extensionDevelopmentPath = path.resolve(__dirname, "../../");
 
-        // The path to test runner
+        // The path to the extension test runner script
         // Passed to --extensionTestsPath
         const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
         // Download VS Code, unzip it and run the integration test
-        await runTests({ extensionDevelopmentPath, extensionTestsPath });
+        await runTests({
+            extensionDevelopmentPath,
+            extensionTestsPath,
+            // Tell vscode-neovim to create a debug connection
+            extensionTestsEnv: { NEOVIM_DEBUG: "1" },
+        });
     } catch (err) {
+        console.error(err);
         console.error("Failed to run tests");
         process.exit(1);
     }

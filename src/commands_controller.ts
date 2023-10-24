@@ -1,108 +1,40 @@
-import vscode, { Disposable } from "vscode";
-import { NeovimClient } from "neovim";
+import vscode, { Disposable, commands } from "vscode";
 
-import { NeovimExtensionRequestProcessable } from "./neovim_events_processable";
+import { config } from "./config";
+import { eventBus } from "./eventBus";
+import { MainController } from "./main_controller";
+import { disposeAll } from "./utils";
 
-export class CommandsController implements Disposable, NeovimExtensionRequestProcessable {
-    private client: NeovimClient;
-
+export class CommandsController implements Disposable {
     private disposables: Disposable[] = [];
 
-    private revealCursorScrollLine: boolean;
+    private get client() {
+        return this.main.client;
+    }
 
-    public constructor(client: NeovimClient, revealCursorScrollLine: boolean) {
-        this.client = client;
-        this.revealCursorScrollLine = revealCursorScrollLine;
-
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-a-insert", this.ctrlAInsert));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.send", (key) => this.sendToVim(key)));
+    public constructor(private main: MainController) {
         this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.paste-register", (reg) => this.pasteFromRegister(reg)),
+            commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
+            commands.registerCommand("vscode-neovim.ctrl-b", () => this.scrollPage("page", "up")),
+            commands.registerCommand("vscode-neovim.ctrl-d", () => this.scrollPage("halfPage", "down")),
+            commands.registerCommand("vscode-neovim.ctrl-u", () => this.scrollPage("halfPage", "up")),
+            commands.registerCommand("vscode-neovim.ctrl-e", () => this.scrollLine("down")),
+            commands.registerCommand("vscode-neovim.ctrl-y", () => this.scrollLine("up")),
+            eventBus.on("reveal", ([at, updateCursor]) => this.revealLine(at, !!updateCursor)),
+            eventBus.on("move-cursor", ([to]) => this.goToLine(to)),
+            eventBus.on("scroll", ([by, to]) => this.scrollPage(by, to)),
+            eventBus.on("scroll-line", ([to]) => this.scrollLine(to)),
+            eventBus.on("insert-line", async ([type]) => {
+                await this.client.command("startinsert");
+                await commands.executeCommand(
+                    type === "before" ? "editor.action.insertLineBefore" : "editor.action.insertLineAfter",
+                );
+            }),
         );
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
-        );
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.ctrl-b", () => this.scrollPage("page", "up")),
-        );
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.ctrl-d", () => this.scrollPage("halfPage", "down")),
-        );
-        this.disposables.push(
-            vscode.commands.registerCommand("vscode-neovim.ctrl-u", () => this.scrollPage("halfPage", "up")),
-        );
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-e", () => this.scrollLine("down")));
-        this.disposables.push(vscode.commands.registerCommand("vscode-neovim.ctrl-y", () => this.scrollLine("up")));
     }
 
     public dispose(): void {
-        for (const d of this.disposables) {
-            d.dispose();
-        }
-    }
-
-    public async handleExtensionRequest(name: string, args: unknown[]): Promise<void> {
-        switch (name) {
-            case "reveal": {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const [at, updateCursor] = args as any;
-                this.revealLine(at, !!updateCursor);
-                break;
-            }
-            case "move-cursor": {
-                const [to] = args as ["top" | "middle" | "bottom"];
-                this.goToLine(to);
-                break;
-            }
-            case "scroll": {
-                const [by, to] = args as ["page" | "halfPage", "up" | "down"];
-                this.scrollPage(by, to);
-                break;
-            }
-            case "scroll-line": {
-                const [to] = args as ["up" | "down"];
-                this.scrollLine(to);
-                break;
-            }
-            case "insert-line": {
-                const [type] = args as ["before" | "after"];
-                await this.client.command("startinsert");
-                await vscode.commands.executeCommand(
-                    type === "before" ? "editor.action.insertLineBefore" : "editor.action.insertLineAfter",
-                );
-                break;
-            }
-        }
-    }
-
-    private sendToVim = (keys: string): void => {
-        this.client.input(keys);
-    };
-
-    private ctrlAInsert = async (): Promise<void> => {
-        // Insert previously inserted text from the insert mode
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            return;
-        }
-        const lines: string[] = await this.client.callFunction("VSCodeGetLastInsertText");
-        if (!lines.length) {
-            return;
-        }
-        await editor.edit((b) => b.insert(editor.selection.active, lines.join("\n")));
-    };
-
-    private async pasteFromRegister(registerName: string): Promise<void> {
-        // copy content from register in insert mode
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            return;
-        }
-        const content = await this.client.callFunction("VSCodeGetRegister", [registerName]);
-        if (content === "") {
-            return;
-        }
-        await editor.edit((b) => b.insert(editor.selection.active, content));
+        disposeAll(this.disposables);
     }
 
     /// SCROLL COMMANDS ///
@@ -111,7 +43,7 @@ export class CommandsController implements Disposable, NeovimExtensionRequestPro
     };
 
     private scrollLine = (to: "up" | "down"): void => {
-        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: this.revealCursorScrollLine });
+        vscode.commands.executeCommand("editorScroll", { to, by: "line", revealCursor: config.revealCursorScrollLine });
     };
 
     private goToLine = (to: "top" | "middle" | "bottom"): void => {

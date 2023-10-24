@@ -1,88 +1,113 @@
-import { EventEmitter } from "events";
+import { Disposable, EventEmitter } from "vscode";
 
-import { NeovimClient } from "neovim";
-import { commands, Disposable, window } from "vscode";
+import { eventBus, EventBusData } from "./eventBus";
+import { createLogger } from "./logger";
+import { disposeAll, VSCodeContext } from "./utils";
 
-import { Logger } from "./logger";
-import { NeovimExtensionRequestProcessable, NeovimRedrawProcessable } from "./neovim_events_processable";
-import { findLastEvent } from "./utils";
+const logger = createLogger("ModeManager");
 
-const LOG_PREFIX = "ModeManager";
-
-export class ModeManager implements Disposable, NeovimRedrawProcessable, NeovimExtensionRequestProcessable {
+// a representation of the current mode. can be read in different ways using accessors. underlying type is shortname name as returned by `:help mode()`
+export class Mode {
+    public constructor(public shortname: string = "") {}
+    // mode 1-char code: n, v, V, i, s, ...
+    // converts ^v into v
+    public get char(): string {
+        return this.shortname.charAt(0).replace("\x16", "v");
+    }
+    // mode long name
+    public get name(): "insert" | "visual" | "cmdline" | "replace" | "normal" {
+        switch (this.char.toLowerCase()) {
+            case "i":
+                return "insert";
+            case "v":
+                return "visual";
+            case "c":
+                return "cmdline";
+            case "r":
+                return "replace";
+            case "n":
+            default:
+                return "normal";
+        }
+    }
+    // visual mode name
+    public get visual(): "char" | "line" | "block" {
+        return this.char === "V" ? "line" : this.shortname.charAt(0) === "v" ? "char" : "block";
+    }
+    public get isVisual(): boolean {
+        return this.name === "visual";
+    }
+    public get isInsert(): boolean {
+        return this.name === "insert";
+    }
+    public get isNormal(): boolean {
+        return this.name === "normal";
+    }
+}
+export class ModeManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Current neovim mode
      */
-    private mode = "";
+    private mode: Mode = new Mode("n");
     /**
      * True when macro recording in insert mode
      */
     private isRecording = false;
-
     private eventEmitter = new EventEmitter();
 
-    public constructor(private logger: Logger, private client: NeovimClient) {
-        this.disposables.push(window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor));
+    constructor() {
+        this.disposables.push(
+            eventBus.on("mode-changed", this.handleModeChanged, this),
+            eventBus.on(
+                "notify-recording",
+                () => {
+                    logger.debug(`setting recording flag`);
+                    this.isRecording = true;
+                    VSCodeContext.set("neovim.recording", true);
+                },
+                this,
+            ),
+        );
     }
 
-    public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
-    }
-
-    public get currentMode(): string {
+    public get currentMode(): Mode {
         return this.mode;
     }
 
     public get isInsertMode(): boolean {
-        return this.mode === "insert";
+        return this.mode.isInsert;
     }
 
     public get isVisualMode(): boolean {
-        return this.mode === "visual";
+        return this.mode.isVisual;
     }
 
     public get isNormalMode(): boolean {
-        return this.mode === "normal";
+        return this.mode.isNormal;
     }
 
     public get isRecordingInInsertMode(): boolean {
         return this.isRecording;
     }
 
-    public onModeChange(callback: (newMode: string) => void): void {
-        this.eventEmitter.on("neovimModeChanged", callback);
+    public onModeChange(callback: () => void): Disposable {
+        return this.eventEmitter.event(callback);
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        const lastModeChange = findLastEvent("mode_change", batch);
-        if (lastModeChange) {
-            const modeArg = lastModeChange[1] as [string, never] | undefined;
-            if (modeArg && modeArg[0] && modeArg[0] !== this.mode) {
-                const modeName = modeArg[0];
-                this.logger.debug(`${LOG_PREFIX}: Changing mode to ${modeName}`);
-                this.mode = modeName;
-                if (!this.isInsertMode && this.isRecording) {
-                    this.isRecording = false;
-                    commands.executeCommand("setContext", "neovim.recording", false);
-                }
-                commands.executeCommand("setContext", "neovim.mode", this.mode);
-                this.eventEmitter.emit("neovimModeChanged", modeName);
-            }
+    private handleModeChanged([mode]: EventBusData<"mode-changed">) {
+        logger.debug(`Changing mode to ${mode}`);
+        this.mode = new Mode(mode);
+        if (!this.isInsertMode && this.isRecording) {
+            this.isRecording = false;
+            VSCodeContext.set("neovim.recording", false);
         }
+        VSCodeContext.set("neovim.mode", this.mode.name);
+        logger.debug(`Setting mode context to ${this.mode.name}`);
+        this.eventEmitter.fire(null);
     }
 
-    public async handleExtensionRequest(name: string): Promise<void> {
-        if (name === "notify-recording") {
-            this.logger.debug(`${LOG_PREFIX}: setting recording flag`);
-            this.isRecording = true;
-            commands.executeCommand("setContext", "neovim.recording", true);
-        }
+    dispose() {
+        disposeAll(this.disposables);
     }
-
-    private onDidChangeActiveTextEditor = (): void => {
-        if (!this.isNormalMode) {
-            commands.executeCommand("vscode-neovim.escape");
-        }
-    };
 }
