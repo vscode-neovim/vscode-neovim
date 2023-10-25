@@ -49,7 +49,7 @@ ctrlKeys.forEach((k) => {
         cmd = "vscode-neovim.escape";
         args = null;
         when += [
-            "!markersNavigationVisible",
+            " && !markersNavigationVisible",
             "!parameterHintsVisible",
             "!inReferenceSearchEditor",
             "!referenceSearchVisible",
