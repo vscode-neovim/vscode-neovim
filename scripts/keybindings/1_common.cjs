@@ -12,7 +12,7 @@ const keybinds = [
         key: "ctrl+c",
         when: and(
             "neovim.mode == normal",
-            "neovim.ctrlKeysNormal.c",
+            "neovim.ctrlKeysNormal.c", // special case!
 
             "!markersNavigationVisible",
             "!parameterHintsVisible",
@@ -27,7 +27,10 @@ const keybinds = [
     {
         command: "vscode-neovim.escape",
         key: "ctrl+c",
-        when: and("neovim.mode != normal", "neovim.ctrlKeysInsert.c"),
+        when: and(
+            "neovim.mode != normal",
+            "neovim.ctrlKeysInsert.c", // special case!
+        ),
     },
     {
         command: "vscode-neovim.escape",
