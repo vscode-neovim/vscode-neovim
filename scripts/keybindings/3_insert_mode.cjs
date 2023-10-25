@@ -4,7 +4,8 @@ const [add, keybinds] = addKeybinds();
 
 // Generate Ctrl keys
 // const defaults = "adhjortuw";
-[..."abcdefghijklmnopqrstuvwxyz/]", "right", "left", "up", "down", "backspace", "delete"].forEach((k) => {
+// ! ctrl+c is special and is defined in common
+[..."abdefghijklmnopqrstuvwxyz/]", "right", "left", "up", "down", "backspace", "delete"].forEach((k) => {
     let cmd = "vscode-neovim.send";
     let key = `ctrl+${k}`;
     let args = key2arg(key);
@@ -16,10 +17,13 @@ const [add, keybinds] = addKeybinds();
         "editorLangId not in neovim.editorLangIdExclusions",
     ].join(" && ");
 
-    if (k === "o") {
-        cmd = "vscode-neovim.escape";
-    } else if (k === "r") {
-        cmd = "vscode-neovim.send-blocking";
+    switch (k) {
+        case "o":
+            cmd = "vscode-neovim.escape";
+            break;
+        case "r":
+            cmd = "vscode-neovim.send-blocking";
+            break;
     }
 
     add(key, when, args, cmd);
