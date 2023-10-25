@@ -16,10 +16,17 @@ const [add, keybinds] = addKeybinds();
         "editorLangId not in neovim.editorLangIdExclusions",
     ].join(" && ");
 
-    if (k === "o") {
-        cmd = "vscode-neovim.escape";
-    } else if (k === "r") {
-        cmd = "vscode-neovim.send-blocking";
+    switch (k) {
+        case "c":
+            cmd = "vscode-neovim.escape";
+            args = null;
+            break;
+        case "o":
+            cmd = "vscode-neovim.escape";
+            break;
+        case "r":
+            cmd = "vscode-neovim.send-blocking";
+            break;
     }
 
     add(key, when, args, cmd);

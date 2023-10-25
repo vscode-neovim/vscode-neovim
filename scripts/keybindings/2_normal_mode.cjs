@@ -44,6 +44,21 @@ ctrlKeys.forEach((k) => {
         cmd = `vscode-neovim.ctrl-${k}`;
         args = null;
     }
+    // escape
+    if (k === "c") {
+        cmd = "vscode-neovim.escape";
+        args = null;
+        when += [
+            "!markersNavigationVisible",
+            "!parameterHintsVisible",
+            "!inReferenceSearchEditor",
+            "!referenceSearchVisible",
+            "!dirtyDiffVisible",
+            "!notebookCellFocused",
+            "!findWidgetVisible",
+            "!notificationCenterVisible",
+        ].join(" && ");
+    }
 
     add(key, when, args, cmd);
 });
