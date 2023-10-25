@@ -1,18 +1,54 @@
+const and = (...items) =>
+    ["editorTextFocus", "neovim.init", "editorLangId not in neovim.editorLangIdExclusions", ...items].join(" && ");
+
 const keybinds = [
     {
         command: "vscode-neovim.escape",
         key: "ctrl+[",
-        when: "editorTextFocus && neovim.init",
+        when: and(),
+    },
+    {
+        command: "vscode-neovim.escape",
+        key: "ctrl+c",
+        when: and(
+            "neovim.mode == normal",
+            "neovim.ctrlKeysNormal.c",
+
+            "!markersNavigationVisible",
+            "!parameterHintsVisible",
+            "!inReferenceSearchEditor",
+            "!referenceSearchVisible",
+            "!dirtyDiffVisible",
+            "!notebookCellFocused",
+            "!findWidgetVisible",
+            "!notificationCenterVisible",
+        ),
+    },
+    {
+        command: "vscode-neovim.escape",
+        key: "ctrl+c",
+        when: and("neovim.mode != normal", "neovim.ctrlKeysInsert.c"),
     },
     {
         command: "vscode-neovim.escape",
         key: "Escape",
-        when: "editorTextFocus && neovim.init && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible",
+        when: and(
+            "neovim.mode == normal",
+
+            "!markersNavigationVisible",
+            "!parameterHintsVisible",
+            "!inReferenceSearchEditor",
+            "!referenceSearchVisible",
+            "!dirtyDiffVisible",
+            "!notebookCellFocused",
+            "!findWidgetVisible",
+            "!notificationCenterVisible",
+        ),
     },
     {
         command: "vscode-neovim.escape",
         key: "Escape",
-        when: "editorTextFocus && neovim.init && neovim.mode != normal",
+        when: and("neovim.mode != normal"),
     },
 ];
 
