@@ -37,7 +37,10 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         });
     }
     context.subscriptions.push(
-        vscode.commands.registerCommand("vscode-neovim.stop", () => disposeAll(context.subscriptions)),
+        vscode.commands.registerCommand("vscode-neovim.stop", () => {
+            deactivate(true);
+            disposeAll(context.subscriptions);
+        }),
     );
 }
 
