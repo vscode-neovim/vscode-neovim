@@ -19,6 +19,13 @@ const [add, keybinds] = addKeybinds();
     switch (k) {
         case "c":
             cmd = "vscode-neovim.escape";
+            when = [
+                "editorTextFocus",
+                "neovim.init",
+                "neovim.mode != normal",
+                `neovim.ctrlKeysInsert.${k}`,
+                "editorLangId not in neovim.editorLangIdExclusions",
+            ].join(" && ");
             args = null;
             break;
         case "o":

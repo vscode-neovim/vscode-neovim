@@ -48,8 +48,13 @@ ctrlKeys.forEach((k) => {
     if (k === "c") {
         cmd = "vscode-neovim.escape";
         args = null;
-        when += [
-            " && !markersNavigationVisible",
+        when = [
+            "editorTextFocus",
+            "neovim.init",
+            "neovim.mode == normal",
+            `neovim.ctrlKeysNormal.${k}`,
+            "editorLangId not in neovim.editorLangIdExclusions",
+            "!markersNavigationVisible",
             "!parameterHintsVisible",
             "!inReferenceSearchEditor",
             "!referenceSearchVisible",
