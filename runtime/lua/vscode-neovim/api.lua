@@ -1,3 +1,6 @@
+local api = vim.api
+local fn = vim.fn
+
 local M = {}
 
 ------------------------
@@ -276,6 +279,65 @@ function M.notify(msg, level, opts)
     level_name = "info"
   end
   M.action("notify", { args = { msg, level_name } })
+end
+
+do
+  ---@alias RangeType 'line' | 'char'
+
+  local op_func_id = 0
+
+  ---@see map-operator
+  --- vim.keymap.set(
+  ---   { "n", "x" },
+  ---   "tt",
+  ---   vscode.util.to_op(function(range, type)
+  ---     vim.print(range, type)
+  ---   { expr = true }
+  ---   end),
+  --- )
+  function M.to_op(func)
+    op_func_id = op_func_id + 1
+    local op_func_name = "__vscode_op_func_" .. tostring(op_func_id)
+    local operatorfunc = "v:lua." .. op_func_name
+
+    local op_func = function(motion)
+      local mode = api.nvim_get_mode().mode
+      if not motion then
+        if mode == "n" then
+          vim.go.operatorfunc = operatorfunc
+          return "g@"
+        elseif mode ~= "\x16" and mode:lower() ~= "v" then
+          return ""
+        end
+      end
+
+      local start_pos
+      local end_pos
+      if motion then
+        start_pos = api.nvim_buf_get_mark(0, "[")
+        end_pos = api.nvim_buf_get_mark(0, "]")
+      else
+        local a = fn.getpos("v")
+        local b = fn.getpos(".")
+        start_pos = { a[2], a[3] - 1 }
+        end_pos = { b[2], b[3] - 1 }
+      end
+
+      ---@type RangeType
+      local type = (motion == "line" or mode == "V") and "line" or "char"
+      if type == "line" then
+        start_pos = { start_pos[1], 0 }
+        end_pos = { end_pos[1], api.nvim_strwidth(fn.getline(end_pos[1])) - 1 }
+      end
+
+      local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, 0, "utf-16").range
+      func(range, type)
+      return ""
+    end
+
+    _G[op_func_name] = op_func
+    return _G[op_func_name]
+  end
 end
 
 return M

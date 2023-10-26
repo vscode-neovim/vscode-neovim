@@ -321,6 +321,7 @@ Load module: `local vscode = require("vscode-neovim")`
 5. `vscode.get_config` get a configuration value
 6. `vscode.update_config` update a configuration
 7. `vscode.notify` like `vim.notify`, but use vscode notification to show the message
+8. `vscode.to_op` A helper for `map-operator`. See [code_actions.lua](./runtime/plugin/code_actions.lua) for the usage
 
 #### Actions
 

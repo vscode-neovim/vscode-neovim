@@ -26,6 +26,8 @@ local vscode = {
   update_config = api.update_config,
   -- notifications
   notify = api.notify,
+  -- operatorfunc helper
+  to_op = api.to_op,
 }
 
 return vscode
