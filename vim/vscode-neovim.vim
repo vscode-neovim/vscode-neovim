@@ -109,6 +109,5 @@ augroup VscodeGeneral
 augroup END
 
 
-lua << EOF
-require("vscode-neovim")
-EOF
+lua require("vscode-neovim")
+execute 'source ' . fnamemodify(s:currDir, ':h') . '/runtime/plugin/*.lua'
