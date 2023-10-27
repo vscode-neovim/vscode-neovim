@@ -282,7 +282,11 @@ function M.notify(msg, level, opts)
 end
 
 do
-  ---@alias RangeType 'line' | 'char'
+  ---@class Context
+  ---@field range lsp.Range
+  ---@field is_linewise boolean true indicates linewise, otherwise it is charwise.
+  ---@field is_single_line boolean  true if start.line and end.line are equal.
+  ---@field is_current_line boolean is single line, and is current line
 
   local op_func_id = 0
 
@@ -307,7 +311,7 @@ do
           vim.go.operatorfunc = operatorfunc
           return "g@"
         elseif mode ~= "\x16" and mode:lower() ~= "v" then
-          return ""
+          return "<Ignore>"
         end
       end
 
@@ -323,16 +327,28 @@ do
         end_pos = { b[2], b[3] - 1 }
       end
 
-      ---@type RangeType
-      local type = (motion == "line" or mode == "V") and "line" or "char"
-      if type == "line" then
+      if start_pos[1] > end_pos[1] or (start_pos[1] == end_pos[1] and start_pos[2] > end_pos[2]) then
+        start_pos, end_pos = end_pos, start_pos
+      end
+
+      local is_linewise = motion == "line" or mode == "V"
+      if is_linewise then
         start_pos = { start_pos[1], 0 }
         end_pos = { end_pos[1], api.nvim_strwidth(fn.getline(end_pos[1])) - 1 }
       end
 
       local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, 0, "utf-16").range
-      func(range, type)
-      return ""
+      local is_single_line = range.start.line == range["end"].line
+      local is_current_line = is_single_line and range.start.line == fn.line(".") - 1
+      ---@type Context
+      local ctx = {
+        range = range,
+        is_linewise = is_linewise,
+        is_single_line = is_single_line,
+        is_current_line = is_current_line,
+      }
+      func(ctx)
+      return "<Ignore>"
     end
 
     _G[op_func_name] = op_func

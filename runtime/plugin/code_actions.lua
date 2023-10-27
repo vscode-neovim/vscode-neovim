@@ -1,5 +1,10 @@
 local vscode = require("vscode-neovim")
 
+local function esc()
+  local key = vim.api.nvim_replace_termcodes("<esc>", true, true, true)
+  vim.api.nvim_feedkeys(key, "n", false)
+end
+
 local k = function(mode, lhs, rhs)
   vim.keymap.set(mode, lhs, rhs, { expr = true }) -- expr is required
 end
@@ -8,7 +13,7 @@ end
 -- Format --
 ------------
 local format = vscode.to_op(function(range)
-  vscode.action("editor.action.formatSelection", { range = range })
+  vscode.action("editor.action.formatSelection", { range = range, callback = esc })
 end)
 
 k({ "n", "x" }, "=", format)
@@ -19,14 +24,13 @@ end)
 -------------
 -- Comment --
 -------------
-local comment = vscode.to_op(function(range, type)
-  local cmd
-  if type == "line" then
-    cmd = "editor.action.commentLine"
-  else
-    cmd = "editor.action.blockComment"
+local comment = vscode.to_op(function(ctx)
+  local cmd = ctx.is_linewise and "editor.action.commentLine" or "editor.action.blockComment"
+  local opts = { range = ctx.range, callback = esc }
+  if ctx.is_current_line then
+    opts.range = nil
   end
-  vscode.action(cmd, { range = range })
+  vscode.action(cmd, opts)
 end)
 
 local comment_line = function()
