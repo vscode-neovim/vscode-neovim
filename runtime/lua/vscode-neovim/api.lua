@@ -291,14 +291,6 @@ do
   local op_func_id = 0
 
   ---@see map-operator
-  --- vim.keymap.set(
-  ---   { "n", "x" },
-  ---   "tt",
-  ---   vscode.util.to_op(function(range, type)
-  ---     vim.print(range, type)
-  ---   { expr = true }
-  ---   end),
-  --- )
   function M.to_op(func)
     op_func_id = op_func_id + 1
     local op_func_name = "__vscode_op_func_" .. tostring(op_func_id)
