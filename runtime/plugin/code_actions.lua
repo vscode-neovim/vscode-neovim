@@ -30,7 +30,7 @@ k({ "n" }, "==", format_line)
 local comment = vscode.to_op(function(ctx)
   local cmd = ctx.is_linewise and "editor.action.commentLine" or "editor.action.blockComment"
   local opts = { range = ctx.range, callback = esc }
-  if ctx.is_current_line then
+  if ctx.is_linewise and ctx.is_current_line then
     opts.range = nil
   end
   vscode.action(cmd, opts)
