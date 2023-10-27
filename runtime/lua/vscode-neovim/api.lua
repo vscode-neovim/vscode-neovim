@@ -291,6 +291,19 @@ do
   local op_func_id = 0
 
   ---@see map-operator
+  ---
+  ---Example: Remap 'gq' to use 'editor.action.formatSelection'
+  ---
+  ---```lua
+  --- local format = vscode.to_op(function(ctx)
+  ---   vscode.action("editor.action.formatSelection", { range = ctx.range })
+  --- end)
+  ---
+  --- vim.keymap.set({ "n", "x" }, "gq", format, { expr = true })
+  --- vim.keymap.set({ "n" }, "gqq", function()
+  ---   return format() .. "_"
+  --- end, { expr = true })
+  ---````
   function M.to_op(func)
     op_func_id = op_func_id + 1
     local op_func_name = "__vscode_op_func_" .. tostring(op_func_id)

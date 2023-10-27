@@ -12,14 +12,17 @@ end
 ------------
 -- Format --
 ------------
-local format = vscode.to_op(function(range)
-  vscode.action("editor.action.formatSelection", { range = range, callback = esc })
+local format = vscode.to_op(function(ctx)
+  vscode.action("editor.action.formatSelection", { range = ctx.range, callback = esc })
 end)
-
-k({ "n", "x" }, "=", format)
-k({ "n" }, "==", function()
+local format_line = function()
   return format() .. "_"
-end)
+end
+
+k({ "n", "x" }, "gq", format)
+k({ "n" }, "gqq", format_line)
+k({ "n", "x" }, "=", format)
+k({ "n" }, "==", format_line)
 
 -------------
 -- Comment --
