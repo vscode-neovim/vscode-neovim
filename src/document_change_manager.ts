@@ -10,6 +10,7 @@ import {
     window,
     workspace,
 } from "vscode";
+import { calcPatch } from "fast-myers-diff";
 
 import { BufferManager } from "./buffer_manager";
 import { eventBus } from "./eventBus";

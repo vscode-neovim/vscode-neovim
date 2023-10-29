@@ -46,51 +46,21 @@ interface DocumentChange {
     rangeLength: number;
 }
 
-class LazyLineLengths {
-    private lines: string[];
-    private cache: number[] = [];
-    private cacheLength = 0;
-    private generator: Generator<number>;
-
-    constructor(text: string) {
-        this.lines = text.split("\n");
-        this.cache = new Array(this.lines.length);
-        this.generator = this.accumulateLengths();
-    }
-
-    private *accumulateLengths(): Generator<number> {
-        let cumulativeLength = 0;
-        for (let i = 0; i < this.lines.length; i++) {
-            cumulativeLength += this.lines[i].length + 1;
-            this.cache[i] = cumulativeLength;
-            this.cacheLength++;
-            yield cumulativeLength;
+// given an array of cumulative line lengths, find the line number given a character position after a known start line.
+// return the line as well as the number of characters until the start of the line.
+function findLine(lineLengths: number[], pos: number, startLine: number): [number, number] {
+    let low = startLine,
+        high = lineLengths.length - 1;
+    while (low < high) {
+        const mid = low + Math.floor((high - low) / 2); // can adjust pivot point based on probability of diffs being close together
+        if (lineLengths[mid] <= pos) {
+            low = mid + 1;
+        } else {
+            high = mid;
         }
     }
-
-    getLengthAt(line: number): number {
-        while (this.cacheLength <= line) {
-            this.generator.next();
-        }
-        return this.cache[line];
-    }
-
-    // given an array of cumulative line lengths, find the line number given a character position after a known start line.
-    // return the line as well as the number of characters until the start of the line.
-    findLine(pos: number, startLine: number): [number, number] {
-        let low = startLine,
-            high = this.lines.length - 1;
-        while (low < high) {
-            const mid = low + Math.floor((high - low) / 2); // can adjust pivot point based on probability of diffs being close together
-            if (this.getLengthAt(mid) <= pos) {
-                low = mid + 1;
-            } else {
-                high = mid;
-            }
-        }
-        const char = low > 0 ? this.getLengthAt(low - 1) : 0;
-        return [low, char];
-    }
+    const char = low > 0 ? lineLengths[low - 1] : 0;
+    return [low, char];
 }
 
 // fast-myers-diff accepts a raw 1D string, and outputs a list of operations to apply to the buffer.
@@ -101,11 +71,17 @@ class LazyLineLengths {
 export function* calcDiffWithPosition(oldText: string, newText: string): Generator<DocumentChange> {
     const patch = calcPatch(oldText, newText);
     // generate prefix sum of line lengths (accumulate the length)
-    const lineLengths = new LazyLineLengths(oldText);
+    const lines = oldText.split("\n");
+    const lineLengths = new Array(lines.length);
+    let cumulativeLength = 0;
+    for (let i = 0; i < lines.length; i++) {
+        cumulativeLength += lines[i].length + 1; // +1 for the newline character
+        lineLengths[i] = cumulativeLength;
+    }
     let lastLine = 0;
     for (const [start, end, text] of patch) {
-        const [lineStart, charToLineStart] = lineLengths.findLine(start, lastLine);
-        const [lineEnd, charToLineEnd] = lineLengths.findLine(end, lineStart);
+        const [lineStart, charToLineStart] = findLine(lineLengths, start, lastLine);
+        const [lineEnd, charToLineEnd] = findLine(lineLengths, end, lineStart);
         const charStart = start - charToLineStart;
         const charEnd = end - charToLineEnd;
         const range = new Range(new Position(lineStart, charStart), new Position(lineEnd, charEnd));
