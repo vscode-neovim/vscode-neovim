@@ -28,6 +28,8 @@ local vscode = {
   notify = api.notify,
   -- operatorfunc helper
   to_op = api.to_op,
+  -- status item
+  get_status_item = api.get_status_item,
 }
 
 return vscode
