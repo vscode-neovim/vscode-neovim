@@ -213,7 +213,7 @@ describe("VSCode integration specific stuff", () => {
         await assertContent(
             {
                 content: ["testblah2"],
-                mode: "V",
+                mode: "n",
             },
             client,
         );
