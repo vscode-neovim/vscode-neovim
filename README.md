@@ -322,6 +322,7 @@ Load module: `local vscode = require("vscode-neovim")`
 6. `vscode.update_config` update a configuration
 7. `vscode.notify` like `vim.notify`, but use vscode notification to show the message
 8. `vscode.to_op` A helper for `map-operator`. See [code_actions.lua](./runtime/plugin/code_actions.lua) for the usage
+9. `vscode.get_status_item` Creates a status item
 
 #### Actions
 
@@ -508,6 +509,20 @@ You can set `vscode.notify` as your default notify functions.
 
 ```lua
 vim.notify = vscode.notify
+```
+
+##### `vscode.get_status_item(id)`
+
+Creates a status item
+
+-   `id` (string): The identifier of the item
+
+```lua
+local test = vscode.get_status_item('test')
+test.text = 'hello' -- Show the text
+test.text = '' -- Hide the item
+test.text = nil -- Close the item
+test.text = '' -- error: The status item "test" has been closed
 ```
 
 ## ⌨️ Bindings

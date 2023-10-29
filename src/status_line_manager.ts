@@ -1,29 +1,63 @@
-import { Disposable } from "vscode";
+import { Disposable, StatusBarAlignment, StatusBarItem, window } from "vscode";
 
-import { MainController } from "./main_controller";
-import { StatusLineController } from "./status_line";
+import actions from "./actions";
+import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
+import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
+
+enum StatusType {
+    Mode, // msg_showmode
+    Cmd, // msg_showcmd
+    Msg, // msg_show, msg_clear
+    Custom, // custom status item
+}
 
 export class StatusLineManager implements Disposable {
     private disposables: Disposable[] = [];
-    /**
-     * Status var UI
-     */
-    private statusLine: StatusLineController;
+
+    // ui events
+    private _modeText = "";
+    private _cmdText = "";
+    private _msgText = "";
+    // custom status items
+    private _customStatus: string[] = [];
+
+    private statusBar: StatusBarItem;
 
     private get client() {
         return this.main.client;
     }
 
     public constructor(private main: MainController) {
-        this.statusLine = new StatusLineController();
-        this.disposables.push(this.statusLine);
-        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+        this.statusBar = window.createStatusBarItem(StatusBarAlignment.Left, -10);
+        this.statusBar.show();
+        this.disposables.push(this.statusBar, eventBus.on("redraw", this.handleRedraw, this));
+        actions.add("refresh-status-items", (items: string[]) => this.setStatus(items, StatusType.Custom));
     }
 
-    public dispose(): void {
-        disposeAll(this.disposables);
+    private setStatus(status: string[], type: StatusType.Custom): void;
+    private setStatus(status: string, type: Omit<StatusType, "Custom">): void;
+    private setStatus(status: string | string[], type: StatusType): void {
+        if (Array.isArray(status)) {
+            this._customStatus = status;
+        } else {
+            switch (type) {
+                case StatusType.Mode:
+                    this._modeText = status;
+                    break;
+                case StatusType.Cmd:
+                    this._cmdText = status;
+                    break;
+                case StatusType.Msg:
+                    this._msgText = status;
+                    break;
+            }
+        }
+        this.statusBar.text = [this._modeText, this._cmdText, this._msgText, ...this._customStatus]
+            .map((i) => i.replace(/\n/g, " ").trim())
+            .filter((i) => i.length)
+            .join(config.statusLineSeparator);
     }
 
     private handleRedraw(data: EventBusData<"redraw">) {
@@ -45,7 +79,7 @@ export class StatusLineManager implements Disposable {
                             }
                         }
                     }
-                    this.statusLine.statusString = str;
+                    this.setStatus(str, StatusType.Cmd);
                     break;
                 }
                 case "msg_show": {
@@ -67,7 +101,7 @@ export class StatusLineManager implements Disposable {
                             }
                         }
                     }
-                    this.statusLine.msgString = str;
+                    this.setStatus(str, StatusType.Msg);
                     break;
                 }
                 case "msg_showmode": {
@@ -81,11 +115,11 @@ export class StatusLineManager implements Disposable {
                             }
                         }
                     }
-                    this.statusLine.modeString = str;
+                    this.setStatus(str, StatusType.Mode);
                     break;
                 }
                 case "msg_clear": {
-                    this.statusLine.msgString = "";
+                    this.setStatus("", StatusType.Msg);
                     break;
                 }
             }
@@ -93,5 +127,9 @@ export class StatusLineManager implements Disposable {
         if (acceptPrompt && !hasMouseOnAfterReturnPrompt) {
             this.client.input("<CR>");
         }
+    }
+
+    dispose() {
+        disposeAll(this.disposables);
     }
 }
