@@ -29,6 +29,14 @@ export class Config implements Disposable {
         "NVIM_APPNAME",
         "logLevel",
         "logOutputToConsole",
+        "neovimWidth",
+        "useWSL",
+        "neovimInitVimPaths.darwin",
+        "neovimInitVimPaths.linux",
+        "neovimInitVimPaths.win32",
+        "neovimExecutablePaths.darwin",
+        "neovimExecutablePaths.linux",
+        "neovimExecutablePaths.win32",
     ].map((c) => `${this.root}.${c}`);
 
     dispose() {
@@ -58,7 +66,7 @@ export class Config implements Disposable {
             .showInformationMessage(`Changing "${requireRestart}" requires restart to take effect.`, "Restart")
             .then((value) => {
                 if (value === "Restart") {
-                    commands.executeCommand("workbench.action.restartExtensionHost");
+                    commands.executeCommand("vscode-neovim.restart");
                 }
             });
     }
