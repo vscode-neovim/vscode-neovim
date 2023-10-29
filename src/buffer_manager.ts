@@ -575,6 +575,13 @@ export class BufferManager implements Disposable {
         logger.debug(`Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`);
         await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
         try {
+            if (this.main.modeManager.isVisualMode) {
+                // https://github.com/vscode-neovim/vscode-neovim/issues/1577
+                logger.debug(
+                    `Cancel visual mode to prevent selection from previous editor to carry over to active editor`,
+                );
+                await this.client.input("<Esc>");
+            }
             await this.client.request("nvim_set_current_win", [winId]);
         } catch (e) {
             logger.error(`${(e as Error).message}`);
