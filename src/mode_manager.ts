@@ -43,6 +43,9 @@ export class Mode {
     public get isNormal(): boolean {
         return this.name === "normal";
     }
+    public get isCmdline(): boolean {
+        return this.name === "cmdline";
+    }
 }
 export class ModeManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -85,6 +88,10 @@ export class ModeManager implements Disposable {
 
     public get isNormalMode(): boolean {
         return this.mode.isNormal;
+    }
+
+    public get isCmdlineMode(): boolean {
+        return this.mode.isCmdline;
     }
 
     public get isRecordingInInsertMode(): boolean {

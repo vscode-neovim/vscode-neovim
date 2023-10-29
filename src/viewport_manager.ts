@@ -5,7 +5,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { ManualPromise, disposeAll } from "./utils";
 
 const logger = createLogger("ViewportManager");
 
@@ -27,6 +27,8 @@ export class ViewportManager implements Disposable {
      */
     private gridViewport: Map<number, Viewport> = new Map();
 
+    private syncViewportPromise?: ManualPromise;
+
     private get client() {
         return this.main.client;
     }
@@ -46,6 +48,10 @@ export class ViewportManager implements Disposable {
                 view.skipcol = saveView.skipcol;
             }),
         );
+    }
+
+    public get isSyncDone(): Promise<void> {
+        return Promise.resolve(this.syncViewportPromise?.promise);
     }
 
     /**
@@ -76,7 +82,7 @@ export class ViewportManager implements Disposable {
         return new Position(view.topline, view.leftcol);
     }
 
-    private handleRedraw(data: EventBusData<"redraw">) {
+    private async handleRedraw(data: EventBusData<"redraw">) {
         for (const { name, args } of data) {
             switch (name) {
                 case "win_viewport": {
@@ -86,6 +92,27 @@ export class ViewportManager implements Disposable {
                         view.botline = botline;
                         view.line = curline;
                         view.col = curcol;
+                    }
+                    // #1555
+                    if (this.main.modeManager.isCmdlineMode && !this.syncViewportPromise) {
+                        this.syncViewportPromise = new ManualPromise();
+                        try {
+                            const [currWin, currView] = (await this.client.lua(
+                                "return {vim.api.nvim_get_current_win(), vim.fn.winsaveview()}",
+                            )) as [number, any];
+                            const grid = this.main.bufferManager.getGridIdForWinId(currWin);
+                            if (grid) {
+                                const view = this.getViewport(grid);
+                                view.line = currView.lnum - 1;
+                                view.col = currView.col;
+                                view.topline = currView.topline - 1;
+                                view.leftcol = currView.leftcol;
+                                view.skipcol = currView.skipcol;
+                            }
+                        } finally {
+                            this.syncViewportPromise.resolve();
+                            this.syncViewportPromise = undefined;
+                        }
                     }
                     break;
                 }

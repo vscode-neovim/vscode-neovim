@@ -16,7 +16,9 @@ export class HighlightManager implements Disposable {
         this.disposables.push(eventBus.on("redraw", this.handleRedraw, this));
     }
 
-    private handleRedraw(data: EventBusData<"redraw">): void {
+    private async handleRedraw(data: EventBusData<"redraw">): Promise<void> {
+        await this.main.viewportManager.isSyncDone;
+
         const gridHLUpdates: Set<number> = new Set();
 
         for (const { name, args } of data) {
