@@ -12,7 +12,6 @@ import {
 } from "vscode";
 
 import { BufferManager } from "./buffer_manager";
-import { eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import {
@@ -20,7 +19,6 @@ import {
     ManualPromise,
     accumulateDotRepeatChange,
     calcDiffWithPosition,
-    callAtomic,
     convertCharNumToByteNum,
     disposeAll,
     getDocumentLineArray,
@@ -72,10 +70,6 @@ export class DocumentChangeManager implements Disposable {
      */
     private dotRepeatChange: DotRepeatChange | undefined;
     /**
-     * A hint for dot-repeat indicating of how the insert mode was started
-     */
-    private dotRepeatStartModeInsertHint?: "o" | "O";
-    /**
      * True when we're currently applying edits, so incoming changes will go into pending events queue
      */
     private applyingEdits = false;
@@ -91,13 +85,7 @@ export class DocumentChangeManager implements Disposable {
     public constructor(private main: MainController) {
         this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
         this.main.bufferManager.onBufferInit = this.onBufferInit;
-        this.disposables.push(
-            workspace.onDidChangeTextDocument(this.onChangeTextDocument),
-            eventBus.on("insert-line", ([type]) => {
-                this.dotRepeatStartModeInsertHint = type === "before" ? "O" : "o";
-                logger.debug(`Setting start insert mode hint - ${this.dotRepeatStartModeInsertHint}`);
-            }),
-        );
+        this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));
     }
 
     public dispose(): void {
@@ -123,69 +111,19 @@ export class DocumentChangeManager implements Disposable {
     }
 
     public async syncDotRepeatWithNeovim(): Promise<void> {
-        // dot-repeat executes last change across all buffers. So we'll create a temporary buffer & window,
+        // dot-repeat executes last change across all buffers.
+        // So we'll create a temporary buffer & window,
         // replay last changes here to trick neovim and destroy it after
-        if (!this.dotRepeatChange) {
-            return;
-        }
-        logger.debug(`Syncing dot repeat`);
-        const dotRepeatChange = { ...this.dotRepeatChange };
+        if (!this.dotRepeatChange) return;
+        const edits = this.dotRepeatChange.text.replace(/\r\n/g, "\n");
+        const deletes = this.dotRepeatChange.rangeLength;
         this.dotRepeatChange = undefined;
-
-        const currWin = await this.client.window;
-
-        // temporary buffer to replay the changes
-        const buf = await this.client.createBuffer(false, true);
-        if (typeof buf === "number") {
-            return;
+        if (!edits.length && !deletes) return;
+        try {
+            await this.client.lua("require'vscode-neovim.internal'.dotrepeat_sync(...)", [edits, deletes]);
+        } finally {
+            await this.client.lua("require'vscode-neovim.internal'.dotrepeat_restore()");
         }
-        // The buffer will be cleaned by checking this variable
-        await buf.setVar("_vscode_dotrepeat_buffer", true);
-        // create temporary win
-        await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
-        const win = await this.client.openWindow(buf, true, {
-            external: true,
-            width: 100,
-            height: 100,
-        });
-        await this.client.setOption("eventignore", "");
-        if (typeof win === "number") {
-            return;
-        }
-        const edits: [string, unknown[]][] = [];
-
-        // for delete changes we need an actual text, so let's prefill with something
-        // accumulate all possible lengths of deleted text to be safe
-        const delRangeLength = dotRepeatChange.rangeLength;
-        if (delRangeLength) {
-            const stub = new Array(delRangeLength).fill("x").join("");
-            edits.push(
-                ["nvim_buf_set_lines", [buf.id, 0, 0, false, [stub]]],
-                ["nvim_win_set_cursor", [win.id, [1, delRangeLength]]],
-            );
-        }
-        let editStr = "";
-        if (dotRepeatChange.startMode) {
-            editStr += `<Esc>${dotRepeatChange.startMode}`;
-            // remove EOL from first change
-            if (dotRepeatChange.text.startsWith(dotRepeatChange.eol)) {
-                dotRepeatChange.text = dotRepeatChange.text.slice(dotRepeatChange.eol.length);
-            }
-        }
-        editStr += dotRepeatChange.text.split(dotRepeatChange.eol).join("\n");
-        edits.push(["nvim_feedkeys", [editStr, "i", false]]);
-        if (dotRepeatChange.rangeLength) {
-            const backspaceEdits = [...new Array(dotRepeatChange.rangeLength).keys()].map(() => "<BS>").join("");
-            edits.push(["nvim_input", [backspaceEdits]]);
-        }
-        // since nvim_input is not blocking we need replay edits first, then clean up things in subsequent request
-        await callAtomic(this.client, edits, logger);
-
-        const cleanEdits: [string, unknown[]][] = [];
-        cleanEdits.push(["nvim_set_current_win", [currWin.id]]);
-        cleanEdits.push(["nvim_win_close", [win.id, true]]);
-        await callAtomic(this.client, cleanEdits, logger);
-        await this.client.executeLua("require'vscode-neovim.internal'.delete_dotrepeat_buffers(...)");
     }
 
     private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {
@@ -403,19 +341,17 @@ export class DocumentChangeManager implements Disposable {
         }
 
         const eol = doc.eol === EndOfLine.LF ? "\n" : "\r\n";
-        const startModeHint = this.dotRepeatStartModeInsertHint;
         const activeEditor = window.activeTextEditor;
 
         // Store dot repeat
         if (activeEditor && activeEditor.document === doc && this.main.modeManager.isInsertMode) {
-            this.dotRepeatStartModeInsertHint = undefined;
             const cursor = activeEditor.selection.active;
             for (const change of contentChanges) {
                 if (isCursorChange(change, cursor, eol)) {
                     if (this.dotRepeatChange && isChangeSubsequentToChange(change, this.dotRepeatChange)) {
                         this.dotRepeatChange = accumulateDotRepeatChange(change, this.dotRepeatChange);
                     } else {
-                        this.dotRepeatChange = normalizeDotRepeatChange(change, eol, startModeHint);
+                        this.dotRepeatChange = normalizeDotRepeatChange(change, eol);
                     }
                 }
             }

@@ -8,10 +8,7 @@ import { disposeAll } from "./utils";
 export class CommandsController implements Disposable {
     private disposables: Disposable[] = [];
 
-    private get client() {
-        return this.main.client;
-    }
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public constructor(private main: MainController) {
         this.disposables.push(
             commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
@@ -24,12 +21,6 @@ export class CommandsController implements Disposable {
             eventBus.on("move-cursor", ([to]) => this.goToLine(to)),
             eventBus.on("scroll", ([by, to]) => this.scrollPage(by, to)),
             eventBus.on("scroll-line", ([to]) => this.scrollLine(to)),
-            eventBus.on("insert-line", async ([type]) => {
-                await this.client.command("startinsert");
-                await commands.executeCommand(
-                    type === "before" ? "editor.action.insertLineBefore" : "editor.action.insertLineAfter",
-                );
-            }),
         );
     }
 
