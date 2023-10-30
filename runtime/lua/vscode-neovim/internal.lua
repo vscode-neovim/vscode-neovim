@@ -90,4 +90,45 @@ function M.handle_changes(bufnr, changes)
   return api.nvim_buf_get_changedtick(bufnr)
 end
 
+do
+  --- Replay changes for dotrepeat ---
+
+  local _curr_win, _temp_buf, _temp_win
+
+  ---@param edits string
+  ---@param deletes number
+  function M.dotrepeat_sync(edits, deletes)
+    local ei = vim.opt.ei:get()
+    vim.opt.ei = "all"
+
+    _curr_win = api.nvim_get_current_win()
+    local buf = api.nvim_create_buf(false, true)
+    _temp_buf = buf
+    local win = api.nvim_open_win(buf, true, { external = true, width = 100, height = 50 })
+    _temp_win = win
+
+    if deletes > 0 then
+      api.nvim_buf_set_lines(buf, 0, -1, false, { ("x"):rep(deletes) })
+      api.nvim_win_set_cursor(win, { 1, deletes })
+      local bs = ("<BS>"):rep(deletes)
+      bs = api.nvim_replace_termcodes(bs, true, true, true)
+      api.nvim_feedkeys(bs, "n", false)
+    end
+    api.nvim_feedkeys(edits, "n", false)
+
+    vim.opt.ei = ei
+  end
+
+  function M.dotrepeat_restore()
+    local ei = vim.opt.ei:get()
+    vim.opt.ei = "all"
+
+    api.nvim_set_current_win(_curr_win)
+    pcall(api.nvim_win_close, _temp_win, true)
+    pcall(api.nvim_buf_delete, _temp_buf, { force = true })
+
+    vim.opt.ei = ei
+  end
+end
+
 return M
