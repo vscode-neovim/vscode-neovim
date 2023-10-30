@@ -1,5 +1,13 @@
-nnoremap <C-o> <Cmd>call VSCodeNotify("workbench.action.navigateBack")<CR>
-nnoremap <C-i> <Cmd>call VSCodeNotify("workbench.action.navigateForward")<CR>
-nnoremap <Tab> <Cmd>call VSCodeNotify("workbench.action.navigateForward")<CR>
-nnoremap <C-t> <Cmd>call VSCodeNotify("workbench.action.navigateBack")<CR>
+function! s:jump(...)
+    let count = a:1
+    let to = a:2
 
+    for i in range(1, count ? count : 1)
+        call VSCodeNotify(to ==# 'back' ? 'workbench.action.navigateBack' : 'workbench.action.navigateForward')
+    endfor
+endfunction
+
+nnoremap <silent> <C-o> <Cmd>call <SID>jump(v:count, 'back')<CR>
+nnoremap <silent> <C-t> <Cmd>call <SID>jump(v:count, 'back')<CR>
+nnoremap <silent> <C-i> <Cmd>call <SID>jump(v:count, 'forward')<CR>
+nnoremap <silent> <Tab> <Cmd>call <SID>jump(v:count, 'forward')<CR>
