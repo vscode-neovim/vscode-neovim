@@ -30,15 +30,15 @@ nnoremap L <Cmd>call <SID>moveCursor('bottom')<CR>
 xnoremap L <Cmd>call <SID>moveCursor('bottom')<CR>
 
 " Disabled due to scroll problems (the ext binds them directly)
-" nnoremap <silent> <expr> <C-d> VSCodeExtensionCall('scroll', 'halfPage', 'down')
-" xnoremap <silent> <expr> <C-d> VSCodeExtensionCall('scroll', 'halfPage', 'down')
-" nnoremap <silent> <expr> <C-u> VSCodeExtensionCall('scroll', 'halfPage', 'up')
-" xnoremap <silent> <expr> <C-u> VSCodeExtensionCall('scroll', 'halfPage', 'up')
+" nnoremap <silent> <expr> <C-d> VSCodeExtensionNotify('scroll', 'halfPage', 'down')
+" xnoremap <silent> <expr> <C-d> VSCodeExtensionNotify('scroll', 'halfPage', 'down')
+" nnoremap <silent> <expr> <C-u> VSCodeExtensionNotify('scroll', 'halfPage', 'up')
+" xnoremap <silent> <expr> <C-u> VSCodeExtensionNotify('scroll', 'halfPage', 'up')
 
-" nnoremap <silent> <expr> <C-f> VSCodeExtensionCall('scroll', 'page', 'down')
-" xnoremap <silent> <expr> <C-f> VSCodeExtensionCall('scroll', 'page', 'down')
-" nnoremap <silent> <expr> <C-b> VSCodeExtensionCall('scroll', 'page', 'up')
-" xnoremap <silent> <expr> <C-b> VSCodeExtensionCall('scroll', 'page', 'up')
+" nnoremap <silent> <expr> <C-f> VSCodeExtensionNotify('scroll', 'page', 'down')
+" xnoremap <silent> <expr> <C-f> VSCodeExtensionNotify('scroll', 'page', 'down')
+" nnoremap <silent> <expr> <C-b> VSCodeExtensionNotify('scroll', 'page', 'up')
+" xnoremap <silent> <expr> <C-b> VSCodeExtensionNotify('scroll', 'page', 'up')
 
 " nnoremap <silent> <expr> <C-e> VSCodeExtensionNotify('scroll-line', 'down')
 " xnoremap <silent> <expr> <C-e> VSCodeExtensionNotify('scroll-line', 'down')

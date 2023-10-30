@@ -3,12 +3,14 @@ import { NeovimClient } from "neovim";
 
 import {
     attachTestNvimClient,
-    sendVSCodeKeys,
+    sendVSCodeCommand,
     assertContent,
     wait,
     closeAllActiveEditors,
     closeNvimClient,
     sendEscapeKey,
+    openTextDocument,
+    sendInsertKey,
 } from "../utils";
 
 describe("Composite escape key", () => {
@@ -18,23 +20,16 @@ describe("Composite escape key", () => {
     });
     after(async () => {
         await closeNvimClient(client);
-    });
-
-    afterEach(async () => {
         await closeAllActiveEditors();
     });
 
     it("Works", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "",
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait(1000);
+        await openTextDocument({ content: "" });
 
-        await sendVSCodeKeys("i");
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
-        await wait(300);
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
+        await sendInsertKey();
+        await sendVSCodeCommand("vscode-neovim.compositeEscape1", "j");
+        await wait(500);
+        await sendVSCodeCommand("vscode-neovim.compositeEscape1", "j");
         await assertContent(
             {
                 mode: "i",
@@ -48,10 +43,10 @@ describe("Composite escape key", () => {
             },
             client,
         );
-        await sendVSCodeKeys("A");
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
-        await wait(300);
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape2", "k");
+        await sendInsertKey("A");
+        await sendVSCodeCommand("vscode-neovim.compositeEscape1", "j");
+        await wait(500);
+        await sendVSCodeCommand("vscode-neovim.compositeEscape2", "k");
         await assertContent(
             {
                 mode: "i",
@@ -65,11 +60,9 @@ describe("Composite escape key", () => {
             },
             client,
         );
-        await sendVSCodeKeys("i");
+        await sendInsertKey();
         await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
-        await wait(50);
         await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
-        await wait();
         await assertContent(
             {
                 content: ["jjjk"],
@@ -78,11 +71,9 @@ describe("Composite escape key", () => {
             client,
         );
 
-        await sendVSCodeKeys("i");
+        await sendInsertKey();
         await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
-        await wait(50);
         await vscode.commands.executeCommand("vscode-neovim.compositeEscape2", "k");
-        await wait(1000);
         await assertContent(
             {
                 content: ["jjjk"],

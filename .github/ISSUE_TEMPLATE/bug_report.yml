@@ -1,0 +1,59 @@
+name: Bug Report
+description: File a bug/issue
+title: "bug: "
+labels: [bug, triage]
+body:
+    - type: markdown
+      attributes:
+          value: |
+              **Before** reporting an issue, make sure to read the [documentation](https://github.com/vscode-neovim/vscode-neovim/) and search [existing issues](https://github.com/vscode-neovim/vscode-neovim/issues). Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/vscode-neovim/vscode-neovim/discussions) and will be closed. Additionally, please be aware of the following:
+                - plugins that provide their own UI, or work during insert mode, will never be supported
+                - neovim can only interact with one window at a time
+                - highlights are best-effort
+    - type: checkboxes
+      attributes:
+          label: Did you check docs and existing issues?
+          description: Make sure you checked all of the below before submitting an issue
+          options:
+              - label: I have read all the vscode-neovim docs
+                required: true
+              - label: I have searched the existing issues of vscode-neovim
+                required: true
+              - label:
+                    I can reproduce the issue with an empty init.vim/init.lua and no other vscode extensions (when
+                    applicable)
+                required: true
+    - type: input
+      attributes:
+          label: "Neovim version (nvim -v)"
+          placeholder: "0.8.0 commit db1b0ee3b30f"
+      validations:
+          required: true
+    - type: input
+      attributes:
+          label: "Operating system/version"
+          placeholder: "MacOS 11.5"
+      validations:
+          required: true
+    - type: textarea
+      attributes:
+          label: Describe the bug
+          description: A clear and concise description of what the bug is. When did this issue first appear?
+      validations:
+          required: true
+    - type: textarea
+      attributes:
+          label: Steps To Reproduce
+          description: Steps to reproduce the behavior.
+          placeholder: |
+              1.
+              2. 
+              3.
+      validations:
+          required: true
+    - type: textarea
+      attributes:
+          label: Expected Behavior
+          description: A concise description of what you expected to happen.
+      validations:
+          required: true

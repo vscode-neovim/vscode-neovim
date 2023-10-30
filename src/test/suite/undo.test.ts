@@ -9,6 +9,8 @@ import {
     sendEscapeKey,
     closeAllActiveEditors,
     closeNvimClient,
+    openTextDocument,
+    sendInsertKey,
 } from "../utils";
 
 describe("Undo", () => {
@@ -18,18 +20,11 @@ describe("Undo", () => {
     });
     after(async () => {
         await closeNvimClient(client);
-    });
-
-    afterEach(async () => {
         await closeAllActiveEditors();
     });
 
     it("U in new buffer doesnt undo initial content", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "some line\notherline",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(2000);
+        await openTextDocument({ content: "some line\notherline" });
         await sendVSCodeKeys("u");
         await assertContent(
             {
@@ -40,18 +35,14 @@ describe("Undo", () => {
     });
 
     it("Undo points are correct after the insert mode", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "some line\notherline",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "some line\notherline" });
         // for some reason sending both jA fails
         await sendVSCodeKeys("j");
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("\nblah");
         await sendEscapeKey();
 
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("\nblah");
         await sendEscapeKey();
 
@@ -62,7 +53,7 @@ describe("Undo", () => {
             client,
         );
 
-        await sendVSCodeKeys("u");
+        await sendVSCodeKeys("u", 500);
         await assertContent(
             {
                 content: ["some line", "otherline", "blah"],
@@ -80,11 +71,7 @@ describe("Undo", () => {
     });
 
     it("Undo points are correct after newlines", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "some line\notherline",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "some line\notherline" });
         await sendVSCodeKeys("jo");
         await sendVSCodeKeys("blah\nblah");
         await sendEscapeKey();
@@ -106,12 +93,8 @@ describe("Undo", () => {
     });
 
     it("Undo points are correct after newlines - 2", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
-        await sendVSCodeKeys("i");
+        await openTextDocument({ content: "" });
+        await sendInsertKey();
         await sendVSCodeKeys("blah\notherblah");
         await sendEscapeKey();
 
@@ -132,15 +115,11 @@ describe("Undo", () => {
     });
 
     it("Buffer is ok after undo and o", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "a\nb",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "a\nb" });
         await sendVSCodeKeys("yy");
         await sendVSCodeKeys("p");
         await sendVSCodeKeys("u");
-        await sendVSCodeKeys("o");
+        await sendInsertKey("o");
 
         await sendEscapeKey();
         await assertContent(
@@ -169,9 +148,7 @@ describe("Undo", () => {
     });
 
     it("Buffer ok after undo - 2", async () => {
-        const doc = await vscode.workspace.openTextDocument();
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: "" });
 
         await sendVSCodeKeys("ia\nb\n\nc");
         await sendEscapeKey();
@@ -184,7 +161,6 @@ describe("Undo", () => {
         );
 
         await sendVSCodeKeys("u");
-        await wait(1000);
         await assertContent(
             {
                 content: [""],
@@ -201,17 +177,17 @@ describe("Undo", () => {
             content: ["2"].join("\n"),
         });
         await vscode.window.showTextDocument(doc1, vscode.ViewColumn.One);
-        await wait(1000);
+        await wait(500);
         await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
-        await wait(1000);
+        await wait(500);
         await assertContent({ content: ["2"] }, client);
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("test");
         await sendEscapeKey();
         await assertContent({ content: ["2test"] }, client);
         await sendVSCodeKeys("gT");
         await sendVSCodeKeys("gt");
-        await wait(1000);
+        await wait(500);
         await sendVSCodeKeys("u");
         await assertContent({ content: ["2"] }, client);
     });

@@ -1,39 +1,75 @@
-import { NeovimClient } from "neovim";
-import { Disposable } from "vscode";
+import { Disposable, StatusBarAlignment, StatusBarItem, window } from "vscode";
 
-import { Logger } from "./logger";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
-import { StatusLineController } from "./status_line";
+import actions from "./actions";
+import { config } from "./config";
+import { EventBusData, eventBus } from "./eventBus";
+import { MainController } from "./main_controller";
+import { disposeAll } from "./utils";
 
-export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
+enum StatusType {
+    Mode, // msg_showmode
+    Cmd, // msg_showcmd
+    Msg, // msg_show, msg_clear
+    Custom, // custom status item
+}
+
+export class StatusLineManager implements Disposable {
     private disposables: Disposable[] = [];
-    /**
-     * Status var UI
-     */
-    private statusLine: StatusLineController;
 
-    public constructor(private logger: Logger, private client: NeovimClient) {
-        this.statusLine = new StatusLineController();
-        this.disposables.push(this.statusLine);
+    // ui events
+    private _modeText = "";
+    private _cmdText = "";
+    private _msgText = "";
+    // custom status items
+    private _customStatus: string[] = [];
+
+    private statusBar: StatusBarItem;
+
+    private get client() {
+        return this.main.client;
     }
 
-    public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+    public constructor(private main: MainController) {
+        this.statusBar = window.createStatusBarItem(StatusBarAlignment.Left, -10);
+        this.statusBar.show();
+        this.disposables.push(this.statusBar, eventBus.on("redraw", this.handleRedraw, this));
+        actions.add("refresh-status-items", (items: string[]) => this.setStatus(items, StatusType.Custom));
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
+    private setStatus(status: string[], type: StatusType.Custom): void;
+    private setStatus(status: string, type: Omit<StatusType, "Custom">): void;
+    private setStatus(status: string | string[], type: StatusType): void {
+        if (Array.isArray(status)) {
+            this._customStatus = status;
+        } else {
+            switch (type) {
+                case StatusType.Mode:
+                    this._modeText = status;
+                    break;
+                case StatusType.Cmd:
+                    this._cmdText = status;
+                    break;
+                case StatusType.Msg:
+                    this._msgText = status;
+                    break;
+            }
+        }
+        this.statusBar.text = [this._modeText, this._cmdText, this._msgText, ...this._customStatus]
+            .map((i) => i.replace(/\n/g, " ").trim())
+            .filter((i) => i.length)
+            .join(config.statusLineSeparator);
+    }
+
+    private handleRedraw(data: EventBusData<"redraw">) {
         let acceptPrompt = false;
+
         // if there is mouse_on event after return prompt, then we don't need automatically accept it
         // use case: easymotion search with jumping
         let hasMouseOnAfterReturnPrompt = false;
-        batch.forEach(([name, ...args], idx) => {
-            // for (const [name, ...args] of batch) {
-            const firstArg = args[0] || [];
-            const lastArg = args[args.length - 1] || [];
+        data.forEach(({ name, args, lastArg, firstArg }, idx) => {
             switch (name) {
                 case "msg_showcmd": {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [content] = firstArg as [string, any[]];
+                    const [content] = firstArg;
                     let str = "";
                     if (content) {
                         for (const c of content) {
@@ -43,19 +79,18 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
                             }
                         }
                     }
-                    this.statusLine.statusString = str;
+                    this.setStatus(str, StatusType.Cmd);
                     break;
                 }
                 case "msg_show": {
                     let str = "";
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    for (const [type, content] of args as [string, any[], never][]) {
+                    for (const [type, content] of args) {
                         // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
                         //     this.nextInputBlocking = true;
                         // }
                         if (type === "return_prompt") {
                             acceptPrompt = true;
-                            hasMouseOnAfterReturnPrompt = !!batch.slice(idx).find(([name]) => name === "mouse_on");
+                            hasMouseOnAfterReturnPrompt = !!data.slice(idx).find(({ name }) => name === "mouse_on");
                         }
                         if (content) {
                             for (const c of content) {
@@ -66,12 +101,11 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
                             }
                         }
                     }
-                    this.statusLine.msgString = str;
+                    this.setStatus(str, StatusType.Msg);
                     break;
                 }
                 case "msg_showmode": {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const [content] = lastArg as [any[]];
+                    const [content] = lastArg;
                     let str = "";
                     if (content) {
                         for (const c of content) {
@@ -81,11 +115,11 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
                             }
                         }
                     }
-                    this.statusLine.modeString = str;
+                    this.setStatus(str, StatusType.Mode);
                     break;
                 }
                 case "msg_clear": {
-                    this.statusLine.msgString = "";
+                    this.setStatus("", StatusType.Msg);
                     break;
                 }
             }
@@ -93,5 +127,9 @@ export class StatusLineManager implements Disposable, NeovimRedrawProcessable {
         if (acceptPrompt && !hasMouseOnAfterReturnPrompt) {
             this.client.input("<CR>");
         }
+    }
+
+    dispose() {
+        disposeAll(this.disposables);
     }
 }

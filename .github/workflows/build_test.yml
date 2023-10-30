@@ -2,6 +2,10 @@ name: Code Check & Test
 
 on: [pull_request, push]
 
+permissions:
+    contents: write
+    pull-requests: write
+
 jobs:
     build:
         name: Build & Test
@@ -15,16 +19,15 @@ jobs:
             - name: Setup Node
               uses: actions/setup-node@v3
               with:
-                  node-version: "14"
+                  node-version: "18"
                   cache: "npm"
             - name: Install Neovim
               uses: rhysd/action-setup-vim@v1
               id: vim
               with:
                   neovim: true
-                  # Use the oldest supported Neovim version here so we don't accidentally
-                  # break the extension on older versions
-                  version: v0.8.0
+                  # use latest stable version
+                  # version: v0.9.0
             - name: npm install
               run: npm ci --silent
             - name: Build
@@ -48,10 +51,9 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
-            - name: Setup Node
-              uses: actions/setup-node@v3
+            - uses: actions/setup-node@v3
               with:
-                  node-version: "14"
+                  node-version: "18"
                   cache: "npm"
             - name: npm install
               run: npm ci --silent
@@ -63,3 +65,40 @@ jobs:
               with:
                   name: vscode-neovim
                   path: vscode-neovim-${{github.sha}}.vsix
+    release-please:
+        name: release-please
+        if: ${{ github.ref == 'refs/heads/master' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: google-github-actions/release-please-action@v3
+              id: release
+              with:
+                  release-type: node
+                  package-name: vscode-neovim
+                  bump-minor-pre-major: true
+                  token: ${{ secrets.RELEASE_PLEASE_KEY }}
+            - uses: actions/checkout@v3
+              if: ${{ steps.release.outputs.release_created }}
+            - uses: actions/setup-node@v3
+              if: ${{ steps.release.outputs.release_created }}
+              with:
+                  node-version: "18"
+                  cache: "npm"
+            - name: npm install
+              if: ${{ steps.release.outputs.release_created }}
+              run: npm ci --silent
+            - name: vsce package
+              if: ${{ steps.release.outputs.release_created }}
+              run: npx vsce package -o vscode-neovim-${{steps.release.outputs.tag_name}}.vsix
+            - name: Upload Release Artifact
+              if: ${{ steps.release.outputs.release_created }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run:
+                  gh release upload ${{ steps.release.outputs.tag_name }} vscode-neovim-${{
+                  steps.release.outputs.tag_name }}.vsix
+            - name: vsce publish
+              if: ${{ steps.release.outputs.release_created }}
+              env:
+                  VSCE_PAT: ${{ secrets.VSCE_TOKEN }}
+              run: npx vsce publish

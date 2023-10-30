@@ -1,29 +1,30 @@
 import { Disposable, OutputChannel, window } from "vscode";
 
-import { Logger } from "./logger";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
-import { EXT_NAME } from "./utils";
+import { EXT_NAME } from "./constants";
+import { EventBusData, eventBus } from "./eventBus";
+import { disposeAll } from "./utils";
 
-export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcessable {
+export class MultilineMessagesManager implements Disposable {
     private disposables: Disposable[] = [];
 
     private channel: OutputChannel;
 
-    public constructor(private logger: Logger) {
+    public constructor() {
         this.channel = window.createOutputChannel(`${EXT_NAME}`);
         this.disposables.push(this.channel);
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 
     public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        disposeAll(this.disposables);
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        for (const [name, ...args] of batch) {
+    private handleRedraw(data: EventBusData<"redraw">): void {
+        for (const { name, args } of data) {
             switch (name) {
                 case "msg_show": {
                     let str = "";
-                    for (const [type, content, clear] of args as [string, [number, string][], boolean][]) {
+                    for (const [type, content, clear] of args) {
                         if (type === "return_prompt") {
                             continue;
                         }
@@ -48,7 +49,7 @@ export class MutlilineMessagesManager implements Disposable, NeovimRedrawProcess
                 }
                 case "msg_history_show": {
                     let str = "\n";
-                    for (const arg of args as [string, [number, string][]][][][]) {
+                    for (const arg of args) {
                         for (const list of arg) {
                             for (const [commandName, content] of list) {
                                 let cmdContent = "";

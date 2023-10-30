@@ -10,8 +10,6 @@ let &runtimepath = &runtimepath . ',' . s:luaPath
 
 " Used to execute vscode command
 let s:vscodeCommandEventName = 'vscode-command'
-" Used to execute vscode command with some range (the specified range will be selected and the command will be executed on this range)
-let s:vscodeRangeCommandEventName = 'vscode-range-command'
 " Used for externsion inter-communications
 let s:vscodePluginEventName = 'vscode-neovim'
 
@@ -25,58 +23,26 @@ function! VSCodeNotify(cmd, ...)
     call rpcnotify(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
 endfunction
 
-function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
-    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, 0, 0, a:leaveSelection, a:000)
-endfunction
-
-function! VSCodeNotifyRange(cmd, line1, line2, leaveSelection, ...)
-    call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, 0, 0, a:leaveSelection, a:000)
-endfunction
-
-function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
-    call rpcrequest(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
-endfunction
-
-function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
-    call rpcnotify(g:vscode_channel, s:vscodeRangeCommandEventName, a:cmd, a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
-endfunction
-
-function! VSCodeExtensionCall(cmd, ...) abort
-    call rpcrequest(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
-endfunction
-
 function! VSCodeExtensionNotify(cmd, ...)
     call rpcnotify(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
-function! VSCodeCallVisual(cmd, leaveSelection, ...) abort
-    let mode = mode()
-    if mode ==# 'V'
-        let startLine = line('v')
-        let endLine = line('.')
-        call VSCodeCallRange(a:cmd, startLine, endLine, a:leaveSelection, a:000)
-    elseif mode ==# 'v' || mode ==# "\<C-v>"
-        let startPos = getpos('v')
-        let endPos = getpos('.')
-        call VSCodeCallRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, a:leaveSelection, a:000)
-    else
-        call VSCodeCall(a:cmd, a:000)
-    endif
+function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
+    " FIXME: breaking
+    call VSCodeExtensionNotify('range-command', a:cmd, 'V', a:line1, a:line2, 1, 1, a:leaveSelection, a:000)
 endfunction
 
-function! VSCodeNotifyVisual(cmd, leaveSelection, ...)
-    let mode = mode()
-    if mode ==# 'V'
-        let startLine = line('v')
-        let endLine = line('.')
-        call VSCodeNotifyRange(a:cmd, startLine, endLine, a:leaveSelection, a:000)
-    elseif mode ==# 'v' || mode ==# "\<C-v>"
-        let startPos = getpos('v')
-        let endPos = getpos('.')
-        call VSCodeNotifyRangePos(a:cmd, startPos[1], endPos[1], startPos[2], endPos[2] + 1, a:leaveSelection, a:000)
-    else
-        call VSCodeNotify(a:cmd, a:000)
-    endif
+function! VSCodeNotifyRange(cmd, line1, line2, leaveSelection, ...)
+    call VSCodeExtensionNotify('range-command', a:cmd, 'V', a:line1, a:line2, 1, 1, a:leaveSelection, a:000)
+endfunction
+
+function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
+    " FIXME: breaking
+    call VSCodeExtensionNotify('range-command', a:cmd, 'v', a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
+endfunction
+
+function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
+    call VSCodeExtensionNotify('range-command', a:cmd, 'v', a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
 endfunction
 
 " Called from extension when opening/creating new file in vscode to reset undo tree
@@ -89,11 +55,6 @@ function! VSCodeClearUndo(bufId)
 endfunction
 
 
-" Set text decorations for given ranges. Used in easymotion
-function! VSCodeSetTextDecorations(hlName, rowsCols)
-    call VSCodeExtensionNotify('text-decorations', a:hlName, a:rowsCols)
-endfunction
-
 " This is called by extension when created new buffer
 function! s:onBufEnter(name, id)
     if exists('b:vscode_temp') && b:vscode_temp
@@ -105,28 +66,23 @@ function! s:onBufEnter(name, id)
     if exists('g:isJumping')
         let isJumping = g:isJumping
     endif
-    call VSCodeExtensionCall('external-buffer', a:name, a:id, 1, tabstop, isJumping)
+    call VSCodeExtensionNotify('external-buffer', a:name, a:id, 1, tabstop, isJumping)
 endfunction
 
 function! s:runFileTypeDetection()
     doautocmd BufRead
-    if exists('b:vscode_controlled') && b:vscode_controlled
-        " make sure we disable syntax (global option seems doesn't take effect for 2nd+ windows)
-        setlocal syntax=off
-    endif
 endfunction
 
 function! s:onInsertEnter()
     let reg = reg_recording()
     if !empty(reg)
-        call VSCodeExtensionCall('notify-recording', reg)
+        call VSCodeExtensionNotify('notify-recording', reg)
     endif
 endfunction
 
 
 " Load altercmd first
 execute 'source ' . s:currDir . '/vim-altercmd/plugin/altercmd.vim'
-execute 'source ' . s:currDir . '/vscode-insert.vim'
 execute 'source ' . s:currDir . '/vscode-scrolling.vim'
 execute 'source ' . s:currDir . '/vscode-jumplist.vim'
 execute 'source ' . s:currDir . '/vscode-code-actions.vim'
@@ -146,9 +102,12 @@ augroup VscodeGeneral
     " Looks like external windows are coming with "set wrap" set automatically, disable them
     " autocmd WinNew,WinEnter * :set nowrap
     autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
+    autocmd VimEnter,ModeChanged * call VSCodeExtensionNotify('mode-changed', mode())
+    autocmd WinEnter * call VSCodeExtensionNotify('window-changed', win_getid())
+    " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.
+    autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:luaPath
 augroup END
 
 
-lua << EOF
-require("vscode")
-EOF
+lua require("vscode-neovim")
+execute 'source ' . fnamemodify(s:currDir, ':h') . '/runtime/plugin/*.lua'

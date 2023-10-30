@@ -1,60 +1,46 @@
-import { spawn, ChildProcess, execSync } from "child_process";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { ChildProcess, execSync, spawn } from "child_process";
+import { readFile } from "fs/promises";
 import path from "path";
 
-import vscode from "vscode";
 import { attach, NeovimClient } from "neovim";
+import vscode, { Range } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { createLogger, transports as loggerTransports } from "winston";
+import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
-import { HighlightConfiguration } from "./highlight_provider";
-import { CommandsController } from "./commands_controller";
-import { ModeManager } from "./mode_manager";
+import actions from "./actions";
 import { BufferManager } from "./buffer_manager";
-import { TypingManager } from "./typing_manager";
-import { CursorManager } from "./cursor_manager";
-import { Logger, LogLevel } from "./logger";
-import { DocumentChangeManager } from "./document_change_manager";
-import {
-    NeovimCommandProcessable,
-    NeovimExtensionRequestProcessable,
-    NeovimRangeCommandProcessable,
-    NeovimRedrawProcessable,
-} from "./neovim_events_processable";
 import { CommandLineManager } from "./command_line_manager";
-import { StatusLineManager } from "./status_line_manager";
+import { CommandsController } from "./commands_controller";
+import { config } from "./config";
+import { CursorManager } from "./cursor_manager";
+import { DocumentChangeManager } from "./document_change_manager";
+import { eventBus } from "./eventBus";
 import { HighlightManager } from "./highlight_manager";
-import { CustomCommandsManager } from "./custom_commands_manager";
-import { findLastEvent } from "./utils";
-import { MutlilineMessagesManager } from "./multiline_messages_manager";
+import { createLogger } from "./logger";
+import { ModeManager } from "./mode_manager";
+import { MultilineMessagesManager } from "./multiline_messages_manager";
+import { StatusLineManager } from "./status_line_manager";
+import { TypingManager } from "./typing_manager";
+import { disposeAll, findLastEvent, VSCodeContext } from "./utils";
 import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
 }
 
-export interface ControllerSettings {
-    neovimPath: string;
-    extensionPath: string;
-    highlightsConfiguration: HighlightConfiguration;
-    mouseSelection: boolean;
-    useWsl: boolean;
-    customInitFile: string;
-    clean: boolean;
-    neovimViewportWidth: number;
-    neovimViewportHeightExtend: number;
-    revealCursorScrollLine: boolean;
-    logConf: {
-        level: "none" | "error" | "warn" | "debug";
-        logPath: string;
-        outputToConsole: boolean;
-    };
-}
+const logger = createLogger("MainController");
 
-const LOG_PREFIX = "MainController";
+interface VSCodeActionOptions {
+    args?: any[];
+    range?: Range | [number, number] | [number, number, number, number];
+    restore_selection?: boolean;
+    callback?: string;
+}
 
 export class MainController implements vscode.Disposable {
     private nvimProc: ChildProcess;
-    private client: NeovimClient;
+    public client: NeovimClient;
 
     private disposables: vscode.Disposable[] = [];
 
@@ -63,9 +49,6 @@ export class MainController implements vscode.Disposable {
      * Save current batch into temp variable
      */
     private currentRedrawBatch: [string, ...unknown[]][] = [];
-
-    private logger!: Logger;
-    private settings: ControllerSettings;
 
     public modeManager!: ModeManager;
     public bufferManager!: BufferManager;
@@ -76,48 +59,40 @@ export class MainController implements vscode.Disposable {
     public commandLineManager!: CommandLineManager;
     public statusLineManager!: StatusLineManager;
     public highlightManager!: HighlightManager;
-    public customCommandsManager!: CustomCommandsManager;
-    public multilineMessagesManager!: MutlilineMessagesManager;
+    public multilineMessagesManager!: MultilineMessagesManager;
     public viewportManager!: ViewportManager;
 
-    public constructor(settings: ControllerSettings) {
-        this.settings = settings;
-        this.logger = new Logger(
-            LogLevel[settings.logConf.level],
-            settings.logConf.logPath,
-            settings.logConf.outputToConsole,
-        );
-        this.disposables.push(this.logger);
-
-        let extensionPath = settings.extensionPath;
-        if (settings.useWsl) {
+    public constructor(private extensionPath: string) {
+        if (config.useWsl) {
             // execSync returns a newline character at the end
-            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
+            this.extensionPath = extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`)
+                .toString()
+                .trim();
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
-        const neovimSupportScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
-        const neovimOptionScriptPath = path.posix.join(extensionPath, "vim", "vscode-options.vim");
+        const neovimPreScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
+        const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode-neovim/force-options.lua");
 
         const args = [
             "-N",
             "--embed",
             // load options after user config
-            "-c",
-            `source ${neovimOptionScriptPath}`,
+            "-S",
+            neovimPostScriptPath,
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
-            `source ${neovimSupportScriptPath}`,
+            `source ${neovimPreScriptPath}`,
         ];
 
         const workspaceFolder = vscode.workspace.workspaceFolders;
         const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : undefined;
-        if (cwd && !settings.useWsl && !vscode.env.remoteName) {
+        if (cwd && !config.useWsl && !vscode.env.remoteName) {
             args.push("-c", `cd ${cwd}`);
         }
 
-        if (settings.useWsl) {
-            args.unshift(settings.neovimPath);
+        if (config.useWsl) {
+            args.unshift(config.neovimPath);
         }
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
@@ -127,101 +102,77 @@ export class MainController implements vscode.Disposable {
                 `${process.env.NEOVIM_DEBUG_HOST || "127.0.0.1"}:${process.env.NEOVIM_DEBUG_PORT || 4000}`,
             );
         }
-        if (settings.clean) {
+        if (config.clean) {
             args.push("--clean");
         }
-        if (settings.customInitFile) {
-            args.push("-u", settings.customInitFile);
+        // #1162
+        if (!config.clean && config.neovimInitPath) {
+            args.push("-u", config.neovimInitPath);
         }
-        this.logger.debug(
-            `${LOG_PREFIX}: Spawning nvim, path: ${settings.neovimPath}, useWsl: ${
-                settings.useWsl
-            }, args: ${JSON.stringify(args)}`,
+        logger.debug(
+            `Spawning nvim, path: ${config.neovimPath}, useWsl: ${config.useWsl}, args: ${JSON.stringify(args)}`,
         );
-        this.nvimProc = spawn(settings.useWsl ? "C:\\Windows\\system32\\wsl.exe" : settings.neovimPath, args, {});
+        if (config.NVIM_APPNAME) {
+            process.env.NVIM_APPNAME = config.NVIM_APPNAME;
+            if (config.useWsl) {
+                /*
+                 * `/u` flag indicates the value should only be included when invoking WSL from Win32.
+                 * https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/#u
+                 */
+                process.env.WSLENV = "NVIM_APPNAME/u";
+            }
+        }
+        this.nvimProc = spawn(config.useWsl ? "C:\\Windows\\system32\\wsl.exe" : config.neovimPath, args, {});
         this.nvimProc.on("close", (code) => {
-            this.logger.error(`${LOG_PREFIX}: Neovim exited with code: ${code}`);
+            logger.error(`Neovim exited with code: ${code}`);
         });
         this.nvimProc.on("error", (err) => {
-            this.logger.error(`${LOG_PREFIX}: Neovim spawn error: ${err.message}. Check if the path is correct.`);
+            logger.error(`Neovim spawn error: ${err.message}. Check if the path is correct.`);
             vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
         });
-        this.logger.debug(`${LOG_PREFIX}: Attaching to neovim`);
+        logger.debug(`Attaching to neovim`);
         this.client = attach({
             proc: this.nvimProc,
             options: {
-                logger: createLogger({
+                logger: winstonCreateLogger({
                     transports: [new loggerTransports.Console()],
                     level: "error",
                     exitOnError: false,
                 }),
             },
         });
+        // This is an exception. Should avoid doing this.
+        Object.defineProperty(actions, "client", { get: () => this.client, configurable: true });
     }
 
     public async init(): Promise<void> {
-        this.logger.debug(`${LOG_PREFIX}: Init, attaching to neovim notifications`);
-        this.client.on("disconnect", () => {
-            this.logger.error(`${LOG_PREFIX}: Neovim was disconnected`);
-        });
+        logger.debug(`Init, attaching to neovim notifications`);
+        this.client.on("disconnect", () => logger.error(`Neovim was disconnected`));
         this.client.on("notification", this.onNeovimNotification);
-        this.client.on("request", this.handleCustomRequest);
-
-        await this.client.setClientInfo("vscode-neovim", { major: 0, minor: 1, patch: 0 }, "embedder", {}, {});
+        this.client.on("request", this.onNeovimRequest);
+        this.setClientInfo();
         await this.checkNeovimVersion();
         const channel = await this.client.channelId;
         await this.client.setVar("vscode_channel", channel);
 
-        this.commandsController = new CommandsController(this.client, this.settings.revealCursorScrollLine);
-        this.disposables.push(this.commandsController);
-
-        this.modeManager = new ModeManager(this.logger);
-        this.disposables.push(this.modeManager);
-
-        this.bufferManager = new BufferManager(this.logger, this.client, this, {
-            neovimViewportWidth: this.settings.neovimViewportWidth,
-        });
-        this.disposables.push(this.bufferManager);
-
-        this.viewportManager = new ViewportManager(
-            this.logger,
-            this.client,
-            this,
-            this.settings.neovimViewportHeightExtend,
+        this.disposables.push(
+            vscode.commands.registerCommand("_getNeovimClient", () => this.client),
+            (this.modeManager = new ModeManager()),
+            (this.typingManager = new TypingManager(this)),
+            (this.bufferManager = new BufferManager(this)),
+            (this.viewportManager = new ViewportManager(this)),
+            (this.cursorManager = new CursorManager(this)),
+            (this.commandsController = new CommandsController(this)),
+            (this.highlightManager = new HighlightManager(this)),
+            (this.changeManager = new DocumentChangeManager(this)),
+            (this.commandLineManager = new CommandLineManager(this)),
+            (this.statusLineManager = new StatusLineManager(this)),
+            (this.multilineMessagesManager = new MultilineMessagesManager()),
         );
-        this.disposables.push(this.viewportManager);
 
-        this.highlightManager = new HighlightManager(this, {
-            highlight: this.settings.highlightsConfiguration,
-        });
-        this.disposables.push(this.highlightManager);
-
-        this.changeManager = new DocumentChangeManager(this.logger, this.client, this);
-        this.disposables.push(this.changeManager);
-
-        this.cursorManager = new CursorManager(this.logger, this.client, this, {
-            mouseSelectionEnabled: this.settings.mouseSelection,
-        });
-        this.disposables.push(this.cursorManager);
-
-        this.typingManager = new TypingManager(this.logger, this.client, this);
-        this.disposables.push(this.typingManager);
-
-        this.commandLineManager = new CommandLineManager(this.logger, this.client);
-        this.disposables.push(this.commandLineManager);
-
-        this.statusLineManager = new StatusLineManager(this.logger, this.client);
-        this.disposables.push(this.statusLineManager);
-
-        this.customCommandsManager = new CustomCommandsManager(this.logger);
-        this.disposables.push(this.customCommandsManager);
-
-        this.multilineMessagesManager = new MutlilineMessagesManager(this.logger);
-        this.disposables.push(this.multilineMessagesManager);
-
-        this.logger.debug(`${LOG_PREFIX}: UIAttach`);
+        logger.debug(`UIAttach`);
         // !Attach after setup of notifications, otherwise we can get blocking call and stuck
-        await this.client.uiAttach(this.settings.neovimViewportWidth, 100, {
+        await this.client.uiAttach(config.neovimViewportWidth, 100, {
             rgb: true,
             // override: true,
             ext_cmdline: true,
@@ -232,188 +183,226 @@ export class MainController implements vscode.Disposable {
             ext_popupmenu: true,
             ext_tabline: true,
             ext_wildmenu: true,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
+        });
 
         await this.bufferManager.forceResync();
 
-        await vscode.commands.executeCommand("setContext", "neovim.init", true);
-        this.logger.debug(`${LOG_PREFIX}: Init completed`);
+        await VSCodeContext.set("neovim.init", true);
+        logger.debug(`Init completed`);
     }
 
-    public dispose(): void {
-        for (const d of this.disposables) {
-            d.dispose();
+    private async runAction(action: string, options: Omit<VSCodeActionOptions, "callback">): Promise<any> {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) await this.cursorManager.waitForCursorUpdate(editor);
+        if (editor && options.range) {
+            const doc = editor.document;
+            const prevSelections = editor.selections;
+            const range = options.range;
+            let targetRange: Range;
+            if (Array.isArray(range)) {
+                if (range.length == 2) {
+                    const startLine = Math.max(0, range[0]);
+                    const endLine = Math.min(editor.document.lineCount - 1, range[1]);
+                    targetRange = new Range(doc.lineAt(startLine).range.start, doc.lineAt(endLine).range.end);
+                } else {
+                    targetRange = new Range(...range);
+                }
+            } else {
+                targetRange = new Range(range.start.line, range.start.character, range.end.line, range.end.character);
+            }
+            targetRange = doc.validateRange(targetRange);
+            editor.selections = [new vscode.Selection(targetRange.start, targetRange.end)];
+            const res = await actions.run(action, ...(options.args || []));
+            if (options.restore_selection !== false) {
+                editor.selections = prevSelections;
+            }
+            return res;
         }
-        this.client.quit();
+        return actions.run(action, ...(options.args || []));
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private onNeovimNotification = (method: string, events: [string, ...any[]]): void => {
-        // order matters here, modeManager should be processed first
-        const redrawManagers: NeovimRedrawProcessable[] = [
-            this.modeManager,
-            this.bufferManager,
-            this.viewportManager,
-            this.cursorManager,
-            this.commandLineManager,
-            this.statusLineManager,
-            this.highlightManager,
-            this.multilineMessagesManager,
-        ];
-        const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
-            this.modeManager,
-            this.changeManager,
-            this.commandsController,
-            this.bufferManager,
-            this.viewportManager,
-            this.highlightManager,
-            this.cursorManager,
-        ];
-        const vscodeComandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
+    private onNeovimNotification = async (method: string, events: [string, ...any[]]) => {
+        switch (method) {
+            case "vscode-action": {
+                const action = events[0] as string;
+                let options = events[1] as VSCodeActionOptions | [];
+                if (Array.isArray(options)) options = {}; // empty lua table
 
-        if (method === "vscode-command") {
-            const [vscodeCommand, commandArgs] = events as [string, unknown[]];
-            vscodeComandManagers.forEach(async (m) => {
-                try {
-                    await m.handleVSCodeCommand(
-                        vscodeCommand,
-                        Array.isArray(commandArgs) ? commandArgs : [commandArgs],
-                    );
-                } catch (e) {
-                    this.logger.error(
-                        `${vscodeCommand} failed, args: ${JSON.stringify(commandArgs)} error: ${(e as Error).message}`,
-                    );
+                const callbackId = options.callback;
+                if (callbackId) {
+                    this.client.handleRequest("vscode-action", events, {
+                        send: (resp: any, isError?: boolean): void => {
+                            this.client.executeLua('require"vscode-neovim.api".invoke_callback(...)', [
+                                callbackId,
+                                resp,
+                                !!isError,
+                            ]);
+                        },
+                    });
+                } else {
+                    try {
+                        await this.runAction(action, options);
+                    } catch (err) {
+                        const errMsg = err instanceof Error ? err.message : err;
+                        logger.error("Error on notification: ", errMsg);
+                    }
                 }
-            });
-            return;
-        }
-        if (method === "vscode-range-command") {
-            const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, args] = events;
-            vscodeRangeCommandManagers.forEach((m) => {
+                break;
+            }
+            case "vscode-command": {
                 try {
-                    m.handleVSCodeRangeCommand(
-                        vscodeCommand,
-                        line1,
-                        line2,
-                        pos1,
-                        pos2,
-                        !!leaveSelection,
-                        Array.isArray(args) ? args : [args],
-                    );
-                } catch (e) {
-                    this.logger.error(
-                        `${vscodeCommand} failed, range: [${line1}, ${line2}, ${pos1}, ${pos2}] args: ${JSON.stringify(
-                            args,
-                        )} error: ${(e as Error).message}`,
-                    );
+                    const editor = vscode.window.activeTextEditor;
+                    if (editor) await this.cursorManager.waitForCursorUpdate(editor);
+                    const [action, args] = events;
+                    await actions.run(action, ...args);
+                } catch (err) {
+                    const errMsg = err instanceof Error ? err.message : err;
+                    logger.error("Error on notification: ", errMsg);
                 }
-            });
-            return;
-        }
-        if (method === "vscode-neovim") {
-            const [command, args] = events;
-            extensionCommandManagers.forEach((m) => {
-                try {
-                    m.handleExtensionRequest(command, args);
-                } catch (e) {
-                    this.logger.error(
-                        `${command} failed, args: ${JSON.stringify(args)} error: ${(e as Error).message}`,
+                break;
+            }
+            case "vscode-neovim": {
+                const [command, args] = events;
+                eventBus.fire(command as any, args);
+                break;
+            }
+            case "redraw": {
+                const redrawEvents = events as [string, ...any[]][];
+                const hasFlush = findLastEvent("flush", events);
+                if (hasFlush) {
+                    const batch = [...this.currentRedrawBatch.splice(0), ...redrawEvents];
+                    const eventData = batch.map(
+                        (b) =>
+                            ({
+                                name: b[0],
+                                args: b.slice(1),
+                                get firstArg() {
+                                    return this.args[0];
+                                },
+                                get lastArg() {
+                                    return this.args[this.args.length - 1];
+                                },
+                            }) as any,
                     );
+                    eventBus.fire("redraw", eventData);
+                } else {
+                    this.currentRedrawBatch.push(...redrawEvents);
                 }
-            });
-            return;
-        }
-        if (method !== "redraw") {
-            return;
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const redrawEvents = events as [string, ...any[]][];
-        const hasFlush = findLastEvent("flush", events);
-
-        if (hasFlush) {
-            const batch = [...this.currentRedrawBatch.splice(0), ...redrawEvents];
-            redrawManagers.forEach((m) => m.handleRedrawBatch(batch));
-        } else {
-            this.currentRedrawBatch.push(...redrawEvents);
+            }
         }
     };
 
-    private handleCustomRequest = async (
-        eventName: string,
-        eventArgs: [string, ...unknown[]],
+    private onNeovimRequest = async (
+        method: string,
+        requestArgs: [string, ...any[]],
         response: RequestResponse,
     ): Promise<void> => {
-        const extensionCommandManagers: NeovimExtensionRequestProcessable[] = [
-            this.modeManager,
-            this.changeManager,
-            this.commandsController,
-            this.bufferManager,
-            this.highlightManager,
-            this.cursorManager,
-        ];
-        const vscodeCommandManagers: NeovimCommandProcessable[] = [this.customCommandsManager];
-        const vscodeRangeCommandManagers: NeovimRangeCommandProcessable[] = [this.cursorManager];
-        try {
-            let result: unknown;
-            if (eventName === "vscode-command") {
-                const [vscodeCommand, commandArgs] = eventArgs as [string, unknown[]];
-                const results = await Promise.all(
-                    vscodeCommandManagers.map((m) =>
-                        m.handleVSCodeCommand(vscodeCommand, Array.isArray(commandArgs) ? commandArgs : [commandArgs]),
-                    ),
-                );
-                // use first non nullable result
-                result = results.find((r) => r != null);
-            } else if (eventName === "vscode-range-command") {
-                const [vscodeCommand, line1, line2, pos1, pos2, leaveSelection, commandArgs] = eventArgs as [
-                    string,
-                    number,
-                    number,
-                    number,
-                    number,
-                    number,
-                    unknown[],
-                ];
-                const results = await Promise.all(
-                    vscodeRangeCommandManagers.map((m) =>
-                        m.handleVSCodeRangeCommand(
-                            vscodeCommand,
-                            line1,
-                            line2,
-                            pos1,
-                            pos2,
-                            !!leaveSelection,
-                            Array.isArray(commandArgs) ? commandArgs : [commandArgs],
-                        ),
-                    ),
-                );
-                // use first non nullable result
-                result = results.find((r) => r != null);
-            } else if (eventName === "vscode-neovim") {
-                const [command, commandArgs] = eventArgs as [string, unknown[]];
-                const results = await Promise.all(
-                    extensionCommandManagers.map((m) => m.handleExtensionRequest(command, commandArgs)),
-                );
-                // use first non nullable result
-                result = results.find((r) => r != null);
+        switch (method) {
+            case "vscode-action": {
+                const action = requestArgs[0] as string;
+                let options = requestArgs[1] as Omit<VSCodeActionOptions, "callback"> | [];
+                if (Array.isArray(options)) options = {}; // empty lua table
+
+                try {
+                    const res = await this.runAction(action, options);
+                    response.send(res);
+                } catch (err) {
+                    const errMsg = err instanceof Error ? err.message : err;
+                    response.send(errMsg, true);
+                    logger.error("Request error: ", errMsg);
+                }
+                break;
             }
-            response.send(result || "", false);
-        } catch (e) {
-            response.send((e as Error).message, true);
+            case "vscode-command": {
+                try {
+                    const editor = vscode.window.activeTextEditor;
+                    if (editor) await this.cursorManager.waitForCursorUpdate(editor);
+                    const [action, args] = requestArgs;
+                    const res = await actions.run(action, ...args);
+                    response.send(res);
+                } catch (err) {
+                    const errMsg = err instanceof Error ? err.message : err;
+                    response.send(errMsg, true);
+                    logger.error("Request error: ", errMsg);
+                }
+                break;
+            }
         }
     };
 
+    private setClientInfo() {
+        readFile(path.posix.join(this.extensionPath, "package.json"))
+            .then((buffer) => {
+                const versionString = JSON.parse(buffer.toString()).version as string;
+                const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
+                this.client.setClientInfo("vscode-neovim", { major, minor, patch }, "embedder", {}, {});
+            })
+            .catch((err) => console.log(err));
+    }
+
     private async checkNeovimVersion(): Promise<void> {
-        const [, info] = await this.client.apiInfo;
-        if (
-            (info.version.major === 0 && info.version.minor < 8) ||
-            !info.ui_events.find((e) => e.name === "win_viewport")
-        ) {
-            vscode.window.showErrorMessage("The extension requires neovim 0.8 or greater");
-            return;
+        const minVersion = [0, 9, 0];
+        // It is necessary to check the functionalities added in the minimum version
+        // because users might be using the development version with incomplete functionalities.
+        const requirements = {
+            options: ["statuscolumn"],
+            functions: ["nvim_exec2"],
+        };
+        // check version
+        {
+            const [, info] = await this.client.apiInfo;
+            const { major, minor, patch } = info.version;
+            const currVersion = [major, minor, patch];
+            let outdated = false;
+            for (let i = 0; i < 3; i++) {
+                if (currVersion[i] < minVersion[i]) {
+                    outdated = true;
+                    break;
+                }
+                if (currVersion[i] > minVersion[i]) {
+                    break;
+                }
+            }
+            if (outdated) {
+                vscode.window.showErrorMessage(
+                    `The extension requires Neovim version ${minVersion} or higher, preferably the [latest stable release](https://github.com/neovim/neovim/releases/tag/stable)`,
+                );
+                return;
+            }
         }
+        // check nvim features
+        const exprs = [...requirements.options.map((o) => `&${o}`), ...requirements.functions.map((f) => `*${f}`)];
+        const rets: number[] = [];
+        for (const e of exprs) {
+            // this.client.callAtomic is not usefull
+            rets.push(await this.client.call("exists", [e]));
+        }
+        const missingOptions: string[] = [];
+        const missingFunctions: string[] = [];
+        rets.forEach((r, i) => {
+            if (!r) {
+                const expr = exprs[i];
+                if (expr.startsWith("&")) {
+                    missingOptions.push(expr.substring(1));
+                } else if (expr.startsWith("*")) {
+                    missingFunctions.push(expr.substring(1));
+                }
+            }
+        });
+        const errMsgs = [
+            "Your nvim does not support the following features. Please check and update your nvim to the [latest stable version](https://github.com/neovim/neovim/releases/tag/stable). ",
+        ];
+        if (missingOptions.length) errMsgs.push("Missing options: " + missingOptions.join(", ") + ". ");
+        if (missingFunctions.length) errMsgs.push("Missing functions: " + missingFunctions.join(", ") + ". ");
+        if (errMsgs.length > 1) {
+            vscode.window.showErrorMessage(errMsgs.join(" "));
+        }
+    }
+
+    dispose() {
+        disposeAll(this.disposables);
+        this.nvimProc.removeAllListeners();
+        this.client.removeAllListeners();
+        this.client.quit();
     }
 }
