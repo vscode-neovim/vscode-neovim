@@ -53,6 +53,46 @@ const keybinds = [
         command: "workbench.action.navigateRight",
         when: "!editorTextFocus && !terminalFocus",
     },
+    {
+        key: "ctrl+w =",
+        command: "workbench.action.evenEditorWidths",
+        when: "!editorTextFocus",
+    },
+    {
+        key: "ctrl+w _",
+        command: "workbench.action.toggleEditorWidths",
+        when: "!editorTextFocus",
+    },
+    {
+        key: "ctrl+w >",
+        command: "workbench.action.increaseViewWidth",
+        when: "!editorTextFocus",
+    },
+    {
+        key: "ctrl+w <",
+        command: "workbench.action.decreaseViewWidth",
+        when: "!editorTextFocus",
+    },
+    {
+        key: "ctrl+w +",
+        command: "workbench.action.increaseViewHeight",
+        when: "!editorTextFocus",
+    },
+    {
+        key: "ctrl+w -",
+        command: "workbench.action.decreaseViewHeight",
+        when: "!editorTextFocus",
+    },
+    {
+        key: "ctrl+w s",
+        command: "workbench.action.splitEditorDown",
+        when: "!editorTextFocus",
+    },
+    {
+        key: "ctrl+w v",
+        command: "workbench.action.splitEditorRight",
+        when: "!editorTextFocus",
+    },
 ];
 
 module.exports = keybinds;
