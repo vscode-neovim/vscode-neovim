@@ -111,7 +111,6 @@ type EventsMapping = {
     ["window-changed"]: [number];
     ["mode-changed"]: [string];
     ["notify-recording"]: undefined;
-    ["insert-line"]: ["before" | "after"];
     reveal: ["center" | "top" | "bottom", boolean];
     ["move-cursor"]: ["top" | "middle" | "bottom"];
     scroll: ["page" | "halfPage", "up" | "down"];
