@@ -20,7 +20,6 @@ import {
     ManualPromise,
     accumulateDotRepeatChange,
     calcDiffWithPosition,
-    callAtomic,
     convertCharNumToByteNum,
     disposeAll,
     getDocumentLineArray,

@@ -39,20 +39,6 @@ function M.delete_buffers(bufs)
   end
 end
 
----Delete the temporary buffers used for replaying dotrepeat
-function M.delete_dotrepeat_buffers()
-  local bufs = {}
-  for _, buf in ipairs(api.nvim_list_bufs()) do
-    local ok, dotrepeat = pcall(api.nvim_buf_get_var, buf, "_vscode_dotrepeat_buffer")
-    if ok and dotrepeat then
-      table.insert(bufs, buf)
-    end
-  end
-  if #bufs > 0 then
-    M.delete_buffers(bufs)
-  end
-end
-
 ---Handle document changes
 ---@param bufnr number
 ---@param changes (string | integer)[][]
@@ -102,14 +88,12 @@ do
     vim.opt.ei = "all"
 
     _curr_win = api.nvim_get_current_win()
-    local buf = api.nvim_create_buf(false, true)
-    _temp_buf = buf
-    local win = api.nvim_open_win(buf, true, { external = true, width = 100, height = 50 })
-    _temp_win = win
+    _temp_buf = api.nvim_create_buf(false, true)
+    _temp_win = api.nvim_open_win(_temp_buf, true, { external = true, width = 100, height = 50 })
 
     if deletes > 0 then
-      api.nvim_buf_set_lines(buf, 0, -1, false, { ("x"):rep(deletes) })
-      api.nvim_win_set_cursor(win, { 1, deletes })
+      api.nvim_buf_set_lines(_temp_buf, 0, -1, false, { ("x"):rep(deletes) })
+      api.nvim_win_set_cursor(_temp_win, { 1, deletes })
       local bs = ("<BS>"):rep(deletes)
       bs = api.nvim_replace_termcodes(bs, true, true, true)
       api.nvim_feedkeys(bs, "n", false)
