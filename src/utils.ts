@@ -298,7 +298,7 @@ export async function callAtomic(
     const res = (await client.callAtomic(requests)) as unknown as [unknown[], [number, unknown, string] | null];
     // Should never reach here if neovim is behaving correctly
     if (!(res && Array.isArray(res) && Array.isArray(res[0]))) {
-        logger.error(`${prefix}: Unexpected result from nvim_call_atomic`);
+        logger.error(`Unexpected result from nvim_call_atomic`);
         return;
     }
     const returned_errors = res[1];
@@ -306,9 +306,12 @@ export async function callAtomic(
         const [failing_call_idx, err_type, err_msg] = returned_errors;
         const call = requests[failing_call_idx];
         const requestName = call[0];
+        const errMsg = `${requestName}: ${err_msg} (Error type: ${err_type})`;
         // TODO: Determine cause for errors for both of these requests
-        if (requestName !== "nvim_input" && requestName !== "nvim_win_close") {
-            logger.error(`${prefix}:\n${requestName}: ${err_msg} (Error type: ${err_type})`);
+        if (requestName === "nvim_input" || requestName === "nvim_win_close") {
+            logger.warn(errMsg);
+        } else {
+            logger.error(errMsg);
         }
     }
 }
