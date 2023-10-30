@@ -1,7 +1,15 @@
-import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
-import { attachTestNvimClient, sendVSCodeKeys, assertContent, wait, closeAllActiveEditors, setCursor } from "../utils";
+import {
+    attachTestNvimClient,
+    sendVSCodeKeys,
+    assertContent,
+    closeAllActiveEditors,
+    setCursor,
+    closeNvimClient,
+    openTextDocument,
+    wait,
+} from "../utils";
 
 describe("Yanking and pasting", () => {
     let client: NeovimClient;
@@ -9,21 +17,13 @@ describe("Yanking and pasting", () => {
         client = await attachTestNvimClient();
     });
     after(async () => {
-        client.quit();
-    });
-
-    afterEach(async () => {
+        await closeNvimClient(client);
         await closeAllActiveEditors();
     });
 
     it("Yank and paste works", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "some line\notherline",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait();
+        await openTextDocument({ content: "some line\notherline" });
         await setCursor(1, 1);
-        await wait();
 
         await sendVSCodeKeys("yy");
         await sendVSCodeKeys("p");
@@ -35,6 +35,7 @@ describe("Yanking and pasting", () => {
             client,
         );
 
+        await wait(200); // wait for document change
         await setCursor(1, 1);
         await sendVSCodeKeys("P");
         await assertContent(
@@ -48,19 +49,11 @@ describe("Yanking and pasting", () => {
 
     // todo: sometimes failing due to cursor positions, sometimes works. most often is failing
     it("Pasting into document with single line", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: "some line\notherline",
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: "some line\notherline" });
         await sendVSCodeKeys("yj");
 
-        const doc2 = await vscode.workspace.openTextDocument({});
-        await vscode.window.showTextDocument(doc2, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: "" });
         await sendVSCodeKeys("p");
-        await wait(2000);
-
         await assertContent(
             {
                 content: ["", "some line", "otherline"],
@@ -69,11 +62,8 @@ describe("Yanking and pasting", () => {
             client,
         );
 
-        const doc3 = await vscode.workspace.openTextDocument({ content: "blah" });
-        await vscode.window.showTextDocument(doc3, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument({ content: "blah" });
         await sendVSCodeKeys("p");
-        await wait(2000);
         await assertContent(
             {
                 content: ["blah", "some line", "otherline"],
@@ -85,16 +75,11 @@ describe("Yanking and pasting", () => {
 
     it.skip("pasting line after vi{", async () => {
         // see https://github.com/asvetliakov/vscode-neovim/issues/116
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["var test='a'", "", "function blah() {", "    var another;", "}", ""].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-        await wait(1000);
+        await openTextDocument(["var test='a'", "", "function blah() {", "    var another;", "}", ""].join("\n"));
 
         await sendVSCodeKeys("yy");
         await sendVSCodeKeys("jjj");
         await sendVSCodeKeys("vi{p");
-
         await assertContent(
             {
                 content: ["var test='a'", "", "function blah() {", "", "var test='a'", "}", ""],

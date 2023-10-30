@@ -44,6 +44,9 @@ const config = {
             },
         ],
     },
+    infrastructureLogging: {
+        level: "log",
+    },
     plugins: [
         new webpack.EnvironmentPlugin({
             // stop neovim winston spam

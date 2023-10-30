@@ -1,12 +1,12 @@
-import { NeovimClient } from "neovim";
 import { Disposable } from "vscode";
 
 import { CommandLineController } from "./command_line";
-import { Logger } from "./logger";
-import { NeovimRedrawProcessable } from "./neovim_events_processable";
-import { normalizeInputString } from "./utils";
+import { config } from "./config";
+import { EventBusData, eventBus } from "./eventBus";
+import { MainController } from "./main_controller";
+import { disposeAll, normalizeInputString } from "./utils";
 
-export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
+export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
      * Simple command line UI
@@ -17,30 +17,25 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
      */
     private cmdlineTimer?: NodeJS.Timeout;
 
-    public constructor(private logger: Logger, private client: NeovimClient) {}
-
-    public dispose(): void {
-        if (this.commandLine) {
-            this.commandLine.dispose();
-        }
-        this.disposables.forEach((d) => d.dispose());
+    private get client() {
+        return this.main.client;
     }
 
-    public handleRedrawBatch(batch: [string, ...unknown[]][]): void {
-        for (const [name, ...args] of batch) {
-            const firstArg = args[0] || [];
+    public constructor(private main: MainController) {
+        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+    }
+
+    public dispose() {
+        this.commandLine?.dispose();
+        disposeAll(this.disposables);
+    }
+
+    private handleRedraw(data: EventBusData<"redraw">) {
+        for (const { name, args } of data) {
             switch (name) {
                 case "cmdline_show": {
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const [content, pos, firstc, prompt, indent, level] = firstArg as [
-                        // eslint-disable-next-line @typescript-eslint/ban-types
-                        [object, string][],
-                        number,
-                        string,
-                        string,
-                        number,
-                        number,
-                    ];
+                    const [content, pos, firstc, prompt, indent, level] = args[0];
                     const allContent = content.map(([, str]) => str).join("");
                     // !note: neovim can send cmdline_hide followed by cmdline_show events
                     // !since quickpick can be destroyed slightly at later time after handling cmdline_hide we want to create new command line
@@ -52,37 +47,24 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
                     if (this.cmdlineTimer) {
                         clearTimeout(this.cmdlineTimer);
                         this.cmdlineTimer = undefined;
-                        if (!this.commandLine) {
-                            this.commandLine = new CommandLineController(this.client, {
-                                onAccepted: this.onCmdAccept,
-                                onCanceled: this.onCmdCancel,
-                                onChanged: this.onCmdChange,
-                            });
-                        }
-                        this.commandLine.show(allContent, firstc, prompt);
+                        this.showCmd(allContent, firstc, prompt);
                     } else {
                         // if there is initial content and it's not currently displayed then it may come
                         // from some mapping. to prevent bad UI commandline transition we delay cmdline appearing here
                         if (allContent !== "" && allContent !== "'<,'>" && !this.commandLine) {
                             this.cmdlineTimer = setTimeout(() => this.showCmdOnTimer(allContent, firstc, prompt), 200);
                         } else {
-                            if (!this.commandLine) {
-                                this.commandLine = new CommandLineController(this.client, {
-                                    onAccepted: this.onCmdAccept,
-                                    onCanceled: this.onCmdCancel,
-                                    onChanged: this.onCmdChange,
-                                });
-                            }
-                            this.commandLine.show(allContent, firstc, prompt);
+                            this.showCmd(allContent, firstc, prompt);
                         }
                     }
                     break;
                 }
                 case "wildmenu_show": {
-                    const [items] = firstArg as [string[]];
-                    if (this.commandLine) {
-                        this.commandLine.setCompletionItems(items);
-                    }
+                    this.commandLine?.setCompletionItems(args[0][0]);
+                    break;
+                }
+                case "wildmenu_hide": {
+                    this.commandLine?.setCompletionItems([]);
                     break;
                 }
                 case "cmdline_hide": {
@@ -100,15 +82,23 @@ export class CommandLineManager implements Disposable, NeovimRedrawProcessable {
         }
     }
 
-    private showCmdOnTimer = (initialContent: string, firstc: string, prompt: string): void => {
+    private showCmd = (content: string, firstc: string, prompt: string): void => {
         if (!this.commandLine) {
-            this.commandLine = new CommandLineController(this.client, {
-                onAccepted: this.onCmdAccept,
-                onCanceled: this.onCmdCancel,
-                onChanged: this.onCmdChange,
-            });
+            this.commandLine = new CommandLineController(
+                this.client,
+                {
+                    onAccepted: this.onCmdAccept,
+                    onCanceled: this.onCmdCancel,
+                    onChanged: this.onCmdChange,
+                },
+                config.completionDelay,
+            );
         }
-        this.commandLine.show(initialContent, firstc, prompt);
+        this.commandLine.show(content, firstc, prompt);
+    };
+
+    private showCmdOnTimer = (initialContent: string, firstc: string, prompt: string): void => {
+        this.showCmd(initialContent, firstc, prompt);
         this.cmdlineTimer = undefined;
     };
 

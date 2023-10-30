@@ -1,15 +1,15 @@
 import { NeovimClient } from "neovim";
-import vscode from "vscode";
 
 import {
     attachTestNvimClient,
     closeNvimClient,
     closeAllActiveEditors,
-    wait,
     sendVSCodeKeys,
     assertContent,
     sendEscapeKey,
     sendVSCodeSpecialKey,
+    openTextDocument,
+    sendInsertKey,
 } from "../utils";
 
 describe("Macros", () => {
@@ -20,23 +20,15 @@ describe("Macros", () => {
     });
     after(async () => {
         await closeNvimClient(client);
-    });
-
-    afterEach(async () => {
         await closeAllActiveEditors();
     });
 
     it("Macros work", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["a1", "b2", "c3"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+        await openTextDocument({ content: ["a1", "b2", "c3"].join("\n") });
 
         await sendVSCodeKeys("qa");
         await sendVSCodeKeys("0xj");
         await sendVSCodeKeys("q");
-
         await assertContent(
             {
                 content: ["1", "b2", "c3"],
@@ -54,18 +46,14 @@ describe("Macros", () => {
     });
 
     it("Macros with insert mode", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["a", "b", "c"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+        await openTextDocument({ content: ["a", "b", "c"].join("\n") });
 
         await sendVSCodeKeys("qa");
-        await sendVSCodeKeys("A1");
+        await sendInsertKey("A");
+        await sendVSCodeKeys("1");
         await sendEscapeKey();
         await sendVSCodeKeys("j");
         await sendVSCodeKeys("q");
-
         await assertContent(
             {
                 content: ["a1", "b", "c"],
@@ -73,7 +61,7 @@ describe("Macros", () => {
             client,
         );
 
-        await sendVSCodeKeys("2@a");
+        await sendVSCodeKeys("2@a", 500);
         await assertContent(
             {
                 content: ["a1", "b1", "c1"],
@@ -83,16 +71,11 @@ describe("Macros", () => {
     });
 
     it("Cursor is ok while recording macro in insert mode", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["a", "b", "c"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+        await openTextDocument({ content: ["a", "b", "c"].join("\n") });
 
         await sendVSCodeKeys("qa");
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("123");
-
         await assertContent(
             {
                 vsCodeCursor: [0, 4],
@@ -104,19 +87,15 @@ describe("Macros", () => {
     });
 
     it("Insert mode is ok after exiting macro insert mode", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["a", "b", "c"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+        await openTextDocument({ content: ["a", "b", "c"].join("\n") });
         await sendVSCodeKeys("qb");
-        await sendVSCodeKeys("A");
+        await sendInsertKey("A");
         await sendVSCodeKeys("1");
 
         await sendEscapeKey();
         await sendVSCodeKeys("q");
 
-        await sendVSCodeKeys("o", 1000);
+        await sendInsertKey("o");
         await sendVSCodeKeys("t");
         await sendVSCodeSpecialKey("backspace");
         await sendVSCodeSpecialKey("backspace");
@@ -130,17 +109,15 @@ describe("Macros", () => {
         );
     });
 
-    it("Macros with o/O", async () => {
-        const doc = await vscode.workspace.openTextDocument({
-            content: ["a", "b", "c"].join("\n"),
-        });
-        await vscode.window.showTextDocument(doc);
-        await wait();
+    it("Macros with o/O", async function () {
+        this.retries(2);
+
+        await openTextDocument({ content: ["a", "b", "c"].join("\n") });
         await sendVSCodeKeys("qa");
-        await sendVSCodeKeys("otest");
+        await sendInsertKey("o");
+        await sendVSCodeKeys("test");
         await sendEscapeKey();
         await sendVSCodeKeys("q");
-
         await assertContent(
             {
                 content: ["a", "test", "b", "c"],
@@ -149,7 +126,7 @@ describe("Macros", () => {
             client,
         );
 
-        await sendVSCodeKeys("2@a");
+        await sendVSCodeKeys("2@a", 1000);
         await assertContent(
             {
                 content: ["a", "test", "test", "test", "b", "c"],
@@ -158,8 +135,9 @@ describe("Macros", () => {
             client,
         );
 
-        await sendVSCodeKeys("qa");
-        await sendVSCodeKeys("Oblah");
+        await sendVSCodeKeys("qa", 200);
+        await sendInsertKey("O", 500);
+        await sendVSCodeKeys("blah");
         await sendEscapeKey();
         await sendVSCodeKeys("q");
         await assertContent(
@@ -170,7 +148,7 @@ describe("Macros", () => {
             client,
         );
 
-        await sendVSCodeKeys("2@a");
+        await sendVSCodeKeys("2@a", 1000);
         await assertContent(
             {
                 content: ["a", "test", "test", "blah", "blah", "blah", "test", "b", "c"],

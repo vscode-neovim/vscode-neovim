@@ -1,12 +1,7 @@
 module.exports = {
     parser: "@typescript-eslint/parser", // Specifies the ESLint parser
-    extends: [
-        "eslint:recommended",
-        "plugin:prettier/recommended",
-    ],
-    plugins: [
-        "import",
-    ],
+    extends: ["eslint:recommended", "plugin:prettier/recommended"],
+    plugins: ["import"],
     parserOptions: {
         ecmaVersion: 2019, // Allows for the parsing of modern ECMAScript features
         sourceType: "module", // Allows for the use of imports
@@ -34,9 +29,8 @@ module.exports = {
         // "import/no-unresolved": "error",
         "import/no-duplicates": "warn",
         "import/no-extraneous-dependencies": "warn",
-        "import/order": ["warn", {"newlines-between": "always"}],
+        "import/order": ["warn", { "newlines-between": "always" }],
         "import/newline-after-import": "warn",
-
     },
     overrides: [
         {
@@ -58,15 +52,9 @@ module.exports = {
                         argsIgnorePattern: "^_",
                     },
                 ],
-                "@typescript-eslint/explicit-function-return-type": [
-                    "warn",
-                    {
-                        allowExpressions: true,
-                        allowTypedFunctionExpressions: true,
-                        allowHigherOrderFunctions: true,
-                    },
-                ],
+                "@typescript-eslint/explicit-function-return-type": "off",
                 "@typescript-eslint/no-non-null-assertion": "off",
+                "@typescript-eslint/no-explicit-any": "off",
             },
             overrides: [
                 {
@@ -81,5 +69,3 @@ module.exports = {
         },
     ],
 };
-
-

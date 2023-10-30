@@ -8,5 +8,6 @@ function! s:jump(...)
 endfunction
 
 nnoremap <silent> <C-o> <Cmd>call <SID>jump(v:count, 'back')<CR>
+nnoremap <silent> <C-t> <Cmd>call <SID>jump(v:count, 'back')<CR>
 nnoremap <silent> <C-i> <Cmd>call <SID>jump(v:count, 'forward')<CR>
 nnoremap <silent> <Tab> <Cmd>call <SID>jump(v:count, 'forward')<CR>
