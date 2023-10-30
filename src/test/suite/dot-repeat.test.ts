@@ -477,4 +477,20 @@ describe("Dot-repeat", () => {
             client,
         );
     });
+    it("Deleting before adding #1580", async () => {
+        await openTextDocument({ content: ["aaaaaa", "bbbbbb"].join("\n") });
+        await sendVSCodeKeys("ggA");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeSpecialKey("backspace");
+        await sendVSCodeKeys("123");
+        await sendEscapeKey();
+        await sendVSCodeKeys("j$.");
+        await assertContent(
+            {
+                content: ["aaa123", "bbb123"],
+            },
+            client,
+        );
+    });
 });
