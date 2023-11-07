@@ -125,6 +125,17 @@ export class CursorManager implements Disposable {
                     args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
                     break;
                 }
+                // TODO: https://github.com/neovim/neovim/issues/19708
+                // Hacky! In visual mode, the highlight change is Visual highlight in most cases,
+                // so we simulate VisualChanged with highlight refresh in visual mode.
+                // It is also possible to record Visual highlight-ID specifically in the highlight_provider
+                // and only update cursors when there is a Visual change, but that would be more invasive to the code.
+                case "grid_line": {
+                    if (this.main.modeManager.isVisualMode) {
+                        args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
+                    }
+                    break;
+                }
                 case "mode_info_set": {
                     args.forEach((arg) =>
                         arg[1].forEach((mode) => {
