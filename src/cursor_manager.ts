@@ -3,6 +3,7 @@ import {
     commands,
     Disposable,
     Position,
+    Range,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
@@ -420,7 +421,6 @@ export class CursorManager implements Disposable {
         anchor: Position | undefined,
     ): Promise<Selection[]> => {
         const doc = editor.document;
-
         if (!anchor) {
             const anchorNvim = await this.client.callFunction("getpos", ["v"]);
             anchor = convertVimPositionToEditorPosition(editor, new Position(anchorNvim[1] - 1, anchorNvim[2] - 1));
@@ -455,32 +455,48 @@ export class CursorManager implements Disposable {
                 if (anchor.line <= active.line) return [new Selection(anchor.line, 0, active.line, activeLineLength)];
                 else return [new Selection(anchor.line, anchorLineLength, active.line, 0)];
             case "block": {
-                const selections: Selection[] = [];
-                // we want the first selection to be on the cursor line, so that a single-line selection will properly trigger word highlight
-                const before = anchor.line < active.line;
-                for (
-                    let line = active.line;
-                    before ? line >= anchor.line : line <= anchor.line;
-                    before ? line-- : line++
-                ) {
-                    // skip lines that don't contain the block selection, except if it contains the cursor
-                    const docLine = doc.lineAt(line);
-                    if (
-                        docLine.range.end.character > Math.min(anchor.character, active.character) ||
-                        line === active.line
-                    ) {
-                        // selections go left to right for simplicity, and don't go past the end of the line
-                        selections.push(
-                            new Selection(
-                                line,
-                                Math.min(anchor.character, active.character),
-                                line,
-                                Math.min(Math.max(anchor.character, active.character) + 1, docLine.range.end.character),
-                            ),
-                        );
-                    }
+                const tabSize = editor.options.tabSize as number;
+                const getTabCount = (pos: Position) => {
+                    const textRange = doc.validateRange(new Range(pos.line, 0, pos.line, pos.character));
+                    return doc.getText(textRange).match(/\t/g)?.length ?? 0;
+                };
+
+                const ranges: Range[] = [];
+
+                // First Organize in the normal order (from top to bottom, from left to right),
+                // and then correct the orientation
+                const start = anchor.isBeforeOrEqual(active) ? anchor : active;
+                const end = anchor.isBeforeOrEqual(active) ? active : anchor;
+
+                const startTabCount = getTabCount(start);
+                const endTabCount = getTabCount(end);
+
+                const isLeftToRight = anchor.isBeforeOrEqual(active)
+                    ? start.character + startTabCount * tabSize <= end.character + endTabCount * tabSize
+                    : start.character + startTabCount * tabSize > end.character + endTabCount * tabSize;
+
+                for (let line = start.line; line <= end.line; line++) {
+                    const currLine = doc.lineAt(line);
+                    const currStartTabCount = getTabCount(new Position(line, start.character));
+                    const currEndTabCount = getTabCount(new Position(line, end.character));
+                    const startChar = Math.max(
+                        0,
+                        start.character + (startTabCount - currStartTabCount) * (tabSize - 1),
+                    );
+                    const endChar = Math.max(0, end.character + (endTabCount - currEndTabCount) * (tabSize - 1));
+                    const range = new Range(line, startChar, line, endChar).intersection(currLine.range);
+                    if (range) ranges.push(range);
                 }
-                return selections;
+
+                const selections = ranges.map((r) => {
+                    const range = doc.validateRange(new Range(r.start, r.end.translate(0, 1)));
+                    return isLeftToRight // correct the orientation
+                        ? new Selection(range.start, range.end)
+                        : new Selection(range.end, range.start);
+                });
+
+                // Make sure word highlighting is triggered correctly
+                return anchor.isBeforeOrEqual(active) ? selections.reverse() : selections;
             }
         }
     };
