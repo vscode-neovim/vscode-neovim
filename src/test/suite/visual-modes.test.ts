@@ -126,7 +126,6 @@ describe("Visual modes test", () => {
         );
     });
 
-    // see https://github.com/neovim/neovim/issues/19708
     it("viw on last symbol", async () => {
         await openTextDocument({ content: ["test"].join("\n") });
 

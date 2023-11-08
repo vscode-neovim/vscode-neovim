@@ -1,4 +1,4 @@
-local api = vim.api
+local api, fn = vim.api, vim.fn
 
 local vscode = require("vscode-neovim.api")
 local util = require("vscode-neovim.util")
@@ -81,35 +81,42 @@ function M.setup_multi_cursor(group)
 end
 
 -- ----------------------- forced visual cursor updates ----------------------- --
-function M.visual_changed()
-  vim.fn.VSCodeExtensionNotify("visual-changed", vim.fn.win_getid())
-end
-
 function M.setup_visual_changed(group)
-  -- simulate VisualChanged event to update visual selection
-  vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+  -- Simulate VisualChanged event
+  -- TODO: https://github.com/neovim/neovim/issues/19708
+  local visual_ns = api.nvim_create_namespace("vscode-neovim.visual.changed")
+
+  local is_visual, last_visual_pos, last_curr_pos
+
+  local function fire_visual_changed()
+    fn.VSCodeExtensionNotify("visual-changed", api.nvim_get_current_win())
+  end
+
+  api.nvim_create_autocmd({ "ModeChanged" }, {
     group = group,
-    pattern = "[vV\x16]*:[vV\x16]*",
-    callback = M.visual_changed,
+    callback = function(ev)
+      local mode = api.nvim_get_mode().mode
+      -- save current mode
+      is_visual = mode:match("[vV\x16]")
+      -- handle mode changes
+      if ev.match:match("[vV\x16]") then
+        last_visual_pos = fn.getpos("v")
+        last_curr_pos = fn.getpos(".")
+        fire_visual_changed()
+      end
+    end,
   })
 
-  vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-    group = group,
-    pattern = "[vV\x16]*:[^vv\x16]*",
-    callback = M.visual_changed,
-  })
-
-  vim.api.nvim_create_autocmd({ "ModeChanged" }, {
-    group = group,
-    pattern = "[^vV\x16]*:[vV\x16]*",
-    callback = M.visual_changed,
-  })
-
-  vim.api.nvim_create_autocmd({ "CursorHold", "TextChanged" }, {
-    group = group,
-    callback = function()
-      if util.is_visual_mode() then
-        M.visual_changed()
+  api.nvim_set_decoration_provider(visual_ns, {
+    on_win = function()
+      if is_visual then
+        local visual_pos = fn.getpos("v")
+        local curr_pos = fn.getpos(".")
+        if not (vim.deep_equal(visual_pos, last_visual_pos) and vim.deep_equal(curr_pos, last_curr_pos)) then
+          last_visual_pos = visual_pos
+          last_curr_pos = curr_pos
+          fire_visual_changed()
+        end
       end
     end,
   })

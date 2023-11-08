@@ -91,7 +91,7 @@ export class CursorManager implements Disposable {
             window.onDidChangeVisibleTextEditors(updateCursorStyle),
             window.onDidChangeActiveTextEditor(updateCursorStyle),
             eventBus.on("redraw", this.handleRedraw, this),
-            eventBus.on(["window-scroll", "visual-changed"], ([winId]) => {
+            eventBus.on("visual-changed", ([winId]) => {
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (gridId) this.gridCursorUpdates.add(gridId);
             }),
@@ -123,17 +123,6 @@ export class CursorManager implements Disposable {
                 // If we received it we must shift current cursor position by given rows
                 case "grid_scroll": {
                     args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
-                    break;
-                }
-                // TODO: https://github.com/neovim/neovim/issues/19708
-                // Hacky! In visual mode, the highlight change is Visual highlight in most cases,
-                // so we simulate VisualChanged with highlight refresh in visual mode.
-                // It is also possible to record Visual highlight-ID specifically in the highlight_provider
-                // and only update cursors when there is a Visual change, but that would be more invasive to the code.
-                case "grid_line": {
-                    if (this.main.modeManager.isVisualMode) {
-                        args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
-                    }
                     break;
                 }
                 case "mode_info_set": {
