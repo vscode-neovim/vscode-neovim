@@ -490,7 +490,7 @@ export class CursorManager implements Disposable {
                     const line = idx + startLine;
                     const lineRange = doc.lineAt(line).range;
                     const range = new Range(line, startChar, line, endChar).intersection(lineRange);
-                    if (range) ranges.push(range);
+                    if (range && (range.start.isBefore(lineRange.end) || line === active.line)) ranges.push(range);
                 });
 
                 // correct the orientation
