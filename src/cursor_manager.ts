@@ -437,23 +437,23 @@ export class CursorManager implements Disposable {
         // we hide the real cursor and use a highlight decorator for the fake cursor
         switch (mode.visual) {
             case "char":
-                if (anchor.isBeforeOrEqual(active))
-                    return [
-                        new Selection(
-                            anchor,
-                            new Position(active.line, Math.min(active.character + 1, activeLineLength)),
-                        ),
-                    ];
-                else
-                    return [
-                        new Selection(
-                            new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
-                            active,
-                        ),
-                    ];
+                return [
+                    anchor.isBeforeOrEqual(active)
+                        ? new Selection(
+                              anchor,
+                              new Position(active.line, Math.min(active.character + 1, activeLineLength)),
+                          )
+                        : new Selection(
+                              new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
+                              active,
+                          ),
+                ];
             case "line":
-                if (anchor.line <= active.line) return [new Selection(anchor.line, 0, active.line, activeLineLength)];
-                else return [new Selection(anchor.line, anchorLineLength, active.line, 0)];
+                return [
+                    anchor.line <= active.line
+                        ? new Selection(anchor.line, 0, active.line, activeLineLength)
+                        : new Selection(anchor.line, anchorLineLength, active.line, 0),
+                ];
             case "block": {
                 const tabSize = editor.options.tabSize as number;
                 const getTabCount = (pos: Position) => {
