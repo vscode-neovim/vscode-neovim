@@ -455,46 +455,51 @@ export class CursorManager implements Disposable {
                         : new Selection(anchor.line, anchorLineLength, active.line, 0),
                 ];
             case "block": {
-                const tabSize = editor.options.tabSize as number;
-                const getTabCount = (pos: Position) => {
-                    const textRange = doc.validateRange(new Range(pos.line, 0, pos.line, pos.character));
-                    return doc.getText(textRange).match(/\t/g)?.length ?? 0;
+                const getDisplayWidth = async (...pos: Position[]) => {
+                    const parts = pos.map((p) => {
+                        const textRange = doc.validateRange(new Range(p.line, 0, p.line, p.character));
+                        return doc.getText(textRange);
+                    });
+                    return this.client.lua(
+                        `
+                   return (function(parts)
+                        return vim.tbl_map(function(part) return vim.fn.strdisplaywidth(part) end, parts)
+                    end)(...)
+                    `,
+                        [parts],
+                    ) as Promise<number[]>;
                 };
 
-                const ranges: Range[] = [];
+                const [anchorDisCol, activeDisCol] = await getDisplayWidth(anchor, active);
+                const [startDisCol, endDisCol] = [
+                    Math.min(anchorDisCol, activeDisCol),
+                    Math.max(anchorDisCol, activeDisCol),
+                ];
 
-                // First Organize in the normal order (from top to bottom, from left to right),
-                // and then correct the orientation
-                const start = anchor.isBeforeOrEqual(active) ? anchor : active;
-                const end = anchor.isBeforeOrEqual(active) ? active : anchor;
-
-                const startTabCount = getTabCount(start);
-                const endTabCount = getTabCount(end);
-
-                const isLeftToRight = anchor.isBeforeOrEqual(active)
-                    ? start.character + startTabCount * tabSize <= end.character + endTabCount * tabSize
-                    : start.character + startTabCount * tabSize > end.character + endTabCount * tabSize;
-
-                for (let line = start.line; line <= end.line; line++) {
-                    const currLine = doc.lineAt(line);
-                    const currStartTabCount = getTabCount(new Position(line, start.character));
-                    const currEndTabCount = getTabCount(new Position(line, end.character));
-                    const startChar = Math.max(
-                        0,
-                        start.character + (startTabCount - currStartTabCount) * (tabSize - 1),
-                    );
-                    const endChar = Math.max(0, end.character + (endTabCount - currEndTabCount) * (tabSize - 1));
-                    const range = new Range(line, startChar, line, endChar).intersection(currLine.range);
-                    if (range) ranges.push(range);
+                const lines = [];
+                const startLine = Math.min(active.line, anchor.line);
+                const endLine = Math.max(active.line, anchor.line);
+                for (let line = startLine; line <= endLine; line++) {
+                    lines.push(doc.lineAt(line).text);
                 }
+                const _code = 'return require"vscode-neovim.internal".handle_blockwise_selection(...)';
+                const ret = (await this.client.lua(_code, [lines, startDisCol, endDisCol])) as [number, number][];
 
+                const ranges: Range[] = [];
+                ret.forEach(([startChar, endChar], idx) => {
+                    const line = idx + startLine;
+                    const lineRange = doc.lineAt(line).range;
+                    const range = new Range(line, startChar, line, endChar).intersection(lineRange);
+                    if (range) ranges.push(range);
+                });
+
+                // correct the orientation
                 const selections = ranges.map((r) => {
                     const range = doc.validateRange(new Range(r.start, r.end.translate(0, 1)));
-                    return isLeftToRight // correct the orientation
+                    return activeDisCol >= anchorDisCol
                         ? new Selection(range.start, range.end)
                         : new Selection(range.end, range.start);
                 });
-
                 // Make sure word highlighting is triggered correctly
                 return anchor.isBeforeOrEqual(active) ? selections.reverse() : selections;
             }
