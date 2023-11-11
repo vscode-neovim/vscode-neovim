@@ -257,8 +257,13 @@ export class BufferManager implements Disposable {
                 doc = await workspace.openTextDocument();
             } else {
                 const normalizedName = fileName.trim();
-                const filePath = this.findPathFromFileName(normalizedName);
-                doc = await workspace.openTextDocument(filePath);
+                let filePath = this.findPathFromFileName(normalizedName);
+                try {
+                    await workspace.fs.stat(Uri.file(filePath));
+                } catch {
+                    filePath = `untitled:${filePath}`
+                }
+                doc = await workspace.openTextDocument(Uri.parse(filePath));
             }
         } catch (error) {
             logger.error(`Error opening file ${fileName}, ${error}`);
