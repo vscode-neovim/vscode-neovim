@@ -98,7 +98,7 @@ do
       bs = api.nvim_replace_termcodes(bs, true, true, true)
       api.nvim_feedkeys(bs, "n", false)
     end
-    api.nvim_feedkeys(edits, "n", false)
+    api.nvim_feedkeys(edits, "n", true)
 
     vim.opt.ei = ei
   end
