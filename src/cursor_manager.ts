@@ -3,7 +3,6 @@ import {
     commands,
     Disposable,
     Position,
-    Range,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
@@ -421,6 +420,7 @@ export class CursorManager implements Disposable {
         anchor: Position | undefined,
     ): Promise<Selection[]> => {
         const doc = editor.document;
+
         if (!anchor) {
             const anchorNvim = await this.client.callFunction("getpos", ["v"]);
             anchor = convertVimPositionToEditorPosition(editor, new Position(anchorNvim[1] - 1, anchorNvim[2] - 1));
@@ -437,71 +437,50 @@ export class CursorManager implements Disposable {
         // we hide the real cursor and use a highlight decorator for the fake cursor
         switch (mode.visual) {
             case "char":
-                return [
-                    anchor.isBeforeOrEqual(active)
-                        ? new Selection(
-                              anchor,
-                              new Position(active.line, Math.min(active.character + 1, activeLineLength)),
-                          )
-                        : new Selection(
-                              new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
-                              active,
-                          ),
-                ];
+                if (anchor.isBeforeOrEqual(active))
+                    return [
+                        new Selection(
+                            anchor,
+                            new Position(active.line, Math.min(active.character + 1, activeLineLength)),
+                        ),
+                    ];
+                else
+                    return [
+                        new Selection(
+                            new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
+                            active,
+                        ),
+                    ];
             case "line":
-                return [
-                    anchor.line <= active.line
-                        ? new Selection(anchor.line, 0, active.line, activeLineLength)
-                        : new Selection(anchor.line, anchorLineLength, active.line, 0),
-                ];
+                if (anchor.line <= active.line) return [new Selection(anchor.line, 0, active.line, activeLineLength)];
+                else return [new Selection(anchor.line, anchorLineLength, active.line, 0)];
             case "block": {
-                const getDisplayWidth = async (...pos: Position[]) => {
-                    const parts = pos.map((p) => {
-                        const textRange = doc.validateRange(new Range(p.line, 0, p.line, p.character));
-                        return doc.getText(textRange);
-                    });
-                    return this.client.lua(
-                        `
-                   return (function(parts)
-                        return vim.tbl_map(function(part) return vim.fn.strdisplaywidth(part) end, parts)
-                    end)(...)
-                    `,
-                        [parts],
-                    ) as Promise<number[]>;
-                };
-
-                const [anchorDisCol, activeDisCol] = await getDisplayWidth(anchor, active);
-                const [startDisCol, endDisCol] = [
-                    Math.min(anchorDisCol, activeDisCol),
-                    Math.max(anchorDisCol, activeDisCol),
-                ];
-
-                const lines = [];
-                const startLine = Math.min(active.line, anchor.line);
-                const endLine = Math.max(active.line, anchor.line);
-                for (let line = startLine; line <= endLine; line++) {
-                    lines.push(doc.lineAt(line).text);
+                const selections: Selection[] = [];
+                // we want the first selection to be on the cursor line, so that a single-line selection will properly trigger word highlight
+                const before = anchor.line < active.line;
+                for (
+                    let line = active.line;
+                    before ? line >= anchor.line : line <= anchor.line;
+                    before ? line-- : line++
+                ) {
+                    // skip lines that don't contain the block selection, except if it contains the cursor
+                    const docLine = doc.lineAt(line);
+                    if (
+                        docLine.range.end.character > Math.min(anchor.character, active.character) ||
+                        line === active.line
+                    ) {
+                        // selections go left to right for simplicity, and don't go past the end of the line
+                        selections.push(
+                            new Selection(
+                                line,
+                                Math.min(anchor.character, active.character),
+                                line,
+                                Math.min(Math.max(anchor.character, active.character) + 1, docLine.range.end.character),
+                            ),
+                        );
+                    }
                 }
-                const _code = 'return require"vscode-neovim.internal".handle_blockwise_selection(...)';
-                const ret = (await this.client.lua(_code, [lines, startDisCol, endDisCol])) as [number, number][];
-
-                const ranges: Range[] = [];
-                ret.forEach(([startChar, endChar], idx) => {
-                    const line = idx + startLine;
-                    const lineRange = doc.lineAt(line).range;
-                    const range = lineRange.intersection(new Range(line, startChar, line, endChar));
-                    if (range && (range.start.isBefore(lineRange.end) || line === active.line)) ranges.push(range);
-                });
-
-                // correct the orientation
-                const selections = ranges.map((r) => {
-                    const range = doc.validateRange(new Range(r.start, r.end.translate(0, 1)));
-                    return activeDisCol >= anchorDisCol
-                        ? new Selection(range.start, range.end)
-                        : new Selection(range.end, range.start);
-                });
-                // Make sure word highlighting is triggered correctly
-                return anchor.isBeforeOrEqual(active) ? selections.reverse() : selections;
+                return selections;
             }
         }
     };

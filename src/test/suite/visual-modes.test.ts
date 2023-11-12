@@ -237,7 +237,7 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("0");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(0, 7, 0, 0), new vscode.Selection(1, 7, 1, 0)],
+                vsCodeSelections: [new vscode.Selection(0, 0, 0, 7), new vscode.Selection(1, 0, 1, 7)],
             },
             client,
         );
@@ -271,7 +271,7 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("j");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 1, 1, 1), new vscode.Selection(0, 3, 0, 1)],
+                vsCodeSelections: [new vscode.Selection(1, 1, 1, 1), new vscode.Selection(0, 1, 0, 3)],
             },
             client,
         );
