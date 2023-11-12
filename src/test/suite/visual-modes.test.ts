@@ -126,8 +126,7 @@ describe("Visual modes test", () => {
         );
     });
 
-    // see https://github.com/vscode-neovim/vscode-neovim/pull/1258
-    it.skip("viw on last symbol", async () => {
+    it("viw on last symbol", async () => {
         await openTextDocument({ content: ["test"].join("\n") });
 
         await sendVSCodeKeys("lll");

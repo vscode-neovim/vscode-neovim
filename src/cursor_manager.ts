@@ -92,7 +92,7 @@ export class CursorManager implements Disposable {
             window.onDidChangeVisibleTextEditors(updateCursorStyle),
             window.onDidChangeActiveTextEditor(updateCursorStyle),
             eventBus.on("redraw", this.handleRedraw, this),
-            eventBus.on(["window-scroll", "visual-changed"], ([winId]) => {
+            eventBus.on("visual-changed", ([winId]) => {
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (gridId) this.gridCursorUpdates.add(gridId);
             }),
