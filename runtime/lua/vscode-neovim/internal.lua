@@ -115,4 +115,51 @@ do
   end
 end
 
+---display-col to col
+---@param line string
+---@param discol number
+local function discol_to_col(line, discol)
+  if discol == 0 then
+    return 0
+  end
+
+  local col = 0
+  local max_col = vim.fn.strcharlen(line)
+
+  local min_distance = math.huge
+  local nearest_col = 0
+
+  while col <= max_col do
+    local curr_col = math.floor((col + max_col) / 2)
+    local curr_discol = fn.strdisplaywidth(fn.strcharpart(line, 0, curr_col))
+    if curr_discol == discol then
+      return curr_col
+    elseif curr_discol > discol then
+      max_col = curr_col - 1
+    else
+      col = curr_col + 1
+    end
+
+    local curr_distance = math.abs(curr_discol - discol)
+    if curr_distance < min_distance then
+      min_distance = curr_distance
+      nearest_col = curr_col
+    elseif curr_distance == min_distance and curr_col < nearest_col then
+      nearest_col = curr_col
+    end
+  end
+  return nearest_col
+end
+
+function M.handle_blockwise_selection(lines, start_discol, end_discol)
+  local result = {}
+  for _, line in ipairs(lines) do
+    table.insert(result, {
+      discol_to_col(line, start_discol),
+      discol_to_col(line, end_discol),
+    })
+  end
+  return result
+end
+
 return M
