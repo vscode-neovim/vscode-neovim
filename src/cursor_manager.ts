@@ -489,7 +489,7 @@ export class CursorManager implements Disposable {
                 ret.forEach(([startChar, endChar], idx) => {
                     const line = idx + startLine;
                     const lineRange = doc.lineAt(line).range;
-                    const range = new Range(line, startChar, line, endChar).intersection(lineRange);
+                    const range = lineRange.intersection(new Range(line, startChar, line, endChar));
                     if (range && (range.start.isBefore(lineRange.end) || line === active.line)) ranges.push(range);
                 });
 
