@@ -30,23 +30,23 @@ function! VSCodeNotify(cmd, ...)
 endfunction
 
 function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
-    call luaeval('require"vscode-neovim".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',\
-                [a:cmd, [a:line1 - 1, a:line2 - 1], !a:leaveSelection, a:000])
+    call luaeval('require"vscode-neovim".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+          \ [a:cmd, [a:line1 - 1, a:line2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeNotifyRange(cmd, line1, line2, leaveSelection, ...)
-    call luaeval('require"vscode-neovim".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',\
-                [a:cmd, [a:line1 - 1, a:line2 - 1], !a:leaveSelection, a:000])
+    call luaeval('require"vscode-neovim".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+          \ [a:cmd, [a:line1 - 1, a:line2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
-    call luaeval('require"vscode-neovim".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',\
-                [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], !a:leaveSelection, a:000])
+    call luaeval('require"vscode-neovim".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+          \ [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
-    call luaeval('require"vscode-neovim".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',\
-                [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], !a:leaveSelection, a:000])
+    call luaeval('require"vscode-neovim".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+          \ [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 " Called from extension when opening/creating new file in vscode to reset undo tree
