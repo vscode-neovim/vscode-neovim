@@ -1,5 +1,7 @@
 local api, fn = vim.api, vim.fn
 
+local util = require("vscode-neovim.util")
+
 local M = {}
 
 ---call from vscode to sync viewport with neovim
@@ -188,9 +190,11 @@ function M.get_selections(win)
     else
       local start_col = fn.virtcol2col(win, line_1, start_vcol)
       local end_col = fn.virtcol2col(win, line_1, end_vcol)
+      local start_col_offset = fn.strlen(util.get_char_at(line_1, start_col, buf) or "")
+      local end_col_offset = fn.strlen(util.get_char_at(line_1, end_col, buf) or "")
       local range = vim.lsp.util.make_given_range_params(
-        { line_1, math.max(0, start_col - 1) },
-        { line_1, math.max(0, end_col - 1) },
+        { line_1, math.max(0, start_col - start_col_offset) },
+        { line_1, math.max(0, end_col - end_col_offset) },
         buf,
         "utf-16"
       ).range
