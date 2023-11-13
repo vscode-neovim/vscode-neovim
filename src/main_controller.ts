@@ -249,18 +249,6 @@ export class MainController implements vscode.Disposable {
                 }
                 break;
             }
-            case "vscode-command": {
-                try {
-                    const editor = vscode.window.activeTextEditor;
-                    if (editor) await this.cursorManager.waitForCursorUpdate(editor);
-                    const [action, args] = events;
-                    await actions.run(action, ...args);
-                } catch (err) {
-                    const errMsg = err instanceof Error ? err.message : err;
-                    logger.error("Error on notification: ", errMsg);
-                }
-                break;
-            }
             case "vscode-neovim": {
                 const [command, args] = events;
                 eventBus.fire(command as any, args);
@@ -305,20 +293,6 @@ export class MainController implements vscode.Disposable {
 
                 try {
                     const res = await this.runAction(action, options);
-                    response.send(res);
-                } catch (err) {
-                    const errMsg = err instanceof Error ? err.message : err;
-                    response.send(errMsg, true);
-                    logger.error("Request error: ", errMsg);
-                }
-                break;
-            }
-            case "vscode-command": {
-                try {
-                    const editor = vscode.window.activeTextEditor;
-                    if (editor) await this.cursorManager.waitForCursorUpdate(editor);
-                    const [action, args] = requestArgs;
-                    const res = await actions.run(action, ...args);
                     response.send(res);
                 } catch (err) {
                     const errMsg = err instanceof Error ? err.message : err;

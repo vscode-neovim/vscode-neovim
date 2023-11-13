@@ -8,41 +8,45 @@ let &runtimepath = &runtimepath . ',' . s:currDir . '/vim-altercmd'
 let s:luaPath = fnamemodify(s:currDir, ':h') . '/runtime'
 let &runtimepath = &runtimepath . ',' . s:luaPath
 
-" Used to execute vscode command
-let s:vscodeCommandEventName = 'vscode-command'
 " Used for externsion inter-communications
 let s:vscodePluginEventName = 'vscode-neovim'
 
 " RPC and global functions
 
-function! VSCodeCall(cmd, ...) abort
-    call rpcrequest(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
-endfunction
-
-function! VSCodeNotify(cmd, ...)
-    call rpcnotify(g:vscode_channel, s:vscodeCommandEventName, a:cmd, a:000)
-endfunction
+" internal
 
 function! VSCodeExtensionNotify(cmd, ...)
     call rpcnotify(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
 endfunction
 
+" apis
+
+function! VSCodeCall(cmd, ...) abort
+    call luaeval('require"vscode-neovim".call(_A[1], {args = _A[2]})', [a:cmd, a:000])
+endfunction
+
+function! VSCodeNotify(cmd, ...)
+    call luaeval('require"vscode-neovim".action(_A[1], {args = _A[2]})', [a:cmd, a:000])
+endfunction
+
 function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
-    " FIXME: breaking
-    call VSCodeExtensionNotify('range-command', a:cmd, 'V', a:line1, a:line2, 1, 1, a:leaveSelection, a:000)
+    call luaeval('require"vscode-neovim".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+          \ [a:cmd, [a:line1 - 1, a:line2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeNotifyRange(cmd, line1, line2, leaveSelection, ...)
-    call VSCodeExtensionNotify('range-command', a:cmd, 'V', a:line1, a:line2, 1, 1, a:leaveSelection, a:000)
+    call luaeval('require"vscode-neovim".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+          \ [a:cmd, [a:line1 - 1, a:line2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
-    " FIXME: breaking
-    call VSCodeExtensionNotify('range-command', a:cmd, 'v', a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
+    call luaeval('require"vscode-neovim".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+          \ [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
-    call VSCodeExtensionNotify('range-command', a:cmd, 'v', a:line1, a:line2, a:pos1, a:pos2, a:leaveSelection, a:000)
+    call luaeval('require"vscode-neovim".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+          \ [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 " Called from extension when opening/creating new file in vscode to reset undo tree

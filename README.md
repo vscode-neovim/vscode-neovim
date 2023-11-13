@@ -273,6 +273,10 @@ The built-in multi-cursor support may not meet your needs. Please refer to the p
 
 ### VimScript
 
+> **Note**
+>
+> In version 1.0.0 and later versions, we no longer recommend using vimscript functions.
+
 There are a few helper functions that are used to invoke VSCode commands from Neovim.
 
 -   `VSCodeNotify(command, ...)`/`VSCodeCall`: Invoke VSCode command with optional arguments.
