@@ -483,7 +483,7 @@ export class CursorManager implements Disposable {
                 for (let line = startLine; line <= endLine; line++) {
                     lines.push(doc.lineAt(line).text);
                 }
-                const ret = await actions.internalLua<[number, number][]>(
+                const ret = await actions.lua<[number, number][]>(
                     "handle_blockwise_selection",
                     lines,
                     startDisCol,

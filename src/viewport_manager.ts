@@ -177,7 +177,7 @@ export class ViewportManager implements Disposable {
         }
         const viewport = this.gridViewport.get(gridId);
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.line) {
-            actions.internalLua("scroll_viewport", Math.max(startLine, 0), endLine);
+            actions.lua("scroll_viewport", Math.max(startLine, 0), endLine);
         }
     }
 

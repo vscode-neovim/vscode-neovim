@@ -64,7 +64,7 @@ class ActionManager implements Disposable {
      * @param fname the internal function name
      * @param args arguments
      */
-    public async internalLua<T = any>(fname: string, ...args: VimValue[]): Promise<T> {
+    public async lua<T = any>(fname: string, ...args: VimValue[]): Promise<T> {
         return this.client.lua(`return require"vscode-neovim.internal".${fname}(...)`, args) as Promise<T>;
     }
 

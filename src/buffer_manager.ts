@@ -523,8 +523,8 @@ export class BufferManager implements Disposable {
                 unusedBuffers.push(bufId);
             }
         });
-        unusedBuffers.length && (await actions.internalLua("delete_buffers", unusedBuffers));
-        unusedWindows.length && (await actions.internalLua("close_windows", unusedWindows));
+        unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
+        unusedWindows.length && (await actions.lua("close_windows", unusedWindows));
 
         if (cancelToken.isCancellationRequested) {
             // If the visible editors has changed since we started, don't resolve the promise,

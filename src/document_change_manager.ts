@@ -121,9 +121,9 @@ export class DocumentChangeManager implements Disposable {
         this.dotRepeatChange = undefined;
         if (!edits.length && !deletes) return;
         try {
-            await actions.internalLua("dotrepeat_sync", edits, deletes);
+            await actions.lua("dotrepeat_sync", edits, deletes);
         } finally {
-            await actions.internalLua("dotrepeat_restore", edits, deletes);
+            await actions.lua("dotrepeat_restore", edits, deletes);
         }
     }
 
@@ -380,6 +380,6 @@ export class DocumentChangeManager implements Disposable {
         logger.debug(`Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
 
-        await actions.internalLua("handle_changes", bufId, changeArgs);
+        await actions.lua("handle_changes", bufId, changeArgs);
     };
 }
