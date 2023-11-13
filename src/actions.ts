@@ -59,6 +59,15 @@ class ActionManager implements Disposable {
         this.client.executeLua('require"vscode-neovim.api".fire_event(...)', [event, ...args]);
     }
 
+    /**
+     * Execute a function from the Lua module `vscode-neovim.internal`.
+     * @param fname the internal function name
+     * @param args arguments
+     */
+    public async lua<T = any>(fname: string, ...args: VimValue[]): Promise<T> {
+        return this.client.lua(`return require"vscode-neovim.internal".${fname}(...)`, args) as Promise<T>;
+    }
+
     private initActions() {
         // testing actions
         this.add("_ping", () => "pong");
