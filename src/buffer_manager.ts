@@ -523,10 +523,8 @@ export class BufferManager implements Disposable {
                 unusedBuffers.push(bufId);
             }
         });
-        unusedBuffers.length &&
-            (await this.client.executeLua("require'vscode-neovim.internal'.delete_buffers(...)", [unusedBuffers]));
-        unusedWindows.length &&
-            (await this.client.executeLua("require'vscode-neovim.internal'.close_windows(...)", [unusedWindows]));
+        unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
+        unusedWindows.length && (await actions.lua("close_windows", unusedWindows));
 
         if (cancelToken.isCancellationRequested) {
             // If the visible editors has changed since we started, don't resolve the promise,
