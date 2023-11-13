@@ -129,7 +129,6 @@ type EventsMapping = {
         },
     ];
     ["visual-changed"]: [number];
-    ["range-command"]: any;
 };
 
 export interface Event<T extends keyof EventsMapping = keyof EventsMapping> {

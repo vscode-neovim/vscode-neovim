@@ -96,7 +96,6 @@ export class CursorManager implements Disposable {
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (gridId) this.gridCursorUpdates.add(gridId);
             }),
-            eventBus.on("range-command", this.handleRangeCommand, this),
             {
                 dispose() {
                     // reset cursor style
@@ -525,39 +524,6 @@ export class CursorManager implements Disposable {
         editor.revealRange(new Selection(pos, pos), type);
         this.main.viewportManager.scrollNeovim(editor);
     };
-
-    private async handleRangeCommand(data: EventBusData<"range-command">): Promise<unknown> {
-        const [command, mode, startLine, endLine, startPos, endPos, leaveSelection, inargs] = data;
-        const args = Array.isArray(inargs) ? inargs : [inargs];
-        try {
-            const e = window.activeTextEditor;
-            if (!e) return;
-            logger.debug(
-                `Range command: ${command}, range: [${startLine}, ${startPos}] - [${endLine}, ${endPos}], leaveSelection: ${leaveSelection}`,
-            );
-            const prevSelections = e.selections;
-            const selection = await this.createVisualSelection(
-                e,
-                new Mode(mode),
-                new Position(endLine - 1, endPos - 1),
-                new Position(startLine - 1, startPos - 1),
-            );
-            this.neovimCursorPosition.set(e, selection[0]);
-            e.selections = selection;
-            const res = await commands.executeCommand(command, ...args);
-            if (!leaveSelection) {
-                this.neovimCursorPosition.set(e, prevSelections[0]);
-                e.selections = prevSelections;
-            }
-            return res;
-        } catch (e) {
-            logger.error(
-                `${command} failed, range: [${startLine}, ${endLine}, ${startPos}, ${endPos}] args: ${JSON.stringify(
-                    inargs,
-                )} error: ${(e as Error).message}`,
-            );
-        }
-    }
 
     public dispose(): void {
         disposeAll(this.disposables);
