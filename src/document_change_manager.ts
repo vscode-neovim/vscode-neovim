@@ -11,6 +11,7 @@ import {
     workspace,
 } from "vscode";
 
+import actions from "./actions";
 import { BufferManager } from "./buffer_manager";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
@@ -120,9 +121,9 @@ export class DocumentChangeManager implements Disposable {
         this.dotRepeatChange = undefined;
         if (!edits.length && !deletes) return;
         try {
-            await this.client.lua("require'vscode-neovim.internal'.dotrepeat_sync(...)", [edits, deletes]);
+            await actions.internalLua("dotrepeat_sync", edits, deletes);
         } finally {
-            await this.client.lua("require'vscode-neovim.internal'.dotrepeat_restore()");
+            await actions.internalLua("dotrepeat_restore", edits, deletes);
         }
     }
 
@@ -379,7 +380,6 @@ export class DocumentChangeManager implements Disposable {
         logger.debug(`Setting wantInsertCursorUpdate to false`);
         this.main.cursorManager.wantInsertCursorUpdate = false;
 
-        const code = "return require('vscode-neovim.internal').handle_changes(...)";
-        await this.client.executeLua(code, [bufId, changeArgs]);
+        await actions.internalLua("handle_changes", bufId, changeArgs);
     };
 }

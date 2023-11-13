@@ -1,6 +1,7 @@
 import { DebouncedFunc, debounce } from "lodash-es";
 import { Disposable, Position, TextEditor, TextEditorVisibleRangesChangeEvent, window, workspace } from "vscode";
 
+import actions from "./actions";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
@@ -176,10 +177,7 @@ export class ViewportManager implements Disposable {
         }
         const viewport = this.gridViewport.get(gridId);
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.line) {
-            this.client.lua("require('vscode-neovim.internal').scroll_viewport(...)", [
-                Math.max(startLine, 0),
-                endLine,
-            ]);
+            actions.internalLua("scroll_viewport", Math.max(startLine, 0), endLine);
         }
     }
 

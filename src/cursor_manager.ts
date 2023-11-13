@@ -14,6 +14,7 @@ import {
     workspace,
 } from "vscode";
 
+import actions from "./actions";
 import { config } from "./config";
 import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
@@ -482,8 +483,12 @@ export class CursorManager implements Disposable {
                 for (let line = startLine; line <= endLine; line++) {
                     lines.push(doc.lineAt(line).text);
                 }
-                const _code = 'return require"vscode-neovim.internal".handle_blockwise_selection(...)';
-                const ret = (await this.client.lua(_code, [lines, startDisCol, endDisCol])) as [number, number][];
+                const ret = await actions.internalLua<[number, number][]>(
+                    "handle_blockwise_selection",
+                    lines,
+                    startDisCol,
+                    endDisCol,
+                );
 
                 const ranges: Range[] = [];
                 ret.forEach(([startChar, endChar], idx) => {
