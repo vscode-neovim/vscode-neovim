@@ -19,13 +19,7 @@ import { config } from "./config";
 import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { Mode } from "./mode_manager";
-import {
-    convertEditorPositionToVimPosition,
-    convertVimPositionToEditorPosition,
-    disposeAll,
-    ManualPromise,
-} from "./utils";
+import { convertEditorPositionToVimPosition, disposeAll, ManualPromise } from "./utils";
 
 const logger = createLogger("CursorManager");
 
@@ -231,9 +225,7 @@ export class CursorManager implements Disposable {
         }
         let ranges: Range[] = [];
         try {
-            ranges = (await this.client.lua("return require'vscode-neovim.internal'.get_selections(...)", [
-                win,
-            ])) as Range[];
+            ranges = await actions.lua("get_selections", win);
         } catch (e) {
             logger.error(e);
             return;
@@ -420,48 +412,6 @@ export class CursorManager implements Disposable {
         await this.client.input(visualmode === "V" || visualmode === "\x16" ? "gvv" : "gv");
         await this.client.call("winrestview", [{ curswant: active.character }]);
     }
-
-    // given a neovim visual selection range (and the current mode), create a vscode selection
-    private createVisualSelection = async (
-        editor: TextEditor,
-        mode: Mode,
-        active: Position,
-        anchor: Position | undefined,
-    ): Promise<Selection[]> => {
-        // TODO: remove this function
-        const doc = editor.document;
-        if (!anchor) {
-            const anchorNvim = await this.client.callFunction("getpos", ["v"]);
-            anchor = convertVimPositionToEditorPosition(editor, new Position(anchorNvim[1] - 1, anchorNvim[2] - 1));
-        }
-
-        logger.debug(
-            `Creating visual selection, mode: ${mode.visual}, anchor: [${anchor.line}, ${anchor.character}], active: [${active.line}, ${active.character}]`,
-        );
-
-        const activeLineLength = doc.lineAt(active.line).range.end.character;
-        const anchorLineLength = doc.lineAt(anchor.line).range.end.character;
-
-        // to make a full selection, the end of the selection needs to be moved forward by one character
-        // we hide the real cursor and use a highlight decorator for the fake cursor
-
-        if (mode.visual == "char") {
-            return [
-                anchor.isBeforeOrEqual(active)
-                    ? new Selection(anchor, new Position(active.line, Math.min(active.character + 1, activeLineLength)))
-                    : new Selection(
-                          new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
-                          active,
-                      ),
-            ];
-        } else {
-            return [
-                anchor.line <= active.line
-                    ? new Selection(anchor.line, 0, active.line, activeLineLength)
-                    : new Selection(anchor.line, anchorLineLength, active.line, 0),
-            ];
-        }
-    };
 
     private triggerMovementFunctions = (editor: TextEditor, pos: Position): void => {
         commands.executeCommand("editor.action.wordHighlight.trigger");
