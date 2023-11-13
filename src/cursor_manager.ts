@@ -455,9 +455,10 @@ export class CursorManager implements Disposable {
                         : new Selection(anchor.line, anchorLineLength, active.line, 0),
                 ];
             case "block": {
+                const win = this.main.bufferManager.getWinIdForTextEditor(editor) ?? 0;
                 const getDisplayWidth = async (...pos: Position[]) => {
                     const parts = pos.map((p) => {
-                        const textRange = doc.validateRange(new Range(p.line, 0, p.line, p.character));
+                        const textRange = doc.validateRange(new Range(p.line, 0, p.line, p.character + 1));
                         return doc.getText(textRange);
                     });
                     return this.client.lua(
@@ -476,30 +477,36 @@ export class CursorManager implements Disposable {
                     Math.max(anchorDisCol, activeDisCol),
                 ];
 
-                const lines = [];
                 const startLine = Math.min(active.line, anchor.line);
                 const endLine = Math.max(active.line, anchor.line);
-                for (let line = startLine; line <= endLine; line++) {
-                    lines.push(doc.lineAt(line).text);
+
+                // [line, startChar, endChar]
+                let ret: [number, number, number][] = [];
+                try {
+                    ret = (await this.client.lua(
+                        'return require"vscode-neovim.internal".handle_blockwise_selection(...)',
+                        [win, startLine, endLine, startDisCol, endDisCol],
+                    )) as [number, number, number][];
+                } catch (e) {
+                    logger.error(e);
+                    return [...editor.selections];
                 }
-                const _code = 'return require"vscode-neovim.internal".handle_blockwise_selection(...)';
-                const ret = (await this.client.lua(_code, [lines, startDisCol, endDisCol])) as [number, number][];
 
                 const ranges: Range[] = [];
-                ret.forEach(([startChar, endChar], idx) => {
-                    const line = idx + startLine;
+                ret.forEach(([line, startChar, endChar]) => {
                     const lineRange = doc.lineAt(line).range;
                     const range = lineRange.intersection(new Range(line, startChar, line, endChar));
-                    if (range && (range.start.isBefore(lineRange.end) || line === active.line)) ranges.push(range);
+                    if (range && (range.start.isBefore(lineRange.end) || line === active.line)) {
+                        ranges.push(range);
+                    }
                 });
 
-                // correct the orientation
-                const selections = ranges.map((r) => {
-                    const range = doc.validateRange(new Range(r.start, r.end.translate(0, 1)));
-                    return activeDisCol >= anchorDisCol
+                const selections = ranges.map((range) =>
+                    // correct the orientation
+                    activeDisCol >= anchorDisCol
                         ? new Selection(range.start, range.end)
-                        : new Selection(range.end, range.start);
-                });
+                        : new Selection(range.end, range.start),
+                );
                 // Make sure word highlighting is triggered correctly
                 return anchor.isBeforeOrEqual(active) ? selections.reverse() : selections;
             }

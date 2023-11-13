@@ -115,50 +115,31 @@ do
   end
 end
 
----display-col to col
----@param line string
----@param discol number
-local function discol_to_col(line, discol)
-  if discol == 0 then
-    return 0
-  end
+---@param win integer
+---@param start_line integer 0-indexed
+---@param end_line integer 0-indexed
+---@param start_vcol integer 1-indexed
+---@param end_vcol integer 1-indexed
+function M.handle_blockwise_selection(win, start_line, end_line, start_vcol, end_vcol)
+  local buf = api.nvim_win_get_buf(win)
+  local lines = api.nvim_buf_get_lines(buf, start_line, end_line + 1, true)
 
-  local col = 0
-  local max_col = vim.fn.strcharlen(line)
-
-  local min_distance = math.huge
-  local nearest_col = 0
-
-  while col <= max_col do
-    local curr_col = math.floor((col + max_col) / 2)
-    local curr_discol = fn.strdisplaywidth(fn.strcharpart(line, 0, curr_col))
-    if curr_discol == discol then
-      return curr_col
-    elseif curr_discol > discol then
-      max_col = curr_col - 1
-    else
-      col = curr_col + 1
-    end
-
-    local curr_distance = math.abs(curr_discol - discol)
-    if curr_distance < min_distance then
-      min_distance = curr_distance
-      nearest_col = curr_col
-    elseif curr_distance == min_distance and curr_col < nearest_col then
-      nearest_col = curr_col
-    end
-  end
-  return nearest_col
-end
-
-function M.handle_blockwise_selection(lines, start_discol, end_discol)
   local result = {}
-  for _, line in ipairs(lines) do
-    table.insert(result, {
-      discol_to_col(line, start_discol),
-      discol_to_col(line, end_discol),
-    })
+  local lnum, start_col, start_char, end_col, end_char, _
+  for idx, line in ipairs(lines) do
+    lnum = start_line + idx
+    start_col = fn.virtcol2col(win, lnum, start_vcol)
+    _, start_char = vim.str_utfindex(line, start_col)
+    end_col = fn.virtcol2col(win, lnum, end_vcol)
+    _, end_char = vim.str_utfindex(line, end_col)
+
+    if start_vcol <= api.nvim_win_call(win, function()
+      return fn.strdisplaywidth(line)
+    end) then
+      table.insert(result, { start_line + idx - 1, math.max(0, start_char - 1), end_char })
+    end
   end
+
   return result
 end
 
