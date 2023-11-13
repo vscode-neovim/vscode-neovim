@@ -115,32 +115,107 @@ do
   end
 end
 
----@param win integer
----@param start_line integer 0-indexed
----@param end_line integer 0-indexed
----@param start_vcol integer 1-indexed
----@param end_vcol integer 1-indexed
-function M.handle_blockwise_selection(win, start_line, end_line, start_vcol, end_vcol)
+---Get editor's selections
+---@return lsp.Range[]
+function M.get_selections(win)
+  win = win or api.nvim_get_current_win()
   local buf = api.nvim_win_get_buf(win)
-  local lines = api.nvim_buf_get_lines(buf, start_line, end_line + 1, true)
+  local mode = api.nvim_get_mode().mode
+  local is_visual = mode:match("[vV\x16]")
 
-  local result = {}
-  local lnum, start_col, start_char, end_col, end_char, _
-  for idx, line in ipairs(lines) do
-    lnum = start_line + idx
-    start_col = fn.virtcol2col(win, lnum, start_vcol)
-    _, start_char = vim.str_utfindex(line, start_col)
-    end_col = fn.virtcol2col(win, lnum, end_vcol)
-    _, end_char = vim.str_utfindex(line, end_col)
+  -- normal
 
-    if start_vcol <= api.nvim_win_call(win, function()
-      return fn.strdisplaywidth(line)
-    end) then
-      table.insert(result, { start_line + idx - 1, math.max(0, start_char - 1), end_char })
+  if not is_visual then
+    local pos = vim.lsp.util.make_position_params(win, "utf-16").position
+    return { { start = pos, ["end"] = pos } }
+  end
+
+  -- linewise/charwise visual
+
+  if mode:lower() == "v" then
+    local start_pos = { fn.line("v"), fn.col("v") - 1 }
+    local end_pos = { fn.line("."), fn.col(".") - 1 }
+    local start_from_left = true
+
+    if start_pos[1] > end_pos[1] or (start_pos[1] == end_pos[1] and start_pos[2] > end_pos[2]) then
+      start_from_left = false
+      start_pos, end_pos = end_pos, start_pos
+    end
+
+    if mode == "V" then
+      start_pos = { start_pos[1], 0 }
+      end_pos = { end_pos[1], #(fn.getbufline(buf, end_pos[1])[1] or "") }
+    end
+
+    local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, buf, "utf-16").range
+    if not start_from_left then
+      range = { start = range["end"], ["end"] = range.start }
+    end
+    return { range }
+  end
+
+  -- blockwise visual
+
+  local ranges = {}
+
+  -- 1-indexed {
+  local start_line_1 = fn.line("v")
+  local end_line_1 = fn.line(".")
+  local curr_line_1 = end_line_1
+  local start_vcol = fn.virtcol("v")
+  local end_vcol = fn.virtcol(".")
+  -- }
+  local top_to_bottom = start_line_1 < end_line_1 or (start_line_1 == end_line_1 and start_vcol <= end_vcol)
+  local start_from_left = end_vcol >= start_vcol
+  if start_line_1 > end_line_1 then
+    start_line_1, end_line_1 = end_line_1, start_line_1
+  end
+  if start_vcol > end_vcol then
+    start_vcol, end_vcol = end_vcol, start_vcol
+  end
+
+  for line_1 = start_line_1, end_line_1 do
+    local line_0 = line_1 - 1
+    local line_text = fn.getbufline(buf, line_1)[1] or ""
+    local line_diswidth = fn.strdisplaywidth(line_text)
+    if start_vcol > line_diswidth then
+      if line_1 == curr_line_1 then
+        local pos = { line = line_0, character = ({ vim.str_utfindex(line_text) })[2] }
+        table.insert(ranges, { start = pos, ["end"] = pos })
+      else
+        -- ignore
+      end
+    else
+      local start_col = fn.virtcol2col(win, line_1, start_vcol)
+      local end_col = fn.virtcol2col(win, line_1, end_vcol)
+      local range = vim.lsp.util.make_given_range_params(
+        { line_1, math.max(0, start_col - 1) },
+        { line_1, math.max(0, end_col - 1) },
+        buf,
+        "utf-16"
+      ).range
+      if not start_from_left then
+        range = { start = range["end"], ["end"] = range.start }
+      end
+      table.insert(ranges, range)
     end
   end
 
-  return result
+  if #ranges == 0 then
+    -- impossible
+    local pos = vim.lsp.util.make_position_params(win, "utf-16").position
+    return { { start = pos, ["end"] = pos } }
+  end
+
+  if top_to_bottom then
+    local ret = {}
+    for i = #ranges, 1, -1 do
+      table.insert(ret, ranges[i])
+    end
+    return ret
+  else
+    return ranges
+  end
 end
 
 return M

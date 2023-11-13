@@ -187,7 +187,7 @@ export class CursorManager implements Disposable {
             }
             // lock typing in editor until cursor update is complete
             if (!this.cursorUpdatePromise.has(editor)) this.cursorUpdatePromise.set(editor, new ManualPromise());
-            this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
+            this.getDebouncedUpdateCursorPos(editor)(editor);
         }
         this.gridCursorUpdates.clear();
     }
@@ -207,7 +207,7 @@ export class CursorManager implements Disposable {
     /**
      * Update cursor in active editor. Creates visual selections if appropriate.
      */
-    public updateCursorPosInEditor = async (editor: TextEditor, gridId: number): Promise<void> => {
+    public updateCursorPosInEditor = async (editor: TextEditor): Promise<void> => {
         // !For text changes neovim sends first buf_lines_event followed by redraw event
         // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
         logger.debug(`Waiting for document change completion before setting the editor cursor`);
@@ -224,21 +224,30 @@ export class CursorManager implements Disposable {
             return;
         }
 
-        const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
-        if (!bytePos) {
-            logger.warn(`No cursor for gridId from viewport: ${gridId}`);
+        const win = this.main.bufferManager.getWinIdForTextEditor(editor);
+        if (!win) {
+            logger.debug(`No window for editor`);
             return;
         }
-        const active = convertVimPositionToEditorPosition(editor, bytePos);
-
-        let selections: Selection[];
-        const mode = this.main.modeManager.currentMode;
-        if (mode.isVisual) {
-            selections = await this.createVisualSelection(editor, mode, active, undefined);
-        } else {
-            logger.debug(`Updating cursor in editor pos: [${active.line}, ${active.character}]`);
-            selections = [new Selection(active, active)];
+        let ranges: Range[] = [];
+        try {
+            ranges = (await this.client.lua("return require'vscode-neovim.internal'.get_selections(...)", [
+                win,
+            ])) as Range[];
+        } catch (e) {
+            logger.error(e);
+            return;
         }
+        const doc = editor.document;
+        const selections = ranges.map((range) => {
+            const start = new Position(range.start.line, range.start.character);
+            const end = new Position(range.end.line, range.end.character);
+            const reversed = start.isAfter(end);
+            range = doc.validateRange(new Range(start, end));
+            return range.start.isBefore(range.end) && reversed
+                ? new Selection(range.end, range.start)
+                : new Selection(range.start, range.end);
+        });
         const { selections: prevSelections } = editor;
         if (
             // Avoid unnecessary selections updates, or it will disrupt cursor movement related features in vscode
@@ -252,8 +261,7 @@ export class CursorManager implements Disposable {
         }
         this.neovimCursorPosition.set(editor, selections[0]);
         if (!selections[0].isEqual(prevSelections[0])) {
-            logger.debug(`The selection was changed, scroll view`);
-            this.triggerMovementFunctions(editor, active);
+            this.triggerMovementFunctions(editor, selections[0].active);
         }
 
         this.cursorUpdatePromise.get(editor)?.resolve();
@@ -420,6 +428,7 @@ export class CursorManager implements Disposable {
         active: Position,
         anchor: Position | undefined,
     ): Promise<Selection[]> => {
+        // TODO: remove this function
         const doc = editor.document;
         if (!anchor) {
             const anchorNvim = await this.client.callFunction("getpos", ["v"]);
@@ -435,81 +444,22 @@ export class CursorManager implements Disposable {
 
         // to make a full selection, the end of the selection needs to be moved forward by one character
         // we hide the real cursor and use a highlight decorator for the fake cursor
-        switch (mode.visual) {
-            case "char":
-                return [
-                    anchor.isBeforeOrEqual(active)
-                        ? new Selection(
-                              anchor,
-                              new Position(active.line, Math.min(active.character + 1, activeLineLength)),
-                          )
-                        : new Selection(
-                              new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
-                              active,
-                          ),
-                ];
-            case "line":
-                return [
-                    anchor.line <= active.line
-                        ? new Selection(anchor.line, 0, active.line, activeLineLength)
-                        : new Selection(anchor.line, anchorLineLength, active.line, 0),
-                ];
-            case "block": {
-                const win = this.main.bufferManager.getWinIdForTextEditor(editor) ?? 0;
-                const getDisplayWidth = async (...pos: Position[]) => {
-                    const parts = pos.map((p) => {
-                        const textRange = doc.validateRange(new Range(p.line, 0, p.line, p.character + 1));
-                        return doc.getText(textRange);
-                    });
-                    return this.client.lua(
-                        `
-                   return (function(parts)
-                        return vim.tbl_map(function(part) return vim.fn.strdisplaywidth(part) end, parts)
-                    end)(...)
-                    `,
-                        [parts],
-                    ) as Promise<number[]>;
-                };
 
-                const [anchorDisCol, activeDisCol] = await getDisplayWidth(anchor, active);
-                const [startDisCol, endDisCol] = [
-                    Math.min(anchorDisCol, activeDisCol),
-                    Math.max(anchorDisCol, activeDisCol),
-                ];
-
-                const startLine = Math.min(active.line, anchor.line);
-                const endLine = Math.max(active.line, anchor.line);
-
-                // [line, startChar, endChar]
-                let ret: [number, number, number][] = [];
-                try {
-                    ret = (await this.client.lua(
-                        'return require"vscode-neovim.internal".handle_blockwise_selection(...)',
-                        [win, startLine, endLine, startDisCol, endDisCol],
-                    )) as [number, number, number][];
-                } catch (e) {
-                    logger.error(e);
-                    return [...editor.selections];
-                }
-
-                const ranges: Range[] = [];
-                ret.forEach(([line, startChar, endChar]) => {
-                    const lineRange = doc.lineAt(line).range;
-                    const range = lineRange.intersection(new Range(line, startChar, line, endChar));
-                    if (range && (range.start.isBefore(lineRange.end) || line === active.line)) {
-                        ranges.push(range);
-                    }
-                });
-
-                const selections = ranges.map((range) =>
-                    // correct the orientation
-                    activeDisCol >= anchorDisCol
-                        ? new Selection(range.start, range.end)
-                        : new Selection(range.end, range.start),
-                );
-                // Make sure word highlighting is triggered correctly
-                return anchor.isBeforeOrEqual(active) ? selections.reverse() : selections;
-            }
+        if (mode.visual == "char") {
+            return [
+                anchor.isBeforeOrEqual(active)
+                    ? new Selection(anchor, new Position(active.line, Math.min(active.character + 1, activeLineLength)))
+                    : new Selection(
+                          new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
+                          active,
+                      ),
+            ];
+        } else {
+            return [
+                anchor.line <= active.line
+                    ? new Selection(anchor.line, 0, active.line, activeLineLength)
+                    : new Selection(anchor.line, anchorLineLength, active.line, 0),
+            ];
         }
     };
 
@@ -534,6 +484,7 @@ export class CursorManager implements Disposable {
     };
 
     private async handleRangeCommand(data: EventBusData<"range-command">): Promise<unknown> {
+        // TODO: remove this
         const [command, mode, startLine, endLine, startPos, endPos, leaveSelection, inargs] = data;
         const args = Array.isArray(inargs) ? inargs : [inargs];
         try {
