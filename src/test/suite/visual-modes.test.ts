@@ -444,6 +444,52 @@ describe("Visual modes test", () => {
         await assertContent({ content: ["btlah1 abc", "btlah2 abc", "btlah3 abc"] }, client);
     });
 
+    it("Visual block mode - multi-width chars", async () => {
+        await openTextDocument({ content: ["hello", "你好", "hello"].join("\n") });
+
+        await sendNeovimKeys(client, "<C-v>");
+        await sendVSCodeKeys("j");
+        await assertContent(
+            {
+                vsCodeSelections: [new vscode.Selection(1, 0, 1, 1), new vscode.Selection(0, 0, 0, 2)],
+            },
+            client,
+        );
+        await sendVSCodeKeys("j");
+        await assertContent(
+            {
+                vsCodeSelections: [
+                    new vscode.Selection(2, 0, 2, 1),
+                    new vscode.Selection(1, 0, 1, 1),
+                    new vscode.Selection(0, 0, 0, 1),
+                ],
+            },
+            client,
+        );
+        await sendVSCodeKeys("l");
+        await assertContent(
+            {
+                vsCodeSelections: [
+                    new vscode.Selection(2, 0, 2, 2),
+                    new vscode.Selection(1, 0, 1, 1),
+                    new vscode.Selection(0, 0, 0, 2),
+                ],
+            },
+            client,
+        );
+        await sendVSCodeKeys("l");
+        await assertContent(
+            {
+                vsCodeSelections: [
+                    new vscode.Selection(2, 0, 2, 3),
+                    new vscode.Selection(1, 0, 1, 2),
+                    new vscode.Selection(0, 0, 0, 3),
+                ],
+            },
+            client,
+        );
+    });
+
     it("Visual mode - $ is ok for upward selection", async () => {
         await openTextDocument({ content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n") });
 

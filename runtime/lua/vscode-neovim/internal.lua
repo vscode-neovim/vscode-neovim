@@ -1,5 +1,7 @@
 local api, fn = vim.api, vim.fn
 
+local util = require("vscode-neovim.util")
+
 local M = {}
 
 ---call from vscode to sync viewport with neovim
@@ -115,51 +117,121 @@ do
   end
 end
 
----display-col to col
----@param line string
----@param discol number
-local function discol_to_col(line, discol)
-  if discol == 0 then
-    return 0
+---Get editor's selections
+---@return lsp.Range[]
+function M.get_selections(win)
+  win = win or api.nvim_get_current_win()
+  local buf = api.nvim_win_get_buf(win)
+  local mode = api.nvim_get_mode().mode
+  local is_visual = mode:match("[vV\x16]")
+
+  local function wincall(cb)
+    return api.nvim_win_call(win, cb)
   end
 
-  local col = 0
-  local max_col = vim.fn.strcharlen(line)
+  -- normal
 
-  local min_distance = math.huge
-  local nearest_col = 0
+  if not is_visual then
+    local pos = vim.lsp.util.make_position_params(win, "utf-16").position
+    return { { start = pos, ["end"] = pos } }
+  end
 
-  while col <= max_col do
-    local curr_col = math.floor((col + max_col) / 2)
-    local curr_discol = fn.strdisplaywidth(fn.strcharpart(line, 0, curr_col))
-    if curr_discol == discol then
-      return curr_col
-    elseif curr_discol > discol then
-      max_col = curr_col - 1
+  -- linewise/charwise visual
+
+  if mode:lower() == "v" then
+    local start_pos, end_pos
+    wincall(function()
+      start_pos = { fn.line("v"), fn.col("v") - 1 }
+      end_pos = { fn.line("."), fn.col(".") - 1 }
+    end)
+    local start_from_left = true
+
+    if start_pos[1] > end_pos[1] or (start_pos[1] == end_pos[1] and start_pos[2] > end_pos[2]) then
+      start_from_left = false
+      start_pos, end_pos = end_pos, start_pos
+    end
+
+    if mode == "V" then
+      start_pos = { start_pos[1], 0 }
+      end_pos = { end_pos[1], #(fn.getbufline(buf, end_pos[1])[1] or "") }
+    end
+
+    local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, buf, "utf-16").range
+    if not start_from_left then
+      range = { start = range["end"], ["end"] = range.start }
+    end
+    return { range }
+  end
+
+  -- blockwise visual
+
+  local ranges = {}
+
+  -- 1-indexed {
+  local start_line_1, end_line_1, start_vcol, end_vcol
+  wincall(function()
+    start_line_1 = fn.line("v")
+    end_line_1 = fn.line(".")
+    start_vcol = fn.virtcol("v")
+    end_vcol = fn.virtcol(".")
+  end)
+  local curr_line_1 = end_line_1
+  -- }
+  local top_to_bottom = start_line_1 < end_line_1 or (start_line_1 == end_line_1 and start_vcol <= end_vcol)
+  local start_from_left = end_vcol >= start_vcol
+  if start_line_1 > end_line_1 then
+    start_line_1, end_line_1 = end_line_1, start_line_1
+  end
+  if start_vcol > end_vcol then
+    start_vcol, end_vcol = end_vcol, start_vcol
+  end
+
+  for line_1 = start_line_1, end_line_1 do
+    local line_0 = line_1 - 1
+    local line_text = fn.getbufline(buf, line_1)[1] or ""
+    local line_diswidth = wincall(function()
+      return fn.strdisplaywidth(line_text)
+    end)
+    if start_vcol > line_diswidth then
+      if line_1 == curr_line_1 then
+        local pos = { line = line_0, character = ({ vim.str_utfindex(line_text) })[2] }
+        table.insert(ranges, { start = pos, ["end"] = pos })
+      else
+        -- ignore
+      end
     else
-      col = curr_col + 1
-    end
-
-    local curr_distance = math.abs(curr_discol - discol)
-    if curr_distance < min_distance then
-      min_distance = curr_distance
-      nearest_col = curr_col
-    elseif curr_distance == min_distance and curr_col < nearest_col then
-      nearest_col = curr_col
+      local start_col = fn.virtcol2col(win, line_1, start_vcol)
+      local end_col = fn.virtcol2col(win, line_1, end_vcol)
+      local start_col_offset = fn.strlen(util.get_char_at(line_1, start_col, buf) or "")
+      local end_col_offset = fn.strlen(util.get_char_at(line_1, end_col, buf) or "")
+      local range = vim.lsp.util.make_given_range_params(
+        { line_1, math.max(0, start_col - start_col_offset) },
+        { line_1, math.max(0, end_col - end_col_offset) },
+        buf,
+        "utf-16"
+      ).range
+      if not start_from_left then
+        range = { start = range["end"], ["end"] = range.start }
+      end
+      table.insert(ranges, range)
     end
   end
-  return nearest_col
-end
 
-function M.handle_blockwise_selection(lines, start_discol, end_discol)
-  local result = {}
-  for _, line in ipairs(lines) do
-    table.insert(result, {
-      discol_to_col(line, start_discol),
-      discol_to_col(line, end_discol),
-    })
+  if #ranges == 0 then
+    -- impossible
+    local pos = vim.lsp.util.make_position_params(win, "utf-16").position
+    return { { start = pos, ["end"] = pos } }
   end
-  return result
+
+  if top_to_bottom then
+    local ret = {}
+    for i = #ranges, 1, -1 do
+      table.insert(ret, ranges[i])
+    end
+    return ret
+  else
+    return ranges
+  end
 end
 
 return M

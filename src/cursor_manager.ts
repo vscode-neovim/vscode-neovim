@@ -3,7 +3,6 @@ import {
     commands,
     Disposable,
     Position,
-    Range,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
@@ -19,12 +18,12 @@ import { config } from "./config";
 import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { Mode } from "./mode_manager";
 import {
     convertEditorPositionToVimPosition,
     convertVimPositionToEditorPosition,
     disposeAll,
     ManualPromise,
+    rangesToSelections,
 } from "./utils";
 
 const logger = createLogger("CursorManager");
@@ -224,21 +223,26 @@ export class CursorManager implements Disposable {
             return;
         }
 
-        const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
-        if (!bytePos) {
-            logger.warn(`No cursor for gridId from viewport: ${gridId}`);
-            return;
-        }
-        const active = convertVimPositionToEditorPosition(editor, bytePos);
-
-        let selections: Selection[];
-        const mode = this.main.modeManager.currentMode;
-        if (mode.isVisual) {
-            selections = await this.createVisualSelection(editor, mode, active, undefined);
-        } else {
-            logger.debug(`Updating cursor in editor pos: [${active.line}, ${active.character}]`);
+        let selections: Selection[] = [];
+        if (!this.main.modeManager.isVisualMode) {
+            const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
+            const active = convertVimPositionToEditorPosition(editor, bytePos);
             selections = [new Selection(active, active)];
+        } else {
+            const win = this.main.bufferManager.getWinIdForTextEditor(editor);
+            if (!win) {
+                logger.warn(`No window for editor`);
+                return;
+            }
+            try {
+                const ranges = await actions.lua("get_selections", win);
+                selections = rangesToSelections(ranges, editor.document);
+            } catch (e) {
+                logger.error(e);
+                return;
+            }
         }
+
         const { selections: prevSelections } = editor;
         if (
             // Avoid unnecessary selections updates, or it will disrupt cursor movement related features in vscode
@@ -252,8 +256,7 @@ export class CursorManager implements Disposable {
         }
         this.neovimCursorPosition.set(editor, selections[0]);
         if (!selections[0].isEqual(prevSelections[0])) {
-            logger.debug(`The selection was changed, scroll view`);
-            this.triggerMovementFunctions(editor, active);
+            this.triggerMovementFunctions(editor, selections[0].active);
         }
 
         this.cursorUpdatePromise.get(editor)?.resolve();
@@ -412,103 +415,6 @@ export class CursorManager implements Disposable {
         await this.client.input(visualmode === "V" || visualmode === "\x16" ? "gvv" : "gv");
         await this.client.call("winrestview", [{ curswant: active.character }]);
     }
-
-    // given a neovim visual selection range (and the current mode), create a vscode selection
-    private createVisualSelection = async (
-        editor: TextEditor,
-        mode: Mode,
-        active: Position,
-        anchor: Position | undefined,
-    ): Promise<Selection[]> => {
-        const doc = editor.document;
-        if (!anchor) {
-            const anchorNvim = await this.client.callFunction("getpos", ["v"]);
-            anchor = convertVimPositionToEditorPosition(editor, new Position(anchorNvim[1] - 1, anchorNvim[2] - 1));
-        }
-
-        logger.debug(
-            `Creating visual selection, mode: ${mode.visual}, anchor: [${anchor.line}, ${anchor.character}], active: [${active.line}, ${active.character}]`,
-        );
-
-        const activeLineLength = doc.lineAt(active.line).range.end.character;
-        const anchorLineLength = doc.lineAt(anchor.line).range.end.character;
-
-        // to make a full selection, the end of the selection needs to be moved forward by one character
-        // we hide the real cursor and use a highlight decorator for the fake cursor
-        switch (mode.visual) {
-            case "char":
-                return [
-                    anchor.isBeforeOrEqual(active)
-                        ? new Selection(
-                              anchor,
-                              new Position(active.line, Math.min(active.character + 1, activeLineLength)),
-                          )
-                        : new Selection(
-                              new Position(anchor.line, Math.min(anchor.character + 1, anchorLineLength)),
-                              active,
-                          ),
-                ];
-            case "line":
-                return [
-                    anchor.line <= active.line
-                        ? new Selection(anchor.line, 0, active.line, activeLineLength)
-                        : new Selection(anchor.line, anchorLineLength, active.line, 0),
-                ];
-            case "block": {
-                const getDisplayWidth = async (...pos: Position[]) => {
-                    const parts = pos.map((p) => {
-                        const textRange = doc.validateRange(new Range(p.line, 0, p.line, p.character));
-                        return doc.getText(textRange);
-                    });
-                    return this.client.lua(
-                        `
-                   return (function(parts)
-                        return vim.tbl_map(function(part) return vim.fn.strdisplaywidth(part) end, parts)
-                    end)(...)
-                    `,
-                        [parts],
-                    ) as Promise<number[]>;
-                };
-
-                const [anchorDisCol, activeDisCol] = await getDisplayWidth(anchor, active);
-                const [startDisCol, endDisCol] = [
-                    Math.min(anchorDisCol, activeDisCol),
-                    Math.max(anchorDisCol, activeDisCol),
-                ];
-
-                const lines = [];
-                const startLine = Math.min(active.line, anchor.line);
-                const endLine = Math.max(active.line, anchor.line);
-                for (let line = startLine; line <= endLine; line++) {
-                    lines.push(doc.lineAt(line).text);
-                }
-                const ret = await actions.lua<[number, number][]>(
-                    "handle_blockwise_selection",
-                    lines,
-                    startDisCol,
-                    endDisCol,
-                );
-
-                const ranges: Range[] = [];
-                ret.forEach(([startChar, endChar], idx) => {
-                    const line = idx + startLine;
-                    const lineRange = doc.lineAt(line).range;
-                    const range = lineRange.intersection(new Range(line, startChar, line, endChar));
-                    if (range && (range.start.isBefore(lineRange.end) || line === active.line)) ranges.push(range);
-                });
-
-                // correct the orientation
-                const selections = ranges.map((r) => {
-                    const range = doc.validateRange(new Range(r.start, r.end.translate(0, 1)));
-                    return activeDisCol >= anchorDisCol
-                        ? new Selection(range.start, range.end)
-                        : new Selection(range.end, range.start);
-                });
-                // Make sure word highlighting is triggered correctly
-                return anchor.isBeforeOrEqual(active) ? selections.reverse() : selections;
-            }
-        }
-    };
 
     private triggerMovementFunctions = (editor: TextEditor, pos: Position): void => {
         commands.executeCommand("editor.action.wordHighlight.trigger");
