@@ -125,6 +125,10 @@ function M.get_selections(win)
   local mode = api.nvim_get_mode().mode
   local is_visual = mode:match("[vV\x16]")
 
+  local function wincall(cb)
+    return api.nvim_win_call(win, cb)
+  end
+
   -- normal
 
   if not is_visual then
@@ -135,8 +139,11 @@ function M.get_selections(win)
   -- linewise/charwise visual
 
   if mode:lower() == "v" then
-    local start_pos = { fn.line("v"), fn.col("v") - 1 }
-    local end_pos = { fn.line("."), fn.col(".") - 1 }
+    local start_pos, end_pos
+    wincall(function()
+      start_pos = { fn.line("v"), fn.col("v") - 1 }
+      end_pos = { fn.line("."), fn.col(".") - 1 }
+    end)
     local start_from_left = true
 
     if start_pos[1] > end_pos[1] or (start_pos[1] == end_pos[1] and start_pos[2] > end_pos[2]) then
@@ -161,11 +168,14 @@ function M.get_selections(win)
   local ranges = {}
 
   -- 1-indexed {
-  local start_line_1 = fn.line("v")
-  local end_line_1 = fn.line(".")
+  local start_line_1, end_line_1, start_vcol, end_vcol
+  wincall(function()
+    start_line_1 = fn.line("v")
+    end_line_1 = fn.line(".")
+    start_vcol = fn.virtcol("v")
+    end_vcol = fn.virtcol(".")
+  end)
   local curr_line_1 = end_line_1
-  local start_vcol = fn.virtcol("v")
-  local end_vcol = fn.virtcol(".")
   -- }
   local top_to_bottom = start_line_1 < end_line_1 or (start_line_1 == end_line_1 and start_vcol <= end_vcol)
   local start_from_left = end_vcol >= start_vcol
@@ -179,7 +189,9 @@ function M.get_selections(win)
   for line_1 = start_line_1, end_line_1 do
     local line_0 = line_1 - 1
     local line_text = fn.getbufline(buf, line_1)[1] or ""
-    local line_diswidth = fn.strdisplaywidth(line_text)
+    local line_diswidth = wincall(function()
+      return fn.strdisplaywidth(line_text)
+    end)
     if start_vcol > line_diswidth then
       if line_1 == curr_line_1 then
         local pos = { line = line_0, character = ({ vim.str_utfindex(line_text) })[2] }
