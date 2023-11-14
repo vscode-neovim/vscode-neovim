@@ -1,6 +1,6 @@
 import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
-import { ConfigurationTarget, Disposable, Position, Range, Selection, commands, window, workspace } from "vscode";
+import { ConfigurationTarget, Disposable, Range, commands, window, workspace } from "vscode";
 
 import { disposeAll, rangesToSelections } from "./utils";
 
