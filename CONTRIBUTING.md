@@ -1,34 +1,8 @@
 # Contributing
 
 Thank you for your interest in contributing to the project! This project is the result of the passion and hard work of
-many contributors, and we appreciate your help! To get started, please read this document to familiarize yourself with
+many contributors, and we appreciate your help. To get started, please read this document to familiarize yourself with
 the project.
-
--   [Contributing](#contributing)
-    -   [🔧 Build](#-build)
-        -   [Create and Install Package](#create-and-install-package)
-        -   [Develop](#develop)
-        -   [Run Tests](#run-tests)
-    -   [Design Principles](#design-principles)
-    -   [Getting Started](#getting-started)
-    -   [Project Structure](#project-structure)
-    -   [How it works](#how-it-works)
-    -   [Neovim APIs](#neovim-apis)
-        -   [Node Client](#node-client)
-        -   [Neovim UI Protocol](#neovim-ui-protocol)
-        -   [Autocommands](#autocommands)
-        -   [Neovim Lua API](#neovim-lua-api)
-    -   [Managers](#managers)
-        -   [ModeManager](#modemanager)
-        -   [CommandLineManager](#commandlinemanager)
-        -   [HighlightManager](#highlightmanager)
-        -   [ViewportManager](#viewportmanager)
-        -   [CursorManager](#cursormanager)
-            -   [Neovim -\> VSCode](#neovim---vscode)
-            -   [VSCode -\> Neovim](#vscode---neovim)
-        -   [TypingManager](#typingmanager)
-        -   [DocumentChangeManager](#documentchangemanager)
-        -   [BufferManager](#buffermanager)
 
 ## 🔧 Build
 
@@ -38,21 +12,21 @@ How to build (and install) from source:
 
 1. Clone the repo locally.
 
-    ```
-    git clone https://github.com/vscode-neovim/vscode-neovim
-    ```
+```sh
+git clone https://github.com/vscode-neovim/vscode-neovim
+```
 
 2. Install the dependencies.
 
-    ```
-    npm install
-    ```
+```sh
+npm install
+```
 
 3. Build the VSIX package:
 
-    ```
-    npx vsce package -o vscode-neovim.vsix
-    ```
+```sh
+npx vsce package -o vscode-neovim.vsix
+```
 
 4. From VSCode, use the `Extensions: Install from VSIX` command to install the package.
 
@@ -171,13 +145,28 @@ To send commands to neovim, and to (worst-case scenario) ask it for additional i
 Due to the number of RPC round trips required, the logic using the lua or vim APIs should be moved to a custom lua
 function running in nvim.
 
+### Set up VSCode for lua development
+
+-   Install [sumneko.lua](marketplace.visualstudio.com/items?itemName=sumneko.lua).
+
+-   In nvim, run `lua=vim.api.nvim_get_runtime_file("", true)`
+-   Add runtime path to settings.json, like:
+
+```json
+  "Lua.workspace.library": ["/usr/share/nvim/runtime/"],
+  "Lua.diagnostics.globals": ["vim"]
+```
+
+## VSCode API
+
+The VSCode API is provided [here](https://code.visualstudio.com/api).
+
 ## Managers
 
 VSCode-Neovim is structured using a manager pattern. Each manager is responsible for syncing a specific aspect of the
 editor with nvim, and roughly matches the nvim ui API. Managers can do the following:
 
--   Listen to ui events from nvim through `handleRedrawBatch`.
--   Listen to custom events from nvim through `handleExtensionRequest`.
+-   Listen to ui and custom events from nvim through `eventBus.on` (`src/eventBus.ts`).
 -   Listen to vscode events such as `window.onDidChangeTextEditorSelection` and `workspace.onDidChangeTextDocument`.
 -   Access the lua API through `this.client.call` and `callAtomic`.
 
@@ -269,3 +258,10 @@ For more information about possible improvements, see
 ### BufferManager
 
 BufferManager is responsible for the syncing of buffers and windows between vscode and nvim.
+
+## Maintenance
+
+Commits should be made using conventional commits. This allows for automatic changelog generation and versioning.
+[Release-please](https://github.com/google-github-actions/release-please-action) is used to automatically make releases.
+It will accumulate merged PRs, and create a release PR. Once the release PR is merged, it will automatically create a
+release and tag it. It will also publish it to the visual studio marketplace using repository secrets.
