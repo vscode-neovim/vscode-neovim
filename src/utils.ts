@@ -6,6 +6,7 @@ import {
     EndOfLine,
     Position,
     Range,
+    Selection,
     TextDocument,
     TextDocumentContentChangeEvent,
     TextEditor,
@@ -382,4 +383,29 @@ export function disposeAll(disposables: Disposable[]): void {
             console.warn(e);
         }
     }
+}
+
+/**
+ * Convert ranges to selections
+ * @param ranges An array of ranges, where the start is the anchor and the end is the active position.
+ * @param document The document used to validate the range.
+ * @returns The converted selections.
+ */
+export function rangesToSelections(
+    ranges: {
+        start: { line: number; character: number };
+        end: { line: number; character: number };
+    }[],
+    document?: TextDocument,
+): Selection[] {
+    return ranges.map((r) => {
+        const start = new Position(r.start.line, r.start.character);
+        const end = new Position(r.end.line, r.end.character);
+        if (!document) return new Selection(start, end);
+        const reversed = start.isAfter(end);
+        const range = document.validateRange(new Range(start, end));
+        return range.start.isBefore(range.end) && reversed
+            ? new Selection(range.end, range.start)
+            : new Selection(range.start, range.end);
+    });
 }

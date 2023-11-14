@@ -3,7 +3,6 @@ import {
     commands,
     Disposable,
     Position,
-    Range,
     Selection,
     TextEditor,
     TextEditorCursorStyle,
@@ -19,7 +18,13 @@ import { config } from "./config";
 import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { convertEditorPositionToVimPosition, disposeAll, ManualPromise } from "./utils";
+import {
+    convertEditorPositionToVimPosition,
+    convertVimPositionToEditorPosition,
+    disposeAll,
+    ManualPromise,
+    rangesToSelections,
+} from "./utils";
 
 const logger = createLogger("CursorManager");
 
@@ -181,7 +186,7 @@ export class CursorManager implements Disposable {
             }
             // lock typing in editor until cursor update is complete
             if (!this.cursorUpdatePromise.has(editor)) this.cursorUpdatePromise.set(editor, new ManualPromise());
-            this.getDebouncedUpdateCursorPos(editor)(editor);
+            this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
         }
         this.gridCursorUpdates.clear();
     }
@@ -201,7 +206,7 @@ export class CursorManager implements Disposable {
     /**
      * Update cursor in active editor. Creates visual selections if appropriate.
      */
-    public updateCursorPosInEditor = async (editor: TextEditor): Promise<void> => {
+    public updateCursorPosInEditor = async (editor: TextEditor, gridId: number): Promise<void> => {
         // !For text changes neovim sends first buf_lines_event followed by redraw event
         // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
         logger.debug(`Waiting for document change completion before setting the editor cursor`);
@@ -218,28 +223,26 @@ export class CursorManager implements Disposable {
             return;
         }
 
-        const win = this.main.bufferManager.getWinIdForTextEditor(editor);
-        if (!win) {
-            logger.debug(`No window for editor`);
-            return;
+        let selections: Selection[] = [];
+        if (!this.main.modeManager.isVisualMode) {
+            const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
+            const active = convertVimPositionToEditorPosition(editor, bytePos);
+            selections = [new Selection(active, active)];
+        } else {
+            const win = this.main.bufferManager.getWinIdForTextEditor(editor);
+            if (!win) {
+                logger.warn(`No window for editor`);
+                return;
+            }
+            try {
+                const ranges = await actions.lua("get_selections", win);
+                selections = rangesToSelections(ranges, editor.document);
+            } catch (e) {
+                logger.error(e);
+                return;
+            }
         }
-        let ranges: Range[] = [];
-        try {
-            ranges = await actions.lua("get_selections", win);
-        } catch (e) {
-            logger.error(e);
-            return;
-        }
-        const doc = editor.document;
-        const selections = ranges.map((range) => {
-            const start = new Position(range.start.line, range.start.character);
-            const end = new Position(range.end.line, range.end.character);
-            const reversed = start.isAfter(end);
-            range = doc.validateRange(new Range(start, end));
-            return range.start.isBefore(range.end) && reversed
-                ? new Selection(range.end, range.start)
-                : new Selection(range.start, range.end);
-        });
+
         const { selections: prevSelections } = editor;
         if (
             // Avoid unnecessary selections updates, or it will disrupt cursor movement related features in vscode
