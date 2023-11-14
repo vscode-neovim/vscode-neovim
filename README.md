@@ -41,9 +41,7 @@ mode and editor commands, making the best use of both editors.
     -   [Insert mode special keys](#insert-mode-special-keys)
     -   [Normal mode control keys](#normal-mode-control-keys)
     -   [Cmdline special keys](#cmdline-special-keys)
--   [🎨 Highlights](#-highlights)
--   [🔧 Build](#-build)
--   [📑 How it works](#-how-it-works)
+-   [🧰 Developing](#-developing)
 -   [❤️ Credits \& External Resources](#️-credits--external-resources)
 
 </details>
@@ -724,50 +722,9 @@ groups may be overridden or cleared. Therefore, please do not link any highlight
     - [vscode-neovim.highlightGroups.highlights](https://github.com/vscode-neovim/vscode-neovim/blob/2657c4506b3dffe0d069db2891e30cebd963c2be/package.json#L160C1-L202C19)
     - [ThemeColor](https://code.visualstudio.com/api/references/theme-color)
 
-## 🔧 Build
+## 🧰 Developing
 
-How to build (and install) from source:
-
-1. Clone the repo locally.
-
-    ```
-    git clone https://github.com/vscode-neovim/vscode-neovim
-    ```
-
-2. Install the dependencies.
-
-    ```
-    npm install
-    ```
-
-3. Build the VSIX package:
-
-    ```
-    npx vsce package -o vscode-neovim.vsix
-    ```
-
-4. From VSCode, use the `Extensions: Install from VSIX` command to install the package.
-
-How to develop:
-
-1. Open the repo in VSCode.
-2. Go to debug view and click `Run Extension` (F5).
-
-How to run tests:
-
-1. Open the repo in VSCode.
-2. Go to debug view and click `Extension Tests` (F5).
-3. To run individual tests, modify `grep: ".*"` in `src/test/suite/index.ts`.
-
-## 📑 How it works
-
--   VScode connects to Neovim instance.
--   When opening a file, a scratch buffer is created within Neovim and being initialized with text content from VSCode.
--   Normal/visual mode commands are being sent directly to Neovim. The extension listens for buffer events and applies
-    edits from Neovim.
--   When entering the insert mode, the extensions stops listen for keystroke events and delegates typing mode to VSCode.
-    Changes are synced to neovim in periodic intervals.
--   After pressing escape key from the insert mode, extension sends changes obtained from the insert mode to Neovim.
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
 
 ## ❤️ Credits & External Resources
 
