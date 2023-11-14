@@ -282,25 +282,19 @@ export class HighlightProvider implements Disposable {
                     }
                 }
             }
-            // combine eol cells that have the same hlId
+            // Combine EOL cells that have the same hlId
+            // However, preserve cells with hlId 0 for clearing highlights
             const finalEolCells: ValidCell[] = [];
-            if (eolCells.length > 1) {
-                let hlId = 0;
-                for (const [idx, cell] of eolCells.entries()) {
-                    if (idx > 0 && cell.hlId === hlId) {
-                        finalEolCells[finalEolCells.length - 1].text += cell.text;
-                    } else {
-                        finalEolCells.push(cell);
-                    }
-                    hlId = cell.hlId;
+            let hlId = 0;
+            for (const cell of eolCells) {
+                if (cell.hlId === 0) {
+                    finalEolCells.push(cell);
+                } else if (cell.hlId === hlId && finalEolCells.length) {
+                    finalEolCells[finalEolCells.length - 1].text += cell.text;
+                } else {
+                    finalEolCells.push(cell);
                 }
-            }
-            // Clearing cells without actual function used to fill the screen
-            if (finalEolCells.length) {
-                const last = finalEolCells[finalEolCells.length - 1];
-                if (last.text.length > 100 && last.text.trim().length === 0) {
-                    finalEolCells.pop();
-                }
+                hlId = cell.hlId;
             }
             validCells.push(...finalEolCells);
         }
