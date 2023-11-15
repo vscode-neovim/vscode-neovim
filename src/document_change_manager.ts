@@ -256,9 +256,8 @@ export class DocumentChangeManager implements Disposable {
                         logger.debug(`No visible text editor for document, skipping`);
                         continue;
                     }
-                    const oldText = doc.getText();
-                    const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
-                    const newText = newLines.join(eol);
+                    const oldText = doc.getText().replace(/\r\n/g, "\n");
+                    const newText = newLines.join("\n");
                     this.documentSkipVersionOnChange.set(doc, doc.version + 1);
 
                     const cursorBefore = editor.selection.active;
