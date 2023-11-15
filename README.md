@@ -31,8 +31,8 @@ mode and editor commands, making the best use of both editors.
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
 -   [⚡️ API](#️-api)
-    -   [VimScript](#vimscript)
     -   [Lua](#lua)
+    -   [VimScript](#vimscript)
 -   [⌨️ Bindings](#️-bindings)
     -   [VSCode specific bindings](#vscode-specific-bindings)
     -   [File management](#file-management)
@@ -269,106 +269,74 @@ The built-in multi-cursor support may not meet your needs. Please refer to the p
 
 ## ⚡️ API
 
-### VimScript
+Load the module:
 
-> **Note**
->
-> In version 1.0.0 and later versions, we no longer recommend using vimscript functions.
-
-There are a few helper functions that are used to invoke VSCode commands from Neovim.
-
--   `VSCodeNotify(command, ...)`/`VSCodeCall`: Invoke VSCode command with optional arguments.
--   `VSCodeNotifyRange(command, line1, line2, leaveSelection, ...)`/`VSCodeCallRange`: Produce linewise VSCode selection
-    from `line1` to `line2` and invoke VSCode command. Setting `leaveSelection` to 1 keeps VSCode selection active after
-    invoking the command. Line is 1-based.
--   `VSCodeNotifyRangePos(command, line1, line2, pos1, pos2, leaveSelection ,...)`/`VSCodeCallRangePos`: Produce
-    characterwise VSCode selection from `line1.pos1` to `line2.pos2` and invoke VSCode command. Pos is (1, 1)-based.
-
-> 💡 Functions with `Notify` in their name are non-blocking, the ones with `Call` are blocking. Generally **use Notify**
-> unless you really need a blocking call. One example of a blocking call is wanting VSCode to process a visual selection
-> when running a command before exiting visual mode.
-
-#### Examples
-
-Format selection (default binding):
-
-```vim
-xnoremap = <Cmd>call VSCodeCall('editor.action.formatSelection')<CR>
-nnoremap = <Cmd>call VSCodeCall('editor.action.formatSelection')<CR><Esc>
-nnoremap == <Cmd>call VSCodeCall('editor.action.formatSelection')<CR>
+```lua
+local vscode = require('vscode-neovim')
 ```
 
-Open definition aside (default binding):
+1. `vscode.action()`: asynchronously executes a vscode command.
+2. `vscode.call()`: synchronously executes a vscode command.
+3. `vscode.on()`: defines a handler for some Nvim UI events.
+4. `vscode.has_config()`: checks if a vscode setting exists.
+5. `vscode.get_config()`: gets a vscode setting value.
+6. `vscode.update_config()`: sets a vscode setting.
+7. `vscode.notify()`: shows a vscode message (see also Nvim's `vim.notify`).
+8. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/plugin/code_actions.lua) for the usage
+9. `vscode.get_status_item`: Gets a vscode statusbar item. Properties can be assigned, which magically updates the statusbar item.
 
-```vim
-nnoremap <C-w>gd <Cmd>call VSCodeNotify('editor.action.revealDefinitionAside')<CR>
-```
+### vscode.action(name, opts)
 
-Find in files for word under cursor:
-
-```vim
-nnoremap ? <Cmd>call VSCodeNotify('workbench.action.findInFiles', { 'query': expand('<cword>')})<CR>
-```
-
-More advanced examples can be found [here](https://github.com/vscode-neovim/vscode-neovim/tree/master/vim).
-
-### Lua
-
-Load module: `local vscode = require("vscode-neovim")`
-
-1. `vscode.action` for asynchronous execution of actions.
-2. `vscode.call` for synchronous execution of actions.
-3. `vscode.on` for adding hook functions.
-4. `vscode.has_config` check if a configuration exists
-5. `vscode.get_config` get a configuration value
-6. `vscode.update_config` update a configuration
-7. `vscode.notify` like `vim.notify`, but use vscode notification to show the message
-8. `vscode.to_op` A helper for `map-operator`. See [code_actions.lua](./runtime/plugin/code_actions.lua) for the usage
-9. `vscode.get_status_item` Creates a status item
-
-#### Actions
-
-##### `vscode.action(name, opts)`
-
-This function is used to run an action asynchronously.
+Asynchronously executes a vscode command. See [Examples](#examples).
 
 Parameters:
 
 -   `name` (string): The name of the action, generally a vscode command.
--   `opts` (table): Optional table of options. All fields in the table are optional.
-    -   `args` (table): Optional arguments for the action.
-    -   `range` (table): Specific range for the action. In visual mode, this parameter is generally not needed. There
-        are three supported formats for defining the range (all values are 0-indexed):
+-   `opts` (table): Map of optional parameters:
+    -   `args` (table): List of arguments passed to the vscode command.
+        - Example: `action('foo', { args = { 'foo', 'bar', … } })`
+    -   `range` (table): Specific range for the action. Implicitly passed in visual mode. Has three possible forms (all values are 0-indexed):
         -   `[start_line, end_line]`
         -   `[start_line, start_character, end_line, end_character]`
         -   `{start = { line = start_line, character = start_character}, end = { line = end_line, character = end_character}}`
     -   `restore_selection` (boolean): Whether to preserve the current selection. Only valid when `range` is specified.
         Defaults to `true`.
-    -   `callback`: Optional callback function to handle the action result. The callback function should have the
-        following signature: `function(err: string|nil, ret: any)`. The first argument is the error message, and the
-        second is the result. If no callback is provided, any error message will be shown as a notification in VSCode.
+    -   `callback`: Function to handle the action result. Must have this signature:
+        ```lua
+        function(err: string|nil, ret: any)
+        ```
+        -   `err` is the error message, if any
+        -   `ret` is the result
+        -   If no callback is provided, error will be shown as a VSCode notification.
 
-##### `vscode.call(name, opts, timeout)`
+### vscode.call(name, opts, timeout)
 
-This function is used to run an action synchronously.
+Synchronously executes a vscode command. See [Examples](#examples).
 
 Parameters:
 
 -   `name` (string): The name of the action, generally a vscode command.
--   `opts` (table): Optional table of options. All fields in the table are optional.
-    -   `args` (table): Optional arguments for the action.
-    -   `range` (table): Specific range for the action. In visual mode, this parameter is generally not needed. There
-        are three supported formats for defining the range (all values are 0-indexed):
-        -   `[start_line, end_line]`
-        -   `[start_line, start_character, end_line, end_character]`
-        -   `{start = { line = start_line, character = start_character}, end = { line = end_line, character = end_character}}`
-    -   `restore_selection` (boolean): Whether to preserve the current selection. Only valid when `range` is specified.
-        Defaults to `true`.
+-   `opts` (table): Same as [vscode.action()](#vscodeactionname-opts).
 -   `timeout` (number): Timeout in milliseconds. The default value is -1, which means there is no timeout.
 
 Returns: the result of the action
 
-##### Examples
+### Examples
+
+- Format selection (default binding):
+  ```vim
+  xnoremap = <Cmd>lua require('vscode-neovim').call('editor.action.formatSelection')<CR>
+  nnoremap = <Cmd>lua require('vscode-neovim').call('editor.action.formatSelection')<CR><Esc>
+  nnoremap == <Cmd>lua require('vscode-neovim').call('editor.action.formatSelection')<CR>
+  ```
+- Open definition aside (default binding):
+  ```vim
+  nnoremap <C-w>gd <Cmd>lua require('vscode-neovim').action('editor.action.revealDefinitionAside')<CR>
+  ```
+- Find in files for word under cursor (see the [vscode command definition](https://github.com/microsoft/vscode/blob/43b0558cc1eec2528a9a1b9ee1c7a559823bda31/src/vs/workbench/contrib/search/browser/searchActionsFind.ts#L177-L197) for the expected parameter format):
+  ```vim
+  nnoremap ? <Cmd>lua require('vscode-neovim').action('workbench.action.findInFiles', { args = { { query = vim.fn.expand('<cword>') } } })<CR>
+  ```
 
 Currently, two built-in actions are provided for testing purposes:
 
@@ -422,15 +390,13 @@ print(vscode.call("_wait", { args = { 2000 } }), 1000)
 -- error: Call '_wait' timed out
 ```
 
-#### Hooks
-
-##### `vscode.on(event, callback)`
+### vscode.on(event, callback)
 
 Currently no available events for user use.
 
-#### VSCode settings integration
+### VSCode settings
 
-##### `vscode.has_config(name)`
+#### vscode.has_config(name)
 
 Check if configuration has a certain value.
 
@@ -443,7 +409,7 @@ Returns:
 -   `boolean|boolean[]`: Returns `true` if the configuration has a certain value, `false` otherwise. If `name` is an
     array, returns an array of booleans indicating whether each configuration has a certain value or not.
 
-##### `vscode.get_config(name)`
+#### vscode.get_config(name)
 
 Get configuration value.
 
@@ -456,7 +422,7 @@ Returns:
 -   `unknown|unknown[]`: The value of the configuration. If `name` is an array, returns an array of values corresponding
     to each configuration.
 
-##### `vscode.update_config(name, value, target)`
+#### vscode.update_config(name, value, target)
 
 Update configuration value.
 
@@ -503,7 +469,7 @@ vscode.update_config("editor.tabSize", 16, "global")
 vscode.update_config({ "editor.fontFamily", "editor.tabSize" }, { "Fira Code", 14 })
 ```
 
-#### Notifications
+### Messages
 
 Show a vscode notification
 
@@ -513,7 +479,7 @@ You can set `vscode.notify` as your default notify functions.
 vim.notify = vscode.notify
 ```
 
-##### `vscode.get_status_item(id)`
+##### vscode.get_status_item(id)
 
 Creates a status item
 
@@ -526,6 +492,14 @@ test.text = '' -- Hide the item
 test.text = nil -- Close the item
 test.text = '' -- error: The status item "test" has been closed
 ```
+
+### VimScript
+
+> **Note:** Since 1.0.0, vimscript functions are deprecated. Use the [Lua](#%EF%B8%8F-api) api instead.
+
+-   `VSCodeNotify()`/`VSCodeCall()`: deprecated, use [Lua](#%EF%B8%8F-api) `require('vscode-neovim').call()` instead.
+-   `VSCodeNotifyRange()`/`VSCodeCallRange()`: deprecated, use [Lua](#%EF%B8%8F-api) `require('vscode-neovim').call(…, {range:…})` instead.
+-   `VSCodeNotifyRangePos()`/`VSCodeCallRangePos()`: deprecated, use [Lua](#%EF%B8%8F-api) `require('vscode-neovim').call(…, {range:…})` instead.
 
 ## ⌨️ Bindings
 
