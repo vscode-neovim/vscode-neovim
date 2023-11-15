@@ -1682,42 +1682,42 @@
             {
                 "key": "ctrl+w =",
                 "command": "workbench.action.evenEditorWidths",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w _",
                 "command": "workbench.action.toggleEditorWidths",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w >",
                 "command": "workbench.action.increaseViewWidth",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w <",
                 "command": "workbench.action.decreaseViewWidth",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w +",
                 "command": "workbench.action.increaseViewHeight",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w -",
                 "command": "workbench.action.decreaseViewHeight",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w s",
                 "command": "workbench.action.splitEditorDown",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             },
             {
                 "key": "ctrl+w v",
                 "command": "workbench.action.splitEditorRight",
-                "when": "!editorTextFocus"
+                "when": "!editorTextFocus && !terminalFocus"
             }
         ]
     },
