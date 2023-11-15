@@ -59,7 +59,13 @@ function M.action(name, opts)
   })
   vim.validate({
     ["opts.callback"] = { opts.callback, "f", true },
-    ["opts.args"] = { opts.args, "t", true },
+    ["opts.args"] = {
+      opts.args,
+      function(args)
+        return args == nil or (type(args) == "table" and vim.tbl_islist(args))
+      end,
+      "array-like table",
+    },
     ["opts.range"] = {
       opts.range,
       function(range)
@@ -114,7 +120,13 @@ function M.call(name, opts, timeout)
   })
   vim.validate({
     ["opts.callback"] = { opts.callback, "nil" },
-    ["opts.args"] = { opts.args, "t", true },
+    ["opts.args"] = {
+      opts.args,
+      function(args)
+        return args == nil or (type(args) == "table" and vim.tbl_islist(args))
+      end,
+      "array-like table",
+    },
     ["opts.range"] = {
       opts.range,
       function(range)
