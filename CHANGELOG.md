@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.0.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.0.0...v1.0.1) (2023-11-15)
+
+
+### Bug Fixes
+
+* **keybindings:** fix ctrl+w in terminal ([#1297](https://github.com/vscode-neovim/vscode-neovim/issues/1297)) ([dc075aa](https://github.com/vscode-neovim/vscode-neovim/commit/dc075aaf7177a42c287230d79a09f3de292a7f8e))
+
 ## [1.0.0](https://github.com/vscode-neovim/vscode-neovim/compare/v0.9.1...v1.0.0) (2023-11-14)
 
 
