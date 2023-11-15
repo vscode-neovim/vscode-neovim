@@ -1,4 +1,7 @@
+import { strict as assert } from "assert";
+
 import { NeovimClient } from "neovim";
+import { EndOfLine } from "vscode";
 
 import {
     attachTestNvimClient,
@@ -444,5 +447,19 @@ describe("Basic editing and navigation", () => {
             },
             client,
         );
+    });
+
+    it("#1618", async () => {
+        const editor = await openTextDocument({ content: ["a", " a", "", "a"].join("\r\n") });
+        assert.ok(editor.document.eol === EndOfLine.CRLF);
+        await sendVSCodeKeys("jo");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                content: ["a", " a", "", "", "a"],
+            },
+            client,
+        );
+        assert.ok(editor.document.eol === EndOfLine.CRLF);
     });
 });
