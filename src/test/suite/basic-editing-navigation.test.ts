@@ -449,7 +449,7 @@ describe("Basic editing and navigation", () => {
         );
     });
 
-    it("#1618", async () => {
+    it("handles CRLF consistently #1618", async () => {
         const editor = await openTextDocument({ content: ["a", " a", "", "a"].join("\r\n") });
         assert.ok(editor.document.eol === EndOfLine.CRLF);
         await sendVSCodeKeys("jo");
