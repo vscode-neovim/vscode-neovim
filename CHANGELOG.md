@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.1.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.0.1...v1.1.0) (2023-11-16)
+
+
+### Features
+
+* Add command "vscode-neovim.lua" ([#1622](https://github.com/vscode-neovim/vscode-neovim/issues/1622)) ([980f40a](https://github.com/vscode-neovim/vscode-neovim/commit/980f40a22aea5c20f2639c7e4ada5c5bcc107d44))
+
+
+### Bug Fixes
+
+* **document_change:** eol is inconsistent when processing changes ([#1619](https://github.com/vscode-neovim/vscode-neovim/issues/1619)) ([6d870f9](https://github.com/vscode-neovim/vscode-neovim/commit/6d870f99cf15658d23d1fe1b003a555f56d7e5ad))
+
 ## [1.0.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.0.0...v1.0.1) (2023-11-15)
 
 
