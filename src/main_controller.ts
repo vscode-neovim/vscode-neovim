@@ -4,7 +4,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 
 import { attach, NeovimClient } from "neovim";
-import vscode, { Range } from "vscode";
+import vscode, { Range, window } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
@@ -157,6 +157,17 @@ export class MainController implements vscode.Disposable {
 
         this.disposables.push(
             vscode.commands.registerCommand("_getNeovimClient", () => this.client),
+            vscode.commands.registerCommand("vscode-neovim.lua", async (lua) => {
+                if (!lua) {
+                    window.showWarningMessage("No lua code provided");
+                    return;
+                }
+                try {
+                    await this.client.lua(lua);
+                } catch (e) {
+                    logger.error(e instanceof Error ? e.message : e);
+                }
+            }),
             (this.modeManager = new ModeManager()),
             (this.typingManager = new TypingManager(this)),
             (this.bufferManager = new BufferManager(this)),
