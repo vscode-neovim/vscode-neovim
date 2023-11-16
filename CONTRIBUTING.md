@@ -142,8 +142,7 @@ To send commands to neovim, and to (worst-case scenario) ask it for additional i
 [neovim lua api](https://neovim.io/doc/user/api.html) can be used. As a last resort, the
 [builtin](https://neovim.io/doc/user/builtin.html) API can be used.
 
-To avoid RPC round trips, the logic using the lua or vim APIs should be moved to a custom lua
-function running in nvim.
+To avoid RPC round trips, the logic using the lua or vim APIs should be moved to a custom lua function running in nvim.
 
 ### Set up VSCode for lua development
 
