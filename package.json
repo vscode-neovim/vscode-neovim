@@ -387,6 +387,10 @@
                 "title": "Neovim: Stop Extension"
             },
             {
+                "command": "vscode-neovim.lua",
+                "title": "Neovim: Executes lua"
+            },
+            {
                 "command": "vscode-neovim.send",
                 "title": "Neovim: send key to neovim, syncing if in insert mode"
             },

@@ -10,8 +10,7 @@ import { VSCodeContext, disposeAll } from "./utils";
 
 const logger = createLogger(EXT_ID);
 
-let restartCommandDisposable: vscode.Disposable | undefined = undefined;
-
+const disposables: vscode.Disposable[] = [];
 export async function activate(context: vscode.ExtensionContext, isRestart = false): Promise<void> {
     if (!isRestart) verifyExperimentalAffinity();
 
@@ -30,18 +29,18 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     }
 
     if (!isRestart) {
-        restartCommandDisposable = vscode.commands.registerCommand("vscode-neovim.restart", async () => {
-            deactivate(true);
-            disposeAll(context.subscriptions);
-            await activate(context, true);
-        });
+        disposables.push(
+            vscode.commands.registerCommand("vscode-neovim.restart", async () => {
+                deactivate(true);
+                disposeAll(context.subscriptions);
+                await activate(context, true);
+            }),
+            vscode.commands.registerCommand("vscode-neovim.stop", () => {
+                deactivate(true);
+                disposeAll(context.subscriptions);
+            }),
+        );
     }
-    context.subscriptions.push(
-        vscode.commands.registerCommand("vscode-neovim.stop", () => {
-            deactivate(true);
-            disposeAll(context.subscriptions);
-        }),
-    );
 }
 
 export function deactivate(isRestart = false) {
@@ -49,7 +48,7 @@ export function deactivate(isRestart = false) {
     VSCodeContext.set("neovim.init");
     VSCodeContext.set("neovim.mode");
     VSCodeContext.set("neovim.recording");
-    if (!isRestart) restartCommandDisposable?.dispose();
+    if (!isRestart) disposeAll(disposables);
 }
 
 async function verifyExperimentalAffinity(): Promise<void> {
