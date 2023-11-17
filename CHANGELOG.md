@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.1.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.0...v1.1.1) (2023-11-17)
+
+
+### Bug Fixes
+
+* **cursor:** Current character not correctly obtained ([ed4e988](https://github.com/vscode-neovim/vscode-neovim/commit/ed4e988c5715973d58b0e68f4c8ce6f37f389383))
+* **highlight:** Identify custom highlight group correctly ([#1628](https://github.com/vscode-neovim/vscode-neovim/issues/1628)) ([da15b14](https://github.com/vscode-neovim/vscode-neovim/commit/da15b1474dc19058e8b5037592b345ad3b6c54a4))
+* **viewport:** Avoid awaiting the hack to refresh viewport ([d5cb701](https://github.com/vscode-neovim/vscode-neovim/commit/d5cb701f845f90e9ca7b9d9943515b94c7211390))
+
 ## [1.1.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.0.1...v1.1.0) (2023-11-16)
 
 
