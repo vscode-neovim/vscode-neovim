@@ -258,7 +258,7 @@ export class BufferManager implements Disposable {
                 doc = await workspace.openTextDocument();
             } else {
                 const normalizedName = fileName.trim();
-                let uri = Uri.parse(this.findPathFromFileName(normalizedName));
+                let uri = Uri.from({ scheme: "file", path: this.findPathFromFileName(normalizedName) });
                 try {
                     await workspace.fs.stat(uri);
                 } catch {
