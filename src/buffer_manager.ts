@@ -9,6 +9,7 @@ import {
     Disposable,
     EndOfLine,
     EventEmitter,
+    NotebookDocument,
     Selection,
     TextDocument,
     TextDocumentContentProvider,
@@ -251,7 +252,7 @@ export class BufferManager implements Disposable {
     private async handleOpenFile(data: EventBusData<"open-file">) {
         const [fileName, close] = data;
         const currEditor = window.activeTextEditor;
-        let doc: TextDocument | undefined;
+        let doc: NotebookDocument | TextDocument | undefined;
         try {
             if (fileName === "__vscode_new__") {
                 doc = await workspace.openTextDocument();
@@ -261,9 +262,10 @@ export class BufferManager implements Disposable {
                 try {
                     await workspace.fs.stat(uri);
                 } catch {
-                    uri = Uri.from({ scheme: 'untitled', path: uri.path });
+                    uri = Uri.from({ scheme: "untitled", path: normalizedName });
+                    doc = await workspace.openNotebookDocument(uri);
                 }
-                doc = await workspace.openTextDocument(uri);
+                doc ??= await workspace.openTextDocument(uri);
             }
         } catch (error) {
             logger.error(`Error opening file ${fileName}, ${error}`);
@@ -276,7 +278,7 @@ export class BufferManager implements Disposable {
             viewColumn = currEditor.viewColumn;
             await commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
         }
-        await window.showTextDocument(doc, viewColumn);
+        await window.showTextDocument(<TextDocument>doc, viewColumn);
         if (close === "all") {
             await commands.executeCommand("workbench.action.closeOtherEditors");
         }
@@ -718,7 +720,7 @@ export class BufferManager implements Disposable {
 
     private findPathFromFileName(name: string): string {
         const folders = workspace.workspaceFolders;
-        if (folders) {
+        if (folders && folders.length > 0) {
             return path.resolve(folders[0].uri.fsPath, name);
         } else {
             return name;
