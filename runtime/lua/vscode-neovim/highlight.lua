@@ -8,6 +8,8 @@ local NS = api.nvim_create_namespace("vscode-neovim-highlight")
 vim.opt.conceallevel = 0
 vim.g.html_ignore_conceal = 1
 vim.g.vim_json_conceal = 0
+vim.g.markdown_recommended_style = 0
+vim.g.markdown_folding = 0
 
 ---Link highlights with same values to the same highlight, to avoid performance
 ---and rendering issues with vscode decorations caused by a large number of
@@ -26,40 +28,45 @@ local function set_hl(id, name, value)
 end
 
 local function setup_globals()
-  set_hl(0, "Normal", {})
-  set_hl(0, "NormalNC", {})
-  set_hl(0, "NormalFloat", {})
-  set_hl(0, "NonText", {})
-  set_hl(0, "Visual", {})
-  set_hl(0, "VisualNOS", {})
-  set_hl(0, "Substitute", {})
-  set_hl(0, "Whitespace", {})
-  set_hl(0, "LineNr", {})
-  set_hl(0, "LineNrAbove", {})
-  set_hl(0, "LineNrBelow", {})
-  set_hl(0, "CursorLine", {})
-  set_hl(0, "CursorLineNr", {})
+  -- Clear the custom highlight group so that when adding highlight decoration,
+  -- the empty attribute can be used to correctly determine whether a custom
+  -- highlight group should be used.
+  local custom_hls = require("vscode-neovim.api").get_config("vscode-neovim.highlightGroups.highlights")
+  if type(custom_hls) == "table" then
+    for hl in pairs(custom_hls) do
+      set_hl(0, hl, {})
+    end
+  end
+  -- stylua: ignore start
+  local hls = {
+    "Normal",       "NormalNC",     "NormalFloat", "Visual",      "VisualNC",     "VisualNOS",
+    "Substitute",   "Whitespace",   "LineNr",      "LineNrAbove", "LineNrBelow",  "CursorLine",
+    "CursorLineNr", "ColorColumn",  "FoldColumn",  "Folded",      "Sign",         "SignColumn",
+    "ErrorMsg",     "MoreMsg",      "ModeMsg",     "WarningMsg",  "MsgSeparator", "MsgArea",
+    "Question",     "QuickFixLine", "EndOfBuffer", "Debug",       "MatchParen",   "CursorColumn",
+    "NonText",      "Search",       "CurSearch",   "IncSearch",
+  }
+  -- stylua: ignore end
+  for _, hl in ipairs(hls) do
+    set_hl(0, hl, {})
+  end
   -- make cursor visible for plugins that use fake cursor
   set_hl(0, "Cursor", { reverse = true })
 end
 
 -- stylua: ignore start
 local overrides = {
-    NonText     = {}, EndOfBuffer  = {}, ErrorMsg       = {}, MoreMsg      = {}, ModeMsg     = {},
-    Question    = {}, VisualNC     = {}, WarningMsg     = {}, Sign         = {}, SignColumn  = {},
-    ColorColumn = {}, QuickFixLine = {}, MsgSeparator   = {}, MsgArea      = {}, Operator    = {},
-    Delimiter   = {}, Identifier   = {}, SpecialChar    = {}, Number       = {}, Type        = {},
-    String      = {}, Error        = {}, Comment        = {}, Constant     = {}, Special     = {},
-    Statement   = {}, PreProc      = {}, Underlined     = {}, Ignore       = {}, Todo        = {},
-    Character   = {}, Boolean      = {}, Float          = {}, Function     = {}, Conditional = {},
-    Repeat      = {}, Label        = {}, Keyword        = {}, Exception    = {}, Include     = {},
-    Define      = {}, Macro        = {}, PreCondit      = {}, StorageClass = {}, Structure   = {},
-    Typedef     = {}, Tag          = {}, SpecialComment = {}, Debug        = {}, Folded      = {},
-    FoldColumn  = {},
+  Delimiter   = {}, Identifier   = {}, SpecialChar    = {}, Number       = {}, Type        = {},
+  String      = {}, Error        = {}, Comment        = {}, Constant     = {}, Special     = {},
+  Statement   = {}, PreProc      = {}, Underlined     = {}, Ignore       = {}, Todo        = {},
+  Character   = {}, Boolean      = {}, Float          = {}, Function     = {}, Conditional = {},
+  Repeat      = {}, Label        = {}, Keyword        = {}, Exception    = {}, Include     = {},
+  Define      = {}, Macro        = {}, PreCondit      = {}, StorageClass = {}, Structure   = {},
+  Typedef     = {}, Tag          = {}, SpecialComment = {}, Operator     = {}, Debug       = {},
 }
 -- stylua: ignore end
 local overridden = {}
-local function setup_overrides()
+local function setup_syntax_overrides()
   for name, attrs in pairs(overrides) do
     if not overridden[name] then
       overridden[name] = true
@@ -100,7 +107,10 @@ local function set_win_hl_ns()
 end
 
 local function setup()
-  -- {{{ autocmds
+  -------------
+  -- Autocmd --
+  -------------
+
   local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
   api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "WinNew", "WinScrolled" }, {
     group = group,
@@ -108,18 +118,28 @@ local function setup()
   })
   api.nvim_create_autocmd({ "VimEnter", "ColorScheme", "Syntax", "FileType" }, {
     group = group,
-    callback = function()
+    callback = function(ev)
       api.nvim_set_hl(0, "VSCodeNone", {})
-      setup_globals()
-      -- highlights of custom namespace
-      setup_overrides()
-      vim.defer_fn(setup_syntax_groups, 200) -- wait syntax things done
+      if ev.event == "VimEnter" or ev.event == "ColorScheme" then
+        setup_globals()
+        -- highlights of custom namespace
+        setup_syntax_overrides()
+      end
+      if ev.event == "Syntax" then
+        -- wait syntax things done
+        vim.defer_fn(setup_syntax_groups, 200)
+      else
+        setup_syntax_groups()
+      end
     end,
   })
-  -- }}}
+
+  --------------------
+  -- Initialization --
+  --------------------
 
   setup_globals()
-  setup_overrides()
+  setup_syntax_overrides()
   setup_syntax_groups()
 end
 

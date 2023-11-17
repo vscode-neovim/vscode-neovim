@@ -187,19 +187,16 @@ export class HighlightProvider implements Disposable {
         // if the highlight consists of any custom groups, use that instead
         const customName = groups.reverse().find((g) => this.configuration.highlights[g] !== undefined);
         const customHl = customName && this.configuration.highlights[customName];
-        if (customHl) {
-            // no need to create custom decorator if already exists
+        if (customHl && (groups.length === 1 || Object.keys(attrs).length === 0)) {
             if (!this.highlighIdToDecorator.has(id)) {
                 this.createDecoratorForHighlightId(id, customHl);
             }
-        } else {
-            // remove if exists
-            if (this.highlighIdToDecorator.has(id)) this.highlighIdToDecorator.get(id)?.dispose();
-            // don't create decoration for empty attrs
-            if (Object.keys(attrs).length) {
-                const conf = vimHighlightToVSCodeOptions(attrs);
-                this.createDecoratorForHighlightId(id, conf);
-            }
+            return;
+        }
+        if (this.highlighIdToDecorator.has(id)) this.highlighIdToDecorator.get(id)?.dispose();
+        if (Object.keys(attrs).length) {
+            const conf = vimHighlightToVSCodeOptions(attrs);
+            this.createDecoratorForHighlightId(id, conf);
         }
     }
 
