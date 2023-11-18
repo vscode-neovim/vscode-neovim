@@ -355,7 +355,7 @@ do
       local is_linewise = motion == "line" or mode == "V"
       if is_linewise then
         start_pos = { start_pos[1], 0 }
-        end_pos = { end_pos[1], api.nvim_strwidth(fn.getline(end_pos[1])) - 1 }
+        end_pos = { end_pos[1], #fn.getline(end_pos[1]) }
       end
 
       local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, 0, "utf-16").range
