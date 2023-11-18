@@ -1,7 +1,9 @@
 ---@diagnostic disable: inject-field
 
 -- Copy global highlights and overrides highlights to the custom namespace, only external buffers use global namespace
+
 local api = vim.api
+local vscode = require("vscode-neovim.api")
 
 local NS = api.nvim_create_namespace("vscode-neovim-highlight")
 
@@ -28,30 +30,60 @@ local function set_hl(id, name, value)
 end
 
 local function setup_globals()
-  -- Clear the custom highlight group so that when adding highlight decoration,
-  -- the empty attribute can be used to correctly determine whether a custom
-  -- highlight group should be used.
-  local custom_hls = require("vscode-neovim.api").get_config("vscode-neovim.highlightGroups.highlights")
-  if type(custom_hls) == "table" then
-    for hl in pairs(custom_hls) do
-      set_hl(0, hl, {})
-    end
+  local custom_hls = vscode.get_config("vscode-neovim.highlightGroups.highlights")
+  if type(custom_hls) ~= "table" then
+    custom_hls = {}
   end
+  for hl in pairs(custom_hls) do
+    -- If we directly clear the highlighting, it may cause the highlighting to
+    -- become "unavailable". For example, nvim_buf_set_extmark will ignore the
+    -- highlighting that has no visual effect on the screen.
+    -- So we use this special and useless attribute to allow highlighting to
+    -- trigger rendering normally.
+    -- In vscode, we will remove this attribute so that we can use the empty
+    -- attribute to determine whether to use custom highlighting. This allows
+    -- other highlights to be rendered correctly when mixed with custom
+    -- highlighting.
+    set_hl(0, hl, { altfont = true })
+  end
+
   -- stylua: ignore start
   local hls = {
-    "Normal",       "NormalNC",     "NormalFloat", "Visual",      "VisualNC",     "VisualNOS",
-    "Substitute",   "Whitespace",   "LineNr",      "LineNrAbove", "LineNrBelow",  "CursorLine",
-    "CursorLineNr", "ColorColumn",  "FoldColumn",  "Folded",      "Sign",         "SignColumn",
-    "ErrorMsg",     "MoreMsg",      "ModeMsg",     "WarningMsg",  "MsgSeparator", "MsgArea",
-    "Question",     "QuickFixLine", "EndOfBuffer", "Debug",       "MatchParen",   "CursorColumn",
-    "NonText",      "Search",       "CurSearch",   "IncSearch",
+    Normal       = {},
+    NormalNC     = {},
+    NormalFloat  = {},
+    VisualNC     = {},
+    VisualNOS    = {},
+    Substitute   = {},
+    Whitespace   = {},
+    LineNr       = {},
+    LineNrAbove  = {},
+    LineNrBelow  = {},
+    CursorLine   = {},
+    CursorLineNr = {},
+    ColorColumn  = {},
+    FoldColumn   = {},
+    Folded       = {},
+    Sign         = {},
+    SignColumn   = {},
+    MsgSeparator = {},
+    MsgArea      = {},
+    Question     = {},
+    QuickFixLine = {},
+    EndOfBuffer  = {},
+    Debug        = {},
+    MatchParen   = {},
+    CursorColumn = {},
+    NonText      = {},
+    -- make cursor visible for plugins that use fake cursor
+    Cursor       = { reverse = true },
   }
   -- stylua: ignore end
-  for _, hl in ipairs(hls) do
-    set_hl(0, hl, {})
+  for name, attrs in pairs(hls) do
+    if not custom_hls[name] then
+      set_hl(0, name, attrs)
+    end
   end
-  -- make cursor visible for plugins that use fake cursor
-  set_hl(0, "Cursor", { reverse = true })
 end
 
 -- stylua: ignore start
@@ -107,10 +139,6 @@ local function set_win_hl_ns()
 end
 
 local function setup()
-  -------------
-  -- Autocmd --
-  -------------
-
   local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
   api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "WinNew", "WinScrolled" }, {
     group = group,
@@ -133,14 +161,6 @@ local function setup()
       end
     end,
   })
-
-  --------------------
-  -- Initialization --
-  --------------------
-
-  setup_globals()
-  setup_syntax_overrides()
-  setup_syntax_groups()
 end
 
 return { setup = setup }
