@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.1.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.1...v1.1.2) (2023-11-19)
+
+
+### Bug Fixes
+
+* Cannot use strwidth to get string length ([#1635](https://github.com/vscode-neovim/vscode-neovim/issues/1635)) ([9e0cff5](https://github.com/vscode-neovim/vscode-neovim/commit/9e0cff5c6084b13ed99c44079ef9bf7494651d98))
+* **highlight:** Do not clear custom highlight groups directly ([#1633](https://github.com/vscode-neovim/vscode-neovim/issues/1633)) ([f5381a7](https://github.com/vscode-neovim/vscode-neovim/commit/f5381a726ebb40c679d4c410659a11dc93d6b7da))
+* rework `:tabnew` ([#1601](https://github.com/vscode-neovim/vscode-neovim/issues/1601)) ([1bff688](https://github.com/vscode-neovim/vscode-neovim/commit/1bff688386c6ec9e7aa48e8544fd66dd4b37e14b))
+
 ## [1.1.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.0...v1.1.1) (2023-11-17)
 
 
