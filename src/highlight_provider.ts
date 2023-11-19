@@ -29,6 +29,7 @@ export interface VimHighlightUIAttributes {
     // has special color
     undercurl?: boolean;
     blend?: number;
+    altfont?: boolean;
 }
 
 export interface HighlightConfiguration {
@@ -180,6 +181,7 @@ export class HighlightProvider implements Disposable {
     }
 
     public addHighlightGroup(id: number, attrs: VimHighlightUIAttributes, groups: string[]): void {
+        delete attrs.altfont;
         if (groups.includes("Visual")) {
             if (groups.length === 1) this.visualHighlightId = id;
             else this.visualHighlightIds.push(id);
