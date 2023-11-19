@@ -263,6 +263,12 @@ export class BufferManager implements Disposable {
                     await workspace.fs.stat(uri);
                 } catch {
                     uri = Uri.from({ scheme: "untitled", path: normalizedName });
+                    // Why notebook?
+                    // Limitations with TextDocument, specifically when there is no active
+                    // workspace. openNotebookDocument prompts for a file path when the
+                    // document is saved and while it returns a NotebookDocument it can
+                    // still be used as a TextDocument
+                    // https://github.com/microsoft/vscode/issues/197836
                     doc = await workspace.openNotebookDocument(uri);
                 }
                 doc ??= await workspace.openTextDocument(uri);
