@@ -515,20 +515,16 @@ To pass custom bindings to Neovim, for example <kbd>C-h</kbd> in normal mode, ad
 }
 ```
 
-To disable an existing shortcut, for example <kbd>C-a</kbd>, add to your keybindings.json:
-
-```json
-{
-    "command": "-vscode-neovim.send",
-    "key": "ctrl+a"
-}
-```
-
 ### Disable keybindings
 
-To disable keybindings defined by this extension in certain filetypes, you can use the `editorLangIdExclusions`
-configuration. Please note that this will not affect all keybindings. If you find that this option is not working, you
-can manually modify the keybindings in VSCode (see below).
+There are three configurations for toggling keybindings:
+
+1.  `ctrlKeysForInsertMode`: toggle ctrl keys for insert mode.
+2.  `ctrlKeysForNormalMode`: toggle ctrl keys for normal mode.
+3.  `editorLangIdExclusions`: disable keybindings defined by this extension in certain filetypes. Please note that this
+    will not affect all keybindings.
+
+If you find that these options are not working, you can manually modify the keybindings in VSCode (see below).
 
 ### Remove keybindings
 
