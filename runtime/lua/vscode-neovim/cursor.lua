@@ -27,17 +27,15 @@ local function start_multi_cursor(right, skip_empty)
     local end_pos = api.nvim_buf_get_mark(0, ">") ---@type number[]
     for row = start_pos[1], end_pos[1] do
       local line = vim.fn.getline(row)
-      local width = api.nvim_strwidth(line)
-      if width == 0 and (skip_empty or is_block) then
+      if #line == 0 and (skip_empty or is_block) then
       else
-        local max_col = math.max(0, width - 1)
         -- (row, col) is (1, 0)-indexed
         local s_col, e_col
         if is_line then
-          s_col = api.nvim_strwidth(line:match("^%s*") or "")
-          e_col = max_col
+          s_col = #(line:match("^%s*") or "")
+          e_col = #line
         else
-          e_col = math.min(max_col, end_pos[2])
+          e_col = math.min(#line, end_pos[2])
           s_col = math.min(e_col, start_pos[2])
         end
         local range = vim.lsp.util.make_given_range_params({ row, s_col }, { row, e_col }, 0, "utf-16").range

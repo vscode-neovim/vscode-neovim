@@ -373,6 +373,28 @@ describe("Visual modes test", () => {
         );
     });
 
+    it("Visual line mode - multi cursor editing when emoji exists", async () => {
+        await openTextDocument({ content: "🦄😊😂🤣" });
+        await sendVSCodeKeys("V");
+        await sendInsertKey("ma");
+        await assertContent(
+            {
+                mode: "i",
+                vsCodeSelections: [new vscode.Selection(0, 8, 0, 8)],
+            },
+            client,
+        );
+        await sendVSCodeKeys("test");
+        await sendEscapeKey();
+        await assertContent(
+            {
+                mode: "n",
+                content: ["🦄😊😂🤣test"],
+            },
+            client,
+        );
+    });
+
     it("Visual block mode - multi cursor editing", async () => {
         await openTextDocument({ content: ["blah1 abc", "blah2 abc", "blah3 abc"].join("\n") });
 
