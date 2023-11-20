@@ -52,6 +52,7 @@ local function setup_globals()
     Normal       = {},
     NormalNC     = {},
     NormalFloat  = {},
+    Visual       = {},
     VisualNC     = {},
     VisualNOS    = {},
     Substitute   = {},
