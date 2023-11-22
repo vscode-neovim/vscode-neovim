@@ -234,4 +234,31 @@ function M.get_selections(win)
   end
 end
 
+---@param buf integer
+---@param anchor lsp.Position
+---@param active lsp.Position
+function M.start_visual(buf, anchor, active)
+  if buf ~= api.nvim_get_current_buf() then
+    return
+  end
+
+  if util.compare_position(anchor, active) == 1 then
+    anchor.character = math.max(0, anchor.character - 1)
+  else
+    active.character = math.max(0, active.character - 1)
+  end
+
+  local anchor_line = anchor.line + 1
+  local active_line = active.line + 1
+  local anchor_line_text = util.get_line(buf, anchor.line)
+  local active_line_text = util.get_line(buf, active.line)
+  local anchor_col = vim.str_byteindex(anchor_line_text, anchor.character, true)
+  local active_col = vim.str_byteindex(active_line_text, active.character, true)
+
+  local v = fn.visualmode(1)
+  api.nvim_buf_set_mark(buf, "<", anchor_line, anchor_col, {})
+  api.nvim_buf_set_mark(buf, ">", active_line, active_col, {})
+  api.nvim_feedkeys((v == "V" or v == "\x16") and "gvv" or "gv", "n", false)
+end
+
 return M
