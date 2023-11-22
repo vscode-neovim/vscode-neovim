@@ -388,32 +388,24 @@ export class CursorManager implements Disposable {
     }
 
     private async updateNeovimVisualSelection(editor: TextEditor, selection: Selection): Promise<void> {
+        if (this.main.modeManager.isInsertMode) return;
         const winId = this.main.bufferManager.getWinIdForTextEditor(editor);
         if (!winId) return;
         const bufId = this.main.bufferManager.getBufferIdForTextDocument(editor.document);
         if (!bufId) return;
         const neovimCursorPos = this.neovimCursorPosition.get(editor);
-        if (neovimCursorPos && neovimCursorPos.isEqual(selection)) {
+        if (neovimCursorPos?.isEqual(selection)) {
             logger.debug(`Skipping event since neovim has same visual pos`);
             return;
         }
-        let anchor = selection.anchor;
-        let active = selection.active;
-        // compensate for vscode selection containing last character
-        if (anchor.isBeforeOrEqual(active)) {
-            active = new Position(active.line, Math.max(active.character - 1, 0));
-        } else {
-            anchor = new Position(anchor.line, Math.max(anchor.character - 1, 0));
-        }
-        if (this.main.modeManager.isInsertMode) return;
-        logger.debug(
-            `Starting visual mode from: [${anchor.line}, ${anchor.character}] to [${active.line}, ${active.character}]`,
+        const anchor = selection.anchor;
+        const active = selection.active;
+        await actions.lua(
+            "start_visual",
+            bufId,
+            { line: anchor.line, character: anchor.character },
+            { line: active.line, character: active.character },
         );
-        const visualmode = await this.client.call("visualmode", [1]);
-        await this.client.call("nvim_buf_set_mark", [bufId, "<", anchor.line + 1, anchor.character, {}]);
-        await this.client.call("nvim_buf_set_mark", [bufId, ">", active.line + 1, active.character, {}]);
-        await this.client.input(visualmode === "V" || visualmode === "\x16" ? "gvv" : "gv");
-        await this.client.call("winrestview", [{ curswant: active.character }]);
     }
 
     private triggerMovementFunctions = (editor: TextEditor, pos: Position): void => {
