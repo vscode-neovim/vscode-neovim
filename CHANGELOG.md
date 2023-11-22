@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.1.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.2...v1.1.3) (2023-11-22)
+
+
+### Bug Fixes
+
+* **highlight:** remove duplicate visual selection highlight ([#1643](https://github.com/vscode-neovim/vscode-neovim/issues/1643)) ([d02dbde](https://github.com/vscode-neovim/vscode-neovim/commit/d02dbde5832a3f5ac10249b2d3c40e778412166a))
+* **visual:** Fix syncing vscode selection to nvim ([#1647](https://github.com/vscode-neovim/vscode-neovim/issues/1647)) ([8d2a14a](https://github.com/vscode-neovim/vscode-neovim/commit/8d2a14a9171fd5cd25672fc68479333335a5f655))
+
 ## [1.1.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.1...v1.1.2) (2023-11-19)
 
 
