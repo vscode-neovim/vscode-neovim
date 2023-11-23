@@ -463,6 +463,29 @@ export class BufferManager implements Disposable {
         // store in copy, just in case
         const currentVisibleEditors = [...window.visibleTextEditors];
 
+        logger.debug(`Clean up windows and buffers`);
+        const unusedWindows: number[] = [];
+        const unusedBuffers: number[] = [];
+        // close windows
+        [...this.textEditorToWinId.entries()].forEach(([editor, winId]) => {
+            if (!currentVisibleEditors.includes(editor)) {
+                logger.debug(`Editor viewColumn: ${editor.viewColumn}, winId: ${winId}, closing`);
+                this.textEditorToWinId.delete(editor);
+                this.winIdToEditor.delete(winId);
+                unusedWindows.push(winId);
+            }
+        });
+        // delete buffers
+        [...this.textDocumentToBufferId.entries()].forEach(([document, bufId]) => {
+            if (!currentVisibleEditors.some((editor) => editor.document === document) && document.isClosed) {
+                logger.debug(`Document: ${document.uri.toString()}, bufId: ${bufId}, deleting`);
+                this.textDocumentToBufferId.delete(document);
+                unusedBuffers.push(bufId);
+            }
+        });
+        unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
+        unusedWindows.length && (await actions.lua("close_windows", unusedWindows));
+
         // Open/change neovim windows
         logger.debug(`new/changed editors/windows`);
         for (const visibleEditor of currentVisibleEditors) {
@@ -515,29 +538,6 @@ export class BufferManager implements Disposable {
                 continue;
             }
         }
-
-        logger.debug(`Clean up windows and buffers`);
-        const unusedWindows: number[] = [];
-        const unusedBuffers: number[] = [];
-        // close windows
-        [...this.textEditorToWinId.entries()].forEach(([editor, winId]) => {
-            if (!currentVisibleEditors.includes(editor)) {
-                logger.debug(`Editor viewColumn: ${editor.viewColumn}, winId: ${winId}, closing`);
-                this.textEditorToWinId.delete(editor);
-                this.winIdToEditor.delete(winId);
-                unusedWindows.push(winId);
-            }
-        });
-        // delete buffers
-        [...this.textDocumentToBufferId.entries()].forEach(([document, bufId]) => {
-            if (!currentVisibleEditors.some((editor) => editor.document === document) && document.isClosed) {
-                logger.debug(`Document: ${document.uri.toString()}, bufId: ${bufId}, deleting`);
-                this.textDocumentToBufferId.delete(document);
-                unusedBuffers.push(bufId);
-            }
-        });
-        unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
-        unusedWindows.length && (await actions.lua("close_windows", unusedWindows));
 
         if (cancelToken.isCancellationRequested) {
             // If the visible editors has changed since we started, don't resolve the promise,
