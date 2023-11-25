@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.1.4](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.3...v1.1.4) (2023-11-23)
+
+
+### Bug Fixes
+
+* **buffer:** bufname conflict when creating a new buffer ([#1652](https://github.com/vscode-neovim/vscode-neovim/issues/1652)) ([f304335](https://github.com/vscode-neovim/vscode-neovim/commit/f304335ce14388fbc47fb577a53f5ced681f0d6a))
+
 ## [1.1.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.2...v1.1.3) (2023-11-22)
 
 
