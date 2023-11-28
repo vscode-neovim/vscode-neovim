@@ -313,10 +313,7 @@ export class CursorManager implements Disposable {
         return func;
     };
 
-    private applySelectionChanged = async (
-        editor: TextEditor,
-        kind: TextEditorSelectionChangeKind | undefined,
-    ): Promise<void> => {
+    public applySelectionChanged = async (editor: TextEditor, kind?: TextEditorSelectionChangeKind): Promise<void> => {
         // reset cursor style if needed
         this.updateCursorStyle(this.main.modeManager.currentMode.name);
 
