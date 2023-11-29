@@ -380,5 +380,7 @@ export class DocumentChangeManager implements Disposable {
         this.main.cursorManager.wantInsertCursorUpdate = false;
 
         await actions.lua("handle_changes", bufId, changeArgs);
+        const editor = window.visibleTextEditors.find((e) => e.document === doc);
+        if (editor) await this.main.cursorManager.applySelectionChanged(editor);
     };
 }
