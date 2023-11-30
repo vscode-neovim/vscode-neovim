@@ -340,7 +340,12 @@ export class BufferManager implements Disposable {
     }
 
     private handleWindowChanged = async (winId: number): Promise<void> => {
-        logger.debug(`onWindowChanged, target window id: ${winId}`);
+        logger.debug(`window changed, target window id: ${winId}`);
+        if (winId === 1000) {
+            // This event is triggered by our layout sync, skip it
+            logger.debug("window id is 1000, skipping");
+            return;
+        }
 
         const returnToActiveEditor = async () => {
             if (window.activeTextEditor) {
