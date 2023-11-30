@@ -39,10 +39,6 @@ import { ManualPromise, callAtomic, convertByteNumToCharNum, disposeAll, wait } 
 // 4. When visibleTextEditors change => create a buffer and window in neovim
 // 5. When activeTextEditor changes => set the current window in neovim
 
-export interface BufferManagerSettings {
-    neovimViewportWidth: number;
-}
-
 const logger = createLogger("BufferManager");
 
 const BUFFER_NAME_PREFIX = "__vscode_neovim__-";
@@ -63,7 +59,7 @@ function makeEditorOptionsVariable(options: TextEditorOptions) {
 }
 
 /**
- * Manages neovim buffers and windows and maps them to vscode editors & documents
+ * Manages neovim windows & buffers and maps them to vscode editors & documents
  */
 export class BufferManager implements Disposable {
     private disposables: Disposable[] = [];
