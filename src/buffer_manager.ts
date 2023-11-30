@@ -170,7 +170,7 @@ export class BufferManager implements Disposable {
     }
 
     public async waitForLayoutSync(): Promise<void> {
-            return this.syncLayoutPromise?.promise;
+        return this.syncLayoutPromise?.promise;
     }
 
     public getTextDocumentForBufferId(id: number): TextDocument | undefined {
@@ -408,7 +408,6 @@ export class BufferManager implements Disposable {
 
     private handleWindowChangedDebounced = debounce(this.handleWindowChanged, 100, { leading: false, trailing: true });
 
-
     private onDidChangeVisibleTextEditors = (): void => {
         // !since onDidChangeVisibleTextEditors/onDidChangeActiveTextEditor are synchronyous
         // !and we debounce this event, and possible init new buffers in neovim in async way
@@ -500,7 +499,7 @@ export class BufferManager implements Disposable {
                     this.main.cursorManager.updateNeovimCursorPosition(visibleEditor, visibleEditor.selection.active);
                 }
             } catch (e) {
-                logger.error(`${(e as Error).message}`);
+                logger.error((e as Error).message);
                 continue;
             }
         }
@@ -561,7 +560,7 @@ export class BufferManager implements Disposable {
             }
             await this.client.request("nvim_set_current_win", [winId]);
         } catch (e) {
-            logger.error(`${(e as Error).message}`);
+            logger.error((e as Error).message);
         }
 
         finish();
@@ -590,7 +589,7 @@ export class BufferManager implements Disposable {
         linedata: string[],
         more: boolean,
     ): void => {
-        this.onBufferEvent && this.onBufferEvent(buffer.id, tick, firstLine, lastLine, linedata, more);
+        this.onBufferEvent?.(buffer.id, tick, firstLine, lastLine, linedata, more);
         // Ensure the receivedBufferEvent callback finishes before we fire
         // the event notifying the doc provider of any changes
         (async () => {
@@ -674,11 +673,7 @@ export class BufferManager implements Disposable {
 
     private findPathFromFileName(name: string): string {
         const folders = workspace.workspaceFolders;
-        if (folders && folders.length > 0) {
-            return path.resolve(folders[0].uri.fsPath, name);
-        } else {
-            return name;
-        }
+        return folders && folders.length > 0 ? path.resolve(folders[0].uri.fsPath, name) : name;
     }
 
     private findDocFromUri(uri: string): TextDocument | undefined {
@@ -713,7 +708,7 @@ export class BufferManager implements Disposable {
 
         this.externalTextDocuments.add(doc);
         this.textDocumentToBufferId.set(doc, id);
-        this.onBufferInit && this.onBufferInit(id, doc);
+        this.onBufferInit?.(id, doc);
 
         const windows = await this.client.windows;
         let closeWinId = 0;
