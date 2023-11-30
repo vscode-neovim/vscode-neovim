@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.1.5](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.4...v1.1.5) (2023-11-30)
+
+
+### Bug Fixes
+
+* **change:** Fix bug in setting applyingEdits variable ([8f6447c](https://github.com/vscode-neovim/vscode-neovim/commit/8f6447c362b97fa12c3147a897b8714cfa846391))
+* **change:** Respect the selections of the editor ([#1661](https://github.com/vscode-neovim/vscode-neovim/issues/1661)) ([4b8f242](https://github.com/vscode-neovim/vscode-neovim/commit/4b8f2429a95095bd9012a7c4769d172f5a3bc38a))
+* skip window changed when target window id is 1000 ([#1667](https://github.com/vscode-neovim/vscode-neovim/issues/1667)) ([56ca01f](https://github.com/vscode-neovim/vscode-neovim/commit/56ca01f803056c79c04a0522b67637b6484706a0))
+
 ## [1.1.4](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.3...v1.1.4) (2023-11-23)
 
 
