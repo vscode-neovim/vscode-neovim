@@ -31,10 +31,13 @@ import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { ManualPromise, callAtomic, convertByteNumToCharNum, disposeAll } from "./utils";
 
-// !Note: document and editors in vscode events and namespace are reference stable
-// ! Integration notes:
-// ! When opening an editor with a document first time, a buffer is created in neovim along with new window for each buffer
-// ! When switching off editor, the buffer is being hidden & unloaded in neovim if it's last visitlbe buffer (see :help bufhidden)
+// NOTE: document and editors in vscode events and namespace are reference stable
+// Integration notes:
+// 1. Each document corresponds to a buffer
+// 2. Each editor corresponds to a window
+// 3. Generally, an editor corresponds to a document, so the buffer and window in neovim have a one-to-one relationship
+// 4. When visibleTextEditors change => create a buffer and window in neovim
+// 5. When activeTextEditor changes => set the current window in neovim
 
 export interface BufferManagerSettings {
     neovimViewportWidth: number;
@@ -121,7 +124,6 @@ export class BufferManager implements Disposable {
             window.onDidChangeVisibleTextEditors(this.onDidChangeVisibleTextEditors),
             window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor),
             window.onDidChangeTextEditorOptions((e) => this.onDidChangeEditorOptions(e.textEditor)),
-            workspace.onDidCloseTextDocument(this.onDidCloseTextDocument),
             workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider),
             eventBus.on("redraw", this.handleRedraw, this),
             eventBus.on("open-file", this.handleOpenFile, this),
@@ -163,17 +165,12 @@ export class BufferManager implements Disposable {
         if (!this.syncLayoutPromise) {
             this.syncLayoutPromise = new ManualPromise();
         }
-        // this.cancelTokenSource will always be cancelled when the visible editors change
         await this.syncLayoutDebounced(this.syncLayoutCancelTokenSource.token);
         await this.syncActiveEditorDebounced();
     }
 
     public async waitForLayoutSync(): Promise<void> {
-        if (this.syncLayoutPromise) {
-            logger.debug(`Waiting for completing layout resyncing`);
-            await this.syncLayoutPromise.promise;
-            logger.debug(`Waiting done`);
-        }
+            return this.syncLayoutPromise?.promise;
     }
 
     public getTextDocumentForBufferId(id: number): TextDocument | undefined {
@@ -411,27 +408,6 @@ export class BufferManager implements Disposable {
 
     private handleWindowChangedDebounced = debounce(this.handleWindowChanged, 100, { leading: false, trailing: true });
 
-    /**
-     * !Note when closing text editor with document, vscode sends onDidCloseTextDocument first
-     * @param doc
-     */
-    private onDidCloseTextDocument = (_doc: TextDocument): void => {
-        // Don't need to do anything here
-        // Regardless of whether the document was previously visible or not,
-        // it will always be cleaned up properly in syncLayout.
-        /*
-        const hasVisibleEditor = !!this.openedEditors.find((d) => d.document === doc);
-        // we'll handle it in onDidChangeVisibleTextEditors()
-        if (!hasVisibleEditor) {
-            // const bufId = this.textDocumentToBufferId.get(doc);
-            this.textDocumentToBufferId.delete(doc);
-            // buffer unloading breaks jumplist https://github.com/asvetliakov/vscode-neovim/issues/350
-            // if (bufId) {
-            //     this.unloadBuffer(bufId);
-            // }
-        }
-        */
-    };
 
     private onDidChangeVisibleTextEditors = (): void => {
         // !since onDidChangeVisibleTextEditors/onDidChangeActiveTextEditor are synchronyous
@@ -509,16 +485,6 @@ export class BufferManager implements Disposable {
                 logger.debug(`Document: ${visibleEditor.document.uri.toString()}, BufId: ${buf.id}`);
                 this.textDocumentToBufferId.set(visibleEditor.document, buf.id);
             }
-            // editor wasn't changed, skip
-            // !Note always sync opened editors, it doesn't hurt and and solves the curious problem when there are
-            // !few visible editors with same viewColumn (happens when you open search editor, when jump to a file from it)
-            // if (prevVisibleEditors.includes(visibleEditor)) {
-            //     logger.debug(`Editor wasn't changed, skip`);
-            //     if (visibleEditor.viewColumn) {
-            //         keepViewColumns.add(visibleEditor.viewColumn);
-            //     }
-            //     continue;
-            // }
             const editorBufferId = this.textDocumentToBufferId.get(visibleEditor.document)!;
             let winId: number | undefined;
             try {
@@ -688,7 +654,6 @@ export class BufferManager implements Disposable {
      */
     private async createNeovimWindow(bufId: number): Promise<number> {
         await this.client.setOption("eventignore", "BufWinEnter,BufEnter,BufLeave");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const win = await this.client.openWindow(bufId as any, false, {
             external: true,
             width: config.neovimViewportWidth,
@@ -699,14 +664,6 @@ export class BufferManager implements Disposable {
             throw new Error(`Unable to create a new neovim window, code: ${win}`);
         }
         return win.id;
-    }
-
-    private async unloadBuffer(bufId: number): Promise<void> {
-        try {
-            await this.client.command(`bunload! ${bufId}`);
-        } catch (e) {
-            logger.warn(`Can't unload the buffer: ${bufId}, err: ${(e as Error)?.message}`);
-        }
     }
 
     private isVscodeUriName(name: string): boolean {
