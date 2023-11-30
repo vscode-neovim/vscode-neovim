@@ -29,7 +29,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, callAtomic, convertByteNumToCharNum, disposeAll } from "./utils";
+import { ManualPromise, callAtomic, convertByteNumToCharNum, disposeAll, wait } from "./utils";
 
 // !Note: document and editors in vscode events and namespace are reference stable
 // ! Integration notes:
@@ -348,22 +348,20 @@ export class BufferManager implements Disposable {
         }
 
         const returnToActiveEditor = async () => {
-            if (window.activeTextEditor) {
-                await window.showTextDocument(window.activeTextEditor.document, window.activeTextEditor.viewColumn);
-            }
+            const e = window.activeTextEditor;
+            if (e) await window.showTextDocument(e.document, e.viewColumn);
         };
 
         let targetEditor = this.getEditorFromWinId(winId);
         if (!targetEditor) {
             logger.debug(`target editor not found <check 1>, return to active editor`);
-            await returnToActiveEditor();
-            return;
+            return returnToActiveEditor();
         }
         if (window.activeTextEditor === targetEditor) return;
         // since the event could be triggered by vscode side operations
         // we need to wait a bit to let vscode finish its internal operations
         // then check if the target editor is still the same
-        await new Promise((res) => setTimeout(res, 50));
+        await wait(50);
         this.syncLayoutPromise && (await this.syncLayoutPromise.promise);
         this.syncActiveEditorPromise && (await this.syncActiveEditorPromise.promise);
         // triggered by vscode side operations
@@ -377,8 +375,7 @@ export class BufferManager implements Disposable {
         targetEditor = this.getEditorFromWinId(curwin);
         if (!targetEditor) {
             logger.debug(`target editor not found <check 2>, return to active editor`);
-            returnToActiveEditor();
-            return;
+            return returnToActiveEditor();
         }
         if (window.activeTextEditor === targetEditor) return;
         await this.main.cursorManager.waitForCursorUpdate(targetEditor);
@@ -396,7 +393,7 @@ export class BufferManager implements Disposable {
                     // 1. jump to target notebook
                     await window.showTextDocument(targetEditor.document, targetNotebook.viewColumn);
                     // wait a bit to let vscode finish its internal operations
-                    await new Promise((res) => setTimeout(res, 50));
+                    await wait(50);
                     // 2. jump to target cell
                     await window.showTextDocument(targetEditor.document, targetEditor.viewColumn);
                     return;
