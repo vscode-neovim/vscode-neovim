@@ -309,8 +309,9 @@ export class DocumentChangeManager implements Disposable {
         }
         if (this.pendingEvents.length) {
             this.applyEdits();
+        } else {
+            this.applyingEdits = false;
         }
-        this.applyingEdits = false;
     };
 
     private onChangeTextDocument = async (e: TextDocumentChangeEvent): Promise<void> => {
