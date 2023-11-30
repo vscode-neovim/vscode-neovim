@@ -196,7 +196,7 @@ export class MainController implements vscode.Disposable {
             ext_wildmenu: true,
         });
 
-        await this.bufferManager.forceResync();
+        await this.bufferManager.forceSyncLayout();
 
         await VSCodeContext.set("neovim.init", true);
         logger.debug(`Init completed`);
