@@ -439,13 +439,13 @@ export class BufferManager implements Disposable {
 
     private async cleanupWindowsAndBuffers(): Promise<void> {
         // store in copy, just in case
-        const currentVisibleEditors = [...window.visibleTextEditors];
+        const visibleEditors = [...window.visibleTextEditors];
 
         const unusedWindows: number[] = [];
         const unusedBuffers: number[] = [];
         // close windows
         [...this.textEditorToWinId.entries()].forEach(([editor, winId]) => {
-            if (currentVisibleEditors.includes(editor)) return;
+            if (visibleEditors.includes(editor)) return;
             logger.debug(`Editor viewColumn: ${editor.viewColumn}, winId: ${winId}, closing`);
             this.textEditorToWinId.delete(editor);
             this.winIdToEditor.delete(winId);
@@ -454,8 +454,8 @@ export class BufferManager implements Disposable {
         // delete buffers
         [...this.textDocumentToBufferId.entries()].forEach(([document, bufId]) => {
             if (!document.isClosed) return;
-            if (currentVisibleEditors.some((editor) => editor.document === document)) return;
-            logger.debug(`Document: ${document.uri.toString()}, bufId: ${bufId}, deleting`);
+            if (visibleEditors.some((editor) => editor.document === document)) return;
+            logger.debug(`Document: ${document.uri}, bufId: ${bufId}, deleting`);
             this.textDocumentToBufferId.delete(document);
             unusedBuffers.push(bufId);
         });
@@ -464,48 +464,37 @@ export class BufferManager implements Disposable {
     }
 
     private async syncVisibleEditors(): Promise<void> {
-        const currentVisibleEditors = [...window.visibleTextEditors];
+        const visibleEditors = [...window.visibleTextEditors];
         // Open/change neovim windows
-        for (const visibleEditor of currentVisibleEditors) {
-            logger.debug(
-                `Visible editor, viewColumn: ${
-                    visibleEditor.viewColumn
-                }, doc: ${visibleEditor.document.uri.toString()}`,
-            );
+        for (const editor of visibleEditors) {
+            const { document } = editor;
+            logger.debug(`Visible editor, viewColumn: ${editor.viewColumn}, doc: ${document.uri}`);
             // create buffer first if not known to the system
             // creating initially not listed buffer to prevent firing autocmd events when
             // buffer name/lines are not yet set. We'll set buflisted after setup
-            if (!this.textDocumentToBufferId.has(visibleEditor.document)) {
+            if (!this.textDocumentToBufferId.has(document)) {
                 logger.debug(`Document not known, init in neovim`);
                 const buf = await this.client.createBuffer(false, true);
                 if (typeof buf === "number") {
                     logger.error(`Cannot create a buffer, code: ${buf}`);
                     continue;
                 }
-                await this.initBufferForDocument(visibleEditor.document, buf, visibleEditor);
+                await this.initBufferForDocument(document, buf, editor);
 
-                logger.debug(`Document: ${visibleEditor.document.uri.toString()}, BufId: ${buf.id}`);
-                this.textDocumentToBufferId.set(visibleEditor.document, buf.id);
+                logger.debug(`Document: ${document.uri}, BufId: ${buf.id}`);
+                this.textDocumentToBufferId.set(document, buf.id);
             }
-            const editorBufferId = this.textDocumentToBufferId.get(visibleEditor.document)!;
-            let winId: number | undefined;
+            if (this.textEditorToWinId.has(editor)) continue;
+            const editorBufferId = this.textDocumentToBufferId.get(document)!;
             try {
-                if (!this.textEditorToWinId.has(visibleEditor)) {
-                    logger.debug(
-                        `Creating new neovim window for ${visibleEditor.viewColumn} column (undefined is OK here)`,
-                    );
-                    winId = await this.createNeovimWindow(editorBufferId);
-                    logger.debug(`Created new window: ${winId} ViewColumn: ${visibleEditor.viewColumn}`);
-                    this.textEditorToWinId.set(visibleEditor, winId);
-                    this.winIdToEditor.set(winId, visibleEditor);
-                    await this.main.cursorManager.updateNeovimCursorPosition(
-                        visibleEditor,
-                        visibleEditor.selection.active,
-                    );
-                }
+                logger.debug(`Creating new window for ${editor.viewColumn} column (undefined is OK here)`);
+                const winId = await this.createNeovimWindow(editorBufferId);
+                logger.debug(`Created new window: ${winId} ViewColumn: ${editor.viewColumn}`);
+                this.textEditorToWinId.set(editor, winId);
+                this.winIdToEditor.set(winId, editor);
+                await this.main.cursorManager.updateNeovimCursorPosition(editor, editor.selection.active);
             } catch (e) {
                 logger.error((e as Error).message);
-                continue;
             }
         }
     }
@@ -579,7 +568,7 @@ export class BufferManager implements Disposable {
      */
     private async initBufferForDocument(document: TextDocument, buffer: Buffer, editor?: TextEditor): Promise<void> {
         const bufId = buffer.id;
-        logger.debug(`Init buffer for ${bufId}, doc: ${document.uri.toString()}`);
+        logger.debug(`Init buffer for ${bufId}, doc: ${document.uri}`);
 
         const { options: editorOptions } = editor || {
             options: {
