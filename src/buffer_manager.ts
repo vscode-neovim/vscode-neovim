@@ -416,6 +416,28 @@ export class BufferManager implements Disposable {
     };
 
     private syncEditorLayout = async (cancelToken: CancellationToken): Promise<void> => {
+        await this.cleanupWindowsAndBuffers();
+        if (cancelToken.isCancellationRequested) {
+            logger.debug(`Sync layout cancelled - syncVisibleEditors`);
+            return;
+        }
+        await this.syncVisibleEditors();
+        if (cancelToken.isCancellationRequested) {
+            logger.debug(`Sync layout cancelled - syncActiveEditor`);
+            return;
+        }
+        await this.syncActiveEditor();
+        if (cancelToken.isCancellationRequested) {
+            logger.debug(`Sync layout cancelled - resolve`);
+            return;
+        }
+        this.syncEditorLayoutPromise?.resolve();
+        this.syncEditorLayoutPromise = undefined;
+    };
+
+    private syncEditorLayoutDebounced = debounce(this.syncEditorLayout, 100, { leading: false, trailing: true });
+
+    private async cleanupWindowsAndBuffers(): Promise<void> {
         // store in copy, just in case
         const currentVisibleEditors = [...window.visibleTextEditors];
 
@@ -437,28 +459,9 @@ export class BufferManager implements Disposable {
             this.textDocumentToBufferId.delete(document);
             unusedBuffers.push(bufId);
         });
-        unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
         unusedWindows.length && (await actions.lua("close_windows", unusedWindows));
-
-        if (cancelToken.isCancellationRequested) {
-            logger.debug(`Sync layout cancelled - syncVisibleEditors`);
-            return;
-        }
-        await this.syncVisibleEditors();
-        if (cancelToken.isCancellationRequested) {
-            logger.debug(`Sync layout cancelled - syncActiveEditor`);
-            return;
-        }
-        await this.syncActiveEditor();
-        if (cancelToken.isCancellationRequested) {
-            logger.debug(`Sync layout cancelled - resolve`);
-            return;
-        }
-        this.syncEditorLayoutPromise?.resolve();
-        this.syncEditorLayoutPromise = undefined;
-    };
-
-    private syncEditorLayoutDebounced = debounce(this.syncEditorLayout, 100, { leading: false, trailing: true });
+        unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
+    }
 
     private async syncVisibleEditors(): Promise<void> {
         const currentVisibleEditors = [...window.visibleTextEditors];
