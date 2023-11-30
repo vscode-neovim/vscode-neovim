@@ -611,9 +611,6 @@ export class BufferManager implements Disposable {
         const bufId = buffer.id;
         logger.debug(`Init buffer for ${bufId}, doc: ${document.uri.toString()}`);
 
-        // !In vscode same document can have different insertSpaces/tabSize settings per editor
-        // !however in neovim it's per buffer. We make assumption here that these settings are same for all editors
-        // !It's possible to set expandtab/tabstop/shiftwidth when switching editors, but rare case
         const { options: editorOptions } = editor || {
             options: {
                 insertSpaces: true,
@@ -625,18 +622,14 @@ export class BufferManager implements Disposable {
         const lines = document.getText().split(eol);
 
         const requests: [string, unknown[]][] = [
-            // fill the buffer
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
             ["nvim_buf_set_var", [bufId, "vscode_editor_options", makeEditorOptionsVariable(editorOptions)]],
-            // buffer name = document URI
             ["nvim_buf_set_name", [bufId, BUFFER_NAME_PREFIX + document.uri.toString()]],
-            // Turn off modifications for external documents
             ["nvim_buf_set_option", [bufId, "modifiable", !this.isExternalTextDocument(document)]],
             // force nofile, just in case if the buffer was created externally
             ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
-            // list buffer
             ["nvim_buf_set_option", [bufId, "buflisted", true]],
         ];
         await callAtomic(this.client, requests, logger);
