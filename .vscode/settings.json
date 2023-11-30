@@ -1,4 +1,3 @@
-// Place your settings in this file to overwrite default and user settings.
 {
     "files.exclude": {
         "out": false // set this to true to hide the "out" folder with the compiled JS files
@@ -18,6 +17,8 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "editor.codeActionsOnSave": {
-        "source.fixAll": true
-    }
+        "source.fixAll": "explicit",
+        "source.fixAll.eslint": "explicit"
+    },
+    "eslint.experimental.useFlatConfig": false
 }
