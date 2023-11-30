@@ -332,19 +332,22 @@ export class BufferManager implements Disposable {
     }
 
     private handleWindowChanged = async (winId: number): Promise<void> => {
-        logger.debug(`onWindowChanged, target window id: ${winId}`);
+        logger.debug(`window changed, target window id: ${winId}`);
+        if (winId === 1000) {
+            // This event is triggered by our layout sync, skip it
+            logger.debug("window id is 1000, skipping");
+            return;
+        }
 
         const returnToActiveEditor = async () => {
-            if (window.activeTextEditor) {
-                await window.showTextDocument(window.activeTextEditor.document, window.activeTextEditor.viewColumn);
-            }
+            const e = window.activeTextEditor;
+            if (e) await window.showTextDocument(e.document, e.viewColumn);
         };
 
         let targetEditor = this.getEditorFromWinId(winId);
         if (!targetEditor) {
             logger.debug(`target editor not found <check 1>, return to active editor`);
-            await returnToActiveEditor();
-            return;
+            return returnToActiveEditor();
         }
         if (window.activeTextEditor === targetEditor) return;
         // since the event could be triggered by vscode side operations
@@ -363,8 +366,7 @@ export class BufferManager implements Disposable {
         targetEditor = this.getEditorFromWinId(curwin);
         if (!targetEditor) {
             logger.debug(`target editor not found <check 2>, return to active editor`);
-            returnToActiveEditor();
-            return;
+            return returnToActiveEditor();
         }
         if (window.activeTextEditor === targetEditor) return;
         await this.main.cursorManager.waitForCursorUpdate(targetEditor);
