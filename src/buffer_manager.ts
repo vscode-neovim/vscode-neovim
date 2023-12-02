@@ -508,7 +508,7 @@ export class BufferManager implements Disposable {
             );
             return;
         }
-        if (this.client.window.id === winId) return;
+        if ((await this.client.window).id === winId) return;
         logger.debug(`Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`);
         await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
         if (this.main.modeManager.isVisualMode) {
