@@ -45,6 +45,11 @@ end
 ---@param buf number
 ---@param opts EditorOptions
 local function set_options(buf, opts)
+  -- Due to debounce of editor options change event, in some special cases, buffer
+  -- may be deleted when starting to set options.
+  if not api.nvim_buf_is_valid(buf) then
+    return
+  end
   api.nvim_buf_set_var(buf, "vscode_editor_options", opts)
   if vim.bo[buf].ts ~= opts.tabSize then
     vim.bo[buf].ts = opts.tabSize
@@ -127,6 +132,9 @@ end
 function M.setup()
   vscode.on("editor_options_changed", set_options)
   vscode.on("document_buffer_init", function(buf)
+    if not api.nvim_buf_is_valid(buf) then
+      return
+    end
     local has, opts = pcall(api.nvim_buf_get_var, buf, "vscode_editor_options")
     if has then
       set_options(buf, opts)
