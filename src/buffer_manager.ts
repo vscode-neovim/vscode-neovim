@@ -566,6 +566,8 @@ export class BufferManager implements Disposable {
         const bufId = buffer.id;
         logger.debug(`Init buffer for ${bufId}, doc: ${document.uri}`);
 
+        // !In vscode same document can have different insertSpaces/tabSize settings per editor
+        // !however in neovim it's per buffer. We make assumption here that these settings are same for all editors
         const { options: editorOptions } = editor || {
             options: {
                 insertSpaces: true,
