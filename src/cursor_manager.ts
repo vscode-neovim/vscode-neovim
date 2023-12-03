@@ -323,6 +323,7 @@ export class CursorManager implements Disposable {
         // wait for possible change document events
         logger.debug(`Waiting for possible document change completion operation`);
         await this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
+        await this.main.changeManager.documentChangeLock.waitForUnlock();
         logger.debug(`Waiting done`);
 
         // ignore selection change caused by buffer edit
