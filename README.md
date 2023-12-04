@@ -258,8 +258,11 @@ Parameters:
 
 -   `name` (string): The name of the action, generally a vscode command.
 -   `opts` (table): Map of optional parameters:
-    -   `args` (table): List of arguments passed to the vscode command.
-        -   Example: `action('foo', { args = { 'foo', 'bar', … } })`
+    -   `args` (table): List of arguments passed to the vscode command. If the command only requires a single object
+        parameter, you can directly pass in a map-like table.
+        -   Examples:
+            -   `action('foo', { args = { 'foo', 'bar', … } })`
+            -   `action('foo', { args = { foo = bar, … } })`
     -   `range` (table): Specific range for the action. Implicitly passed in visual mode. Has three possible forms (all
         values are 0-indexed):
         -   `[start_line, end_line]`
@@ -303,7 +306,7 @@ Returns: the result of the action
     [vscode command definition](https://github.com/microsoft/vscode/blob/43b0558cc1eec2528a9a1b9ee1c7a559823bda31/src/vs/workbench/contrib/search/browser/searchActionsFind.ts#L177-L197)
     for the expected parameter format):
     ```vim
-    nnoremap ? <Cmd>lua require('vscode-neovim').action('workbench.action.findInFiles', { args = { { query = vim.fn.expand('<cword>') } } })<CR>
+    nnoremap ? <Cmd>lua require('vscode-neovim').action('workbench.action.findInFiles', { args = { query = vim.fn.expand('<cword>') } })<CR>
     ```
 
 Currently, two built-in actions are provided for testing purposes:
@@ -343,8 +346,9 @@ do -- Comment the previous line
 end
 
 do -- Find in files for word under cursor
-  local arg = { query = vim.fn.expand('<cword>') }
-  vscode.action("workbench.action.findInFiles", { args = { arg } })
+  vscode.action("workbench.action.findInFiles", {
+    args = { query = vim.fn.expand('<cword>') }
+  })
 end
 
 -- Execute _ping synchronously and print the result

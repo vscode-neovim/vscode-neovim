@@ -59,13 +59,7 @@ function M.action(name, opts)
   })
   vim.validate({
     ["opts.callback"] = { opts.callback, "f", true },
-    ["opts.args"] = {
-      opts.args,
-      function(args)
-        return args == nil or (type(args) == "table" and vim.tbl_islist(args))
-      end,
-      "array-like table",
-    },
+    ["opts.args"] = { opts.args, "t", true },
     ["opts.range"] = {
       opts.range,
       function(range)
@@ -88,6 +82,9 @@ function M.action(name, opts)
     },
     ["opts.restore_selection"] = { opts.restore_selection, "b", true },
   })
+  if opts.args and not vim.tbl_islist(opts.args) then
+    opts.args = { opts.args }
+  end
   if opts.callback then
     opts.callback = add_callback(opts.callback)
   end
@@ -120,13 +117,7 @@ function M.call(name, opts, timeout)
   })
   vim.validate({
     ["opts.callback"] = { opts.callback, "nil" },
-    ["opts.args"] = {
-      opts.args,
-      function(args)
-        return args == nil or (type(args) == "table" and vim.tbl_islist(args))
-      end,
-      "array-like table",
-    },
+    ["opts.args"] = { opts.args, "t", true },
     ["opts.range"] = {
       opts.range,
       function(range)
@@ -149,6 +140,10 @@ function M.call(name, opts, timeout)
     },
     ["opts.restore_selection"] = { opts.restore_selection, "b", true },
   })
+
+  if opts.args and not vim.tbl_islist(opts.args) then
+    opts.args = { opts.args }
+  end
 
   if timeout <= 0 then
     return vim.rpcrequest(vim.g.vscode_channel, "vscode-action", name, opts)
