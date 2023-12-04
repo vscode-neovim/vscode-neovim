@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.2.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.5...v1.2.0) (2023-12-04)
+
+
+### Features
+
+* **api:** support passing a map-like table as args ([#1670](https://github.com/vscode-neovim/vscode-neovim/issues/1670)) ([8fe3d8f](https://github.com/vscode-neovim/vscode-neovim/commit/8fe3d8f9d37ef5f980954c9e1eddbed882ee62ef))
+
+
+### Bug Fixes
+
+* Fix forcing sync editor selections ([#1674](https://github.com/vscode-neovim/vscode-neovim/issues/1674)) ([7ebc1b2](https://github.com/vscode-neovim/vscode-neovim/commit/7ebc1b26384eee1a82a9449e238d60741a26d5e5))
+* refactor buffer manager ([#1666](https://github.com/vscode-neovim/vscode-neovim/issues/1666)) ([1a27694](https://github.com/vscode-neovim/vscode-neovim/commit/1a2769478cb10483c449421e6ddb202bcf2c5472))
+
 ## [1.1.5](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.4...v1.1.5) (2023-11-30)
 
 
