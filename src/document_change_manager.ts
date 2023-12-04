@@ -381,7 +381,18 @@ export class DocumentChangeManager implements Disposable {
         this.main.cursorManager.wantInsertCursorUpdate = false;
 
         await actions.lua("handle_changes", bufId, changeArgs);
-        const editor = window.visibleTextEditors.find((e) => e.document === doc);
-        if (editor) await this.main.cursorManager.applySelectionChanged(editor);
+
+        // Mainly for the changes caused by some vscode commands in visual mode.
+        // e.g. move line up/down
+        // After synchronizing the changes to nvim, the cursor
+        // position/visual range of nvim will change. And the changed result is
+        // usually incorrect, so synchronization is forced here.
+        if (!this.main.modeManager.isInsertMode) {
+            const editor = window.visibleTextEditors.find((e) => e.document === doc);
+            if (editor && editor === activeEditor) {
+                // Don't await here, since it will cause a deadlock
+                this.main.cursorManager.applySelectionChanged(editor);
+            }
+        }
     };
 }
