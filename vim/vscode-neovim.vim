@@ -114,12 +114,4 @@ augroup END
 
 
 lua require("vscode-neovim")
-
-function! s:sourceModules()
-  let modules = globpath(s:runtimePath, 'modules/*.{lua,vim}', 0, 1)
-  for module in modules
-    exe 'source '.module
-  endfor
-endfunction
-
-call s:sourceModules()
+runtime! modules/**/*.{vim,lua}
