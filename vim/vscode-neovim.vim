@@ -11,8 +11,8 @@ let &runtimepath = &runtimepath . ',' . s:runtimePath
 lua << EOF
 local MIN_VERSION = "0.9.0"
 
-local outdated = not vim.version
-if vim.version then
+local outdated = not (vim.version and vim.version.parse)
+if not outdated then
   local cur = vim.version()
   local min = vim.version.parse(MIN_VERSION)
   outdated = vim.version.lt(cur, min)
