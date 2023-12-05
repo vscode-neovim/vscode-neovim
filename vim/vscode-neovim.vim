@@ -8,6 +8,23 @@ let &runtimepath = &runtimepath . ',' . s:currDir . '/vim-altercmd'
 let s:runtimePath = fnamemodify(s:currDir, ':h') . '/runtime'
 let &runtimepath = &runtimepath . ',' . s:runtimePath
 
+lua << EOF
+local MIN_VERSION = "0.9.0"
+
+local outdated = not vim.version
+if vim.version then
+  local cur = vim.version()
+  local min = vim.version.parse(MIN_VERSION)
+  outdated = vim.version.lt(cur, min)
+end
+if outdated then
+  local msg = "vscode-neovim requires nvim version "
+    .. MIN_VERSION
+    .. " or higher. Install the [latest stable version](https://github.com/neovim/neovim/releases/latest)."
+  vim.rpcnotify(vim.g.vscode_channel, "vscode-action", "notify", { args = { msg, "error" } })
+end
+EOF
+
 " Used for externsion inter-communications
 let s:vscodePluginEventName = 'vscode-neovim'
 
