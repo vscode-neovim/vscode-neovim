@@ -5,8 +5,8 @@ let s:currDir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
 " Adjust rtp path
 let &runtimepath = &runtimepath . ',' . s:currDir . '/vim-altercmd'
 
-let s:luaPath = fnamemodify(s:currDir, ':h') . '/runtime'
-let &runtimepath = &runtimepath . ',' . s:luaPath
+let s:runtimePath = fnamemodify(s:currDir, ':h') . '/runtime'
+let &runtimepath = &runtimepath . ',' . s:runtimePath
 
 " Used for externsion inter-communications
 let s:vscodePluginEventName = 'vscode-neovim'
@@ -109,9 +109,9 @@ augroup VscodeGeneral
     autocmd VimEnter,ModeChanged * call VSCodeExtensionNotify('mode-changed', mode())
     autocmd WinEnter * call VSCodeExtensionNotify('window-changed', win_getid())
     " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.
-    autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:luaPath
+    autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:runtimePath
 augroup END
 
 
 lua require("vscode-neovim")
-execute 'source ' . fnamemodify(s:currDir, ':h') . '/runtime/plugin/*.lua'
+runtime! modules/**/*.{vim,lua}
