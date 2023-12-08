@@ -1628,97 +1628,92 @@
                 "when": "terminalFocus"
             },
             {
-                "key": "ctrl+w",
-                "command": "-workbench.action.switchWindow"
+                "command": "-workbench.action.switchWindow",
+                "key": "ctrl+w"
             },
             {
-                "key": "ctrl+w ctrl+w",
                 "command": "workbench.action.focusNextGroup",
-                "when": "!editorTextFocus && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
-            },
-            {
                 "key": "ctrl+w ctrl+w",
-                "command": "workbench.action.focusFirstEditorGroup",
                 "when": "!editorTextFocus && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
             },
             {
+                "command": "workbench.action.navigateUp",
                 "key": "ctrl+w up",
-                "command": "workbench.action.navigateUp",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
+                "command": "workbench.action.navigateUp",
                 "key": "ctrl+w k",
-                "command": "workbench.action.navigateUp",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
+                "command": "workbench.action.navigateDown",
                 "key": "ctrl+w down",
-                "command": "workbench.action.navigateDown",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
+                "command": "workbench.action.navigateDown",
                 "key": "ctrl+w j",
-                "command": "workbench.action.navigateDown",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
+                "command": "workbench.action.navigateLeft",
                 "key": "ctrl+w left",
-                "command": "workbench.action.navigateLeft",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
+                "command": "workbench.action.navigateLeft",
                 "key": "ctrl+w h",
-                "command": "workbench.action.navigateLeft",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
+                "command": "workbench.action.navigateRight",
                 "key": "ctrl+w right",
-                "command": "workbench.action.navigateRight",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
+                "command": "workbench.action.navigateRight",
                 "key": "ctrl+w l",
-                "command": "workbench.action.navigateRight",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
-                "key": "ctrl+w =",
                 "command": "workbench.action.evenEditorWidths",
+                "key": "ctrl+w =",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
-                "key": "ctrl+w _",
                 "command": "workbench.action.toggleEditorWidths",
+                "key": "ctrl+w _",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
-                "key": "ctrl+w >",
                 "command": "workbench.action.increaseViewWidth",
+                "key": "ctrl+w >",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
-                "key": "ctrl+w <",
                 "command": "workbench.action.decreaseViewWidth",
+                "key": "ctrl+w <",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
-                "key": "ctrl+w +",
                 "command": "workbench.action.increaseViewHeight",
+                "key": "ctrl+w +",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
-                "key": "ctrl+w -",
                 "command": "workbench.action.decreaseViewHeight",
+                "key": "ctrl+w -",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
-                "key": "ctrl+w s",
                 "command": "workbench.action.splitEditorDown",
+                "key": "ctrl+w s",
                 "when": "!editorTextFocus && !terminalFocus"
             },
             {
-                "key": "ctrl+w v",
                 "command": "workbench.action.splitEditorRight",
+                "key": "ctrl+w v",
                 "when": "!editorTextFocus && !terminalFocus"
             }
         ]
