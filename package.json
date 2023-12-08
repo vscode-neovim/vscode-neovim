@@ -1715,6 +1715,102 @@
                 "command": "workbench.action.splitEditorRight",
                 "key": "ctrl+w v",
                 "when": "!editorTextFocus && !terminalFocus"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "h",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "h"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "j",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "j"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "k",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "k"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "l",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "l"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "w",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "w"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "e",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "e"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "b",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "b"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "0",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "0"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "shift+4",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "$"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "g g",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "gg"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "shift+g",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "G"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "v",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "v"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "shift+v",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "V"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "ctrl+v",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "<C-v>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "y",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "y"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "shift+y",
+                "when": "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "Y"
             }
         ]
     },

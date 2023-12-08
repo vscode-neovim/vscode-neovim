@@ -30,4 +30,39 @@ for (const [key, cmd] of [
     add(key, "!editorTextFocus && !terminalFocus", null, cmd);
 }
 
+// - Why do we need to manually send keys?
+//    The output panel is not a "real" text editor, it cannot receive regular keyboard inputs.
+// - Why do we send these keys?
+//    We send certain basic keys for actions like moving, selecting, and copying.
+//    This allows us to easily view the output content and copy it, such as error messages.
+for (const item of [
+    // motion
+    "h",
+    "j",
+    "k",
+    "l",
+    "w",
+    "e",
+    "b",
+    "0",
+    ["shift+4", "$"],
+    ["g g", "gg"],
+    ["shift+g", "G"],
+    // select
+    ["v", "v"],
+    ["shift+v", "V"],
+    ["ctrl+v", "<C-v>"],
+    // copy
+    "y",
+    ["shift+y", "Y"],
+]) {
+    const [key, arg] = Array.isArray(item) ? item : [item, item];
+    add(
+        key,
+        "neovim.init && neovim.mode == normal && editorTextFocus && focusedView == workbench.panel.output",
+        arg,
+        "vscode-neovim.send",
+    );
+}
+
 module.exports = keybinds;
