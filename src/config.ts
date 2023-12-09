@@ -31,12 +31,14 @@ export class Config implements Disposable {
         "logOutputToConsole",
         "neovimWidth",
         "useWSL",
+        "wslDistribution",
         "neovimInitVimPaths.darwin",
         "neovimInitVimPaths.linux",
         "neovimInitVimPaths.win32",
         "neovimExecutablePaths.darwin",
         "neovimExecutablePaths.linux",
         "neovimExecutablePaths.win32",
+        "afterInitConfig",
     ].map((c) => `${this.root}.${c}`);
 
     dispose() {
@@ -157,6 +159,10 @@ export class Config implements Disposable {
     }
     get NVIM_APPNAME() {
         return this.cfg.get("NVIM_APPNAME", "");
+    }
+    get afterInitConfig(): string {
+        const config = this.cfg.get<string | string[]>("afterInitConfig", "");
+        return Array.isArray(config) ? config.join("\n") : config;
     }
     get logPath() {
         return this.cfg.get("logPath", "");
