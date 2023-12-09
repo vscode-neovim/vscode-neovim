@@ -322,13 +322,9 @@ export class MainController implements vscode.Disposable {
     };
 
     private setClientInfo() {
-        readFile(path.posix.join(this.extContext.extensionPath, "package.json"))
-            .then((buffer) => {
-                const versionString = JSON.parse(buffer.toString()).version as string;
-                const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
-                this.client.setClientInfo("vscode-neovim", { major, minor, patch }, "embedder", {}, {});
-            })
-            .catch((err) => console.log(err));
+        const versionString = this.extContext.extension.packageJSON.version as string;
+        const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
+        this.client.setClientInfo("vscode-neovim", { major, minor, patch }, "embedder", {}, {});
     }
 
     dispose() {
