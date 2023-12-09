@@ -1835,7 +1835,7 @@
         "@types/vscode": "^1.83.1",
         "@typescript-eslint/eslint-plugin": "^5.61.0",
         "@typescript-eslint/parser": "^5.62.0",
-        "@vscode/test-electron": "^2.3.6",
+        "@vscode/test-electron": "^2.3.8",
         "eslint": "^8.53.0",
         "eslint-config-prettier": "^9.0.0",
         "eslint-plugin-import": "^2.29.0",
@@ -1853,8 +1853,8 @@
     },
     "dependencies": {
         "async-mutex": "^0.4.0",
-        "grapheme-splitter": "^1.0.4",
         "fast-myers-diff": "^3.0.1",
+        "grapheme-splitter": "^1.0.4",
         "lodash-es": "^4.17.21",
         "neovim": "^4.9.0",
         "ts-wcwidth": "^2.0.3"
