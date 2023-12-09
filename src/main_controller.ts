@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ChildProcess, execSync, spawn } from "child_process";
 import { readFile } from "fs/promises";
 import path from "path";
@@ -63,10 +62,13 @@ export class MainController implements vscode.Disposable {
     public viewportManager!: ViewportManager;
 
     public constructor(private extContext: ExtensionContext) {
+        const wslpath = (path: string) =>
+            // execSync returns a newline character at the end
+            execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${path}'`).toString().trim();
+
         let extensionPath = extContext.extensionPath.replace(/\\/g, "\\\\");
         if (config.useWsl) {
-            // execSync returns a newline character at the end
-            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
+            extensionPath = wslpath(extensionPath);
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
@@ -85,9 +87,9 @@ export class MainController implements vscode.Disposable {
         ];
 
         const workspaceFolder = vscode.workspace.workspaceFolders;
-        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : undefined;
-        if (cwd && !config.useWsl && !vscode.env.remoteName) {
-            args.push("-c", `cd ${cwd}`);
+        const cwd = workspaceFolder?.length ? workspaceFolder[0].uri.fsPath : undefined;
+        if (cwd && !vscode.env.remoteName) {
+            args.push("-c", `cd ${config.useWsl ? wslpath(cwd) : cwd}`);
         }
 
         if (config.useWsl) {
