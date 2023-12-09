@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ChildProcess, execSync, spawn } from "child_process";
 import { readFile } from "fs/promises";
 import path from "path";
@@ -63,36 +62,48 @@ export class MainController implements vscode.Disposable {
     public viewportManager!: ViewportManager;
 
     public constructor(private extContext: ExtensionContext) {
+        const wslpath = (path: string) => {
+            // execSync returns a newline character at the end
+            const distro = config.wslDistribution.length ? `-d ${config.wslDistribution}` : "";
+            return execSync(`C:\\Windows\\system32\\wsl.exe ${distro} wslpath '${path}'`).toString().trim();
+        };
+
         let extensionPath = extContext.extensionPath.replace(/\\/g, "\\\\");
         if (config.useWsl) {
-            // execSync returns a newline character at the end
-            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
+            extensionPath = wslpath(extensionPath);
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
         const neovimPreScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
         const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode-neovim/force-options.lua");
 
-        const args = [
+        const args = [];
+
+        if (config.useWsl) {
+            args.push("C:\\Windows\\system32\\wsl.exe");
+            if (config.wslDistribution.length) {
+                args.push("-d", config.wslDistribution);
+            }
+        }
+
+        args.push(
+            config.neovimPath,
             "-N",
             "--embed",
-            // load options after user config
-            "-S",
-            neovimPostScriptPath,
             // load support script before user config (to allow to rebind keybindings/commands)
             "--cmd",
             `source ${neovimPreScriptPath}`,
-        ];
+            // load options after user config
+            "-S",
+            neovimPostScriptPath,
+        );
 
         const workspaceFolder = vscode.workspace.workspaceFolders;
-        const cwd = workspaceFolder && workspaceFolder.length ? workspaceFolder[0].uri.fsPath : undefined;
-        if (cwd && !config.useWsl && !vscode.env.remoteName) {
-            args.push("-c", `cd ${cwd}`);
+        const cwd = workspaceFolder?.length ? workspaceFolder[0].uri.fsPath : undefined;
+        if (cwd && !vscode.env.remoteName) {
+            args.push("-c", `cd ${config.useWsl ? wslpath(cwd) : cwd}`);
         }
 
-        if (config.useWsl) {
-            args.unshift(config.neovimPath);
-        }
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
                 "-u",
@@ -101,6 +112,7 @@ export class MainController implements vscode.Disposable {
                 `${process.env.NEOVIM_DEBUG_HOST || "127.0.0.1"}:${process.env.NEOVIM_DEBUG_PORT || 4000}`,
             );
         }
+
         if (config.clean) {
             args.push("--clean");
         }
@@ -108,9 +120,6 @@ export class MainController implements vscode.Disposable {
         if (!config.clean && config.neovimInitPath) {
             args.push("-u", config.neovimInitPath);
         }
-        logger.debug(
-            `Spawning nvim, path: ${config.neovimPath}, useWsl: ${config.useWsl}, args: ${JSON.stringify(args)}`,
-        );
         if (config.NVIM_APPNAME) {
             process.env.NVIM_APPNAME = config.NVIM_APPNAME;
             if (config.useWsl) {
@@ -121,14 +130,13 @@ export class MainController implements vscode.Disposable {
                 process.env.WSLENV = "NVIM_APPNAME/u";
             }
         }
-        this.nvimProc = spawn(config.useWsl ? "C:\\Windows\\system32\\wsl.exe" : config.neovimPath, args, {});
-        this.nvimProc.on("close", (code) => {
-            logger.error(`Neovim exited with code: ${code}`);
-        });
-        this.nvimProc.on("error", (err) => {
-            logger.error(`Neovim spawn error: ${err.message}. Check if the path is correct.`);
-            vscode.window.showErrorMessage("Neovim: configure the path to neovim and restart the editor");
-        });
+
+        logger.debug(`Spawning nvim, ${args.join(" ")}`);
+        this.nvimProc = spawn(args[0], args.slice(1));
+        this.nvimProc.on("close", (code) => logger.error(`Neovim exited with code: ${code}`));
+        this.nvimProc.on("error", (err) =>
+            logger.error(`Neovim spawn error: ${err.message}. Check if the path is correct.`),
+        );
         logger.debug(`Attaching to neovim`);
         this.client = attach({
             proc: this.nvimProc,

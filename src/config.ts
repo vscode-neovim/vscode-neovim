@@ -128,6 +128,9 @@ export class Config implements Disposable {
         const ext = extensions.getExtension(EXT_ID)!;
         return ext.extensionKind !== ExtensionKind.Workspace && isWindows && this.cfg.get("useWSL", false);
     }
+    get wslDistribution() {
+        return this.cfg.get("wslDistribution", "");
+    }
     get revealCursorScrollLine() {
         return this.cfg.get("revealCursorScrollLine", false);
     }
