@@ -21,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     context.subscriptions.push(config, rootLogger, eventBus, actions);
 
     try {
-        const plugin = new MainController(context.extensionPath.replace(/\\/g, "\\\\"));
+        const plugin = new MainController(context);
         context.subscriptions.push(plugin);
         await plugin.init();
     } catch (e) {

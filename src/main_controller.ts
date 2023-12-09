@@ -4,7 +4,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 
 import { attach, NeovimClient } from "neovim";
-import vscode, { Range, window } from "vscode";
+import vscode, { type ExtensionContext, Range, window } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
@@ -62,12 +62,11 @@ export class MainController implements vscode.Disposable {
     public multilineMessagesManager!: MultilineMessagesManager;
     public viewportManager!: ViewportManager;
 
-    public constructor(private extensionPath: string) {
+    public constructor(private extContext: ExtensionContext) {
+        let extensionPath = extContext.extensionPath.replace(/\\/g, "\\\\");
         if (config.useWsl) {
             // execSync returns a newline character at the end
-            this.extensionPath = extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`)
-                .toString()
-                .trim();
+            extensionPath = execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${extensionPath}'`).toString().trim();
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
@@ -315,7 +314,7 @@ export class MainController implements vscode.Disposable {
     };
 
     private setClientInfo() {
-        readFile(path.posix.join(this.extensionPath, "package.json"))
+        readFile(path.posix.join(this.extContext.extensionPath, "package.json"))
             .then((buffer) => {
                 const versionString = JSON.parse(buffer.toString()).version as string;
                 const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
