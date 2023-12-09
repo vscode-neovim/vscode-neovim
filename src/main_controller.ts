@@ -62,9 +62,11 @@ export class MainController implements vscode.Disposable {
     public viewportManager!: ViewportManager;
 
     public constructor(private extContext: ExtensionContext) {
-        const wslpath = (path: string) =>
+        const wslpath = (path: string) => {
             // execSync returns a newline character at the end
-            execSync(`C:\\Windows\\system32\\wsl.exe wslpath '${path}'`).toString().trim();
+            const distro = config.wslDistribution.length ? `-d ${config.wslDistribution}` : "";
+            return execSync(`C:\\Windows\\system32\\wsl.exe ${distro} wslpath '${path}'`).toString().trim();
+        };
 
         let extensionPath = extContext.extensionPath.replace(/\\/g, "\\\\");
         if (config.useWsl) {
@@ -94,6 +96,9 @@ export class MainController implements vscode.Disposable {
 
         if (config.useWsl) {
             args.unshift(config.neovimPath);
+            if (config.wslDistribution.length) {
+                args.unshift("-d", config.wslDistribution);
+            }
         }
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
