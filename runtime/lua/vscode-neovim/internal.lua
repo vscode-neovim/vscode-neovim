@@ -55,9 +55,16 @@ function M.handle_changes(bufnr, changes)
     end
   end
 
+  -- The changes from vscode are all expected and must be applied.
+  local ro = vim.bo[bufnr].ro
+  local ma = vim.bo[bufnr].ma
+  vim.bo[bufnr].ro = false
+  vim.bo[bufnr].ma = true
   for _, change in ipairs(changes) do
     api.nvim_buf_set_text(bufnr, unpack(change))
   end
+  vim.bo[bufnr].ro = ro
+  vim.bo[bufnr].ma = ma
 
   local max = api.nvim_buf_line_count(bufnr)
   -- no need to restore marks that still exist

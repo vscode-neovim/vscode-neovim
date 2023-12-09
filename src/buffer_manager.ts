@@ -208,11 +208,8 @@ export class BufferManager implements Disposable {
     }
 
     public isExternalTextDocument(textDoc: TextDocument): boolean {
-        // !Output should be modifiable, vscode treats it as a regular document.
-        // !When the option "modifiable" is set to false, nvim_buf_set_text will not work. #498
-        // !Don't remove this, cause it's a long time bug
         if (textDoc.uri.scheme === "output") {
-            return false;
+            return true;
         }
         return this.externalTextDocuments.has(textDoc);
     }
