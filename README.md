@@ -596,14 +596,14 @@ If you find that these options are not working, you can manually modify the keyb
 
 > 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
 
-You can add this to your keybindings.json: When hover is invisible, K is sent to nvim(show hover); when hover is
+The following keybinding is set by default: When hover is invisible, K is sent to nvim(show hover); when hover is
 visible, press K again to focus the hover widget.
 
 ```json
 {
     "command": "editor.action.showHover",
     "key": "shift+k",
-    "when": "editorTextFocus && editorHoverVisible && neovim.mode == normal"
+    "when": "neovim.init && neovim.mode == normal && editorTextFocus && editorHoverVisible"
 }
 ```
 

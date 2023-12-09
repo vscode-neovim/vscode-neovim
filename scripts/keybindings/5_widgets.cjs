@@ -217,6 +217,11 @@ const keybinds = [
 
     // #region Hover Widget
     {
+        command: "editor.action.showHover",
+        key: "shift+k",
+        when: "neovim.init && neovim.mode == normal && editorTextFocus && editorHoverVisible",
+    },
+    {
         command: "editor.action.pageDownHover",
         key: "ctrl+f",
         when: "editorHoverFocused",
