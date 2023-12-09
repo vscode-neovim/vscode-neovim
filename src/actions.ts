@@ -1,6 +1,6 @@
 import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
-import { ConfigurationTarget, Disposable, Range, commands, window, workspace } from "vscode";
+import vscode, { ConfigurationTarget, Disposable, Range, commands, window, workspace } from "vscode";
 
 import { disposeAll, rangesToSelections } from "./utils";
 
@@ -127,6 +127,8 @@ class ActionManager implements Disposable {
                 editor.selections = rangesToSelections(ranges, editor.document);
             }
         });
+        this.add("clipboard_read", () => vscode.env.clipboard.readText());
+        this.add("clipboard_write", (text: string) => vscode.env.clipboard.writeText(text));
     }
 
     private initHooks() {
