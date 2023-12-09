@@ -1,5 +1,23 @@
 # Change Log
 
+## [1.3.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.2.0...v1.3.0) (2023-12-09)
+
+
+### Features
+
+* Add clipboard provider `g:vscode_clipboard` ([#1688](https://github.com/vscode-neovim/vscode-neovim/issues/1688)) ([c5346c8](https://github.com/vscode-neovim/vscode-neovim/commit/c5346c8c185840655291bd0b50daecf36b00285d))
+* Allow specifying WSL distro by wslDistribution ([#1693](https://github.com/vscode-neovim/vscode-neovim/issues/1693)) ([6c5dbcb](https://github.com/vscode-neovim/vscode-neovim/commit/6c5dbcb68a00ae2df29e61bdf91f9bf15987564d))
+* **keybindings:** add keybindings for output panel ([#1685](https://github.com/vscode-neovim/vscode-neovim/issues/1685)) ([12502e0](https://github.com/vscode-neovim/vscode-neovim/commit/12502e0a3d20cc8f0d21be7f121b34ce6c8bc815))
+* **keybindings:** Add keybindings for the hover widget ([#1694](https://github.com/vscode-neovim/vscode-neovim/issues/1694)) ([68f0df8](https://github.com/vscode-neovim/vscode-neovim/commit/68f0df895bd9a08a35c692432de76e2c8cf4f1ee))
+
+
+### Bug Fixes
+
+* fix setting client info in wsl ([#1687](https://github.com/vscode-neovim/vscode-neovim/issues/1687)) ([11e3cab](https://github.com/vscode-neovim/vscode-neovim/commit/11e3cab75b64c0075a96c1c6558061e5d568882f))
+* fix sourcing our runtime files ([#1679](https://github.com/vscode-neovim/vscode-neovim/issues/1679)) ([567fea5](https://github.com/vscode-neovim/vscode-neovim/commit/567fea5674a24673ea2e48db528571b9ace72946))
+* set correct cwd for WSL ([#1689](https://github.com/vscode-neovim/vscode-neovim/issues/1689)) ([240e8f9](https://github.com/vscode-neovim/vscode-neovim/commit/240e8f9d0b4b14224242d86c3487cc6bd8a22fa0))
+* **test:** upgrade @vscode/test-electron ([#1690](https://github.com/vscode-neovim/vscode-neovim/issues/1690)) ([d3b25fd](https://github.com/vscode-neovim/vscode-neovim/commit/d3b25fd9b186a817a5232a6a524e0deeb238b6cf))
+
 ## [1.2.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.1.5...v1.2.0) (2023-12-04)
 
 
