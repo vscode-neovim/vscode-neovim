@@ -592,6 +592,32 @@ If you find that these options are not working, you can manually modify the keyb
 | <kbd>a</kbd> | `explorer.newFile`    |
 | <kbd>A</kbd> | `explorer.newFolder`  |
 
+### Hover widget manipulation
+
+> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
+
+The following keybinding is set by default: When hover is invisible, K is sent to nvim(show hover); when hover is
+visible, press K again to focus the hover widget.
+
+```json
+{
+    "command": "editor.action.showHover",
+    "key": "shift+k",
+    "when": "neovim.init && neovim.mode == normal && editorTextFocus && editorHoverVisible"
+}
+```
+
+| Key            | VSCode Command                   |
+| -------------- | -------------------------------- |
+| <kbd>h</kbd>   | `editor.action.scrollLeftHover`  |
+| <kbd>j</kbd>   | `editor.action.scrollDownHover`  |
+| <kbd>k</kbd>   | `editor.action.scrollUpHover`    |
+| <kbd>l</kbd>   | `editor.action.scrollRightHover` |
+| <kbd>gg</kbd>  | `editor.action.goToTopHover`     |
+| <kbd>G</kbd>   | `editor.action.goToBottomHover`  |
+| <kbd>C-f</kbd> | `editor.action.pageDownHover`    |
+| <kbd>C-b</kbd> | `editor.action.pageUpHover`      |
+
 ### File management
 
 The extension aliases various Nvim commands (`:edit`, `:enew`, `:find`, `:write`, `:saveas`, `:wall`, `:quit`, etc.) to
