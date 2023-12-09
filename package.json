@@ -1885,6 +1885,60 @@
             },
             {
                 "command": "vscode-neovim.send",
+                "key": "1",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "1"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "2",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "2"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "3",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "3"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "4",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "4"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "5",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "5"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "6",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "6"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "7",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "7"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "8",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "8"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "9",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "9"
+            },
+            {
+                "command": "vscode-neovim.send",
                 "key": "'",
                 "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
                 "args": "'"
@@ -1948,6 +2002,18 @@
                 "key": "ctrl+v",
                 "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
                 "args": "<C-v>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "backspace",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "<BS>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "delete",
+                "when": "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
+                "args": "<Del>"
             }
         ]
     },

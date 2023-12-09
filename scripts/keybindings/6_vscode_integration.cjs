@@ -35,7 +35,7 @@ for (const [key, cmd] of [
 // - Why do we send these keys?
 //    This allows us to easily view the output content and copy it, such as error messages.
 for (const item of [
-    ..."abcdefghijklmnopqrstuvwxyz0';/",
+    ..."abcdefghijklmnopqrstuvwxyz0123456789';/",
     ["shift+'", '"'],
     ["shift+;", ":"],
     ["shift+4", "$"],
@@ -44,6 +44,8 @@ for (const item of [
     ["shift+v", "V"],
     ["shift+y", "Y"],
     ["ctrl+v", "<C-v>"],
+    ["backspace", "<BS>"],
+    ["delete", "<Del>"],
 ]) {
     const [key, arg] = Array.isArray(item) ? item : [item, item];
     add(
