@@ -273,6 +273,11 @@
                     "default": false,
                     "markdownDescription": "Use neovim installed in [default WSL distro](https://learn.microsoft.com/en-us/windows/wsl/basic-commands#run-a-specific-linux-distribution-from-powershell-or-cmd). If you enable this setting, specify the path to the neovim executable installed in WSL `neovimExecutablePaths.linux` setting. "
                 },
+                "vscode-neovim.wslDistribution": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Specify the WSL distribution to run neovim in. Use default WSL distro if empty. Use wsl.exe --list to see available distros"
+                },
                 "vscode-neovim.revealCursorScrollLine": {
                     "type": "boolean",
                     "default": false,
