@@ -249,6 +249,8 @@ local vscode = require('vscode-neovim')
    usage
 9. `vscode.get_status_item`: Gets a vscode statusbar item. Properties can be assigned, which magically updates the
    statusbar item.
+10. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
+    `:h g:clipboard` for more details. Usage: `let g:clipboard = g:vscode_clipboard`
 
 ### vscode.action(name, opts)
 
