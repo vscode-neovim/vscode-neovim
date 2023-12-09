@@ -214,6 +214,49 @@ const keybinds = [
         command: "workbench.action.focusActiveEditorGroup",
         when: "terminalFocus",
     },
+
+    // #region Hover Widget
+    {
+        command: "editor.action.pageDownHover",
+        key: "ctrl+f",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.pageUpHover",
+        key: "ctrl+b",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.scrollDownHover",
+        key: "j",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.scrollUpHover",
+        key: "k",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.scrollLeftHover",
+        key: "h",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.scrollRightHover",
+        key: "l",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.goToTopHover",
+        key: "g g",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.goToBottomHover",
+        key: "shift+g",
+        when: "editorHoverFocused",
+    },
+    // #endregion
 ];
 
 module.exports = keybinds;
