@@ -33,6 +33,7 @@ vim.g.vscode_clipboard = {
     ["+"] = paste,
     ["*"] = paste,
   },
+  cache_enabled = 0,
 }
 
 -- The user also can override g:clipboard in the init config
