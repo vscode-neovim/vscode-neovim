@@ -1,9 +1,8 @@
 import { ChildProcess, execSync, spawn } from "child_process";
-import { readFile } from "fs/promises";
 import path from "path";
 
 import { attach, NeovimClient } from "neovim";
-import vscode, { type ExtensionContext, Range, window } from "vscode";
+import vscode, { Range, window, type ExtensionContext } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
