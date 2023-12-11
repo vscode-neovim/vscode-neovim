@@ -268,4 +268,16 @@ function M.start_visual(buf, anchor, active)
   api.nvim_feedkeys((v == "V" or v == "\x16") and "gvv" or "gv", "n", false)
 end
 
+---Translate from a Windows path to a WSL path
+---@param path string
+---@return string
+function M.wslpath(path)
+  local ok, ret = pcall(vim.fn.system, { "wslpath", path })
+  if not ok then
+    vim.notify(ret, vim.log.levels.ERROR)
+    return path
+  end
+  return vim.trim(ret)
+end
+
 return M

@@ -572,6 +572,13 @@ export class BufferManager implements Disposable {
 
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
+        // We don't care about the name of the buffer if it's not a file
+        const bufname =
+            docUri.scheme === "file"
+                ? config.useWsl
+                    ? await actions.lua("wslpath", docUri.fsPath)
+                    : docUri.fsPath
+                : docUri.toString();
 
         const requests: [string, unknown[]][] = [
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
@@ -582,8 +589,7 @@ export class BufferManager implements Disposable {
             ["nvim_buf_set_var", [bufId, "vscode_editor_options", makeEditorOptionsVariable(editor?.options)]],
             ["nvim_buf_set_var", [bufId, "vscode_uri", docUri.toString()]],
             ["nvim_buf_set_var", [bufId, "vscode_uri_data", docUri.toJSON()]],
-            // We don't care about the name of the buffer if it's not a file
-            ["nvim_buf_set_name", [bufId, docUri.scheme === "file" ? docUri.fsPath : docUri.toString()]],
+            ["nvim_buf_set_name", [bufId, bufname]],
             ["nvim_buf_set_option", [bufId, "modifiable", !this.isExternalTextDocument(document)]],
             // force nofile, just in case if the buffer was created externally
             ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],

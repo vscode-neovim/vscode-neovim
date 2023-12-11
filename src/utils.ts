@@ -1,3 +1,5 @@
+import { execSync } from "child_process";
+
 import { calcPatch } from "fast-myers-diff";
 import { NeovimClient } from "neovim";
 import wcwidth from "ts-wcwidth";
@@ -13,6 +15,7 @@ import {
     commands,
 } from "vscode";
 
+import { config } from "./config";
 import { ILogger } from "./logger";
 
 /**
@@ -409,3 +412,14 @@ export function rangesToSelections(
             : new Selection(range.start, range.end);
     });
 }
+
+/**
+ * Translate from a Windows path to a WSL path
+ * @param path Windows path
+ * @returns WSL path
+ */
+export const wslpath = (path: string) => {
+    // execSync returns a newline character at the end
+    const distro = config.wslDistribution.length ? `-d ${config.wslDistribution}` : "";
+    return execSync(`C:\\Windows\\system32\\wsl.exe ${distro} wslpath '${path}'`).toString().trim();
+};

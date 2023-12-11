@@ -1,4 +1,4 @@
-import { ChildProcess, execSync, spawn } from "child_process";
+import { ChildProcess, spawn } from "child_process";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 
@@ -21,7 +21,7 @@ import { ModeManager } from "./mode_manager";
 import { MultilineMessagesManager } from "./multiline_messages_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
-import { disposeAll, findLastEvent, VSCodeContext } from "./utils";
+import { disposeAll, findLastEvent, VSCodeContext, wslpath } from "./utils";
 import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
@@ -62,12 +62,6 @@ export class MainController implements vscode.Disposable {
     public viewportManager!: ViewportManager;
 
     public constructor(private extContext: ExtensionContext) {
-        const wslpath = (path: string) => {
-            // execSync returns a newline character at the end
-            const distro = config.wslDistribution.length ? `-d ${config.wslDistribution}` : "";
-            return execSync(`C:\\Windows\\system32\\wsl.exe ${distro} wslpath '${path}'`).toString().trim();
-        };
-
         let extensionPath = extContext.extensionPath.replace(/\\/g, "\\\\");
         if (config.useWsl) {
             extensionPath = wslpath(extensionPath);
