@@ -41,11 +41,16 @@ import { ManualPromise, callAtomic, convertByteNumToCharNum, disposeAll, wait } 
 
 const logger = createLogger("BufferManager");
 
-const BUFFER_NAME_PREFIX = "__vscode_neovim__-";
-
 const BUFFER_SCHEME = "vscode-neovim";
 
-function makeEditorOptionsVariable(options: TextEditorOptions) {
+function makeEditorOptionsVariable(options?: TextEditorOptions) {
+    if (!options) {
+        const editorConfig = workspace.getConfiguration("editor");
+        const tabSize = editorConfig.get<number>("tabSize")!;
+        const insertSpaces = editorConfig.get<boolean>("insertSpaces")!;
+        const lineNumbers = editorConfig.get<"on" | "off" | "relative">("lineNumbers")!;
+        return { tabSize, insertSpaces, lineNumbers };
+    }
     const { tabSize, insertSpaces, lineNumbers } = options;
     return {
         tabSize,
@@ -276,51 +281,53 @@ export class BufferManager implements Disposable {
     }
 
     private async handleExternalBuffer(data: EventBusData<"external-buffer">) {
-        const [name, idStr, expandTab, tabStop] = data;
-        if (name.startsWith(`${BUFFER_NAME_PREFIX}output:`)) {
-            return;
-        }
-        const id = parseInt(idStr, 10);
-        if (!(name && this.isVscodeUriName(name))) {
-            logger.debug(`Attaching new external buffer: '${name}', id: ${id}`);
-            if (id === 1) {
-                logger.debug(`${id} is the first neovim buffer, skipping`);
+        const [bufferInfo, expandTab, tabStop] = data;
+        const {
+            name,
+            bufnr,
+            variables: { vscode_uri },
+        } = bufferInfo;
+
+        if (!vscode_uri) {
+            logger.debug(`Attaching new external buffer: '${name}', id: ${bufnr}`);
+            if (bufnr === 1) {
+                logger.debug(`${bufnr} is the first neovim buffer, skipping`);
                 return;
             }
-            await this.attachNeovimExternalBuffer(name, id, !!expandTab, tabStop);
-        } else if (name) {
-            const normalizedName = name.startsWith(BUFFER_NAME_PREFIX) ? name.substring(18) : name;
-            logger.debug(`Buffer request for ${normalizedName}, bufId: ${idStr}`);
-            try {
-                let doc = this.findDocFromUri(normalizedName);
-                if (!doc) {
-                    logger.debug(`Opening a doc: ${normalizedName}`);
-                    doc = await workspace.openTextDocument(Uri.parse(normalizedName, true));
-                }
-                if (!this.textDocumentToBufferId.has(doc)) {
-                    logger.debug(`No doc -> buffer mapping exists, assigning mapping and init buffer options`);
-                    const buffers = await this.client.buffers;
-                    const buf = buffers.find((b) => b.id === id);
-                    if (buf) {
-                        await this.initBufferForDocument(doc, buf);
-                    }
-                    this.textDocumentToBufferId.set(doc, id);
-                }
-                if (window.activeTextEditor?.document !== doc) {
-                    // this.skipJumpsForUris.set(normalizedNamee, true);
-                    const editor = await window.showTextDocument(doc, {
-                        // viewColumn: vscode.ViewColumn.Active,
-                        // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
-                        viewColumn: window.activeTextEditor ? window.activeTextEditor.viewColumn : ViewColumn.Active,
-                        preserveFocus: false,
-                        preview: false,
-                    });
-                    // force resync
-                    this.onDidChangeEditorOptions(editor);
-                }
-            } catch {
-                // todo: show error
+            await this.attachNeovimExternalBuffer(name, bufnr, !!expandTab, tabStop);
+            return;
+        }
+
+        const uri = Uri.parse(vscode_uri, true);
+        logger.debug(`Buffer request for ${uri.fsPath}, bufId: ${bufnr}`);
+        try {
+            let doc = this.findDocFromUri(uri.toString());
+            if (!doc) {
+                logger.debug(`Opening a doc: ${uri.fsPath}`);
+                doc = await workspace.openTextDocument(uri);
             }
+            if (!this.textDocumentToBufferId.has(doc)) {
+                logger.debug(`No doc -> buffer mapping exists, assigning mapping and init buffer options`);
+                const buffers = await this.client.buffers;
+                const buf = buffers.find((b) => b.id === bufnr);
+                if (buf) {
+                    await this.initBufferForDocument(doc, buf);
+                }
+                this.textDocumentToBufferId.set(doc, bufnr);
+            }
+            if (window.activeTextEditor?.document !== doc) {
+                const editor = await window.showTextDocument(doc, {
+                    // viewColumn: vscode.ViewColumn.Active,
+                    // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
+                    viewColumn: window.activeTextEditor ? window.activeTextEditor.viewColumn : ViewColumn.Active,
+                    preserveFocus: false,
+                    preview: false,
+                });
+                // force resync
+                this.onDidChangeEditorOptions(editor);
+            }
+        } catch {
+            // todo: show error
         }
     }
 
@@ -557,33 +564,12 @@ export class BufferManager implements Disposable {
 
     /**
      * Set buffer options from vscode document
-     * @param document
      */
     private async initBufferForDocument(document: TextDocument, buffer: Buffer, editor?: TextEditor): Promise<void> {
         const bufId = buffer.id;
-        logger.debug(`Init buffer for ${bufId}, doc: ${document.uri}`);
+        const { uri: docUri } = document;
+        logger.debug(`Init buffer for ${bufId}, doc: ${docUri}`);
 
-        // !In vscode same document can have different insertSpaces/tabSize settings per editor
-        // !however in neovim it's per buffer. We make assumption here that these settings are same for all editors
-        let editorOptions: TextEditorOptions;
-        if (editor) {
-            editorOptions = editor.options;
-        } else {
-            const editorConfig = workspace.getConfiguration("editor");
-            const tabSize = editorConfig.get<number>("tabSize")!;
-            const insertSpaces = editorConfig.get<boolean>("insertSpaces")!;
-            const lineNumbers = editorConfig.get<"on" | "off" | "relative">("lineNumbers")!;
-            editorOptions = {
-                tabSize,
-                insertSpaces,
-                lineNumbers:
-                    lineNumbers === "off"
-                        ? TextEditorLineNumbersStyle.Off
-                        : lineNumbers === "relative"
-                        ? TextEditorLineNumbersStyle.Relative
-                        : TextEditorLineNumbersStyle.On,
-            };
-        }
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
 
@@ -591,8 +577,13 @@ export class BufferManager implements Disposable {
             ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
             // set vscode controlled flag so we can check it neovim
             ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
-            ["nvim_buf_set_var", [bufId, "vscode_editor_options", makeEditorOptionsVariable(editorOptions)]],
-            ["nvim_buf_set_name", [bufId, BUFFER_NAME_PREFIX + document.uri.toString()]],
+            // In vscode same document can have different insertSpaces/tabSize settings per editor
+            // however in neovim it's per buffer. We make assumption here that these settings are same for all editors
+            ["nvim_buf_set_var", [bufId, "vscode_editor_options", makeEditorOptionsVariable(editor?.options)]],
+            ["nvim_buf_set_var", [bufId, "vscode_uri", docUri.toString()]],
+            ["nvim_buf_set_var", [bufId, "vscode_uri_data", docUri.toJSON()]],
+            // We don't care about the name of the buffer if it's not a file
+            ["nvim_buf_set_name", [bufId, docUri.scheme === "file" ? docUri.fsPath : docUri.toString()]],
             ["nvim_buf_set_option", [bufId, "modifiable", !this.isExternalTextDocument(document)]],
             // force nofile, just in case if the buffer was created externally
             ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
@@ -623,19 +614,6 @@ export class BufferManager implements Disposable {
             throw new Error(`Unable to create a new neovim window, code: ${win}`);
         }
         return win.id;
-    }
-
-    private isVscodeUriName(name: string): boolean {
-        if (/:\/\//.test(name)) {
-            return true;
-        }
-        if (name.startsWith("output:") || name.startsWith(`${BUFFER_NAME_PREFIX}output:`)) {
-            return true;
-        }
-        if (name.startsWith("/search-editor:") || name.startsWith(`${BUFFER_NAME_PREFIX}/search-editor:`)) {
-            return true;
-        }
-        return false;
     }
 
     private findPathFromFileName(name: string): string {

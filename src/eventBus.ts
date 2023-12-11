@@ -102,12 +102,18 @@ type RedrawEventArgs = (
 )[];
 // #endregion
 
+interface BufferInfo {
+    bufnr: number;
+    name: string;
+    variables: { vscode_uri?: string };
+}
+
 type EventsMapping = {
     // nvim
     redraw: RedrawEventArgs;
     // custom
     ["open-file"]: [string, 1 | 0 | "all"];
-    ["external-buffer"]: [string, string, number, number, number];
+    ["external-buffer"]: [BufferInfo, 1 | 0, number];
     ["window-changed"]: [number];
     ["mode-changed"]: [string];
     ["notify-recording"]: undefined;

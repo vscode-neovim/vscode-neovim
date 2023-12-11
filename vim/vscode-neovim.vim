@@ -75,25 +75,6 @@ function! VSCodeClearUndo(bufId)
     unlet oldlevels
 endfunction
 
-
-" This is called by extension when created new buffer
-function! s:onBufEnter(name, id)
-    if exists('b:vscode_temp') && b:vscode_temp
-        return
-    endif
-    set conceallevel=0
-    let tabstop = &tabstop
-    let isJumping = 0
-    if exists('g:isJumping')
-        let isJumping = g:isJumping
-    endif
-    call VSCodeExtensionNotify('external-buffer', a:name, a:id, 1, tabstop, isJumping)
-endfunction
-
-function! s:runFileTypeDetection()
-    doautocmd BufRead
-endfunction
-
 function! s:onInsertEnter()
     let reg = reg_recording()
     if !empty(reg)
@@ -115,11 +96,12 @@ execute 'source ' . s:currDir . '/vscode-motion.vim'
 augroup VscodeGeneral
     autocmd!
     " autocmd BufWinEnter,WinNew,WinEnter * :only
-    autocmd BufWinEnter * call <SID>onBufEnter(expand('<afile>'), expand('<abuf>'))
+    autocmd BufWinEnter * call VSCodeExtensionNotify('external-buffer', getbufinfo(bufnr())[0], &et, &ts)
     " Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
     " autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
     autocmd InsertEnter * call <SID>onInsertEnter()
-    autocmd BufAdd * call <SID>runFileTypeDetection()
+    " Trigger filetype detection
+    autocmd BufAdd * do BufRead
     " Looks like external windows are coming with "set wrap" set automatically, disable them
     " autocmd WinNew,WinEnter * :set nowrap
     autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
