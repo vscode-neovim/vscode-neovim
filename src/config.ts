@@ -160,10 +160,6 @@ export class Config implements Disposable {
     get NVIM_APPNAME() {
         return this.cfg.get("NVIM_APPNAME", "");
     }
-    get afterInitConfig(): string {
-        const config = this.cfg.get<string | string[]>("afterInitConfig", "");
-        return Array.isArray(config) ? config.join("\n") : config;
-    }
     get logPath() {
         return this.cfg.get("logPath", "");
     }

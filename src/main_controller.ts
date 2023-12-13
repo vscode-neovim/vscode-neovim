@@ -1,5 +1,4 @@
 import { ChildProcess, spawn } from "child_process";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 
 import { attach, NeovimClient } from "neovim";
@@ -201,13 +200,6 @@ export class MainController implements vscode.Disposable {
         // #1162
         if (!config.clean && config.neovimInitPath) {
             args.push("-u", config.neovimInitPath);
-        }
-        if (config.afterInitConfig.length) {
-            const storagePath = this.extContext.globalStorageUri.fsPath;
-            if (!existsSync(storagePath)) mkdirSync(storagePath, { recursive: true });
-            const vim = path.join(storagePath, "afterInitConfig.vim");
-            writeFileSync(vim, config.afterInitConfig, { encoding: "utf8" });
-            args.push("-c", `source ${config.useWsl ? wslpath(vim) : vim}`);
         }
         if (config.NVIM_APPNAME) {
             process.env.NVIM_APPNAME = config.NVIM_APPNAME;
