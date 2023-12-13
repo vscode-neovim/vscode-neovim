@@ -109,6 +109,8 @@ augroup VscodeGeneral
     autocmd WinEnter * call VSCodeExtensionNotify('window-changed', win_getid())
     " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.
     autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:runtimePath
+    " Source config "afterInitConfig"
+    autocmd VimEnter * call nvim_exec2(join(v:lua.require("vscode-neovim").get_config("vscode-neovim.afterInitConfig"), "\n"), {})
 augroup END
 
 
