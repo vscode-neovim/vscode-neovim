@@ -38,8 +38,8 @@ interface VSCodeActionOptions {
 }
 
 export class MainController implements vscode.Disposable {
-    private nvimProc: ChildProcess;
-    public client: NeovimClient;
+    private nvimProc!: ChildProcess;
+    public client!: NeovimClient;
 
     private disposables: vscode.Disposable[] = [];
 
@@ -61,8 +61,96 @@ export class MainController implements vscode.Disposable {
     public multilineMessagesManager!: MultilineMessagesManager;
     public viewportManager!: ViewportManager;
 
-    public constructor(private extContext: ExtensionContext) {
-        let extensionPath = extContext.extensionPath.replace(/\\/g, "\\\\");
+    public constructor(private extContext: ExtensionContext) {}
+
+    public async init(): Promise<void> {
+        const [cmd, args] = this.buildSpawnArgs();
+        logger.debug(`Spawning nvim: ${cmd} ${args.join(" ")}`);
+        this.nvimProc = spawn(cmd, args);
+        const spawnPromise = new Promise<void>((resolve, reject) => {
+            this.nvimProc.once("spawn", () => resolve());
+            this.nvimProc.once("close", (code, signal) => reject(`Neovim exited: ${code} ${signal}`));
+            this.nvimProc.once("error", (err) => reject(`Neovim spawn error: ${err.message}`));
+        });
+        await spawnPromise;
+        this.nvimProc.removeAllListeners();
+        this.nvimProc.on("close", (code, signal) => this._stop(`Neovim exited: ${code} ${signal}`));
+        this.nvimProc.on("error", (err) => this._stop(`Neovim spawn error: ${err.message}`));
+
+        logger.debug(`Attaching to neovim`);
+        this.client = attach({
+            proc: this.nvimProc,
+            options: {
+                logger: winstonCreateLogger({
+                    transports: [new loggerTransports.Console()],
+                    level: "error",
+                    exitOnError: false,
+                }),
+            },
+        });
+        this.client.on("disconnect", () => this._stop(`Neovim was disconnected`));
+        this.client.on("notification", this.onNeovimNotification);
+        this.client.on("request", this.onNeovimRequest);
+        this.setClientInfo();
+        await this.client.setVar("vscode_channel", await this.client.channelId);
+
+        // This is an exception. Should avoid doing this.
+        Object.defineProperty(actions, "client", { get: () => this.client, configurable: true });
+
+        this.disposables.push(
+            vscode.commands.registerCommand("_getNeovimClient", () => this.client),
+            vscode.commands.registerCommand("vscode-neovim.lua", async (lua) => {
+                if (!lua) {
+                    window.showWarningMessage("No lua code provided");
+                    return;
+                }
+                try {
+                    await this.client.lua(lua);
+                } catch (e) {
+                    logger.error(e instanceof Error ? e.message : e);
+                }
+            }),
+            (this.modeManager = new ModeManager()),
+            (this.typingManager = new TypingManager(this)),
+            (this.bufferManager = new BufferManager(this)),
+            (this.viewportManager = new ViewportManager(this)),
+            (this.cursorManager = new CursorManager(this)),
+            (this.commandsController = new CommandsController(this)),
+            (this.highlightManager = new HighlightManager(this)),
+            (this.changeManager = new DocumentChangeManager(this)),
+            (this.commandLineManager = new CommandLineManager(this)),
+            (this.statusLineManager = new StatusLineManager(this)),
+            (this.multilineMessagesManager = new MultilineMessagesManager()),
+        );
+
+        logger.debug(`UIAttach`);
+        // !Attach after setup of notifications, otherwise we can get blocking call and stuck
+        await this.client.uiAttach(config.neovimViewportWidth, 100, {
+            rgb: true,
+            // override: true,
+            ext_cmdline: true,
+            ext_linegrid: true,
+            ext_hlstate: true,
+            ext_messages: true,
+            ext_multigrid: true,
+            ext_popupmenu: true,
+            ext_tabline: true,
+            ext_wildmenu: true,
+        });
+
+        await this.bufferManager.forceSyncLayout();
+
+        await VSCodeContext.set("neovim.init", true);
+        logger.debug(`Init completed`);
+    }
+
+    private _stop(msg: string) {
+        logger.error(msg);
+        vscode.commands.executeCommand("vscode-neovim.stop");
+    }
+
+    private buildSpawnArgs(): [string, string[]] {
+        let extensionPath = this.extContext.extensionPath.replace(/\\/g, "\\\\");
         if (config.useWsl) {
             extensionPath = wslpath(extensionPath);
         }
@@ -131,82 +219,7 @@ export class MainController implements vscode.Disposable {
                 process.env.WSLENV = "NVIM_APPNAME/u";
             }
         }
-
-        logger.debug(`Spawning nvim, ${args.join(" ")}`);
-        this.nvimProc = spawn(args[0], args.slice(1));
-        this.nvimProc.on("close", (code) => logger.error(`Neovim exited with code: ${code}`));
-        this.nvimProc.on("error", (err) =>
-            logger.error(`Neovim spawn error: ${err.message}. Check if the path is correct.`),
-        );
-        logger.debug(`Attaching to neovim`);
-        this.client = attach({
-            proc: this.nvimProc,
-            options: {
-                logger: winstonCreateLogger({
-                    transports: [new loggerTransports.Console()],
-                    level: "error",
-                    exitOnError: false,
-                }),
-            },
-        });
-        // This is an exception. Should avoid doing this.
-        Object.defineProperty(actions, "client", { get: () => this.client, configurable: true });
-    }
-
-    public async init(): Promise<void> {
-        logger.debug(`Init, attaching to neovim notifications`);
-        this.client.on("disconnect", () => logger.error(`Neovim was disconnected`));
-        this.client.on("notification", this.onNeovimNotification);
-        this.client.on("request", this.onNeovimRequest);
-        this.setClientInfo();
-        const channel = await this.client.channelId;
-        await this.client.setVar("vscode_channel", channel);
-
-        this.disposables.push(
-            vscode.commands.registerCommand("_getNeovimClient", () => this.client),
-            vscode.commands.registerCommand("vscode-neovim.lua", async (lua) => {
-                if (!lua) {
-                    window.showWarningMessage("No lua code provided");
-                    return;
-                }
-                try {
-                    await this.client.lua(lua);
-                } catch (e) {
-                    logger.error(e instanceof Error ? e.message : e);
-                }
-            }),
-            (this.modeManager = new ModeManager()),
-            (this.typingManager = new TypingManager(this)),
-            (this.bufferManager = new BufferManager(this)),
-            (this.viewportManager = new ViewportManager(this)),
-            (this.cursorManager = new CursorManager(this)),
-            (this.commandsController = new CommandsController(this)),
-            (this.highlightManager = new HighlightManager(this)),
-            (this.changeManager = new DocumentChangeManager(this)),
-            (this.commandLineManager = new CommandLineManager(this)),
-            (this.statusLineManager = new StatusLineManager(this)),
-            (this.multilineMessagesManager = new MultilineMessagesManager()),
-        );
-
-        logger.debug(`UIAttach`);
-        // !Attach after setup of notifications, otherwise we can get blocking call and stuck
-        await this.client.uiAttach(config.neovimViewportWidth, 100, {
-            rgb: true,
-            // override: true,
-            ext_cmdline: true,
-            ext_linegrid: true,
-            ext_hlstate: true,
-            ext_messages: true,
-            ext_multigrid: true,
-            ext_popupmenu: true,
-            ext_tabline: true,
-            ext_wildmenu: true,
-        });
-
-        await this.bufferManager.forceSyncLayout();
-
-        await VSCodeContext.set("neovim.init", true);
-        logger.debug(`Init completed`);
+        return [args[0], args.slice(1)];
     }
 
     private async runAction(action: string, options: Omit<VSCodeActionOptions, "callback">): Promise<any> {

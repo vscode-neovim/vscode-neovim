@@ -12,22 +12,6 @@ const logger = createLogger(EXT_ID);
 
 const disposables: vscode.Disposable[] = [];
 export async function activate(context: vscode.ExtensionContext, isRestart = false): Promise<void> {
-    if (!isRestart) verifyExperimentalAffinity();
-
-    config.init();
-    rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
-    eventBus.init();
-    actions.init();
-    context.subscriptions.push(config, rootLogger, eventBus, actions);
-
-    try {
-        const plugin = new MainController(context);
-        context.subscriptions.push(plugin);
-        await plugin.init();
-    } catch (e) {
-        vscode.window.showErrorMessage(`Unable to init vscode-neovim: ${(e as Error).message}`);
-    }
-
     if (!isRestart) {
         disposables.push(
             vscode.commands.registerCommand("vscode-neovim.restart", async () => {
@@ -40,6 +24,21 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
                 disposeAll(context.subscriptions);
             }),
         );
+        verifyExperimentalAffinity();
+    }
+
+    config.init();
+    rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
+    eventBus.init();
+    actions.init();
+    context.subscriptions.push(config, rootLogger, eventBus, actions);
+
+    try {
+        const plugin = new MainController(context);
+        context.subscriptions.push(plugin);
+        await plugin.init();
+    } catch (e) {
+        vscode.window.showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`);
     }
 }
 
