@@ -123,6 +123,8 @@ export class BufferManager implements Disposable {
         this.disposables.push(
             window.onDidChangeVisibleTextEditors(this.onEditorLayoutChanged),
             window.onDidChangeActiveTextEditor(this.onEditorLayoutChanged),
+            workspace.onDidCloseTextDocument(this.onEditorLayoutChanged),
+            workspace.onDidCloseNotebookDocument(this.onEditorLayoutChanged),
             window.onDidChangeTextEditorOptions((e) => this.onDidChangeEditorOptions(e.textEditor)),
             workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider),
             eventBus.on("redraw", this.handleRedraw, this),
