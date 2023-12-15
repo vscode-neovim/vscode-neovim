@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.4.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.3.0...v1.4.0) (2023-12-15)
+
+
+### Features
+
+* Add option `afterInitConfig` ([#1695](https://github.com/vscode-neovim/vscode-neovim/issues/1695)) ([ec2b287](https://github.com/vscode-neovim/vscode-neovim/commit/ec2b287f891ae34935a1d4fff5602ae1fcbfd687))
+
+
+### Bug Fixes
+
+* auto stop extension when starting nvim failed ([#1703](https://github.com/vscode-neovim/vscode-neovim/issues/1703)) ([67e10ad](https://github.com/vscode-neovim/vscode-neovim/commit/67e10ad9db4a26995c39d670cd6478274d0dd5a8))
+* **buffer:** prefer real path as buffer name ([#1699](https://github.com/vscode-neovim/vscode-neovim/issues/1699)) ([eff13f2](https://github.com/vscode-neovim/vscode-neovim/commit/eff13f2809f7992c48facb895e835ef214478d01))
+* **buffer:** sync layout on doc closed ([#1706](https://github.com/vscode-neovim/vscode-neovim/issues/1706)) ([81951e7](https://github.com/vscode-neovim/vscode-neovim/commit/81951e70daebbe4d1448ffec1d02192d69e526ad))
+
 ## [1.3.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.2.0...v1.3.0) (2023-12-09)
 
 
