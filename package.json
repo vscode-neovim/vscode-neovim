@@ -457,18 +457,6 @@
             {
                 "command": "vscode-neovim.ctrl-y",
                 "title": "Neovim: ctrl-y"
-            },
-            {
-                "command": "vscode-neovim.shift-m",
-                "title": "Neovim: shift-m"
-            },
-            {
-                "command": "vscode-neovim.shift-l",
-                "title": "Neovim: shift-l"
-            },
-            {
-                "command": "vscode-neovim:shift-h",
-                "title": "Neovim: shift-h"
             }
         ],
         "keybindings": [
