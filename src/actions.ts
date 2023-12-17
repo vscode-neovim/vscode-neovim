@@ -129,6 +129,12 @@ class ActionManager implements Disposable {
         });
         this.add("clipboard_read", () => vscode.env.clipboard.readText());
         this.add("clipboard_write", (text: string) => vscode.env.clipboard.writeText(text));
+        this.add("ui_select", (args: { items: vscode.QuickPickItem[]; opts: vscode.QuickPickOptions }) => {
+            return vscode.window.showQuickPick(args.items, args.opts);
+        });
+        this.add("ui_input", (args: { opts: vscode.InputBoxOptions }) => {
+            return vscode.window.showInputBox(args.opts);
+        });
     }
 
     private initHooks() {
