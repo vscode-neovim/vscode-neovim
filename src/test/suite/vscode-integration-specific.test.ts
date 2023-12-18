@@ -533,26 +533,18 @@ describe("VSCode integration specific stuff", () => {
     });
 
     it("vim.ui.select works", async () => {
-        await openTextDocument({ content: "" });
-
-        // trigger vim.ui.select - don't wait on it, otherwise we cannot issue subsequent commands
-        const p1 = client.lua(`
+        await client.lua(`
             vim.ui.select({ 'red', 'green', 'blue' }, {}, function(item, idx)
                 vim.g._ret_item = item
                 vim.g._ret_idx = idx
             end)
         `);
         // wait enough time for it to open
-        await wait(200);
-
+        await wait(100);
         // select the last item
         await vscode.commands.executeCommand("workbench.action.quickOpenNavigateNext");
         await vscode.commands.executeCommand("workbench.action.quickOpenNavigateNext");
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
-
-        // wait for the dialog to close
-        await p1;
-
         // check the results
         const actual_item = await client.getVar("_ret_item");
         const actual_idx = await client.getVar("_ret_idx");
@@ -561,10 +553,7 @@ describe("VSCode integration specific stuff", () => {
     });
 
     it("vim.ui.select with format_item works", async () => {
-        await openTextDocument({ content: "" });
-
-        // trigger vim.ui.select - don't wait on it, otherwise we cannot issue subsequent commands
-        const p1 = client.lua(`
+        await client.lua(`
             vim.ui.select({{ label = 'apple', detail = 'red' }, { label = 'avocado', detail = 'green' }}, {
                 format_item = function(item)
                     return item.label
@@ -575,14 +564,9 @@ describe("VSCode integration specific stuff", () => {
             end)
         `);
         // wait enough time for it to open
-        await wait(200);
-
+        await wait(100);
         // select the first item
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
-
-        // wait for the dialog to close
-        await p1;
-
         // check the results
         const actual_item = await client.getVar("_ret_item");
         const actual_idx = await client.getVar("_ret_idx");
@@ -591,24 +575,16 @@ describe("VSCode integration specific stuff", () => {
     });
 
     it("vim.ui.select cancel returns nil", async () => {
-        await openTextDocument({ content: "" });
-
-        // trigger vim.ui.select - don't wait on it, otherwise we cannot issue subsequent commands
-        const p1 = client.lua(`
+        await client.lua(`
             vim.ui.select({ 'red', 'green', 'blue' }, {}, function(item, idx)
                 vim.g._ret_item = item
                 vim.g._ret_idx = idx
             end)
         `);
         // wait enough time for it to open
-        await wait(200);
-
+        await wait(100);
         // cancel the dialog
         await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
-
-        // wait for the dialog to close
-        await p1;
-
         // check the results
         const actual_item = await client.getVar("_ret_item");
         const actual_idx = await client.getVar("_ret_idx");
@@ -617,69 +593,45 @@ describe("VSCode integration specific stuff", () => {
     });
 
     it("vim.ui.input works", async () => {
-        await openTextDocument({ content: "" });
-
-        // trigger vim.ui.input - don't wait on it, otherwise we cannot issue subsequent commands
-        const p1 = client.lua(`
+        await client.lua(`
             vim.ui.input({ prompt = 'Enter a value: ', default = 'test' }, function(input)
                 vim.g._res = input
             end)
         `);
         // wait enough time for it to open
-        await wait(200);
-
+        await wait(100);
         // confirm the value
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
-
-        // wait for the dialog to close
-        await p1;
-
         // check the results
         const actual_input = await client.getVar("_res");
         assert.strictEqual(actual_input, "test");
     });
 
     it("vim.ui.input empty not nil", async () => {
-        await openTextDocument({ content: "" });
-
-        // trigger vim.ui.input - don't wait on it, otherwise we cannot issue subsequent commands
-        const p1 = client.lua(`
+        await client.lua(`
             vim.ui.input({ prompt = 'Enter a value: ' }, function(input)
                 vim.g._res = input
             end)
         `);
         // wait enough time for it to open
-        await wait(200);
-
+        await wait(100);
         // confirm the value
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
-
-        // wait for the dialog to close
-        await p1;
-
         // check the results
         const actual_input = await client.getVar("_res");
         assert.strictEqual(actual_input, "");
     });
 
     it("vim.ui.input cancel returns nil", async () => {
-        await openTextDocument({ content: "" });
-
-        // trigger vim.ui.select - don't wait on it, otherwise we cannot issue subsequent commands
-        const p1 = client.lua(`
+        await client.lua(`
             vim.ui.input({ prompt = 'Enter a value: ' }, function(input)
                 vim.g._res = input
             end)
         `);
         // wait enough time for it to open
-        await wait(200);
-
+        await wait(100);
         // cancel the dialog
-        await sendEscapeKey();
-
-        // wait for the dialog to close
-        await p1;
-
+        await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
         // check the results
         const actual_input = await client.getVar("_res");
         assert.strictEqual(actual_input, null);
