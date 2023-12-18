@@ -568,9 +568,11 @@ describe("VSCode integration specific stuff", () => {
         // select the first item
         await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
         // check the results
-        const actual_item = await client.getVar("_ret_item");
+        const actual_item = (await client.getVar("_ret_item")) as { label: string; detail: string };
         const actual_idx = await client.getVar("_ret_idx");
-        assert.strictEqual(actual_item, "apple");
+        assert.ok(typeof actual_item === "object");
+        assert.strictEqual(actual_item.label, "apple");
+        assert.strictEqual(actual_item.detail, "red");
         assert.strictEqual(actual_idx, 1);
     });
 
