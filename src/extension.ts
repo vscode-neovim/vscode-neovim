@@ -38,7 +38,13 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         context.subscriptions.push(plugin);
         await plugin.init();
     } catch (e) {
-        vscode.window.showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`);
+        vscode.window
+            .showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`, "Restart")
+            .then((value) => {
+                if (value == "Restart") {
+                    vscode.commands.executeCommand("vscode-neovim.restart");
+                }
+            });
     }
 }
 
