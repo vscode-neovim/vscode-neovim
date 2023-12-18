@@ -73,7 +73,7 @@ local function vscode_ui_select(items, opts, on_choice)
     callback = function(err, res)
       -- distinguish between success and cancelled
       if not err and type(res) == "table" and res.idx then
-        on_choice(res.label, res.idx)
+        on_choice(items[res.idx], res.idx)
       else
         on_choice(nil, nil)
       end
@@ -105,7 +105,7 @@ end
 local function vscode_ui_input(opts, on_confirm)
   -- validate parameters
   vim.validate({
-    on_confirm = { on_confirm, 'function', false },
+    on_confirm = { on_confirm, "function", false },
   })
   opts = opts or {}
 
