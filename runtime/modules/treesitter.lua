@@ -14,7 +14,7 @@ vim.api.nvim_create_autocmd({ "TextChanged", "InsertLeave" }, {
             vim.treesitter.get_parser():parse()
           end)
         end
-      end, 500)
+      end, 300)
     end
   end)(),
 })
