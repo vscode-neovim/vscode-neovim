@@ -45,9 +45,9 @@ local function vscode_ui_select(items, opts, on_choice)
   opts = opts or {}
 
   -- set sane defaults
-  opts.prompt = vim.F.if_nil(opts.prompt, "Select one of")
-  opts.format_item = vim.F.if_nil(opts.format_item, tostring)
-  opts.kind = vim.F.if_nil(opts.prompt, "string")
+  opts.prompt = opts.prompt or "Select one of"
+  opts.format_item = opts.format_item or tostring
+  opts.kind = opts.prompt or "string"
 
   -- fill the vscode datastructures
   local vscode_items = {}
@@ -110,8 +110,8 @@ local function vscode_ui_input(opts, on_confirm)
   opts = opts or {}
 
   -- set sane defaults
-  opts.prompt = vim.F.if_nil(opts.prompt, "Enter a value")
-  opts.default = vim.F.if_nil(opts.default, "")
+  opts.prompt = opts.prompt or "Enter a value"
+  opts.default = opts.default or ""
 
   -- fill the vscode datastructures
   local vscode_opts = {
