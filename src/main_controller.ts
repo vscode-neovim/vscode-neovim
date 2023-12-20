@@ -2,7 +2,7 @@ import { ChildProcess, spawn } from "child_process";
 import path from "path";
 
 import { attach, NeovimClient } from "neovim";
-import vscode, { Range, window, type ExtensionContext } from "vscode";
+import vscode, { Disposable, Range, window, type ExtensionContext } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
@@ -66,6 +66,12 @@ export class MainController implements vscode.Disposable {
         const [cmd, args] = this.buildSpawnArgs();
         logger.debug(`Spawning nvim: ${cmd} ${args.join(" ")}`);
         this.nvimProc = spawn(cmd, args);
+        this.disposables.push(
+            new Disposable(() => {
+                this.nvimProc.removeAllListeners();
+                this.nvimProc.kill();
+            }),
+        );
         const spawnPromise = new Promise<void>((resolve, reject) => {
             this.nvimProc.once("spawn", () => resolve());
             this.nvimProc.once("close", (code, signal) => reject(`Neovim exited: ${code} ${signal}`));
@@ -87,6 +93,12 @@ export class MainController implements vscode.Disposable {
                 }),
             },
         });
+        this.disposables.push(
+            new Disposable(() => {
+                this.client.removeAllListeners();
+                this.client.quit();
+            }),
+        );
         this.client.on("disconnect", () => this._stop(`Neovim was disconnected`));
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.onNeovimRequest);
@@ -144,8 +156,10 @@ export class MainController implements vscode.Disposable {
     }
 
     private _stop(msg: string) {
-        logger.error(msg);
         vscode.commands.executeCommand("vscode-neovim.stop");
+        vscode.window.showErrorMessage(msg, "Restart").then((value) => {
+            if (value == "Restart") vscode.commands.executeCommand("vscode-neovim.restart");
+        });
     }
 
     private buildSpawnArgs(): [string, string[]] {
@@ -335,8 +349,5 @@ export class MainController implements vscode.Disposable {
 
     dispose() {
         disposeAll(this.disposables);
-        this.nvimProc.removeAllListeners();
-        this.client.removeAllListeners();
-        this.client.quit();
     }
 }

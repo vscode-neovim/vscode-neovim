@@ -581,16 +581,17 @@ If you find that these options are not working, you can manually modify the keyb
 
 > 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
 
-| Key          | VSCode Command        |
-| ------------ | --------------------- |
-| <kbd>r</kbd> | `renameFile`          |
-| <kbd>d</kbd> | `deleteFile`          |
-| <kbd>y</kbd> | `filesExplorer.copy`  |
-| <kbd>x</kbd> | `filesExplorer.cut`   |
-| <kbd>p</kbd> | `filesExplorer.paste` |
-| <kbd>v</kbd> | `explorer.openToSide` |
-| <kbd>a</kbd> | `explorer.newFile`    |
-| <kbd>A</kbd> | `explorer.newFolder`  |
+| Key          | VSCode Command                                |
+| ------------ | --------------------------------------------- |
+| <kbd>r</kbd> | `renameFile`                                  |
+| <kbd>d</kbd> | `deleteFile`                                  |
+| <kbd>y</kbd> | `filesExplorer.copy`                          |
+| <kbd>x</kbd> | `filesExplorer.cut`                           |
+| <kbd>p</kbd> | `filesExplorer.paste`                         |
+| <kbd>v</kbd> | `explorer.openToSide`                         |
+| <kbd>a</kbd> | `explorer.newFile`                            |
+| <kbd>A</kbd> | `explorer.newFolder`                          |
+| <kbd>R</kbd> | `workbench.files.action.refreshFilesExplorer` |
 
 ### Hover widget manipulation
 

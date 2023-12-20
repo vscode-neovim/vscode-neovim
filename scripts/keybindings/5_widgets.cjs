@@ -100,6 +100,11 @@ const keybinds = [
         when: "filesExplorerFocus && !inputFocus",
     },
     {
+        key: "shift+r",
+        command: "workbench.files.action.refreshFilesExplorer",
+        when: "filesExplorerFocus && !inputFocus",
+    },
+    {
         key: "z o",
         command: "list.expand",
         when: "!editorTextFocus && !inputFocus",
