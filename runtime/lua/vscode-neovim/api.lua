@@ -20,7 +20,7 @@ end
 
 ---Invoke the callback, called by vscode
 ---@param id number callback id
----@param result any resutl
+---@param result any result
 ---@param is_error boolean is error
 function M.invoke_callback(id, result, is_error)
   vim.schedule(function()
