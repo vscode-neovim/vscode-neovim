@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.5.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.4.0...v1.5.0) (2023-12-20)
+
+
+### Features
+
+* override the default vim.ui interfaces ([#1710](https://github.com/vscode-neovim/vscode-neovim/issues/1710)) ([b522787](https://github.com/vscode-neovim/vscode-neovim/commit/b52278772a6b3557d8b05471b1fb90a2375f662a))
+* R to refresh file explorer ([5464b48](https://github.com/vscode-neovim/vscode-neovim/commit/5464b48b4d4e6979dd0c2a61cdb76d2ffb06739f))
+
+
+### Bug Fixes
+
+* **treesitter:** manually trigger parsing ([#1713](https://github.com/vscode-neovim/vscode-neovim/issues/1713)) ([c2ca1be](https://github.com/vscode-neovim/vscode-neovim/commit/c2ca1be787c9114bdb7dcc57e47d1932cd9fb878))
+
 ## [1.4.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.3.0...v1.4.0) (2023-12-15)
 
 
