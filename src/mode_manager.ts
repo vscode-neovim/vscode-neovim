@@ -8,7 +8,10 @@ const logger = createLogger("ModeManager");
 
 // a representation of the current mode. can be read in different ways using accessors. underlying type is shortname name as returned by `:help mode()`
 export class Mode {
-    public constructor(public shortname: string = "") {}
+    public constructor(
+        public shortname: string = "",
+        public fullMode: string = "",
+    ) {}
     // mode 1-char code: n, v, V, i, s, ...
     // converts ^v into v
     public get char(): string {
@@ -102,14 +105,19 @@ export class ModeManager implements Disposable {
         return this.eventEmitter.event(callback);
     }
 
-    private handleModeChanged([mode]: EventBusData<"mode-changed">) {
-        logger.debug(`Changing mode to ${mode}`);
-        this.mode = new Mode(mode);
+    private handleModeChanged([mode, fullMode]: EventBusData<"mode-changed">) {
+        logger.debug(`Changing mode to ${mode} (${JSON.stringify(fullMode)})`);
+        this.mode = new Mode(mode, fullMode);
         if (!this.isInsertMode && this.isRecording) {
             this.isRecording = false;
             VSCodeContext.set("neovim.recording", false);
         }
+
         VSCodeContext.set("neovim.mode", this.mode.name);
+        // TODO: should we replace ^V here? It appears to match against \u0016
+        // with both == and =~, so maybe leaving it unescaped is best for advanced users.
+        VSCodeContext.set("neovim.fullMode", fullMode);
+
         logger.debug(`Setting mode context to ${this.mode.name}`);
         this.eventEmitter.fire(null);
     }

@@ -52,6 +52,7 @@ export function deactivate(isRestart = false) {
     // Reset all when clause contexts that impact the keybindings
     VSCodeContext.set("neovim.init");
     VSCodeContext.set("neovim.mode");
+    VSCodeContext.set("neovim.fullMode");
     VSCodeContext.set("neovim.recording");
     if (!isRestart) disposeAll(disposables);
 }

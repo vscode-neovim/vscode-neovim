@@ -115,7 +115,7 @@ type EventsMapping = {
     ["open-file"]: [string, 1 | 0 | "all"];
     ["external-buffer"]: [BufferInfo, 1 | 0, number];
     ["window-changed"]: [number];
-    ["mode-changed"]: [string];
+    ["mode-changed"]: [string, string];
     ["notify-recording"]: undefined;
     reveal: ["center" | "top" | "bottom", boolean];
     ["move-cursor"]: ["top" | "middle" | "bottom"];
