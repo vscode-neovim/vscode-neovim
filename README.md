@@ -521,6 +521,19 @@ To pass custom bindings to Neovim, for example <kbd>C-h</kbd> in normal mode, ad
 }
 ```
 
+If you need more precise information about the mode (i.e. `mode(1)` in neovim),
+you can use the `neovim.fullMode` context key for matching:
+
+```jsonc
+{
+    "command": "vscode-neovim.send",
+    "key": "ctrl+h",
+    // don't activate during insert or operator-pending mode
+    "when": "editorTextFocus && !(neovim.fullMode =~ /^(i|no)/)",
+    "args": "<C-h>"
+}
+```
+
 ### Disable keybindings
 
 There are three configurations for toggling keybindings:
