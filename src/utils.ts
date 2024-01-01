@@ -376,6 +376,13 @@ export abstract class VSCodeContext {
     public static get(key: string): VSCodeContextValue | undefined {
         return this.cache.get(key);
     }
+
+    public static reset() {
+        for (const key of this.cache.keys()) {
+            commands.executeCommand("setContext", key, undefined);
+        }
+        this.cache.clear();
+    }
 }
 
 export function disposeAll(disposables: Disposable[]): void {

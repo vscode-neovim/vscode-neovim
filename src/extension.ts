@@ -31,7 +31,13 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole);
     eventBus.init();
     actions.init();
-    context.subscriptions.push(config, rootLogger, eventBus, actions);
+    context.subscriptions.push(
+        config,
+        rootLogger,
+        eventBus,
+        actions,
+        new vscode.Disposable(() => VSCodeContext.reset()),
+    );
 
     try {
         const plugin = new MainController(context);
@@ -49,10 +55,6 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
 }
 
 export function deactivate(isRestart = false) {
-    // Reset all when clause contexts that impact the keybindings
-    VSCodeContext.set("neovim.init");
-    VSCodeContext.set("neovim.mode");
-    VSCodeContext.set("neovim.recording");
     if (!isRestart) disposeAll(disposables);
 }
 
