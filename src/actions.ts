@@ -12,7 +12,7 @@ import vscode, {
     workspace,
 } from "vscode";
 
-import { disposeAll, rangesToSelections } from "./utils";
+import { VSCodeContext, disposeAll, rangesToSelections } from "./utils";
 
 function getActionName(action: string) {
     return `neovim:${action}`;
@@ -143,6 +143,7 @@ class ActionManager implements Disposable {
             window.showQuickPick(args.items, args.opts),
         );
         this.add("ui_input", (args: { opts: InputBoxOptions }) => window.showInputBox(args.opts));
+        this.add("setContext", (key: string, value: any) => VSCodeContext.set(key, value));
     }
 
     private initHooks() {
