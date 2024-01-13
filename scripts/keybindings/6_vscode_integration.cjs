@@ -5,7 +5,7 @@ const [add, keybinds] = addKeybinds();
 add("ctrl+w", null, null, "-workbench.action.switchWindow");
 add(
     "ctrl+w ctrl+w",
-    "!editorTextFocus && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)",
+    "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)",
     null,
     "workbench.action.focusNextGroup",
 );
@@ -27,7 +27,7 @@ for (const [key, cmd] of [
     ["ctrl+w s", "workbench.action.splitEditorDown"],
     ["ctrl+w v", "workbench.action.splitEditorRight"],
 ]) {
-    add(key, "!editorTextFocus && !terminalFocus", null, cmd);
+    add(key, "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus", null, cmd);
 }
 
 // - Why do we need to manually send keys?

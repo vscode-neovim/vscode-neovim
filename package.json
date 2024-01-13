@@ -1627,7 +1627,7 @@
             {
                 "key": "ctrl+w q",
                 "command": "workbench.action.closeActiveEditor",
-                "when": "!editorTextFocus && !terminalFocus && !filesExplorerFocus && !searchViewletFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !filesExplorerFocus && !searchViewletFocus"
             },
             {
                 "key": "ctrl+Escape",
@@ -1686,87 +1686,87 @@
             {
                 "command": "workbench.action.focusNextGroup",
                 "key": "ctrl+w ctrl+w",
-                "when": "!editorTextFocus && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
             },
             {
                 "command": "workbench.action.navigateUp",
                 "key": "ctrl+w up",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateUp",
                 "key": "ctrl+w k",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateDown",
                 "key": "ctrl+w down",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateDown",
                 "key": "ctrl+w j",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateLeft",
                 "key": "ctrl+w left",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateLeft",
                 "key": "ctrl+w h",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateRight",
                 "key": "ctrl+w right",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateRight",
                 "key": "ctrl+w l",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.evenEditorWidths",
                 "key": "ctrl+w =",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.toggleEditorWidths",
                 "key": "ctrl+w _",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.increaseViewWidth",
                 "key": "ctrl+w >",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.decreaseViewWidth",
                 "key": "ctrl+w <",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.increaseViewHeight",
                 "key": "ctrl+w +",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.decreaseViewHeight",
                 "key": "ctrl+w -",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.splitEditorDown",
                 "key": "ctrl+w s",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.splitEditorRight",
                 "key": "ctrl+w v",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "vscode-neovim.send",
