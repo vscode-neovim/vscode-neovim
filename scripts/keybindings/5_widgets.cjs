@@ -237,6 +237,16 @@ const keybinds = [
         when: "editorHoverFocused",
     },
     {
+        command: "editor.action.pageDownHover",
+        key: "ctrl+d",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.pageUpHover",
+        key: "ctrl+u",
+        when: "editorHoverFocused",
+    },
+    {
         command: "editor.action.scrollDownHover",
         key: "j",
         when: "editorHoverFocused",
