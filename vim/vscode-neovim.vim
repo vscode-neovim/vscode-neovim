@@ -80,6 +80,9 @@ function! s:onInsertEnter()
     if !empty(reg)
         call VSCodeExtensionNotify('notify-recording', reg)
     endif
+    if exists("b:VM_Selection") && !empty(b:VM_Selection)
+        call VSCodeExtensionNotify('notify-recording', reg)
+    endif
 endfunction
 
 
