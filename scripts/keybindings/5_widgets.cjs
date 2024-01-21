@@ -212,7 +212,7 @@ const keybinds = [
     {
         key: "ctrl+w q",
         command: "workbench.action.closeActiveEditor",
-        when: "!editorTextFocus && !terminalFocus && !filesExplorerFocus && !searchViewletFocus",
+        when: "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !filesExplorerFocus && !searchViewletFocus",
     },
     {
         key: "ctrl+Escape",
