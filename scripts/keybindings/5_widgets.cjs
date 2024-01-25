@@ -212,7 +212,7 @@ const keybinds = [
     {
         key: "ctrl+w q",
         command: "workbench.action.closeActiveEditor",
-        when: "!editorTextFocus && !terminalFocus && !filesExplorerFocus && !searchViewletFocus",
+        when: "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !filesExplorerFocus && !searchViewletFocus",
     },
     {
         key: "ctrl+Escape",
@@ -234,6 +234,16 @@ const keybinds = [
     {
         command: "editor.action.pageUpHover",
         key: "ctrl+b",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.pageDownHover",
+        key: "ctrl+d",
+        when: "editorHoverFocused",
+    },
+    {
+        command: "editor.action.pageUpHover",
+        key: "ctrl+u",
         when: "editorHoverFocused",
     },
     {

@@ -1627,7 +1627,7 @@
             {
                 "key": "ctrl+w q",
                 "command": "workbench.action.closeActiveEditor",
-                "when": "!editorTextFocus && !terminalFocus && !filesExplorerFocus && !searchViewletFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !filesExplorerFocus && !searchViewletFocus"
             },
             {
                 "key": "ctrl+Escape",
@@ -1647,6 +1647,16 @@
             {
                 "command": "editor.action.pageUpHover",
                 "key": "ctrl+b",
+                "when": "editorHoverFocused"
+            },
+            {
+                "command": "editor.action.pageDownHover",
+                "key": "ctrl+d",
+                "when": "editorHoverFocused"
+            },
+            {
+                "command": "editor.action.pageUpHover",
+                "key": "ctrl+u",
                 "when": "editorHoverFocused"
             },
             {
@@ -1686,87 +1696,87 @@
             {
                 "command": "workbench.action.focusNextGroup",
                 "key": "ctrl+w ctrl+w",
-                "when": "!editorTextFocus && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)"
             },
             {
                 "command": "workbench.action.navigateUp",
                 "key": "ctrl+w up",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateUp",
                 "key": "ctrl+w k",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateDown",
                 "key": "ctrl+w down",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateDown",
                 "key": "ctrl+w j",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateLeft",
                 "key": "ctrl+w left",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateLeft",
                 "key": "ctrl+w h",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateRight",
                 "key": "ctrl+w right",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.navigateRight",
                 "key": "ctrl+w l",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.evenEditorWidths",
                 "key": "ctrl+w =",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.toggleEditorWidths",
                 "key": "ctrl+w _",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.increaseViewWidth",
                 "key": "ctrl+w >",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.decreaseViewWidth",
                 "key": "ctrl+w <",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.increaseViewHeight",
                 "key": "ctrl+w +",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.decreaseViewHeight",
                 "key": "ctrl+w -",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.splitEditorDown",
                 "key": "ctrl+w s",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.splitEditorRight",
                 "key": "ctrl+w v",
-                "when": "!editorTextFocus && !terminalFocus"
+                "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "vscode-neovim.send",
@@ -2080,7 +2090,7 @@
         "@types/glob": "^7.1.3",
         "@types/lodash-es": "^4.17.12",
         "@types/mocha": "^10.0.6",
-        "@types/node": "^20.10.7",
+        "@types/node": "^20.11.5",
         "@types/vscode": "^1.83.1",
         "@typescript-eslint/eslint-plugin": "^5.61.0",
         "@typescript-eslint/parser": "^5.62.0",
@@ -2101,7 +2111,7 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "async-mutex": "^0.4.0",
+        "async-mutex": "^0.4.1",
         "fast-myers-diff": "^3.2.0",
         "grapheme-splitter": "^1.0.4",
         "lodash-es": "^4.17.21",
