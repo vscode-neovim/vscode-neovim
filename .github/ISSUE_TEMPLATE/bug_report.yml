@@ -6,22 +6,22 @@ body:
     - type: markdown
       attributes:
           value: |
-              **Before** reporting an issue, make sure to read the [documentation](https://github.com/vscode-neovim/vscode-neovim/) and search [existing issues](https://github.com/vscode-neovim/vscode-neovim/issues). Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/vscode-neovim/vscode-neovim/discussions) and will be closed. Additionally, please be aware of the following:
-                - plugins that provide their own UI, or work during insert mode, will never be supported
-                - neovim can only interact with one window at a time
-                - highlights are best-effort
+                ### Before reporting an issue:
+                - Set `vscode-neovim.neovimClean` in VSCode settings to confirm if the issue is caused by an Nvim plugin.
+                - Read the [documentation](https://github.com/vscode-neovim/vscode-neovim/) and search [existing issues](https://github.com/vscode-neovim/vscode-neovim/issues).
+                - Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/vscode-neovim/vscode-neovim/discussions) and will be closed.
+                - Plugins that provide their own UI, or work during _insert-mode_, are not supported.
+                - Nvim can only interact with one window at a time.
+                - Highlights are best-effort.
     - type: checkboxes
       attributes:
-          label: Did you check docs and existing issues?
-          description: Make sure you checked all of the below before submitting an issue
+          label: 'Check the following:'
           options:
-              - label: I have read all the vscode-neovim docs
+              - label: 'I have checked the behavior after setting "vscode-neovim.neovimClean" in VSCode settings.'
                 required: true
-              - label: I have searched the existing issues of vscode-neovim
+              - label: 'I have read the vscode-neovim docs.'
                 required: true
-              - label:
-                    I can reproduce the issue with an empty init.vim/init.lua and no other vscode extensions (when
-                    applicable)
+              - label: 'I have searched existing issues.'
                 required: true
     - type: input
       attributes:
@@ -38,7 +38,7 @@ body:
     - type: textarea
       attributes:
           label: Describe the bug
-          description: A clear and concise description of what the bug is. When did this issue first appear?
+          description: Clear and concise description of what the bug is. When did this issue first appear?
       validations:
           required: true
     - type: textarea
@@ -54,6 +54,6 @@ body:
     - type: textarea
       attributes:
           label: Expected Behavior
-          description: A concise description of what you expected to happen.
+          description: Concise description of what you expected to happen.
       validations:
           required: true

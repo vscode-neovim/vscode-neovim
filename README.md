@@ -127,9 +127,15 @@ have built-in support for `cond = vim.g.vscode`. See
 
 ### Troubleshooting
 
-If you get the "Unable to init vscode-neovim: command 'type' already exists" message, uninstall other VSCode extensions
-that register the `type` command (like [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
-[Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
+- Enable `vscode-neovim.neovimClean` in VSCode settings, which starts Nvim _without_ your plugins
+  (`nvim --clean`). Nvim plugins can do _anything_. Visual effects in particular can cause visual
+  artifacts. vscode-neovim does its best to merge the visual effects of Nvim and VSCode, but it's
+  far from perfect. You may need to disable some Nvim plugins that cause visual effects.
+- If you encounter rendering issues (visual artifacts), try <kbd>CTRL-L</kbd> to force Nvim to redraw.
+- If you get the `Unable to init vscode-neovim: command 'type' already exists` message, uninstall
+  other VSCode extensions that use `registerTextEditorCommand("type", …)` (like
+  [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
+  [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
 
 ### Performance
 
