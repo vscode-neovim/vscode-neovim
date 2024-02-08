@@ -6,22 +6,22 @@ body:
     - type: markdown
       attributes:
           value: |
-                ### Before reporting an issue:
-                - Set `vscode-neovim.neovimClean` in VSCode settings to confirm if the issue is caused by an Nvim plugin.
-                - Read the [documentation](https://github.com/vscode-neovim/vscode-neovim/) and search [existing issues](https://github.com/vscode-neovim/vscode-neovim/issues).
-                - Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/vscode-neovim/vscode-neovim/discussions) and will be closed.
-                - Plugins that provide their own UI, or work during _insert-mode_, are not supported.
-                - Nvim can only interact with one window at a time.
-                - Highlights are best-effort.
+              ### Before reporting an issue:
+              - Set `vscode-neovim.neovimClean` in VSCode settings to confirm if the issue is caused by an Nvim plugin.
+              - Read the [documentation](https://github.com/vscode-neovim/vscode-neovim/) and search [existing issues](https://github.com/vscode-neovim/vscode-neovim/issues).
+              - Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/vscode-neovim/vscode-neovim/discussions) and will be closed.
+              - Plugins that provide their own UI, or work during _insert-mode_, are not supported.
+              - Nvim can only interact with one window at a time.
+              - Highlights are best-effort.
     - type: checkboxes
       attributes:
-          label: 'Check the following:'
+          label: "Check the following:"
           options:
               - label: 'I have checked the behavior after setting "vscode-neovim.neovimClean" in VSCode settings.'
                 required: true
-              - label: 'I have read the vscode-neovim docs.'
+              - label: "I have read the vscode-neovim docs."
                 required: true
-              - label: 'I have searched existing issues.'
+              - label: "I have searched existing issues."
                 required: true
     - type: input
       attributes:

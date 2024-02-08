@@ -1,17 +1,12 @@
-import { Disposable, OutputChannel, window } from "vscode";
+import { Disposable, LogOutputChannel } from "vscode";
 
-import { EXT_NAME } from "./constants";
 import { EventBusData, eventBus } from "./eventBus";
 import { disposeAll } from "./utils";
 
-export class MultilineMessagesManager implements Disposable {
+export class MessagesManager implements Disposable {
     private disposables: Disposable[] = [];
 
-    private channel: OutputChannel;
-
-    public constructor() {
-        this.channel = window.createOutputChannel(`${EXT_NAME}`);
-        this.disposables.push(this.channel);
+    public constructor(readonly channel: LogOutputChannel) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 

@@ -17,7 +17,7 @@ import { eventBus } from "./eventBus";
 import { HighlightManager } from "./highlight_manager";
 import { createLogger } from "./logger";
 import { ModeManager } from "./mode_manager";
-import { MultilineMessagesManager } from "./multiline_messages_manager";
+import { MessagesManager } from "./messages_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
 import { disposeAll, findLastEvent, VSCodeContext, wslpath } from "./utils";
@@ -57,14 +57,14 @@ export class MainController implements vscode.Disposable {
     public commandLineManager!: CommandLineManager;
     public statusLineManager!: StatusLineManager;
     public highlightManager!: HighlightManager;
-    public multilineMessagesManager!: MultilineMessagesManager;
+    public messagesManager!: MessagesManager;
     public viewportManager!: ViewportManager;
 
     public constructor(private extContext: ExtensionContext) {}
 
-    public async init(): Promise<void> {
+    public async init(outputChannel: vscode.LogOutputChannel): Promise<void> {
         const [cmd, args] = this.buildSpawnArgs();
-        logger.debug(`Spawning nvim: ${cmd} ${args.join(" ")}`);
+        logger.info(`starting nvim: ${cmd} ${args.join(" ")}`);
         this.nvimProc = spawn(cmd, args);
         this.disposables.push(
             new Disposable(() => {
@@ -131,7 +131,7 @@ export class MainController implements vscode.Disposable {
             (this.changeManager = new DocumentChangeManager(this)),
             (this.commandLineManager = new CommandLineManager(this)),
             (this.statusLineManager = new StatusLineManager(this)),
-            (this.multilineMessagesManager = new MultilineMessagesManager()),
+            (this.messagesManager = new MessagesManager(outputChannel)),
         );
 
         logger.debug(`UIAttach`);
@@ -156,6 +156,7 @@ export class MainController implements vscode.Disposable {
     }
 
     private _stop(msg: string) {
+        logger.error(msg);
         vscode.commands.executeCommand("vscode-neovim.stop");
         vscode.window.showErrorMessage(msg, "Restart").then((value) => {
             if (value == "Restart") vscode.commands.executeCommand("vscode-neovim.restart");

@@ -35,6 +35,14 @@ npx vsce package -o vscode-neovim.vsix
 1. Open the repo in VSCode.
 2. Go to debug view and click `Run Extension` (F5).
 
+### Logging
+
+You can observe the extension logs via the `vscode-neovim` Output channel or from the dev tools
+console (run the `Developer: Toggle Developer Tools` vscode command to see the console).
+
+Note: some messages are not logged to the Output channel, to avoid infinite loop. This is decided by
+the [`logToOutputChannel` parameter](https://github.com/vscode-neovim/vscode-neovim/blob/7337ffd5009067d074af5371171f277cb522aa9b/src/logger.ts#L184).
+
 ### Run Tests
 
 1. Open the repo in VSCode.

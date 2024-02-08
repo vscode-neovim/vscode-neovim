@@ -43,51 +43,49 @@
                     "type": "string",
                     "default": "",
                     "title": "Neovim path",
-                    "markdownDescription": "*Windows, OSX, Linux in Neovim path settings won`t work if this setting is set* Full path to Neovim executable. If you have enabled `useWSL` setting, specify the Linux path to nvim executable instead.",
-                    "deprecationMessage": "This setting is deprecated. Remove this setting and use neovimExecutablePaths.win32/linux/darwin instead. If you continue to use this setting, keep in mind this setting takes precedence over neovimExecutablePaths.windows/linux/darwin and those settings won't work. If you want them to work, just remove this setting from your settings.json or make its input box in User Settings empty"
+                    "deprecationMessage": "Remove this setting and use neovimExecutablePaths.win32/linux/darwin instead. If you continue to use this setting, keep in mind this setting takes precedence over neovimExecutablePaths.windows/linux/darwin and those settings won't work. If you want them to work, just remove this setting from your settings.json or make its input box in User Settings empty"
                 },
                 "vscode-neovim.neovimExecutablePaths.win32": {
                     "type": "string",
                     "default": "nvim",
                     "title": "Neovim executable path on Windows",
-                    "markdownDescription": "Full path to Neovim executable that should be used by the extension if running VS Code on Windows.  \nExample:  \nC:\\tools\\neovim\\Neovim\\bin\\nvim.exe (if you installed using Chocolatey)  \nIf you want to use Windows Subsystem for Linux, enable the `useWSL` setting and set `neovimExecutablePaths.linux` instead"
+                    "markdownDescription": "Path to Nvim executable if running VS Code on Windows. \n- Example: `C:\\tools\\neovim\\Neovim\\bin\\nvim.exe` (if you installed using Chocolatey)\n- If you want to use Windows Subsystem for Linux, enable the `useWSL` setting and set `neovimExecutablePaths.linux` instead"
                 },
                 "vscode-neovim.neovimExecutablePaths.darwin": {
                     "type": "string",
                     "default": "nvim",
-                    "title": "Neovim executable path on OSX",
-                    "description": "Full path to Neovim executable that should be used by the extension if running VS Code on OSX."
+                    "title": "Neovim executable path on macOS",
+                    "markdownDescription": "Path to Nvim executable if running VS Code on macOS."
                 },
                 "vscode-neovim.neovimExecutablePaths.linux": {
                     "type": "string",
                     "default": "nvim",
                     "title": "Neovim executable path on Linux (and in WSL)",
-                    "markdownDescription": "Full path to Neovim executable that should be used by the extension if running VS Code on Linux or WSL. If `useWSL` setting is checked, vscode-neovim will look for this path in default WSL distro  \nExample:  \n/usr/bin/nvim"
+                    "markdownDescription": "Path to Nvim executable if running VS Code on Linux or WSL. \n- Example: `/usr/bin/nvim`\n- If `useWSL` setting is checked, vscode-neovim will look for this path in default WSL distro."
                 },
                 "vscode-neovim.neovimInitPath": {
                     "type": "string",
                     "default": "",
                     "title": "Custom init.vim path",
-                    "description": "Full path to custom neovim init file, equals to startup option -u. If checked useWSL flag specify a Linux path. You can also use exists('g:vscode') in your init.vim to check if neovim is being run in vscode and share init file between neovim/vscode",
-                    "deprecationMessage": "This setting is deprecated. Use neovimInitVimPaths.win32/linux/darwin instead. If you continue to use this setting, keep in mind this setting takes precedence over neovimInitVimPaths.win32/linux/darwin and those settings won't work. If you want them to work, just remove this setting from your settings.json or make its input box in User Settings empty"
+                    "deprecationMessage": "Use neovimInitVimPaths.win32/linux/darwin instead. If you continue to use this setting, keep in mind this setting takes precedence over neovimInitVimPaths.win32/linux/darwin and those settings won't work. If you want them to work, just remove this setting from your settings.json or make its input box in User Settings empty"
                 },
                 "vscode-neovim.neovimInitVimPaths.win32": {
                     "type": "string",
                     "default": "",
                     "title": "Custom init.vim path on Windows",
-                    "markdownDescription": "Full path to custom neovim init.vim file on Windows, equals to startup option `-u`. If the `useWSL` setting is checked, the value of the `neovimInitVimPaths.linux` setting will be used to find the init.vim file instead. You can also use `exists('g:vscode')` in your init.vim to check if neovim is being run in vscode and share init file between neovim/vscode"
+                    "markdownDescription": "Path to alternative `init.vim` file on Windows, equivalent to Nvim startup option `-u`. If `useWSL` is enabled, the value of the `neovimInitVimPaths.linux` setting will be used to find the init.vim file instead. You can also use `exists('g:vscode')` in your `init.vim` to check if Nvim is running in vscode."
                 },
                 "vscode-neovim.neovimInitVimPaths.darwin": {
                     "type": "string",
                     "default": "",
-                    "title": "Custom init.vim path on OSX",
-                    "markdownDescription": "Full path to custom neovim init.vim file on OSX, equals to startup option `-u`. You can also use `exists('g:vscode')` in your init.vim to check if neovim is being run in vscode and share init file between neovim/vscode"
+                    "title": "Custom init.vim path on macOS",
+                    "markdownDescription": "Path to alternative `init.vim` file on macOS, equivalent to Nvim startup option `-u`. You can also use `exists('g:vscode')` in your `init.vim` to check if Nvim is running in vscode."
                 },
                 "vscode-neovim.neovimInitVimPaths.linux": {
                     "type": "string",
                     "default": "",
                     "title": "Custom init.vim path on Linux",
-                    "markdownDescription": "Full path to custom neovim init.vim file on Linux or default WSL distro, equals to startup option `-u`. If the `useWSL` setting is checked, this path will be used to find `init.vim` in Windows Subsystem for Linux. You can also use `exists('g:vscode')` in your init.vim to check if neovim is being run in vscode and share init file between neovim/vscode"
+                    "markdownDescription": "Path to alternative `init.vim` file on Linux or default WSL distro, equivalent to Nvim startup option `-u`. If the `useWSL` setting is checked, this path will be used to find `init.vim` in Windows Subsystem for Linux. You can also use `exists('g:vscode')` in your `init.vim` to check if Nvim is running in vscode."
                 },
                 "vscode-neovim.afterInitConfig": {
                     "type": "array",
@@ -106,7 +104,7 @@
                 "vscode-neovim.NVIM_APPNAME": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "See `:h NVIM_APPNAME`."
+                    "markdownDescription": "See `:help NVIM_APPNAME`."
                 },
                 "vscode-neovim.neovimWidth": {
                     "type": "number",
@@ -127,16 +125,14 @@
                     "description": "How much to extend neovim viewport on each side beyond vscode editor size. Increase if you are not seeing decorations or highlights on the edges of the editor."
                 },
                 "vscode-neovim.useCtrlKeysForNormalMode": {
-                    "deprecationMessage": "Use vscode-neovim.ctrlKeysForNormalMode instead (Set it to empty)",
+                    "deprecationMessage": "Use `vscode-neovim.ctrlKeysForNormalMode` instead (Set it to empty)",
                     "type": "boolean",
-                    "default": true,
-                    "description": "Use Ctrl keys in normal/visual/etc...(except insert) modes"
+                    "default": true
                 },
                 "vscode-neovim.useCtrlKeysForInsertMode": {
-                    "deprecationMessage": "Use vscode-neovim.ctrlKeysForInsertMode instead (Set it to empty)",
+                    "deprecationMessage": "Use `vscode-neovim.ctrlKeysForInsertMode` instead (Set it to empty)",
                     "type": "boolean",
-                    "default": true,
-                    "description": "Use Ctrl keys in insert mode"
+                    "default": true
                 },
                 "vscode-neovim.ctrlKeysForNormalMode": {
                     "type": "array",
@@ -304,14 +300,15 @@
                         "none",
                         "error",
                         "warn",
+                        "info",
                         "debug"
                     ],
-                    "description": "Log Level"
+                    "markdownDescription": "Log Level. See also `vscode-neovim.logOutputToConsole`."
                 },
                 "vscode-neovim.logOutputToConsole": {
                     "type": "boolean",
                     "default": false,
-                    "description": "When on, print log messages to vscode developer console (not output channel!)"
+                    "markdownDescription": "Log to vscode developer console (not output channel!). \n- Hint: Run the `Developer: Toggle Developer Tools` command to see the console. \n- Hint: Adjust the `vscode-neovim.logLevel` setting to see more messages."
                 },
                 "vscode-neovim.highlightGroups.highlights": {
                     "type": "object",
