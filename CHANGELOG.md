@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.6.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.5.0...v1.6.0) (2024-02-08)
+
+
+### Features
+
+* **bindings:** handle C-d/C-u in hover widget ([#1744](https://github.com/vscode-neovim/vscode-neovim/issues/1744)) ([64c4cc7](https://github.com/vscode-neovim/vscode-neovim/commit/64c4cc7bb56a64aa8627b1a8bab9bee0446ea17c))
+* expose logs in OutputChannel, log info on startup [#1786](https://github.com/vscode-neovim/vscode-neovim/issues/1786) ([f77256b](https://github.com/vscode-neovim/vscode-neovim/commit/f77256be6afcaa596dc8c3cb9d4e6bc0cb12cfab))
+
+
+### Bug Fixes
+
+* **bindings:** C-w in cmdline ([#1742](https://github.com/vscode-neovim/vscode-neovim/issues/1742)) ([048acea](https://github.com/vscode-neovim/vscode-neovim/commit/048acea91676c2216cf418c8bbfafae27f2c4a3a))
+* rework visual-multi ([#1755](https://github.com/vscode-neovim/vscode-neovim/issues/1755)) ([0bd6834](https://github.com/vscode-neovim/vscode-neovim/commit/0bd68345fae514572c62927a81071af68963f78e))
+
 ## [1.5.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.4.0...v1.5.0) (2023-12-20)
 
 
