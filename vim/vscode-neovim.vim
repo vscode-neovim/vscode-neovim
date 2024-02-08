@@ -80,6 +80,11 @@ function! s:onInsertEnter()
     if !empty(reg)
         call VSCodeExtensionNotify('notify-recording', reg)
     endif
+    " Hack to disable `type` unbinding during insert mode by triggering recording mode to add support for vim-visual-multi
+    " https://github.com/vscode-neovim/vscode-neovim/pull/1755
+    if exists("b:VM_Selection") && !empty(b:VM_Selection)
+        call VSCodeExtensionNotify('notify-recording', reg)
+    endif
 endfunction
 
 
