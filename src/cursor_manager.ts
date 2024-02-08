@@ -26,7 +26,7 @@ import {
     rangesToSelections,
 } from "./utils";
 
-const logger = createLogger("CursorManager");
+const logger = createLogger("CursorManager", false);
 
 interface CursorInfo {
     cursorShape: "block" | "horizontal" | "vertical";
