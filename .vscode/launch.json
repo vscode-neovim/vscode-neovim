@@ -10,10 +10,7 @@
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
-            "args": [
-                // "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ],
+            "args": ["--disable-extensions", "--extensionDevelopmentPath=${workspaceFolder}"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "smartStep": true,
             "preLaunchTask": "Watch"
