@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.6.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.6.0...v1.6.1) (2024-02-12)
+
+
+### Bug Fixes
+
+* **logging:** infinite loop in BufferManager ([#1790](https://github.com/vscode-neovim/vscode-neovim/issues/1790)) ([b011631](https://github.com/vscode-neovim/vscode-neovim/commit/b0116315a018db9a8bb7a1d5df4a8f505dfa73f2)), closes [#1788](https://github.com/vscode-neovim/vscode-neovim/issues/1788)
+
 ## [1.6.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.5.0...v1.6.0) (2024-02-08)
 
 
