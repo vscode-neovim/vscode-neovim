@@ -48,8 +48,8 @@ export class CommandsController implements Disposable {
             to === "top"
                 ? topVisible
                 : to === "bottom"
-                ? bottomVisible
-                : Math.floor(topVisible + (bottomVisible - topVisible) / 2);
+                  ? bottomVisible
+                  : Math.floor(topVisible + (bottomVisible - topVisible) / 2);
         const line = e.document.lineAt(lineNum);
         e.selections = [
             new vscode.Selection(
