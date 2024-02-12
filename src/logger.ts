@@ -153,10 +153,19 @@ export class Logger implements Disposable {
                       }
                   },
                   log(uri: vscode.Uri | undefined, level: LogLevel, ...logArgs: any[]) {
-                      const isLogSink = uri?.scheme === "output" || uri?.toString().startsWith("output:");
-                      if (!uri || isLogSink) {
+                      const isLogSink =
+                          !uri ||
+                          uri.scheme === "output" ||
+                          uri.toString().startsWith("output:") ||
+                          // XXX: may get filepath like
+                          //    "/my/workspace/path/output:asvetliakov.vscode-neovim.vscode-neovim"
+                          // This seems like a bug ("output:…" channel path appended to a workspace path?), but we should detect it here and avoid a loop nevertheless.
+                          /[/\\]output:[^/\\]+$/i.test(uri.path);
+
+                      if (isLogSink) {
                           return;
                       }
+
                       switch (level) {
                           case LogLevel.error:
                               logger.error(...logArgs);

@@ -16,7 +16,7 @@ import {
 } from "vscode";
 
 import { config } from "./config";
-import { ILogger } from "./logger";
+import { ILogger, LogLevel } from "./logger";
 
 /**
  * Stores last changes information for dot repeat
@@ -302,7 +302,7 @@ export async function callAtomic(
     const res = (await client.callAtomic(requests)) as unknown as [unknown[], [number, unknown, string] | null];
     // Should never reach here if neovim is behaving correctly
     if (!(res && Array.isArray(res) && Array.isArray(res[0]))) {
-        logger.error(`Unexpected result from nvim_call_atomic`);
+        logger.log(undefined, LogLevel.error, `Unexpected result from nvim_call_atomic`);
         return;
     }
     const returned_errors = res[1];
@@ -313,9 +313,9 @@ export async function callAtomic(
         const errMsg = `${requestName}: ${err_msg} (Error type: ${err_type})`;
         // TODO: Determine cause for errors for both of these requests
         if (requestName === "nvim_input" || requestName === "nvim_win_close") {
-            logger.warn(errMsg);
+            logger.log(undefined, LogLevel.warn, errMsg);
         } else {
-            logger.error(errMsg);
+            logger.log(undefined, LogLevel.error, errMsg);
         }
     }
 }
