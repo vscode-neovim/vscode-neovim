@@ -418,10 +418,10 @@ export class CursorManager implements Disposable {
                     ? TextEditorRevealType.InCenterIfOutsideViewport
                     : TextEditorRevealType.Default
                 : deltaLine < 0
-                ? pos.line < topVisibleLine - 10
-                    ? TextEditorRevealType.InCenterIfOutsideViewport
-                    : TextEditorRevealType.Default
-                : TextEditorRevealType.Default;
+                  ? pos.line < topVisibleLine - 10
+                      ? TextEditorRevealType.InCenterIfOutsideViewport
+                      : TextEditorRevealType.Default
+                  : TextEditorRevealType.Default;
         editor.revealRange(new Selection(pos, pos), type);
         this.main.viewportManager.scrollNeovim(editor);
     };

@@ -151,8 +151,8 @@ export class BufferManager implements Disposable {
                     numbers === "off"
                         ? TextEditorLineNumbersStyle.Off
                         : numbers === "on"
-                        ? TextEditorLineNumbersStyle.On
-                        : TextEditorLineNumbersStyle.Relative;
+                          ? TextEditorLineNumbersStyle.On
+                          : TextEditorLineNumbersStyle.Relative;
                 editor.options = { tabSize, insertSpaces, lineNumbers };
             },
         );
