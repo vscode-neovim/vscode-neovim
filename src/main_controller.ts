@@ -152,6 +152,7 @@ export class MainController implements vscode.Disposable {
         await this.bufferManager.forceSyncLayout();
 
         await VSCodeContext.set("neovim.init", true);
+        await this.logNvimInfo(); // Do this _after_ UIAttach.
         logger.debug(`Init completed`);
     }
 
@@ -346,6 +347,21 @@ export class MainController implements vscode.Disposable {
         const versionString = this.extContext.extension.packageJSON.version as string;
         const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
         this.client.setClientInfo("vscode-neovim", { major, minor, patch }, "embedder", {}, {});
+    }
+
+    /** Logs diagnostic info for troubleshooting. */
+    private async logNvimInfo() {
+        const luaCode = `
+            local rv = {
+              configDir = vim.fn.stdpath('config'),
+              configFile = vim.env.MYVIMRC,
+              logFile = vim.env.NVIM_LOG_FILE,
+              nvimVersion = vim.fn.api_info().version,
+            }
+            return rv
+        `;
+        const nvimInfo = await this.client.executeLua(luaCode, []);
+        logger.info("Nvim info:", nvimInfo);
     }
 
     dispose() {
