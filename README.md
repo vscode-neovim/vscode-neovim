@@ -67,23 +67,19 @@ mode and VSCode commands, making the best use of both editors.
 
 ### Installation
 
-Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension.
+- Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension.
+- Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.10.0** or newer.
+    - (Optional) Set the Nvim path in the extension settings. You must specify the full path to Neovim, like
+      `C:\Neovim\bin\nvim.exe` or `/usr/local/bin/nvim`.
+    - Choose one of the following platform-specific settings:
+        - `vscode-neovim.neovimExecutablePaths.win32`
+        - `vscode-neovim.neovimExecutablePaths.linux`
+        - `vscode-neovim.neovimExecutablePaths.darwin`
+- If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to the nvim
+  binary. `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available through
+  `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
+- Assign [affinity](#affinity) value for performance improvement.
 
-Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.10.0** or greater.
-
-> **Note:** Though the extension strives to be as compatible as possible with older versions of Neovim, some older
-> versions may have quirks that are not present anymore. In light of this, certain configuration settings are
-> recommended in some older versions for the best experience. These can be found
-> [on the wiki](https://github.com/vscode-neovim/vscode-neovim/wiki/Version-Compatibility-Notes).
-
-\[Optional\] Set the Neovim path in the extension settings under
-"`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system. For example,
-"`C:\Neovim\bin\nvim.exe`" or "`/usr/local/bin/nvim`".
-
-> **WSL Users:** If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to
-> the nvim binary. `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be
-> available through `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
->
 > **Snap Users:** If you want to use Neovim from Snap, the Neovim path must be resolved to the snap binary location. On
 > some systems it might be "`/snap/nvim/current/usr/bin/nvim`". To check if you're running as a snap package, see if
 > `which nvim` resolves to `/usr/bin/snap`.
@@ -96,13 +92,13 @@ which types of plugins are supported, see [troubleshooting](#troubleshooting).
 Before creating an issue on Github, make sure you can reproduce the problem with an empty `init.vim` and no VSCode
 extensions.
 
-To determine if Neovim is running in VSCode, add to your `init.vim`:
+To detect if Nvim is running in VSCode, add to your `init.vim`:
 
 ```vim
 if exists('g:vscode')
     " VSCode extension
 else
-    " ordinary Neovim
+    " ordinary Nvim
 endif
 ```
 
@@ -112,7 +108,7 @@ In lua:
 if vim.g.vscode then
     -- VSCode extension
 else
-    -- ordinary Neovim
+    -- ordinary Nvim
 end
 ```
 

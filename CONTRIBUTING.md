@@ -30,7 +30,9 @@ How to build (and install) from source:
         ```
 4. From VSCode, use the `Extensions: Install from VSIX` command to install the package.
 
-### Develop
+## Develop
+
+### Run the extension in the VSCode debugger
 
 1. Open the repo in VSCode.
 2. Go to debug view and click `Run Extension` (F5).
@@ -58,7 +60,7 @@ You can view the extension logs in one of these ways:
 Unit tests run in node only (not vscode), and can call code directly (unlike the integration tests). You can run unit
 tests independently by doing `npm run test:unit`.
 
-### Run Integration Tests
+### Run Integration Tests from VSCode
 
 Integration tests exercise a vscode instance which runs the vscode-neovim extension in a separate "extension host"
 process. These tests call the vscode API which indirectly exercises the extension; they cannot access the memory of the
@@ -76,6 +78,32 @@ by:
   run `npx husky` to install them.
 - run `npm run format` to automatically format typescript and lua code.
 - run `npm run lint` to check for errors in typescript code.
+
+The test scripts set `$NEOVIM_DEBUG` which has these effects:
+
+- Starts `nvim` with `--listen` argument, so Nvim listens on localhost TCP port.
+
+### Run Tests from CLI
+
+Build the extension (the `test` task only builds the test code, not the application code). Run this in a separate
+terminal:
+
+    npm run webpack-dev
+
+Run the tests in another terminal:
+
+    npm run test
+
+### Write Tests
+
+Tests can access the `vscode` API but cannot import modules from the extension codebase. For example this will not work:
+
+    // Cannot do this in tests.
+    import { MainController } from "../../main_controller";
+
+Instead, tests can invoke a vscode command which calls into the extension.
+
+    await commands.executeCommand("vscode-neovim.foo");
 
 ## Design Principles
 

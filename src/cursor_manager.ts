@@ -223,7 +223,7 @@ export class CursorManager implements Disposable {
             logger.debug(`Received cursor update from neovim, gridId: ${gridId}`);
             const editor = this.main.bufferManager.getEditorFromGridId(gridId);
             if (!editor) {
-                logger.warn(`No editor for gridId: ${gridId}`);
+                logger.debug(`No editor for gridId: ${gridId}`);
                 continue;
             }
             // lock typing in editor until cursor update is complete

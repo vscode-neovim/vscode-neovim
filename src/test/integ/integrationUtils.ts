@@ -358,6 +358,28 @@ async function assertContentOnce(
 }
 
 /**
+ * Asserts that the extension logged a message matching the pattern(s) in `expect`.
+ */
+export async function assertLogs(expect: RegExp[], timeout = 3000, stack = new Error().stack): Promise<void> {
+    // Registered only when NEOVIM_DEBUG is set (see extension.ts).
+    const getMsgs = async () => (await commands.executeCommand<string[]>("_vscodeneovim._test")) ?? [];
+
+    try {
+        await waitUntil(async () => {
+            const msgs = await getMsgs();
+            const missing = expect.filter((pattern) => !msgs.some((msg) => pattern.test(msg)));
+            assert.ok(
+                missing.length === 0,
+                `No log message matches ${missing.join(", ")}\nLast logged:\n  ${msgs.slice(-100).join("\n  ")}`,
+            );
+        }, timeout);
+    } catch (e) {
+        (e as Error).stack = stack;
+        throw e;
+    }
+}
+
+/**
  * Selects `selection`, waiting for the change to reach Nvim.
  *
  * Assigning a selection queues a sync to Nvim that lands whenever it lands, so a selection that is

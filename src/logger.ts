@@ -5,7 +5,6 @@ import { Disposable, window } from "vscode";
 import * as vscode from "vscode";
 
 import { disposeAll } from "./utils";
-import { EXT_NAME } from "./constants";
 
 export interface ILogger {
     trace(...args: any[]): void;
@@ -26,8 +25,11 @@ export interface ILogger {
     log(uri: vscode.Uri | undefined, level: vscode.LogLevel, ...logArgs: any[]): void;
 }
 
-function getTimestamp(): string {
-    return new Date().toISOString();
+/** Last 10000 log messages, recorded only with $NEOVIM_DEBUG (see `assertLogs`). */
+const debugLogs: string[] = [];
+
+export function getLogs(): readonly string[] {
+    return debugLogs;
 }
 
 export class Logger implements Disposable {
@@ -45,12 +47,10 @@ export class Logger implements Disposable {
      * @param filePath Write messages to this file.
      * @param logToConsole Write messages to the `console` (Hint: run the "Developer: Toggle Developer Tools" vscode command to see the console).
      */
-    public init(filePath: string, logToConsole = false) {
-        this.outputChannel = window.createOutputChannel(`${EXT_NAME} logs`, { log: true });
-        this.disposables.push(
-            this.outputChannel,
-            this.outputChannel.onDidChangeLogLevel((level) => this.onLogLevelChanged(level)),
-        );
+    /** @param outputChannel Owned by the caller, which also disposes it. */
+    public init(filePath: string, logToConsole: boolean, outputChannel: vscode.LogOutputChannel) {
+        this.outputChannel = outputChannel;
+        this.disposables.push(this.outputChannel.onDidChangeLogLevel((level) => this.onLogLevelChanged(level)));
 
         this.level = this.outputChannel.logLevel;
         this.logToConsole = logToConsole;
@@ -102,7 +102,9 @@ export class Logger implements Disposable {
     }
 
     private log(level: vscode.LogLevel, scope: string, logToOutputChannel: boolean, args: any[]): void {
-        const msg = args.reduce((p, c, i) => {
+        const timestamp = new Date().toISOString();
+
+        const msg = args.reduce<string>((p, c, i) => {
             if (typeof c === "object") {
                 try {
                     c = inspect(c, false, 2, false);
@@ -110,11 +112,18 @@ export class Logger implements Disposable {
                     // ignore
                 }
             }
-            return p + (i > 0 ? " " : "") + c;
+            return `${p}${i > 0 ? " " : ""}${c}`;
         }, "");
 
+        if (process.env.NEOVIM_DEBUG) {
+            debugLogs.push(msg);
+            if (debugLogs.length > 10000) {
+                debugLogs.shift();
+            }
+        }
+
         if (this.fd || this.logToConsole) {
-            const logMsg = `${getTimestamp()} ${scope}: ${msg}`;
+            const logMsg = `${timestamp} ${scope}: ${msg}`;
             if (this.fd) {
                 fs.appendFileSync(this.fd, logMsg + "\n");
             }
@@ -128,7 +137,7 @@ export class Logger implements Disposable {
         const activeDoc = window.activeTextEditor?.document; // "output:asvetliakov.vscode-neovim.vscode-neovim"
         const outputFocused = activeDoc?.uri.scheme === "output" || activeDoc?.fileName?.startsWith("output:");
         if (logToOutputChannel && this.outputChannel && activeDoc && !outputFocused) {
-            const fullMsg = `${scope}: ${msg}`;
+            const fullMsg = `${scope}: ${msg.trim()}`;
             switch (level) {
                 case vscode.LogLevel.Error:
                     this.outputChannel.error(fullMsg);
