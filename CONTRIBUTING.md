@@ -90,7 +90,7 @@ support nvim bindings.
     -   All other files are managers responsible for syncing a specific aspect of the editor with nvim (such as mode)
         between vscode and nvim
 -   `package.json`: The extension manifest. This is where the extension is configured. This is also where:
-    -   Non-alphanumaric keyboard shortcuts are intercepted and sent to nvim.
+    -   Non-alphanumeric keyboard shortcuts are intercepted and sent to nvim.
     -   Default keybindings targeting vscode features are defined, to make vscode's interface feel more vim-like.
         Shortcuts defined here also have the advantage of having access to vscode's when clause contexts, and are easier
         for users to override.

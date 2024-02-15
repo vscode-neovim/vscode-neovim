@@ -1,7 +1,7 @@
 import path from "path";
 
+import * as vscode from "vscode";
 import Mocha from "mocha";
-import glob from "glob";
 import "source-map-support/register";
 
 export async function run(): Promise<void> {
@@ -16,25 +16,32 @@ export async function run(): Promise<void> {
         retries: 2,
     });
     const testsRoot = path.resolve(__dirname, "..");
+
     return new Promise((c, e) => {
-        glob("**/**.test.js", { cwd: testsRoot }, (err, files) => {
-            if (err) {
-                return e(err);
-            }
-            // Add files to the test suite
-            files.forEach((f) => mocha.addFile(path.resolve(testsRoot, f)));
-            try {
-                // Run the mocha test
-                mocha.run((failures) => {
-                    if (failures > 0) {
-                        e(new Error(`${failures} tests failed.`));
-                    } else {
-                        c();
-                    }
-                });
-            } catch (err) {
+        return vscode.workspace.findFiles(new vscode.RelativePattern(vscode.Uri.file(testsRoot), "**/**.test.js")).then(
+            (testFiles) => {
+                // Add files to the test suite, in alphanumeric order.
+                testFiles.sort((a, b) => a.fsPath.localeCompare(b.fsPath));
+                for (const f of testFiles) {
+                    mocha.addFile(path.resolve(testsRoot, f.fsPath));
+                }
+
+                try {
+                    // Run the mocha test
+                    mocha.run((failures) => {
+                        if (failures > 0) {
+                            e(new Error(`${failures} tests failed.`));
+                        } else {
+                            c();
+                        }
+                    });
+                } catch (err) {
+                    e(err);
+                }
+            },
+            (err) => {
                 e(err);
-            }
-        });
+            },
+        );
     });
 }
