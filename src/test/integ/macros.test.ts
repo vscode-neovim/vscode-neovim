@@ -136,7 +136,7 @@ describe("Macros", () => {
         );
 
         await sendVSCodeKeys("qa", 200);
-        await sendInsertKey("O", 500);
+        await sendInsertKey("O");
         await sendVSCodeKeys("blah");
         await sendEscapeKey();
         await sendVSCodeKeys("q");

@@ -14,6 +14,7 @@ import {
     sendNeovimKeys,
     sendVSCodeKeys,
     wait,
+    waitForNvimBuffer,
 } from "./integrationUtils";
 
 describe("BufWriteCmd integration", () => {
@@ -53,6 +54,7 @@ describe("BufWriteCmd integration", () => {
         const doc = await workspace.openTextDocument(uri);
         assert.equal(doc.getText(), "hello world");
         await window.showTextDocument(doc);
+        await waitForNvimBuffer(doc);
         await sendEscapeKey();
         return doc;
     };
@@ -82,6 +84,7 @@ describe("BufWriteCmd integration", () => {
         const doc = await workspace.openTextDocument(testFileSymbolicUri);
         assert.equal(doc.getText(), "hello friends");
         await window.showTextDocument(doc);
+        await waitForNvimBuffer(doc);
         await sendEscapeKey();
         return doc;
     };

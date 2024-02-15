@@ -71,6 +71,9 @@ export async function waitForCondition(
 export const describeSkipMacos = process.platform === "darwin" ? describe.skip : describe;
 export const itSkipMacos = process.platform === "darwin" ? it.skip : it;
 
+/** The client of the running suite, so helpers can wait on Nvim without every caller passing it. */
+let testClient: NeovimClient | undefined;
+
 export async function attachTestNvimClient(): Promise<NeovimClient> {
     const NV_HOST = process.env.NEOVIM_DEBUG_HOST || "127.0.0.1";
     const NV_PORT = process.env.NEOVIM_DEBUG_PORT || 4000;
@@ -82,11 +85,13 @@ export async function attachTestNvimClient(): Promise<NeovimClient> {
     await client.channelId;
 
     (client as any).testConn = conn;
+    testClient = client;
     return client;
 }
 
 export async function closeNvimClient(client: NeovimClient): Promise<void> {
     const conn: net.Socket = (client as any).testConn;
+    testClient = undefined;
 
     // Try to gracefully close the socket first, this prevents noisy errors if it works.
     // The Neovim server seems well-behaved normally and will close the connection.
@@ -185,7 +190,15 @@ export async function sendVSCodeKeysAtomic(keys: string, waitTimeout = 250): Pro
     await sendVSCodeCommand("type", { text: keys }, waitTimeout);
 }
 
-export async function sendVSCodeKeys(keys: string, waitTimeout = 250): Promise<void> {
+/**
+ * Sends `keys` one at a time, treating a `<...>` sequence as a single key.
+ *
+ * Keys are paced because the extension applies each one over several async hops, and sending the
+ * next before the last has landed desyncs Nvim from the VSCode document. Keys that switch input
+ * routing (insert mode, cmdline) need the longer pause. Nothing is waited out after the last key:
+ * the assertion that follows does that (see `assertContent`).
+ */
+export async function sendVSCodeKeys(keys: string, waitTimeout = 0): Promise<void> {
     let key = "";
     let append = false;
     for (const k of keys) {
@@ -199,7 +212,9 @@ export async function sendVSCodeKeys(keys: string, waitTimeout = 250): Promise<v
             await sendVSCodeKeysAtomic(key, "iaAIoO.:".includes(k) ? 300 : 50);
         }
     }
-    await wait(waitTimeout);
+    if (waitTimeout) {
+        await wait(waitTimeout);
+    }
 }
 
 export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTimeout = 250): Promise<void> {
@@ -207,21 +222,31 @@ export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTim
     await wait(waitTimeout);
 }
 
-export async function sendEscapeKey(timeout = 250): Promise<void> {
+/**
+ * Returns to normal mode, waiting until Nvim reports it via the cursor style.
+ *
+ * An escape sent from normal mode still does work the extension must settle, but reaching a block
+ * cursor proves nothing about it, since the cursor was already one. Nvim reports no state change
+ * to wait on in that case, so it is waited out.
+ */
+export async function sendEscapeKey(): Promise<void> {
+    const wasNormalMode = hasVSCodeCursorStyle("block");
     await commands.executeCommand("vscode-neovim.escape");
     await waitForCondition(() => assert.ok(hasVSCodeCursorStyle("block"), "escape should give a block cursor"), 10000);
-    await wait(timeout);
+    if (wasNormalMode) {
+        await wait(250);
+    }
 }
 
-export async function sendInsertKey(key = "i", timeout = 250): Promise<void> {
+/** Enters insert mode, waiting until Nvim reports it via the cursor style. */
+export async function sendInsertKey(key = "i"): Promise<void> {
     await sendVSCodeKeys(key, 0);
     await waitForCondition(() => assert.ok(hasVSCodeCursorStyle("line"), `"${key}" should give a line cursor`), 10000);
-    await wait(timeout);
 }
 
 export async function sendVSCodeSpecialKey(
     key: "backspace" | "delete" | "cursorLeft" | "cursorRight" | "cursorUp" | "cursorDown",
-    waitTimeout = 100,
+    waitTimeout = 10,
 ): Promise<void> {
     switch (key) {
         case "backspace": {
@@ -243,6 +268,16 @@ export async function sendVSCodeSpecialKey(
     await wait(waitTimeout);
 }
 
+/**
+ * Asserts the expected state of Nvim and VSCode, retrying until they agree.
+ *
+ * Sending a key is asynchronous all the way down (VSCode command -> extension -> Nvim -> redraw
+ * -> extension -> VSCode document edit), so the state settles some unknown time after the key was
+ * sent. Retrying here is what lets the senders return without waiting out a fixed delay.
+ *
+ * A test asserting that something does *not* happen must `wait()` first, because the expected
+ * state is already true when the assertion starts.
+ */
 export async function assertContent(
     options: {
         cursor?: [number, number];
@@ -259,6 +294,22 @@ export async function assertContent(
     editor?: TextEditor,
     stack = new Error().stack,
 ): Promise<void> {
+    options.vsCodeCursor = options.vsCodeCursor ?? options.cursor;
+    options.neovimCursor = options.neovimCursor ?? options.cursor;
+
+    try {
+        await waitForCondition(() => assertContentOnce(options, client, editor));
+    } catch (e) {
+        (e as Error).stack = stack;
+        throw e;
+    }
+}
+
+async function assertContentOnce(
+    options: Parameters<typeof assertContent>[0],
+    client: NeovimClient,
+    editor?: TextEditor,
+): Promise<void> {
     if (!editor) {
         editor = window.activeTextEditor;
     }
@@ -266,87 +317,86 @@ export async function assertContent(
         throw new Error("No active editor");
     }
 
-    options.vsCodeCursor = options.vsCodeCursor ?? options.cursor;
-    options.neovimCursor = options.neovimCursor ?? options.cursor;
-
-    try {
-        if (options.content) {
-            assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");
-            assert.deepEqual(getVSCodeContent(), options.content, "VSCode content is wrong");
-        }
-        if (options.neovimCursor) {
-            assert.deepEqual(
-                await getNeovimCursor(client),
-                options.neovimCursor,
-                `Cursor position in neovim - ${options.neovimCursor[0]}:${options.neovimCursor[1]}`,
-            );
-        }
-        if (options.vsCodeSelections) {
-            assert.deepEqual(editor.selections, options.vsCodeSelections, "Selections in vscode are not correct");
-        }
-        if (options.vsCodeCursor) {
-            assert.deepEqual(
-                getVScodeCursor(editor),
-                options.vsCodeCursor,
-                `Cursor position in vscode - ${options.vsCodeCursor[0]}:${options.vsCodeCursor[1]}`,
-            );
-        }
-        if (options.cursorLine) {
-            const vscodeCursor = getVScodeCursor(editor);
-            const nvimCursor = await getNeovimCursor(client);
-            assert.deepEqual(
-                vscodeCursor[0],
-                options.cursorLine,
-                `Cursor line position in vscode is not correct: ${vscodeCursor[0]}`,
-            );
-            assert.deepEqual(
-                nvimCursor[0],
-                options.cursorLine,
-                `Cursor line position in neovim is not correct: ${vscodeCursor[0]}`,
-            );
-        }
-        if (options.vsCodeVisibleRange) {
-            const range = editor.visibleRanges[0];
-            const top = range.start.line;
-            const bottom = range.end.line;
-            if (options.vsCodeVisibleRange.top) {
-                assert.ok(
-                    top === options.vsCodeVisibleRange.top ||
-                        top === options.vsCodeVisibleRange.top - 1 ||
-                        top === options.vsCodeVisibleRange.top + 1,
-                    "Top visible range is wrong",
-                );
-            }
-            if (options.vsCodeVisibleRange.bottom) {
-                assert.ok(
-                    bottom === options.vsCodeVisibleRange.bottom ||
-                        bottom === options.vsCodeVisibleRange.bottom - 1 ||
-                        bottom === options.vsCodeVisibleRange.bottom + 1,
-                    "Bottom visible range is wrong",
-                );
-            }
-        }
-        if (options.cursorStyle) {
+    if (options.content) {
+        assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");
+        assert.deepEqual(getVSCodeContent(), options.content, "VSCode content is wrong");
+    }
+    if (options.neovimCursor) {
+        assert.deepEqual(
+            await getNeovimCursor(client),
+            options.neovimCursor,
+            `Cursor position in neovim - ${options.neovimCursor[0]}:${options.neovimCursor[1]}`,
+        );
+    }
+    if (options.vsCodeSelections) {
+        assert.deepEqual(editor.selections, options.vsCodeSelections, "Selections in vscode are not correct");
+    }
+    if (options.vsCodeCursor) {
+        assert.deepEqual(
+            getVScodeCursor(editor),
+            options.vsCodeCursor,
+            `Cursor position in vscode - ${options.vsCodeCursor[0]}:${options.vsCodeCursor[1]}`,
+        );
+    }
+    if (options.cursorLine) {
+        const vscodeCursor = getVScodeCursor(editor);
+        const nvimCursor = await getNeovimCursor(client);
+        assert.deepEqual(
+            vscodeCursor[0],
+            options.cursorLine,
+            `Cursor line position in vscode is not correct: ${vscodeCursor[0]}`,
+        );
+        assert.deepEqual(
+            nvimCursor[0],
+            options.cursorLine,
+            `Cursor line position in neovim is not correct: ${vscodeCursor[0]}`,
+        );
+    }
+    if (options.vsCodeVisibleRange) {
+        const range = editor.visibleRanges[0];
+        const top = range.start.line;
+        const bottom = range.end.line;
+        if (options.vsCodeVisibleRange.top) {
             assert.ok(
-                hasVSCodeCursorStyle(options.cursorStyle),
-                `VSCode cursor style should be: ${options.cursorStyle}`,
+                top === options.vsCodeVisibleRange.top ||
+                    top === options.vsCodeVisibleRange.top - 1 ||
+                    top === options.vsCodeVisibleRange.top + 1,
+                "Top visible range is wrong",
             );
         }
-        if (options.mode) {
-            assert.equal(await getCurrentNeovimMode(client), options.mode, `Neovim mode should be: ${options.mode}`);
+        if (options.vsCodeVisibleRange.bottom) {
+            assert.ok(
+                bottom === options.vsCodeVisibleRange.bottom ||
+                    bottom === options.vsCodeVisibleRange.bottom - 1 ||
+                    bottom === options.vsCodeVisibleRange.bottom + 1,
+                "Bottom visible range is wrong",
+            );
         }
-    } catch (e) {
-        (e as Error).stack = stack;
-        throw e;
+    }
+    if (options.cursorStyle) {
+        assert.ok(hasVSCodeCursorStyle(options.cursorStyle), `VSCode cursor style should be: ${options.cursorStyle}`);
+    }
+    if (options.mode) {
+        assert.equal(await getCurrentNeovimMode(client), options.mode, `Neovim mode should be: ${options.mode}`);
     }
 }
 
+/**
+ * Selects `selection`, waiting for the change to reach Nvim.
+ *
+ * Assigning a selection queues a sync to Nvim that lands whenever it lands, so a selection that is
+ * already current is left alone: the sync it would queue has nothing to say, but would still
+ * arrive later and move the cursor out from under whatever the test does next.
+ */
 export async function setSelection(selection: Selection, waitTimeout = 250, editor?: TextEditor): Promise<void> {
     if (!editor) {
         editor = window.activeTextEditor;
     }
     if (!editor) {
         throw new Error("No editor");
+    }
+    if (editor.selections.length === 1 && editor.selections[0].isEqual(selection)) {
+        return;
     }
 
     editor.selections = [selection];
@@ -377,6 +427,22 @@ export async function pasteVSCode(): Promise<void> {
     await sendVSCodeCommand("editor.action.clipboardPasteAction");
 }
 
+/**
+ * Waits until Nvim's current buffer is the one backing `doc`.
+ *
+ * Nvim gets its buffer for a newly shown document asynchronously, and cannot be typed into until
+ * it does. `b:vscode_uri` is set as part of that setup.
+ */
+export async function waitForNvimBuffer(doc: TextDocument): Promise<void> {
+    await waitForCondition(async () =>
+        assert.equal(
+            await testClient!.request("nvim_buf_get_var", [0, "vscode_uri"]),
+            doc.uri.toString(),
+            "Nvim should have the document as its current buffer",
+        ),
+    );
+}
+
 export async function openTextDocument(options: { content: string; language?: string } | string): Promise<TextEditor> {
     let doc: TextDocument;
     if (typeof options === "string") {
@@ -385,6 +451,7 @@ export async function openTextDocument(options: { content: string; language?: st
         doc = await workspace.openTextDocument(options);
     }
     const editor = await window.showTextDocument(doc, ViewColumn.One);
+    await waitForNvimBuffer(doc);
     await setCursor(0, 0);
     await sendEscapeKey();
     return editor;

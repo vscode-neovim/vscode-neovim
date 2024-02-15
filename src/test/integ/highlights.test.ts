@@ -10,6 +10,7 @@ import {
     sendEscapeKey,
     sendNeovimKeys,
     wait,
+    waitForNvimBuffer,
 } from "./integrationUtils";
 
 describe("Test highlights", () => {
@@ -43,8 +44,8 @@ describe("Test highlights", () => {
         const doc = await vscode.workspace.openTextDocument({
             content: ["test ext match", "test ext match", "test ext match"].join("\n"),
         });
-        await wait(500);
         await vscode.window.showTextDocument(doc);
+        await waitForNvimBuffer(doc);
 
         const curEditor = vscode.window.activeTextEditor;
         assert.ok(curEditor != null);
@@ -88,6 +89,7 @@ describe("Test highlights", () => {
             content: ["hello", " ".repeat(3000), "world", " ".repeat(1000)].join(""),
         });
         await vscode.window.showTextDocument(doc);
+        await waitForNvimBuffer(doc);
 
         const curEditor = vscode.window.activeTextEditor;
         assert.ok(curEditor != null);
