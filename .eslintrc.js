@@ -17,7 +17,13 @@ module.exports = {
         quotes: ["error", "double", { avoidEscape: true, allowTemplateLiterals: false }],
         "no-unused-vars": [
             "error",
-            { vars: "all", args: "after-used", ignoreRestSiblings: false, argsIgnorePattern: "^_" },
+            {
+                vars: "all",
+                args: "after-used",
+                ignoreRestSiblings: false,
+                argsIgnorePattern: "^_",
+                varsIgnorePattern: "^_",
+            },
         ],
         "require-atomic-updates": "off", // many false positives, boring for nonsense
         // these are don't work with TS and TS already checks imports
@@ -50,6 +56,7 @@ module.exports = {
                         args: "after-used",
                         ignoreRestSiblings: true,
                         argsIgnorePattern: "^_",
+                        varsIgnorePattern: "^_",
                     },
                 ],
                 "@typescript-eslint/explicit-function-return-type": "off",

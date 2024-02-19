@@ -181,10 +181,8 @@ export class DocumentChangeManager implements Disposable {
 
         while (this.pendingEvents.length) {
             const newTextByDoc: Map<TextDocument, string[]> = new Map();
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             let edit = this.pendingEvents.shift();
             while (edit) {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const [bufId, _tick, firstLine, lastLine, data, _more] = edit;
                 const doc = this.main.bufferManager.getTextDocumentForBufferId(bufId);
                 if (!doc) {
