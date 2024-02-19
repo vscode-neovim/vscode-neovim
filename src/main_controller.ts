@@ -1,5 +1,6 @@
 import { ChildProcess, spawn } from "child_process";
 import path from "path";
+import fs from "node:fs";
 
 import { attach, NeovimClient } from "neovim";
 import vscode, { Disposable, Range, window, type ExtensionContext } from "vscode";
@@ -153,6 +154,7 @@ export class MainController implements vscode.Disposable {
 
         await VSCodeContext.set("neovim.init", true);
         await this.logNvimInfo(); // Do this _after_ UIAttach.
+        await this.validateNvimRuntime();
         logger.debug(`Init completed`);
     }
 
@@ -362,6 +364,25 @@ export class MainController implements vscode.Disposable {
         `;
         const nvimInfo = await this.client.executeLua(luaCode, []);
         logger.info("Nvim info:", nvimInfo);
+    }
+
+    private async validateNvimRuntime() {
+        // WEIRD BUT TRUE: $VIMRUNTIME may be inaccessible even though Nvim itself is runnable! #1815
+        const luaCode = `
+            return vim.env.VIMRUNTIME
+        `;
+        const runtimeDir = await this.client.executeLua(luaCode, []);
+        try {
+            const files = typeof runtimeDir === "string" ? fs.readdirSync(runtimeDir) : [];
+            if (files.length <= 0) {
+                throw new Error();
+            }
+            return;
+        } catch {
+            logger.error(
+                `Cannot read $VIMRUNTIME directory "${runtimeDir}". Ensure that VSCode has access to that directory. Also try :checkhealth.`,
+            );
+        }
     }
 
     dispose() {
