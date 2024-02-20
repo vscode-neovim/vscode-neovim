@@ -21,10 +21,6 @@ export class TypingManager implements Disposable {
      */
     private isExitingInsertMode = false;
     /**
-     * Flag indicating if vscode-neovim is enabled or disabled
-     */
-    private neovimEnable = true;
-    /**
      * Flag indicating that we're going to enter insert mode and there are pending document changes
      */
     private isEnteringInsertMode = false;

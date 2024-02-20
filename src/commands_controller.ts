@@ -8,8 +8,8 @@ import { disposeAll } from "./utils";
 export class CommandsController implements Disposable {
     private disposables: Disposable[] = [];
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public constructor(private main: MainController) {
+        void this.main;
         this.disposables.push(
             commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
             commands.registerCommand("vscode-neovim.ctrl-b", () => this.scrollPage("page", "up")),
