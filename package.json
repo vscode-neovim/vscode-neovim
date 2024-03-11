@@ -397,27 +397,27 @@
             },
             {
                 "command": "vscode-neovim.lua",
-                "title": "Neovim: Executes lua"
+                "title": "Neovim: Execute lua code"
             },
             {
                 "command": "vscode-neovim.send",
-                "title": "Neovim: send key to neovim, syncing if in insert mode"
+                "title": "Neovim: Send key to neovim, syncing if in insert mode"
             },
             {
                 "command": "vscode-neovim.send-blocking",
-                "title": "Neovim: send multiple keys to neovim, used for insert mode paste"
+                "title": "Neovim: Send multiple keys to neovim, used for insert mode paste"
             },
             {
                 "command": "vscode-neovim.escape",
-                "title": "Neovim send escape key to neovim, or other keys that will exit insert mode"
+                "title": "Neovim: Send escape key to neovim, or other keys that will exit insert mode"
             },
             {
                 "command": "vscode-neovim.compositeEscape1",
-                "title": "Composite escape key 1"
+                "title": "Neovim: Composite escape key 1"
             },
             {
                 "command": "vscode-neovim.compositeEscape2",
-                "title": "Composite escape key 2"
+                "title": "Neovim: Composite escape key 2"
             },
             {
                 "command": "vscode-neovim.commit-cmdline",
@@ -2086,7 +2086,7 @@
     "devDependencies": {
         "@types/lodash-es": "^4.17.12",
         "@types/mocha": "^10.0.6",
-        "@types/node": "^20.11.24",
+        "@types/node": "^20.11.25",
         "@types/vscode": "^1.83.1",
         "@typescript-eslint/eslint-plugin": "^5.62.0",
         "@typescript-eslint/parser": "^5.62.0",
