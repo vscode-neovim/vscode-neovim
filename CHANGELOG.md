@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.7.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.6.1...v1.7.0) (2024-03-11)
+
+
+### Features
+
+* **logging:** check that $VIMRUNTIME is readable [#1816](https://github.com/vscode-neovim/vscode-neovim/issues/1816) ([c9ddc3e](https://github.com/vscode-neovim/vscode-neovim/commit/c9ddc3ea90444e17b325c1b2c0c6756ad8d8374d)), closes [#1815](https://github.com/vscode-neovim/vscode-neovim/issues/1815)
+* **logging:** log Nvim info at startup ([#1797](https://github.com/vscode-neovim/vscode-neovim/issues/1797)) ([6b174c8](https://github.com/vscode-neovim/vscode-neovim/commit/6b174c81d4327186d350643a4867f7155693d18a))
+
 ## [1.6.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.6.0...v1.6.1) (2024-02-12)
 
 
