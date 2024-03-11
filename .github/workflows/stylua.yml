@@ -1,4 +1,4 @@
-name: style checking
+name: Check Lua Style
 
 on: [push, pull_request]
 
@@ -13,4 +13,4 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   version: latest
                   # CLI arguments
-                  args: --color always --check runtime/lua
+                  args: --color always --check runtime
