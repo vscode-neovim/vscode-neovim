@@ -1,6 +1,5 @@
 import { ChildProcess, spawn } from "child_process";
 import path from "path";
-import fs from "node:fs";
 
 import { attach, NeovimClient } from "neovim";
 import vscode, { Disposable, Range, window, type ExtensionContext } from "vscode";
@@ -373,12 +372,13 @@ export class MainController implements vscode.Disposable {
         `;
         const runtimeDir = await this.client.executeLua(luaCode, []);
         try {
-            const files = typeof runtimeDir === "string" ? fs.readdirSync(runtimeDir) : [];
+            const runtimeDirUri = typeof runtimeDir === "string" ? vscode.Uri.file(runtimeDir) : undefined;
+            const files = runtimeDirUri ? await vscode.workspace.fs.readDirectory(runtimeDirUri) : [];
             if (files.length <= 0) {
                 throw new Error();
             }
             return;
-        } catch {
+        } catch (err) {
             logger.error(
                 `Cannot read $VIMRUNTIME directory "${runtimeDir}". Ensure that VSCode has access to that directory. Also try :checkhealth.`,
             );
