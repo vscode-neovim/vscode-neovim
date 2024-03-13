@@ -1,6 +1,5 @@
 import { ChildProcess, spawn } from "child_process";
 import path from "path";
-import fs from "node:fs";
 
 import { attach, NeovimClient } from "neovim";
 import vscode, { Disposable, Range, window, type ExtensionContext } from "vscode";
@@ -17,8 +16,8 @@ import { DocumentChangeManager } from "./document_change_manager";
 import { eventBus } from "./eventBus";
 import { HighlightManager } from "./highlight_manager";
 import { createLogger } from "./logger";
-import { ModeManager } from "./mode_manager";
 import { MessagesManager } from "./messages_manager";
+import { ModeManager } from "./mode_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
 import { disposeAll, findLastEvent, VSCodeContext, wslpath } from "./utils";
@@ -369,20 +368,21 @@ export class MainController implements vscode.Disposable {
     private async validateNvimRuntime() {
         // WEIRD BUT TRUE: $VIMRUNTIME may be inaccessible even though Nvim itself is runnable! #1815
         const luaCode = `
-            return vim.env.VIMRUNTIME
+          local ok = pcall(function()
+            local dir = vim.loop.fs_opendir(vim.env.VIMRUNTIME)
+            assert(dir ~= nil)
+            local entry = dir:readdir()
+            dir:closedir()
+            assert(entry ~= nil)
+          end)
+          return { ok, vim.env.VIMRUNTIME }
         `;
-        const runtimeDir = await this.client.executeLua(luaCode, []);
-        try {
-            const files = typeof runtimeDir === "string" ? fs.readdirSync(runtimeDir) : [];
-            if (files.length <= 0) {
-                throw new Error();
-            }
-            return;
-        } catch {
+        const ret = await this.client.executeLua(luaCode, []);
+        const [ok, runtimeDir] = ret as [boolean, string];
+        if (!ok)
             logger.error(
                 `Cannot read $VIMRUNTIME directory "${runtimeDir}". Ensure that VSCode has access to that directory. Also try :checkhealth.`,
             );
-        }
     }
 
     dispose() {
