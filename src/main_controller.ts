@@ -368,14 +368,8 @@ export class MainController implements vscode.Disposable {
     private async validateNvimRuntime() {
         // WEIRD BUT TRUE: $VIMRUNTIME may be inaccessible even though Nvim itself is runnable! #1815
         const luaCode = `
-          local ok = pcall(function()
-            local dir = vim.loop.fs_opendir(vim.env.VIMRUNTIME)
-            assert(dir ~= nil)
-            local entry = dir:readdir()
-            dir:closedir()
-            assert(entry ~= nil)
-          end)
-          return { ok, vim.env.VIMRUNTIME }
+            local rt = vim.env.VIMRUNTIME
+            return { vim.fs.dir(rt)() ~= nil, rt }
         `;
         const ret = await this.client.executeLua(luaCode, []);
         const [ok, runtimeDir] = ret as [boolean, string];
