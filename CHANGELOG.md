@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.7.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.7.0...v1.7.1) (2024-03-13)
+
+
+### Bug Fixes
+
+* **startup:** $VIMRUNTIME check fails on WSL [#1850](https://github.com/vscode-neovim/vscode-neovim/issues/1850) ([6db15d0](https://github.com/vscode-neovim/vscode-neovim/commit/6db15d02a1547e53a9373680a52fa6160346a1e7)), closes [#1848](https://github.com/vscode-neovim/vscode-neovim/issues/1848)
+
 ## [1.7.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.6.1...v1.7.0) (2024-03-11)
 
 
