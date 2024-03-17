@@ -21,7 +21,7 @@ async function get(client: NeovimClient, name: string): Promise<any> {
 
 function pathsEqual(a: string, b: string) {
     if (process.platform == "win32") {
-        return path.win32.normalize(output) == path.win32.normalize(b);
+        return path.win32.normalize(a) == path.win32.normalize(b);
     } else {
         return a == b;
     }
@@ -50,13 +50,13 @@ describe("Actions", () => {
         await openTextDocument(filePath);
 
         let output = await get(client, "");
-        assert.equal(null, output);
+        assert.equal(output, null);
 
         output = await get(client, "window");
-        assert.equal("[object Object]", output);
+        assert.equal(output, "[object Object]");
 
         output = await get(client, "window.showWarningMessage");
-        assert.equal("function showWarningMessage() { [native code] }", output);
+        assert.equal(output, "function showWarningMessage() { [native code] }");
 
         output = await get(client, "window.activeTextEditor.document.fileName");
         assert.ok(pathsEqual(output, filePath));
