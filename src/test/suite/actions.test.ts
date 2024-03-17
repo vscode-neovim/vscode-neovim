@@ -20,8 +20,8 @@ async function get(client: NeovimClient, name: string): Promise<any> {
 }
 
 function pathsEqual(a: string, b: string) {
-    if (process.platform == "win32") {
-        return path.win32.normalize(a) == path.win32.normalize(b);
+    if (process.platform === "win32") {
+        return a.toLowerCase() === b.toLowerCase();
     } else {
         return a == b;
     }
@@ -59,7 +59,7 @@ describe("Actions", () => {
         assert.equal(output, "function showWarningMessage() { [native code] }");
 
         output = await get(client, "window.activeTextEditor.document.fileName");
-        assert.ok(pathsEqual(output, filePath));
+        assert.ok(pathsEqual(output, filePath), `${output} != ${filePath}`);
 
         output = await get(client, "window.tabGroups.activeTabGroup.activeTab.isPinned");
         assert.equal(output, false);
@@ -105,6 +105,6 @@ describe("Actions", () => {
         assert.equal(output, "[object Object]");
 
         output = await get(client, "window.visibleTextEditors.0.document.fileName");
-        assert.ok(pathsEqual(output, filePath));
+        assert.ok(pathsEqual(output, filePath), `${output} != ${filePath}`);
     });
 });
