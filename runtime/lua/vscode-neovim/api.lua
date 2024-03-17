@@ -171,6 +171,16 @@ function M.call(name, opts, timeout)
   end
 end
 
+--- Obtain a vscode API value (https://code.visualstudio.com/api/references/vscode-api)
+---@param name the variable name to obtain.
+---           - use `foo.bar` to access nested properties. e.g. `window.activeTextEditor.document.fileName`
+---           - use `.123` instead of `[123]` for array access e.g. `extensions.all.0`
+---
+---@return any: result
+function M.get(name)
+  return M.call("get", { args = { name } })
+end
+
 ---------------------------
 ------- Event Hooks -------
 ---------------------------

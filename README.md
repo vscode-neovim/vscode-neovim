@@ -248,16 +248,17 @@ local vscode = require('vscode-neovim')
 
 1. `vscode.action()`: asynchronously executes a vscode command.
 2. `vscode.call()`: synchronously executes a vscode command.
-3. `vscode.on()`: defines a handler for some Nvim UI events.
-4. `vscode.has_config()`: checks if a vscode setting exists.
-5. `vscode.get_config()`: gets a vscode setting value.
-6. `vscode.update_config()`: sets a vscode setting.
-7. `vscode.notify()`: shows a vscode message (see also Nvim's `vim.notify`).
-8. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/plugin/code_actions.lua) for the
+3. `vscode.get()`: obtain a vscode API value.
+4. `vscode.on()`: defines a handler for some Nvim UI events.
+5. `vscode.has_config()`: checks if a vscode setting exists.
+6. `vscode.get_config()`: gets a vscode setting value.
+7. `vscode.update_config()`: sets a vscode setting.
+8. `vscode.notify()`: shows a vscode message (see also Nvim's `vim.notify`).
+9. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/plugin/code_actions.lua) for the
    usage
-9. `vscode.get_status_item`: Gets a vscode statusbar item. Properties can be assigned, which magically updates the
-   statusbar item.
-10. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
+10. `vscode.get_status_item`: Gets a vscode statusbar item. Properties can be assigned, which magically updates the
+    statusbar item.
+11. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
     `:h g:clipboard` for more details. Usage: `let g:clipboard = g:vscode_clipboard`
 
 ### vscode.action(name, opts)
@@ -300,7 +301,7 @@ Parameters:
 
 Returns: the result of the action
 
-### Examples
+#### Examples
 
 -   Format selection (default binding):
     ```vim
@@ -370,6 +371,29 @@ print(vscode.call("_wait", { args = { 1000 } })) -- outputs: ok
 -- Wait for 2 seconds with a timeout of 1 second
 print(vscode.call("_wait", { args = { 2000 } }), 1000)
 -- error: Call '_wait' timed out
+```
+
+### vscode.get(name)
+
+Obtain a [VSCode API](https://code.visualstudio.com/api/references/vscode-api) value.
+
+Parameters:
+
+-   `name (string)`: The name of the variable to obtain
+    -   use `foo.bar` to access nested properties. e.g. `window.activeTextEditor.document.fileName`
+    -   use `.123` instead of `[123]` for array access e.g. `extensions.all.0`
+
+Returns:
+
+-   return the value of the requested variable. Converted to a string if the value is not representable in lua (i.e.
+    "object" or "function")
+
+Examples:
+
+```lua
+local current_file = vscode.get("window.activeTextEditor.document.fileName")
+local current_tab_is_pinned = vscode.get("window.tabGroups.activeTabGroup.activeTab.isPinned")
+local workspace_uri = vscode.get("workspace.workspaceFolders.0.uri")
 ```
 
 ### vscode.on(event, callback)

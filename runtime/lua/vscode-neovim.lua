@@ -18,6 +18,7 @@ local vscode = {
   -- actions
   action = api.action,
   call = api.call,
+  get = api.get,
   -- hooks
   on = api.on,
   -- vscode settings
