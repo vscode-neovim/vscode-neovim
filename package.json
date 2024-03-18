@@ -2106,7 +2106,7 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "async-mutex": "^0.4.1",
+        "async-mutex": "^0.5.0",
         "fast-myers-diff": "^3.2.0",
         "grapheme-splitter": "^1.0.4",
         "lodash-es": "^4.17.21",
