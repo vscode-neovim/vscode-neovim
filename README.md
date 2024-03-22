@@ -525,7 +525,7 @@ To pass custom bindings to Neovim, for example <kbd>C-h</kbd> in normal mode, ad
     // don't activate during insert mode
     "when": "editorTextFocus && neovim.mode != insert",
     // the input to send to Neovim
-    "args": "<C-h>",
+    "args": "<C-h>"
 }
 ```
 
