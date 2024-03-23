@@ -5,12 +5,11 @@ import Mocha from "mocha";
 import "source-map-support/register";
 
 export async function run(): Promise<void> {
-    let test_regex = process.env.VSCODE_NEOVIM_TEST_REGEX;
-    if (test_regex !== undefined) {
-        console.log(`running tests by regex: ${test_regex}`);
-    } else {
+    let test_regex = process.env.NEOVIM_TEST_REGEX;
+    if (test_regex === undefined) {
         test_regex = ".*";
     }
+    console.log(`running tests by regex: ${test_regex}`);
 
     // Create the mocha test
     const mocha = new Mocha({
