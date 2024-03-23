@@ -32,3 +32,11 @@ repos:
       rev: v0.20.0
       hooks:
           - id: stylua-github
+    - repo: local
+      hooks:
+          - id: test-compile
+            name: test compile
+            entry: npm run test-compile
+            files: \.ts$
+            language: system
+            pass_filenames: false
