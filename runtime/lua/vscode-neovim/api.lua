@@ -171,14 +171,19 @@ function M.call(name, opts, timeout)
   end
 end
 
---- Obtain a vscode API value (https://code.visualstudio.com/api/references/vscode-api)
----@param name the variable name to obtain.
----           - use `foo.bar` to access nested properties. e.g. `window.activeTextEditor.document.fileName`
----           - use `.123` instead of `[123]` for array access e.g. `extensions.all.0`
+--- Evaluate javascript inside vscode with access to the [vscode API](https://code.visualstudio.com/api/references/vscode-api)
+--
+---@param code string the javascript code to run
+---           - the code runs in an async function context
+---             (so `await` can be used. Make sure to `await` if calling an async function from the VSCode API)
+---           - use `return` to return a value to lua
+---           - use the `vscode` variable to access the VSCode API
+---           - use the `args` variable to access any arguments passed from lua
+---@param args string arguments to serialize and make available to the code being run (as the `args` variable)
 ---
----@return any: result
-function M.get(name)
-  return M.call("get", { args = { name } })
+---@return any: the result of evaluating the given code in VSCode
+function M.eval(code, args)
+  return M.call("eval", { args = { code, args } })
 end
 
 ---------------------------

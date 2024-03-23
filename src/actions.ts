@@ -12,28 +12,11 @@ import vscode, {
     workspace,
 } from "vscode";
 
+import { eval_for_client } from "./actions_eval";
 import { VSCodeContext, disposeAll, rangesToSelections } from "./utils";
 
 function getActionName(action: string) {
     return `neovim:${action}`;
-}
-
-function getVariable(name: string): any {
-    const names = name.split(".");
-    let item: any = vscode;
-    for (let i = 0; i < names.length; i++) {
-        const integer_name = parseInt(names[i]);
-        if (isNaN(integer_name)) {
-            item = item[names[i]];
-        } else {
-            item = item[integer_name];
-        }
-
-        if (typeof item === "undefined") {
-            return item;
-        }
-    }
-    return item;
 }
 
 class ActionManager implements Disposable {
@@ -103,17 +86,8 @@ class ActionManager implements Disposable {
             await new Promise((resolve) => setTimeout(resolve, ms));
             return "ok";
         });
-        this.add("get", (name: string): string | boolean | null => {
-            const value = getVariable(name);
-            const value_type = typeof value;
-            if (value_type === "object") {
-                return String(value);
-            } else if (value_type === "function") {
-                // pretend like all functions are native code even when they aren't since it doesn't matter to neovim
-                return `function ${value.name}() { [native code] }`;
-            } else {
-                return value;
-            }
+        this.add("eval", async (code: string, args: any): Promise<any> => {
+            return await eval_for_client(code, args);
         });
         this.add("has_config", (names: string | string[]): boolean | boolean[] => {
             const config = workspace.getConfiguration();
