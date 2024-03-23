@@ -478,7 +478,7 @@ test.text = nil -- Close the item
 test.text = '' -- error: The status item "test" has been closed
 ```
 
-### vscode.eval(code)
+### vscode.eval(code[, args])
 
 Evaluate javascript inside vscode and return the result. The code is executed in an async function context (so `await`
 can be used). Use a `return` statement to return a value back to lua. Arguments passed from lua are available as the
@@ -489,16 +489,15 @@ Tips:
 
 -   Make sure to `await` on asynchronous functions when accessing the API.
 -   Plain data such as strings, integers etc can be returned directly, but even simple objects such as `{foo: 123}` are
-    returned as `"[object Object]"`. `JSON.stringify()` can be used to serialize plain objects that can be deserialized
-    with `vim.json.decode()` in lua.
+    converted to strings and returned as `"[object Object]"`. `JSON.stringify()` can be used to serialize plain objects
+    to JSON that can be deserialized with `vim.json.decode()` in lua.
 -   `globalThis['some_name'] = ...` can be used to persist values between calls.
 
 Parameters:
 
 -   `code (string)`: The javascript to execute.
--   `args (any)`: Optionally provide arguments that are accessible as the `args` variable in javascript.
-    -   Use `foo.bar` to access nested properties. e.g. `window.activeTextEditor.document.fileName`.
-    -   Use `.123` instead of `[123]` for array access e.g. `extensions.all.0`.
+-   `args (any)`: Optionally provide arguments that are accessible as the `args` variable in javascript. Can be a single
+    value such as a string or a table of multiple values.
 
 Returns:
 
