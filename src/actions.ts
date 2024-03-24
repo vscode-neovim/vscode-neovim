@@ -86,9 +86,7 @@ class ActionManager implements Disposable {
             await new Promise((resolve) => setTimeout(resolve, ms));
             return "ok";
         });
-        this.add("eval", async (code: string, args: any): Promise<any> => {
-            return await eval_for_client(code, args);
-        });
+        this.add("eval", (code: string, args: any) => eval_for_client(code, args));
         this.add("has_config", (names: string | string[]): boolean | boolean[] => {
             const config = workspace.getConfiguration();
             if (Array.isArray(names)) {
