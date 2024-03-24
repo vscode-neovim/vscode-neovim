@@ -21,7 +21,7 @@ if outdated then
   local msg = "vscode-neovim requires nvim version "
     .. MIN_VERSION
     .. " or higher. Install the [latest stable version](https://github.com/neovim/neovim/releases/latest)."
-  local cmd = "vscode.window.showErrorMessage(args)"
+  local cmd = "await vscode.window.showErrorMessage(args)"
   vim.rpcnotify(vim.g.vscode_channel, "vscode-action", "eval", { args = { cmd, msg } })
 end
 EOF

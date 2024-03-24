@@ -134,9 +134,18 @@ describe("Eval VSCode", () => {
         assert.equal(output, "nil");
 
         await client.commandOutput(
-            `lua require'vscode-neovim'.eval_async('globalThis["async_ran"] = args; return args;', { args = "yes", callback = function(err, ret) vim.g.async_callback_ran = ret end })`,
-        ),
-            await wait(200);
+            `lua require'vscode-neovim'.eval_async(\
+            'await new Promise((resolve) => setTimeout(resolve, 250));\
+            globalThis["async_ran"] = args; return args;', \
+            { args = "yes", callback = function(err, ret) vim.g.async_callback_ran = ret end })`,
+        );
+
+        output = await eval_from_nvim(client, 'return globalThis["async_ran"];');
+        assert.equal(output, null);
+        output = await client.commandOutput(`lua print(vim.g.async_callback_ran)`);
+        assert.equal(output, "nil");
+
+        await wait(250);
 
         output = await eval_from_nvim(client, 'return globalThis["async_ran"];');
         assert.equal(output, "yes");
