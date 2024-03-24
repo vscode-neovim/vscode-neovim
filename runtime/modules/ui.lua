@@ -65,7 +65,7 @@ local function vscode_ui_select(items, opts, on_choice)
   }
 
   -- open the select dialog
-  vscode.eval_async("await vscode.window.showQuickPick(args.items, args.opts)", {
+  vscode.eval_async("return await vscode.window.showQuickPick(args.items, args.opts)", {
     args = {
       items = vscode_items,
       opts = vscode_opts,
@@ -121,7 +121,7 @@ local function vscode_ui_input(opts, on_confirm)
   }
 
   -- open the input dialog
-  vscode.eval_async("await vscode.window.showInputBox(args.opts)", {
+  vscode.eval_async("return await vscode.window.showInputBox(args.opts)", {
     args = {
       opts = vscode_opts,
     },

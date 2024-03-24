@@ -75,7 +75,7 @@ describe("Yanking and pasting", () => {
 
     it.skip("pasting line after vi{", async () => {
         // see https://github.com/asvetliakov/vscode-neovim/issues/116
-        await openTextDocument(["var test='a'", "", "function blah() {", "    var another;", "}", ""].join("\n"));
+        await openTextDocument({ content: ["var test='a'", "", "function blah() {", "    var another;", "}", ""].join("\n") });
 
         await sendVSCodeKeys("yy");
         await sendVSCodeKeys("jjj");
