@@ -3,6 +3,11 @@
 
 import * as _vscode from "vscode";
 
+import { createLogger } from "./logger";
+
+// @ts-ignore
+const logger = createLogger("eval");
+
 // for some reason, the name used in the import statement is not always visible to the code being run with eval()
 // but global variables/constants are always visible.
 // @ts-ignore

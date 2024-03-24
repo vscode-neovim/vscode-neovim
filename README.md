@@ -489,6 +489,8 @@ can be used). Use a `return` statement to return a value back to lua. Arguments 
 Tips:
 
 -   Make sure to `await` on asynchronous functions when accessing the API.
+-   the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim (logging level
+    controlled with the `vscode-neovim.logLevel` setting)
 -   Plain data such as strings, integers etc can be returned directly, but even simple objects such as `{foo: 123}` are
     converted to strings and returned as `"[object Object]"`. `JSON.stringify()` can be used to serialize plain objects
     to JSON that can be deserialized with `vim.json.decode()` in lua.
