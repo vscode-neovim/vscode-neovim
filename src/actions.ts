@@ -1,16 +1,6 @@
 import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
-import {
-    ConfigurationTarget,
-    Disposable,
-    InputBoxOptions,
-    QuickPickItem,
-    QuickPickOptions,
-    Range,
-    commands,
-    window,
-    workspace,
-} from "vscode";
+import { ConfigurationTarget, Disposable, Range, commands, window, workspace } from "vscode";
 
 import { eval_for_client } from "./actions_eval";
 import { VSCodeContext, disposeAll, rangesToSelections } from "./utils";
@@ -123,10 +113,6 @@ class ActionManager implements Disposable {
                 editor.selections = rangesToSelections(ranges, editor.document);
             }
         });
-        this.add("ui_select", (args: { items: QuickPickItem[]; opts: QuickPickOptions }) =>
-            window.showQuickPick(args.items, args.opts),
-        );
-        this.add("ui_input", (args: { opts: InputBoxOptions }) => window.showInputBox(args.opts));
         this.add("setContext", (key: string, value: any) => VSCodeContext.set(key, value));
     }
 
