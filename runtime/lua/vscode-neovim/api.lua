@@ -324,13 +324,14 @@ function M.notify(msg, level, opts)
   end
 
   if level >= levels.ERROR then
-    level_name = "error"
+    cmd = "await vscode.window.showErrorMessage(args)"
   elseif level >= levels.WARN then
-    level_name = "warn"
+    cmd = "await vscode.window.showWarningMessage(args)"
   else
-    level_name = "info"
+    cmd = "await vscode.window.showInformationMessage(args)"
   end
-  M.action("notify", { args = { msg, level_name } })
+
+  M.eval_async(cmd, { args = msg })
 end
 
 ---------------------------------

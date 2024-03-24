@@ -117,22 +117,6 @@ class ActionManager implements Disposable {
                 await config.update(name, values[idx], targetConfig);
             }
         });
-        this.add("notify", (msg: string, level: "info" | "warn" | "error") => {
-            switch (level) {
-                case "warn": {
-                    window.showWarningMessage(msg);
-                    break;
-                }
-                case "error": {
-                    window.showErrorMessage(msg);
-                    break;
-                }
-                default: {
-                    window.showInformationMessage(msg);
-                    break;
-                }
-            }
-        });
         this.add("start-multiple-cursors", (ranges: Range[]) => {
             const editor = window.activeTextEditor;
             if (editor && ranges.length) {
