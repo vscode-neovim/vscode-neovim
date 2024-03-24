@@ -171,19 +171,49 @@ function M.call(name, opts, timeout)
   end
 end
 
---- Evaluate javascript inside vscode with access to the [vscode API](https://code.visualstudio.com/api/references/vscode-api)
---
+--- Evaluate javascript synchronously inside vscode with access to the
+--- [vscode API](https://code.visualstudio.com/api/references/vscode-api) and return the result.
+---
 ---@param code string the javascript code to run
 ---           - the code runs in an async function context
 ---             (so `await` can be used. Make sure to `await` if calling an async function from the VSCode API)
 ---           - use `return` to return a value to lua
 ---           - use the `vscode` variable to access the VSCode API
 ---           - use the `args` variable to access any arguments passed from lua
----@param args string arguments to serialize and make available to the code being run (as the `args` variable)
+---@param opts? table Optional options table, all fields are optional
+---            - args: (any) Optional arguments to serialize and make available to the code being run (as the `args` variable)
+---@param timeout? number Timeout in milliseconds. The default value is -1, which means no timeout.
 ---
 ---@return any: the result of evaluating the given code in VSCode
-function M.eval(code, args)
-  return M.call("eval", { args = { code, args } })
+function M.eval(code, opts)
+  vim.validate({
+    code = { code, "string" },
+    opts = { opts, "table", true },
+    timeout = { timeout, "number", true },
+  })
+  opts = opts or {}
+  opts.args = { code, opts.args }
+  return M.call("eval", opts)
+end
+
+--- Evaluate javascript asynchronously inside vscode with access to the
+--- [vscode API](https://code.visualstudio.com/api/references/vscode-api).
+---
+---@param code string the javascript code to run
+---@param opts? table Optional options table, all fields are optional
+---            - args: (any) Optional arguments to serialize and make available to the code being run (as the `args` variable)
+---            - callback: (function(err: string|nil, ret: any))
+---                        Optional callback function to handle the evaluated result.
+---                        The first argument is the error message, and the second is the result.
+---                        If no callback is provided, any error message will be shown as a notification in VSCode.
+function M.eval_async(code, opts)
+  vim.validate({
+    code = { code, "string" },
+    opts = { opts, "table", true },
+  })
+  opts = opts or {}
+  opts.args = { code, opts.args }
+  M.action("eval", opts)
 end
 
 ---------------------------

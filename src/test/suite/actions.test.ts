@@ -20,9 +20,9 @@ async function eval_from_nvim(client: NeovimClient, code: string): Promise<any> 
     );
 }
 
-async function eval_from_nvim_with_args(client: NeovimClient, code: string, args: string): Promise<any> {
+async function eval_from_nvim_with_opts(client: NeovimClient, code: string, opts: string): Promise<any> {
     return JSON.parse(
-        await client.commandOutput(`lua print(vim.fn.json_encode(require'vscode-neovim'.eval('${code}', ${args})))`),
+        await client.commandOutput(`lua print(vim.fn.json_encode(require'vscode-neovim'.eval('${code}', ${opts})))`),
     );
 }
 
@@ -73,13 +73,13 @@ describe("Eval VSCode", () => {
         output = await eval_from_nvim(client, "async function f(v) {return 100 + v;}; return await f(2);");
         assert.equal(output, 102);
 
-        output = await eval_from_nvim_with_args(client, "return args;", "12");
+        output = await eval_from_nvim_with_opts(client, "return args;", "{ args = 12 }");
         assert.equal(output, 12);
 
-        output = await eval_from_nvim_with_args(client, "return args.foo", "{ foo = 12 }");
+        output = await eval_from_nvim_with_opts(client, "return args.foo", "{ args = { foo = 12 } }");
         assert.equal(output, 12);
 
-        output = await eval_from_nvim_with_args(client, "return args[0]", "{ 12 }");
+        output = await eval_from_nvim_with_opts(client, "return args[0]", "{ args = { 12 } }");
         assert.equal(output, 12);
     });
 
@@ -103,7 +103,7 @@ describe("Eval VSCode", () => {
         output = await eval_from_nvim(client, "return vscode.window.tabGroups.activeTabGroup.activeTab.isPinned");
         assert.equal(output, false);
 
-        await eval_from_nvim(client, 'await vscode.commands.executeCommand("workbench.action.pinEditor", "")');
+        await eval_from_nvim(client, 'await vscode.commands.executeCommand("workbench.action.pinEditor")');
         await wait(200);
         try {
             output = await eval_from_nvim(client, "return vscode.window.tabGroups.activeTabGroup.activeTab.isPinned");
@@ -112,7 +112,11 @@ describe("Eval VSCode", () => {
             await sendVSCodeCommand("workbench.action.unpinEditor");
         }
 
-        await eval_from_nvim_with_args(client, "await vscode.env.clipboard.writeText(args.text)", "{ text = 'hi'}");
+        await eval_from_nvim_with_opts(
+            client,
+            "await vscode.env.clipboard.writeText(args.text)",
+            "{ args = { text = 'hi'} }",
+        );
         output = await eval_from_nvim(client, "return await vscode.env.clipboard.readText()");
         assert.equal(output, "hi");
 
@@ -121,6 +125,23 @@ describe("Eval VSCode", () => {
         await eval_from_nvim(client, 'globalThis["foo"] = 123');
         output = await eval_from_nvim(client, 'return globalThis["foo"];');
         assert.equal(output, 123);
+    });
+
+    it("Javascript Async Evaluation", async () => {
+        let output: any = await eval_from_nvim(client, 'return globalThis["async_ran"];');
+        assert.equal(output, null);
+        output = await client.commandOutput(`lua print(vim.g.async_callback_ran)`);
+        assert.equal(output, "nil");
+
+        await client.commandOutput(
+            `lua require'vscode-neovim'.eval_async('globalThis["async_ran"] = args; return args;', { args = "yes", callback = function(err, ret) vim.g.async_callback_ran = ret end })`,
+        ),
+            await wait(200);
+
+        output = await eval_from_nvim(client, 'return globalThis["async_ran"];');
+        assert.equal(output, "yes");
+        output = await client.commandOutput(`lua print(vim.g.async_callback_ran)`);
+        assert.equal(output, "yes");
     });
 
     it("Error handling", async () => {
@@ -139,7 +160,7 @@ describe("Eval VSCode", () => {
         assert.equal(output, null);
 
         await assert.rejects(async () => {
-            await eval_from_nvim(client, 'await vscode.commands.executeCommand("unknown_action", "")');
+            await eval_from_nvim(client, 'await vscode.commands.executeCommand("unknown_action")');
         }, /Error executing lua command 'unknown_action' not found/);
     });
 });

@@ -1,6 +1,6 @@
 import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
-import vscode, {
+import {
     ConfigurationTarget,
     Disposable,
     InputBoxOptions,
