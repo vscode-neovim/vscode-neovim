@@ -126,11 +126,10 @@ local function vscode_ui_input(opts, on_confirm)
       opts = vscode_opts,
     },
     callback = function(err, res)
-      -- distinguish between empty and cancelled
-      if not err and res ~= nil then
-        on_confirm(res)
-      else
+      if err or res == vim.NIL then -- vim.NIL if cancelled
         on_confirm(nil)
+      else
+        on_confirm(res)
       end
     end,
   })
