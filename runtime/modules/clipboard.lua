@@ -20,7 +20,7 @@ end
 local function copy(lines, regtype)
   last_item = { lines, regtype }
   local text = table.concat(lines, "\n")
-  code.eval("await vscode.env.clipboard.writeText(args)", text)
+  code.eval("await vscode.env.clipboard.writeText(args)", { args = text })
 end
 
 vim.g.vscode_clipboard = {
