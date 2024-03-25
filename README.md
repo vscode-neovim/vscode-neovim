@@ -479,7 +479,7 @@ test.text = nil -- Close the item
 test.text = '' -- error: The status item "test" has been closed
 ```
 
-### vscode.eval(code[, opts])
+### vscode.eval(code[, opts, timeout])
 
 Evaluate javascript inside vscode and return the result. The code is executed in an async function context (so `await`
 can be used). Use a `return` statement to return a value back to lua. Arguments passed from lua are available as the
@@ -489,7 +489,7 @@ can be used). Use a `return` statement to return a value back to lua. Arguments 
 Tips:
 
 -   Make sure to `await` on asynchronous functions when accessing the API.
--   the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim (logging level
+-   Use the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim (logging level
     controlled with the `vscode-neovim.logLevel` setting)
 -   Plain data such as strings, integers etc can be returned directly, but even simple objects such as `{foo: 123}` are
     converted to strings and returned as `"[object Object]"`. `JSON.stringify()` can be used to serialize plain objects
@@ -499,9 +499,11 @@ Tips:
 Parameters:
 
 -   `code (string)`: The javascript to execute.
--   `opts` (table): Map of optional parameters:
+-   `opts (table)`: Map of optional parameters:
     -   `args` (any): a value to make available as the `args` variable in javascript. Can be a single value such as a
         string or a table of multiple values.
+-   `timeout (number)`: The number of milliseconds to wait for the evalution to complete before cancelling. By default
+    there is no timeout.
 
 Returns:
 

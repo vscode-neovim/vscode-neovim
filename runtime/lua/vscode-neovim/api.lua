@@ -172,7 +172,7 @@ function M.call(name, opts, timeout)
 end
 
 --- Evaluate javascript synchronously inside vscode with access to the
---- [vscode API](https://code.visualstudio.com/api/references/vscode-api) and return the result.
+--- [VSCode API](https://code.visualstudio.com/api/references/vscode-api) and return the result.
 ---
 ---@param code string the javascript code to run
 ---           - the code runs in an async function context
@@ -197,7 +197,7 @@ function M.eval(code, opts, timeout)
 end
 
 --- Evaluate javascript asynchronously inside vscode with access to the
---- [vscode API](https://code.visualstudio.com/api/references/vscode-api).
+--- [VSCode API](https://code.visualstudio.com/api/references/vscode-api).
 ---
 ---@param code string the javascript code to run
 ---@param opts? table Optional options table, all fields are optional
