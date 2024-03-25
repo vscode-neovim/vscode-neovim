@@ -259,6 +259,8 @@ local vscode = require('vscode-neovim')
    statusbar item.
 10. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
     `:h g:clipboard` for more details. Usage: `let g:clipboard = g:vscode_clipboard`
+11. `vscode.eval()`: evaluate javascript synchronously in vscode and return the result
+12. `vscode.eval_async()`: evaluate javascript asynchronously in vscode
 
 ### vscode.action(name, opts)
 
@@ -476,6 +478,61 @@ test.text = '' -- Hide the item
 test.text = nil -- Close the item
 test.text = '' -- error: The status item "test" has been closed
 ```
+
+### vscode.eval(code[, opts])
+
+Evaluate javascript inside vscode and return the result. The code is executed in an async function context (so `await`
+can be used). Use a `return` statement to return a value back to lua. Arguments passed from lua are available as the
+`args` variable. The evaluated code has access to the
+[VSCode API](https://code.visualstudio.com/api/references/vscode-api) through the `vscode` global.
+
+Tips:
+
+-   Make sure to `await` on asynchronous functions when accessing the API.
+-   the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim (logging level
+    controlled with the `vscode-neovim.logLevel` setting)
+-   Plain data such as strings, integers etc can be returned directly, but even simple objects such as `{foo: 123}` are
+    converted to strings and returned as `"[object Object]"`. `JSON.stringify()` can be used to serialize plain objects
+    to JSON that can be deserialized with `vim.json.decode()` in lua.
+-   `globalThis['some_name'] = ...` can be used to persist values between calls.
+
+Parameters:
+
+-   `code (string)`: The javascript to execute.
+-   `opts` (table): Map of optional parameters:
+    -   `args` (any): a value to make available as the `args` variable in javascript. Can be a single value such as a
+        string or a table of multiple values.
+
+Returns:
+
+-   Return the result of executing the provided code. The result is converted to a string if the value is not
+    representable in lua (i.e. an object or function).
+
+Examples:
+
+```lua
+local current_file = vscode.eval("return vscode.window.activeTextEditor.document.fileName")
+local current_tab_is_pinned = vscode.eval("return vscode.window.tabGroups.activeTabGroup.activeTab.isPinned")
+vscode.eval("await vscode.env.clipboard.writeText(args.text)", { args = { text = "some text" } })
+```
+
+### vscode.eval_async(code[, opts])
+
+Like `vscode.eval()` but returns immediately and evaluates in the background instead.
+
+Parameters:
+
+-   `code (string)`: The javascript to execute.
+-   `opts` (table): Map of optional parameters:
+    -   `args` (any): a value to make available as the `args` variable in javascript. Can be a single value such as a
+        string or a table of multiple values.
+    -   `callback`: Function to handle the action result. Must have this signature:
+        ```lua
+        function(err: string|nil, ret: any)
+        ```
+        -   `err` is the error message, if any
+        -   `ret` is the result
+        -   If no callback is provided, error will be shown as a VSCode notification.
 
 ### VimScript
 

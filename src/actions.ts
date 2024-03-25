@@ -1,17 +1,8 @@
 import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
-import vscode, {
-    ConfigurationTarget,
-    Disposable,
-    InputBoxOptions,
-    QuickPickItem,
-    QuickPickOptions,
-    Range,
-    commands,
-    window,
-    workspace,
-} from "vscode";
+import { ConfigurationTarget, Disposable, Range, commands, window, workspace } from "vscode";
 
+import { eval_for_client } from "./actions_eval";
 import { VSCodeContext, disposeAll, rangesToSelections } from "./utils";
 
 function getActionName(action: string) {
@@ -85,6 +76,7 @@ class ActionManager implements Disposable {
             await new Promise((resolve) => setTimeout(resolve, ms));
             return "ok";
         });
+        this.add("eval", (code: string, args: any) => eval_for_client(code, args));
         this.add("has_config", (names: string | string[]): boolean | boolean[] => {
             const config = workspace.getConfiguration();
             if (Array.isArray(names)) {
@@ -115,34 +107,12 @@ class ActionManager implements Disposable {
                 await config.update(name, values[idx], targetConfig);
             }
         });
-        this.add("notify", (msg: string, level: "info" | "warn" | "error") => {
-            switch (level) {
-                case "warn": {
-                    window.showWarningMessage(msg);
-                    break;
-                }
-                case "error": {
-                    window.showErrorMessage(msg);
-                    break;
-                }
-                default: {
-                    window.showInformationMessage(msg);
-                    break;
-                }
-            }
-        });
         this.add("start-multiple-cursors", (ranges: Range[]) => {
             const editor = window.activeTextEditor;
             if (editor && ranges.length) {
                 editor.selections = rangesToSelections(ranges, editor.document);
             }
         });
-        this.add("clipboard_read", () => vscode.env.clipboard.readText());
-        this.add("clipboard_write", (text: string) => vscode.env.clipboard.writeText(text));
-        this.add("ui_select", (args: { items: QuickPickItem[]; opts: QuickPickOptions }) =>
-            window.showQuickPick(args.items, args.opts),
-        );
-        this.add("ui_input", (args: { opts: InputBoxOptions }) => window.showInputBox(args.opts));
         this.add("setContext", (key: string, value: any) => VSCodeContext.set(key, value));
     }
 
