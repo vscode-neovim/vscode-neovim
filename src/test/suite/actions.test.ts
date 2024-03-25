@@ -158,6 +158,14 @@ describe("Eval VSCode", () => {
             await eval_from_nvim(client, "!$%");
         }, /Error executing lua Unexpected token '}'/);
 
+        await assert.rejects(async () => {
+            await eval_from_nvim_with_opts(
+                client,
+                "await new Promise((resolve) => setTimeout(resolve, 1000))",
+                "{}, 100",
+            );
+        }, /Error executing lua .* Call 'eval' timed out/);
+
         let output = await eval_from_nvim(client, "return vscode.window.property_that_does_not_exist");
         assert.equal(output, null);
 

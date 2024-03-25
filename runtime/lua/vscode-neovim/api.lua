@@ -185,7 +185,7 @@ end
 ---@param timeout? number Timeout in milliseconds. The default value is -1, which means no timeout.
 ---
 ---@return any: the result of evaluating the given code in VSCode
-function M.eval(code, opts)
+function M.eval(code, opts, timeout)
   vim.validate({
     code = { code, "string" },
     opts = { opts, "table", true },
@@ -193,7 +193,7 @@ function M.eval(code, opts)
   })
   opts = opts or {}
   opts.args = { code, opts.args }
-  return M.call("eval", opts)
+  return M.call("eval", opts, timeout)
 end
 
 --- Evaluate javascript asynchronously inside vscode with access to the
