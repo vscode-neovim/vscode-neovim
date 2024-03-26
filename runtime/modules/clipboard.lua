@@ -3,7 +3,7 @@ local code = require("vscode-neovim")
 local last_item = nil
 
 local function paste()
-  local curr_text = code.call("clipboard_read"):gsub("\r\n", "\n")
+  local curr_text = code.eval("return await vscode.env.clipboard.readText()"):gsub("\r\n", "\n")
   local curr_item = { vim.split(curr_text, "\n"), "v" }
 
   if not last_item then
@@ -20,7 +20,7 @@ end
 local function copy(lines, regtype)
   last_item = { lines, regtype }
   local text = table.concat(lines, "\n")
-  code.call("clipboard_write", { args = { text } })
+  code.eval("await vscode.env.clipboard.writeText(args)", { args = text })
 end
 
 vim.g.vscode_clipboard = {

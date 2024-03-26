@@ -5,6 +5,12 @@ import Mocha from "mocha";
 import "source-map-support/register";
 
 export async function run(): Promise<void> {
+    let test_regex = process.env.NEOVIM_TEST_REGEX;
+    if (test_regex === undefined) {
+        test_regex = ".*";
+    }
+    console.log(`running tests by regex: ${test_regex}`);
+
     // Create the mocha test
     const mocha = new Mocha({
         ui: "bdd",
@@ -12,7 +18,7 @@ export async function run(): Promise<void> {
         bail: false,
         slow: 20000,
         fullTrace: true,
-        grep: ".*",
+        grep: test_regex,
         retries: 2,
     });
     const testsRoot = path.resolve(__dirname, "..");

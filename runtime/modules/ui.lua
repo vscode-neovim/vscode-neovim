@@ -65,17 +65,17 @@ local function vscode_ui_select(items, opts, on_choice)
   }
 
   -- open the select dialog
-  vscode.action("ui_select", {
+  vscode.eval_async("return JSON.stringify(await vscode.window.showQuickPick(args.items, args.opts))", {
     args = {
       items = vscode_items,
       opts = vscode_opts,
     },
     callback = function(err, res)
-      -- distinguish between success and cancelled
-      if not err and type(res) == "table" and res.idx then
-        on_choice(items[res.idx], res.idx)
-      else
+      if err or res == vim.NIL then -- vim.NIL if cancelled
         on_choice(nil, nil)
+      else
+        res = vim.json.decode(res)
+        on_choice(items[res.idx], res.idx)
       end
     end,
   })
@@ -121,16 +121,15 @@ local function vscode_ui_input(opts, on_confirm)
   }
 
   -- open the input dialog
-  vscode.action("ui_input", {
+  vscode.eval_async("return await vscode.window.showInputBox(args.opts)", {
     args = {
       opts = vscode_opts,
     },
     callback = function(err, res)
-      -- distinguish between empty and cancelled
-      if not err and res ~= nil then
-        on_confirm(res)
-      else
+      if err or res == vim.NIL then -- vim.NIL if cancelled
         on_confirm(nil)
+      else
+        on_confirm(res)
       end
     end,
   })

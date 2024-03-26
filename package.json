@@ -2085,23 +2085,23 @@
     "devDependencies": {
         "@types/lodash-es": "^4.17.12",
         "@types/mocha": "^10.0.6",
-        "@types/node": "^20.11.25",
+        "@types/node": "^20.11.30",
         "@types/vscode": "^1.83.1",
         "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^2.24.0",
         "mocha": "^10.3.0",
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.4.2",
-        "webpack": "^5.90.3",
+        "typescript": "^5.4.3",
+        "webpack": "^5.91.0",
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "async-mutex": "^0.4.1",
+        "async-mutex": "^0.5.0",
         "fast-myers-diff": "^3.2.0",
         "grapheme-splitter": "^1.0.4",
         "lodash-es": "^4.17.21",
-        "neovim": "^5.0.1",
+        "neovim": "^5.1.0",
         "ts-wcwidth": "^2.0.3"
     }
 }

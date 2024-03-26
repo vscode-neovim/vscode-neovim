@@ -49,7 +49,8 @@ Note: some messages are not logged to the Output channel, to avoid infinite loop
 
 1. Open the repo in VSCode.
 2. Go to debug view and click `Extension Tests` (F5).
-3. To run individual tests, modify `grep: ".*"` in `src/test/suite/index.ts`.
+3. To run individual tests, modify `grep: ".*"` in `src/test/suite/index.ts` or set the `NEOVIM_TEST_REGEX` environment
+   variable, e.g. `NEOVIM_TEST_REGEX="foo bar" npm run test`.
 
 ## Style and Tools
 
