@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.83.1"
+        "vscode": "^1.87.0"
     },
     "keywords": [
         "keybindings",
@@ -2086,7 +2086,7 @@
         "@types/lodash-es": "^4.17.12",
         "@types/mocha": "^10.0.6",
         "@types/node": "^20.11.30",
-        "@types/vscode": "^1.83.1",
+        "@types/vscode": "^1.87.0",
         "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^2.24.0",
         "mocha": "^10.3.0",
