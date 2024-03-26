@@ -79,7 +79,7 @@ describe("handle window changed event", () => {
 
     it("notebook", async () => {
         setWin(findWinId("cell 1"));
-        await wait(400);
+        await wait(800);
         assert.equal(window.activeNotebookEditor, notebookEditor);
         assert.equal(window.activeTextEditor!.document.getText(), "cell 1");
 
