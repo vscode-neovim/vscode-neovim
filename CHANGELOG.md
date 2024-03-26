@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.8.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.7.1...v1.8.0) (2024-03-26)
+
+
+### Features
+
+* `vscode.eval()` ([#1854](https://github.com/vscode-neovim/vscode-neovim/issues/1854)) ([32eedf0](https://github.com/vscode-neovim/vscode-neovim/commit/32eedf08fa7bce669666492b6515091352913ae4))
+* **dev:** pre-commit hooks ([#1853](https://github.com/vscode-neovim/vscode-neovim/issues/1853)) ([e2a36d8](https://github.com/vscode-neovim/vscode-neovim/commit/e2a36d872e23fd8e623d67dd9ccf5aa1e51d2f09))
+
+
+### Bug Fixes
+
+* handle timeout in eval properly ([#1863](https://github.com/vscode-neovim/vscode-neovim/issues/1863)) ([767f7ca](https://github.com/vscode-neovim/vscode-neovim/commit/767f7ca6a3c338b662edacabe833614cf7ea0221))
+
 ## [1.7.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.7.0...v1.7.1) (2024-03-13)
 
 
