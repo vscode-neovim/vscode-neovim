@@ -20,6 +20,8 @@ git clone https://github.com/vscode-neovim/vscode-neovim
 
 ```sh
 npm install
+pipx install pre-commit  # https://pre-commit.com/#installation
+pre-commit install
 ```
 
 3. Build the VSIX package:
@@ -49,6 +51,12 @@ Note: some messages are not logged to the Output channel, to avoid infinite loop
 2. Go to debug view and click `Extension Tests` (F5).
 3. To run individual tests, modify `grep: ".*"` in `src/test/suite/index.ts` or set the `NEOVIM_TEST_REGEX` environment
    variable, e.g. `NEOVIM_TEST_REGEX="foo bar" npm run test`.
+
+## Style and Tools
+
+-   checks should be run before each commit. Run `pre-commit install` to enable them.
+-   run `npm run format` to automatically format typescript and lua code.
+-   run `npm run lint` to check for errors in typescript and lua code.
 
 ## Design Principles
 
@@ -158,7 +166,7 @@ To avoid RPC round trips, the logic using the lua or vim APIs should be moved to
 -   Install [sumneko.lua](marketplace.visualstudio.com/items?itemName=sumneko.lua).
 
 -   In nvim, run `lua=vim.api.nvim_get_runtime_file("", true)`
--   Add runtime path to settings.json, like:
+-   Add runtime path to `settings.json`, like:
 
 ```json
   "Lua.workspace.library": ["/usr/share/nvim/runtime/"],
@@ -269,7 +277,8 @@ BufferManager is responsible for the syncing of buffers and windows between vsco
 
 ## Maintenance
 
-Commits should be made using conventional commits. This allows for automatic changelog generation and versioning.
+Commits should be made using ['conventional commits'](https://www.conventionalcommits.org/en/v1.0.0/). This allows for
+automatic changelog generation and versioning.
 [Release-please](https://github.com/google-github-actions/release-please-action) is used to automatically make releases.
 It will accumulate merged PRs, and create a release PR. Once the release PR is merged, it will automatically create a
 release and tag it. It will also publish it to the visual studio marketplace using repository secrets.

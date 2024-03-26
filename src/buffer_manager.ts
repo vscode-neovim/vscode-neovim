@@ -48,7 +48,7 @@ function makeEditorOptionsVariable(options?: TextEditorOptions) {
         const editorConfig = workspace.getConfiguration("editor");
         const tabSize = editorConfig.get<number>("tabSize")!;
         const insertSpaces = editorConfig.get<boolean>("insertSpaces")!;
-        const lineNumbers = editorConfig.get<"on" | "off" | "relative">("lineNumbers")!;
+        const lineNumbers = editorConfig.get<"on" | "off" | "relative" | "interval">("lineNumbers")!;
         return { tabSize, insertSpaces, lineNumbers };
     }
     const { tabSize, insertSpaces, lineNumbers } = options;
@@ -59,6 +59,7 @@ function makeEditorOptionsVariable(options?: TextEditorOptions) {
             [TextEditorLineNumbersStyle.On]: "on",
             [TextEditorLineNumbersStyle.Off]: "off",
             [TextEditorLineNumbersStyle.Relative]: "relative",
+            [TextEditorLineNumbersStyle.Interval]: "interval",
         }[lineNumbers as TextEditorLineNumbersStyle],
     };
 }
