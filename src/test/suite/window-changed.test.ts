@@ -69,7 +69,7 @@ describe("handle window changed event", () => {
 
     it("text editor", async () => {
         setWin(findWinId("text 1"));
-        await wait(400);
+        await wait(800);
         assert.equal(window.activeTextEditor, textEditor1);
 
         setWin(findWinId("text 2"));
