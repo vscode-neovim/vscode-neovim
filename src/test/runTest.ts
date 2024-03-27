@@ -9,11 +9,11 @@ async function main(): Promise<void> {
         const extensionDevelopmentPath = path.resolve(__dirname, "../../");
 
         // The path to the extension test runner script
-        // Passed to --extensionTestsPath
         const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
         // Download VS Code, unzip it and run the integration test
         await runTests({
+            launchArgs: ["--disable-extensions"],
             extensionDevelopmentPath,
             extensionTestsPath,
             // Tell vscode-neovim to create a debug connection
