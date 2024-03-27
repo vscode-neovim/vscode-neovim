@@ -1,17 +1,11 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-import * as _vscode from "vscode";
+import _vscode from "vscode";
 
 import { createLogger } from "./logger";
 
-// @ts-ignore
+const vscode = _vscode;
 const logger = createLogger("eval");
 
-// for some reason, the name used in the import statement is not always visible to the code being run with eval()
-// but global variables/constants are always visible.
-// @ts-ignore
-const vscode = _vscode;
+_use_variables([vscode, logger]);
 
 /**
  * Execute javascript code passed from lua in an async function context
@@ -27,6 +21,8 @@ const vscode = _vscode;
 export async function eval_for_client(code: string, args: any): Promise<any> {
     const result = await eval("async () => {" + code + "}")();
 
+    _use_variables([args]);
+
     const value_type = typeof result;
     if (value_type === "object") {
         return String(result);
@@ -34,5 +30,17 @@ export async function eval_for_client(code: string, args: any): Promise<any> {
         return `[Function: ${result.name}]`;
     } else {
         return result;
+    }
+}
+
+/**
+ * Re-assure static analysis tools that the given variables are used.
+ * This prevents them from being removed at build time.
+ *
+ * @param variables list of variables to mark as used.
+ */
+function _use_variables(variables: any[]) {
+    if (variables.length === 0) {
+        return;
     }
 }
