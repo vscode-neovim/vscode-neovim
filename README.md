@@ -490,7 +490,7 @@ Tips:
 
 -   Make sure to `await` on asynchronous functions when accessing the API.
 -   Use the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim (logging level
-    controlled with the `vscode-neovim.logLevel` setting)
+    controlled with the `vscode-neovim.logLevel` setting).
 -   Plain data such as strings, integers etc can be returned directly, but even simple objects such as `{foo: 123}` are
     converted to strings and returned as `"[object Object]"`. `JSON.stringify()` can be used to serialize plain objects
     to JSON that can be deserialized with `vim.json.decode()` in lua.
@@ -498,11 +498,11 @@ Tips:
 
 Parameters:
 
--   `code (string)`: The javascript to execute.
--   `opts (table)`: Map of optional parameters:
+-   `code` (string): The javascript to execute.
+-   `opts` (table): Map of optional parameters:
     -   `args` (any): a value to make available as the `args` variable in javascript. Can be a single value such as a
         string or a table of multiple values.
--   `timeout (number)`: The number of milliseconds to wait for the evalution to complete before cancelling. By default
+-   `timeout` (number): The number of milliseconds to wait for the evalution to complete before cancelling. By default
     there is no timeout.
 
 Returns:
@@ -524,11 +524,11 @@ Like `vscode.eval()` but returns immediately and evaluates in the background ins
 
 Parameters:
 
--   `code (string)`: The javascript to execute.
+-   `code` (string): The javascript to execute.
 -   `opts` (table): Map of optional parameters:
     -   `args` (any): a value to make available as the `args` variable in javascript. Can be a single value such as a
         string or a table of multiple values.
-    -   `callback`: Function to handle the action result. Must have this signature:
+    -   `callback`: Function to handle the eval result. Must have this signature:
         ```lua
         function(err: string|nil, ret: any)
         ```

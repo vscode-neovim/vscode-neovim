@@ -1,17 +1,14 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-import * as _vscode from "vscode";
+import _vscode from "vscode";
 
 import { createLogger } from "./logger";
 
-// @ts-ignore
+const vscode = _vscode;
 const logger = createLogger("eval");
 
-// for some reason, the name used in the import statement is not always visible to the code being run with eval()
-// but global variables/constants are always visible.
-// @ts-ignore
-const vscode = _vscode;
+// Ensure that the globals are 'used' so that they are not removed at build time
+// and linters do not complain about them.
+void vscode;
+void logger;
 
 /**
  * Execute javascript code passed from lua in an async function context
@@ -26,6 +23,8 @@ const vscode = _vscode;
  */
 export async function eval_for_client(code: string, args: any): Promise<any> {
     const result = await eval("async () => {" + code + "}")();
+
+    void args;
 
     const value_type = typeof result;
     if (value_type === "object") {
