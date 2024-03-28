@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.8.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.8.0...v1.8.1) (2024-03-28)
+
+
+### Bug Fixes
+
+* vscode null in eval ([#1866](https://github.com/vscode-neovim/vscode-neovim/issues/1866)) ([923319a](https://github.com/vscode-neovim/vscode-neovim/commit/923319af2e2b41bd5e64f46dbf1fdac6262b170f))
+
 ## [1.8.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.7.1...v1.8.0) (2024-03-26)
 
 
