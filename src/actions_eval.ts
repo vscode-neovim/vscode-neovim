@@ -5,7 +5,10 @@ import { createLogger } from "./logger";
 const vscode = _vscode;
 const logger = createLogger("eval");
 
-_use_variables([vscode, logger]);
+// Ensure that the globals are 'used' so that they are not removed at build time
+// and linters do not complain about them.
+void vscode;
+void logger;
 
 /**
  * Execute javascript code passed from lua in an async function context
@@ -21,7 +24,7 @@ _use_variables([vscode, logger]);
 export async function eval_for_client(code: string, args: any): Promise<any> {
     const result = await eval("async () => {" + code + "}")();
 
-    _use_variables([args]);
+    void args;
 
     const value_type = typeof result;
     if (value_type === "object") {
@@ -30,17 +33,5 @@ export async function eval_for_client(code: string, args: any): Promise<any> {
         return `[Function: ${result.name}]`;
     } else {
         return result;
-    }
-}
-
-/**
- * Re-assure static analysis tools that the given variables are used.
- * This prevents them from being removed at build time.
- *
- * @param variables list of variables to mark as used.
- */
-function _use_variables(variables: any[]) {
-    if (variables.length === 0) {
-        return;
     }
 }
