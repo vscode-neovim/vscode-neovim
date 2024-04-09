@@ -9,8 +9,13 @@ updates:
     - package-ecosystem: "npm"
       directory: "/"
       schedule:
-          interval: "weekly"
+          interval: "monthly"
+      groups:
+          dev-deps:
+              dependency-type: "development"
+          prod-deps:
+              dependency-type: "production"
     - package-ecosystem: "github-actions"
       directory: "/"
       schedule:
-          interval: "weekly"
+          interval: "monthly"
