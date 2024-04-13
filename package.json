@@ -1018,6 +1018,18 @@
             },
             {
                 "command": "vscode-neovim.send-cmdline",
+                "key": "ctrl+m",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<C-m>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "ctrl+j",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<C-j>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+up",
                 "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-up>"
