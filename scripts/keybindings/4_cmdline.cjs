@@ -6,7 +6,7 @@ const add = (key, args, cmd = "vscode-neovim.send-cmdline") =>
     _add(key, "neovim.init && neovim.mode == cmdline", args, cmd);
 
 // ctrl keys
-[..."hwunplgt", "up", "down"].forEach((k) => {
+[..."hwunplgtmj", "up", "down"].forEach((k) => {
     let key = `ctrl+${k}`;
     let args = key2arg(key);
     let cmd = "vscode-neovim.send-cmdline";

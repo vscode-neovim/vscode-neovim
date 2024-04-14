@@ -743,7 +743,7 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 
 Enabled by `ctrlKeysForInsertMode`
 
-Default: `["a", "d", "h", "j", "o", "r", "t", "u", "w"]`
+Default: `["a", "d", "h", "j", "m", "o", "r", "t", "u", "w"]`
 
 > 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
 
@@ -751,7 +751,8 @@ Default: `["a", "d", "h", "j", "o", "r", "t", "u", "w"]`
 
 Enabled by `ctrlKeysForNormalMode`
 
-Default: `["a", "b", "d", "e", "f", "h", "i", "j", "k", "l", "o", "r", "t", "u", "v", "w", "x", "y", "z", "/", "]"]`
+Default:
+`["a", "b", "d", "e", "f", "h", "i", "j", "k", "l", "m", "o", "r", "t", "u", "v", "w", "x", "y", "z", "/", "]"]`
 
 > 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
 

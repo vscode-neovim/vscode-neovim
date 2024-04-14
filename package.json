@@ -188,6 +188,7 @@
                         "j",
                         "k",
                         "l",
+                        "m",
                         "o",
                         "r",
                         "t",
@@ -256,6 +257,7 @@
                         "d",
                         "h",
                         "j",
+                        "m",
                         "o",
                         "r",
                         "t",
@@ -1015,6 +1017,18 @@
                 "key": "ctrl+t",
                 "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-t>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "ctrl+m",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<C-m>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "ctrl+j",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<C-j>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
