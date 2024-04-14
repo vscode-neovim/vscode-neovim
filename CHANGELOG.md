@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.8.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.8.1...v1.8.2) (2024-04-14)
+
+
+### Bug Fixes
+
+* **keybinds:** fix behavior of CTRL-m and CTRL-j ([#1886](https://github.com/vscode-neovim/vscode-neovim/issues/1886)) ([afb435d](https://github.com/vscode-neovim/vscode-neovim/commit/afb435df67189752d7e339d05ed42e57d622cd65))
+
 ## [1.8.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.8.0...v1.8.1) (2024-03-28)
 
 
