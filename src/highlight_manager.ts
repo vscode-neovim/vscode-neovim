@@ -19,7 +19,7 @@ export class HighlightManager implements Disposable {
     private async handleRedraw(data: EventBusData<"redraw">): Promise<void> {
         await this.main.viewportManager.isSyncDone;
 
-        const gridHLUpdates: Set<number> = new Set();
+        const pendingUpdates = new PendingHLUpdates();
 
         for (const { name, args } of data) {
             switch (name) {
@@ -40,7 +40,7 @@ export class HighlightManager implements Disposable {
                             // by > 0 - scroll down, must remove existing elements from first and shift row hl left
                             // by < 0 - scroll up, must remove existing elements from right shift row hl right
                             this.highlightProvider.shiftGridHighlights(grid, by, top);
-                            gridHLUpdates.add(grid);
+                            pendingUpdates.addGridForceUpdate(grid);
                         }
                     }
                     break;
@@ -64,11 +64,11 @@ export class HighlightManager implements Disposable {
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             if (highlightLine > 0) {
                                 this.highlightProvider.cleanRow(grid, row);
-                                gridHLUpdates.add(grid);
+                                pendingUpdates.addGridForceUpdate(grid);
                             }
                             continue;
                         }
-                        const lineText = editor.document.lineAt(highlightLine).text;
+
                         let vimCol = col + gridOffset.character;
 
                         // remove cells from statuscolumn
@@ -79,19 +79,34 @@ export class HighlightManager implements Disposable {
                             vimCol -= 20;
                         }
 
+                        const tabSize = editor.options.tabSize as number;
+
                         if (cells.length) {
-                            const tabSize = editor.options.tabSize as number;
-                            const update = this.highlightProvider.processHLCellsEvent(
+                            pendingUpdates.addGridConditionalUpdate(
                                 grid,
-                                row,
-                                vimCol,
-                                cells,
-                                lineText,
-                                tabSize,
+                                // Defer the update so that it can be done with the document lock
+                                () => {
+                                    // FIXME: Possibly due to viewport desync
+                                    // This precheck ensures that we don't call lineAt with an out of bounds
+                                    // line, which throws and breaks a highlight
+                                    if (highlightLine >= editor.document.lineCount) {
+                                        // Force an update, just to ensure the highlights are correct
+                                        return true;
+                                    }
+
+                                    const lineText = editor.document.lineAt(highlightLine).text;
+                                    const doUpdate = this.highlightProvider.processHLCellsEvent(
+                                        grid,
+                                        row,
+                                        vimCol,
+                                        cells,
+                                        lineText,
+                                        tabSize,
+                                    );
+
+                                    return doUpdate;
+                                },
                             );
-                            if (update) {
-                                gridHLUpdates.add(grid);
-                            }
                         }
                     }
                     break;
@@ -99,13 +114,13 @@ export class HighlightManager implements Disposable {
             }
         }
 
-        if (gridHLUpdates.size) {
-            this.applyHLGridUpdates(gridHLUpdates);
+        if (pendingUpdates.size() > 0) {
+            this.applyHLGridUpdates(pendingUpdates);
         }
     }
 
-    private applyHLGridUpdates = (updates: Set<number>): void => {
-        for (const grid of updates) {
+    private applyHLGridUpdates = (pendingUpdates: PendingHLUpdates): void => {
+        for (const [grid, update] of pendingUpdates.entries()) {
             const gridOffset = this.main.viewportManager.getGridOffset(grid);
             const editor = this.main.bufferManager.getEditorFromGridId(grid);
             if (!editor || !gridOffset) {
@@ -114,6 +129,11 @@ export class HighlightManager implements Disposable {
             // !For text changes neovim sends first buf_lines_event followed by redraw event
             // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
             this.main.changeManager.getDocumentChangeCompletionLock(editor.document).then(() => {
+                const changed = update();
+                if (!changed) {
+                    return;
+                }
+
                 const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.line);
                 for (const [decorator, ranges] of hls) {
                     editor.setDecorations(decorator, ranges);
@@ -124,5 +144,51 @@ export class HighlightManager implements Disposable {
 
     public dispose(): void {
         disposeAll(this.disposables);
+    }
+}
+
+class PendingHLUpdates {
+    // maps from grid number to a set of functions that indicate whether or not a grid should update
+    private pendingGridUpdates: Map<number, (() => boolean)[]>;
+
+    constructor() {
+        this.pendingGridUpdates = new Map();
+    }
+
+    size(): number {
+        return this.pendingGridUpdates.size;
+    }
+
+    entries(): [number, () => boolean][] {
+        return Array.from(this.pendingGridUpdates.entries()).map(([key, checks]) => {
+            const anyValid = () => this.evaluateChecks(checks);
+            return [key, anyValid];
+        });
+    }
+
+    addGridConditionalUpdate(grid: number, check: () => boolean) {
+        this.pushForGrid(grid, check);
+    }
+
+    addGridForceUpdate(grid: number) {
+        this.pushForGrid(grid, () => true);
+    }
+
+    private evaluateChecks(checks: (() => boolean)[]): boolean {
+        let someCheckTrue = false;
+        for (const check of checks) {
+            const checkRes = check();
+            if (checkRes) {
+                someCheckTrue = true;
+            }
+        }
+
+        return someCheckTrue;
+    }
+
+    private pushForGrid(grid: number, check: () => boolean): void {
+        const currentUpdates = this.pendingGridUpdates.get(grid) ?? [];
+        currentUpdates.push(check);
+        this.pendingGridUpdates.set(grid, currentUpdates);
     }
 }
