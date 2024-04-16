@@ -10,7 +10,7 @@ import {
     sendVSCodeSpecialKey,
     openTextDocument,
     sendInsertKey,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("Macros", () => {
     let client: NeovimClient;

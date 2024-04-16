@@ -15,7 +15,7 @@ import {
     openTextDocument,
     sendVSCodeKeysAtomic,
     wait,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("Neovim external buffers", () => {
     let client: NeovimClient;

@@ -11,7 +11,7 @@ import {
     closeNvimClient,
     openTextDocument,
     sendInsertKey,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("Undo", () => {
     let client: NeovimClient;

@@ -10,7 +10,7 @@ import {
     sendEscapeKey,
     openTextDocument,
     sendInsertKey,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("Multi-width characters", () => {
     let client: NeovimClient;

@@ -4,7 +4,7 @@ import path from "path";
 import { NeovimClient } from "neovim";
 import vscode, { Uri, ViewColumn, commands, window, workspace } from "vscode";
 
-import { attachTestNvimClient, closeAllActiveEditors, closeNvimClient, wait } from "../utils";
+import { attachTestNvimClient, closeAllActiveEditors, closeNvimClient, wait } from "../integrationUtils";
 
 describe("handle window changed event", () => {
     let client: NeovimClient;

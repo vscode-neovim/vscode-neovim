@@ -12,7 +12,7 @@ import {
     closeNvimClient,
     openTextDocument,
     sendInsertKey,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("Basic editing and navigation", () => {
     let client: NeovimClient;

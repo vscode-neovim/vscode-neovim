@@ -12,7 +12,7 @@ import {
     wait,
     closeActiveEditor,
     openTextDocument,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("External changes in file", () => {
     let client: NeovimClient;

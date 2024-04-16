@@ -11,7 +11,7 @@ import {
     sendEscapeKey,
     openTextDocument,
     sendInsertKey,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("Composite escape key", () => {
     let client: NeovimClient;

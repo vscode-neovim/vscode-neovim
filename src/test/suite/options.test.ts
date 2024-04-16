@@ -14,7 +14,7 @@ import {
     sendVSCodeKeys,
     setCursor,
     wait,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("Synchronize editor options", () => {
     let client: NeovimClient;

@@ -9,7 +9,7 @@ import {
     closeAllActiveEditors,
     closeNvimClient,
     openTextDocument,
-} from "../utils";
+} from "../integrationUtils";
 
 describe("Command line", () => {
     let client: NeovimClient;
