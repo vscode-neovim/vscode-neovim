@@ -9,7 +9,7 @@ async function main(): Promise<void> {
         const extensionDevelopmentPath = path.resolve(__dirname, "../../");
 
         // The path to the extension test runner script
-        const extensionTestsPath = path.resolve(__dirname, "./integration/index");
+        const extensionTestsPath = path.resolve(__dirname, "./integ/index");
 
         // Download VS Code, unzip it and run the integration test
         await runTests({

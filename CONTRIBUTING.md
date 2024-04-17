@@ -55,7 +55,7 @@ You can run integration tests by running `npm run test:integration` or interacti
 
 1. Open the repo in VSCode.
 2. Go to debug view and click `Extension Tests` (F5).
-3. To run individual tests, modify `test_regex = ".*"` in `src/test/integration/index.ts` or set the `NEOVIM_TEST_REGEX`
+3. To run individual tests, modify `test_regex = ".*"` in `src/test/integ/index.ts` or set the `NEOVIM_TEST_REGEX`
    environment variable, e.g. `NEOVIM_TEST_REGEX="foo bar" npm run test`.
 
 ## Style and Tools
