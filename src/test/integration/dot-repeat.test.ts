@@ -15,7 +15,7 @@ import {
     openTextDocument,
     sendInsertKey,
     sendVSCodeKeysAtomic,
-} from "../integrationUtils";
+} from "./integrationUtils";
 
 describe("Dot-repeat", () => {
     let client: NeovimClient;

@@ -12,7 +12,7 @@ import {
     closeNvimClient,
     openTextDocument,
     wait,
-} from "../integrationUtils";
+} from "./integrationUtils";
 
 async function eval_from_nvim(client: NeovimClient, code: string): Promise<any> {
     return JSON.parse(

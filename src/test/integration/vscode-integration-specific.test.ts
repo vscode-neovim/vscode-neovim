@@ -21,7 +21,7 @@ import {
     sendInsertKey,
     sendVSCodeCommand,
     sendNeovimKeys,
-} from "../integrationUtils";
+} from "./integrationUtils";
 
 describe("VSCode integration specific stuff", () => {
     let client: NeovimClient;

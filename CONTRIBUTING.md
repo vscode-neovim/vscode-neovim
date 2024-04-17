@@ -45,12 +45,18 @@ You can observe the extension logs via the `vscode-neovim` Output channel or fro
 Note: some messages are not logged to the Output channel, to avoid infinite loop. This is decided by the
 [`logToOutputChannel` parameter](https://github.com/vscode-neovim/vscode-neovim/blob/7337ffd5009067d074af5371171f277cb522aa9b/src/logger.ts#L184).
 
-### Run Tests
+### Run Unit Tests
+
+You can run unit tests independently by doing `npm run test:unit`.
+
+### Run Integration Tests
+
+You can run integration tests by running `npm run test:integration` or interactively through VSCode by:
 
 1. Open the repo in VSCode.
 2. Go to debug view and click `Extension Tests` (F5).
-3. To run individual tests, modify `grep: ".*"` in `src/test/suite/index.ts` or set the `NEOVIM_TEST_REGEX` environment
-   variable, e.g. `NEOVIM_TEST_REGEX="foo bar" npm run test`.
+3. To run individual tests, modify `test_regex = ".*"` in `src/test/integration/index.ts` or set the `NEOVIM_TEST_REGEX`
+   environment variable, e.g. `NEOVIM_TEST_REGEX="foo bar" npm run test`.
 
 ## Style and Tools
 

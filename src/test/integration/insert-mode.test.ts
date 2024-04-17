@@ -17,7 +17,7 @@ import {
     sendInsertKey,
     sendVSCodeCommand,
     sendVSCodeKeysAtomic,
-} from "../integrationUtils";
+} from "./integrationUtils";
 
 describe("Insert mode and buffer synchronization", () => {
     let client: NeovimClient;

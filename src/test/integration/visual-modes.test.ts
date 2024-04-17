@@ -12,7 +12,7 @@ import {
     openTextDocument,
     sendInsertKey,
     wait,
-} from "../integrationUtils";
+} from "./integrationUtils";
 
 describe("Visual modes test", () => {
     let client: NeovimClient;

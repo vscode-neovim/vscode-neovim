@@ -13,7 +13,7 @@ import {
     openTextDocument,
     sendInsertKey,
     sendVSCodeCommand,
-} from "../integrationUtils";
+} from "./integrationUtils";
 
 describe("Simulated insert keys", () => {
     let client: NeovimClient;

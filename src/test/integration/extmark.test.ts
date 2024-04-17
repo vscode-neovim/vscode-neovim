@@ -3,7 +3,7 @@ import assert from "assert";
 import { NeovimClient } from "neovim";
 import vscode, { DecorationOptions, Position, window } from "vscode";
 
-import { attachTestNvimClient, closeAllActiveEditors, closeNvimClient, wait } from "../integrationUtils";
+import { attachTestNvimClient, closeAllActiveEditors, closeNvimClient, wait } from "./integrationUtils";
 
 describe("Test ext mark", () => {
     let client: NeovimClient;

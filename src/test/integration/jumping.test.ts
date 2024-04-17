@@ -12,7 +12,7 @@ import {
     sendNeovimKeys,
     openTextDocument,
     wait,
-} from "../integrationUtils";
+} from "./integrationUtils";
 
 describe("Jumplist & jump actions & marks", () => {
     // abc

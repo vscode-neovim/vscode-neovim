@@ -9,7 +9,7 @@ import {
     closeNvimClient,
     openTextDocument,
     wait,
-} from "../integrationUtils";
+} from "./integrationUtils";
 
 describe("Yanking and pasting", () => {
     let client: NeovimClient;
