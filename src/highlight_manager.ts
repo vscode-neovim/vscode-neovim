@@ -4,6 +4,7 @@ import { EventBusData, eventBus } from "./eventBus";
 import { HighlightProvider } from "./highlight_provider";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
+import { PendingUpdates } from "./pending_updates";
 
 export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -19,7 +20,7 @@ export class HighlightManager implements Disposable {
     private async handleRedraw(data: EventBusData<"redraw">): Promise<void> {
         await this.main.viewportManager.isSyncDone;
 
-        const pendingUpdates = new PendingHLUpdates();
+        const pendingUpdates = new PendingUpdates<number>();
 
         for (const { name, args } of data) {
             switch (name) {
@@ -40,7 +41,7 @@ export class HighlightManager implements Disposable {
                             // by > 0 - scroll down, must remove existing elements from first and shift row hl left
                             // by < 0 - scroll up, must remove existing elements from right shift row hl right
                             this.highlightProvider.shiftGridHighlights(grid, by, top);
-                            pendingUpdates.addGridForceUpdate(grid);
+                            pendingUpdates.addForceUpdate(grid);
                         }
                     }
                     break;
@@ -64,7 +65,7 @@ export class HighlightManager implements Disposable {
                         if (highlightLine >= editor.document.lineCount || highlightLine < 0) {
                             if (highlightLine > 0) {
                                 this.highlightProvider.cleanRow(grid, row);
-                                pendingUpdates.addGridForceUpdate(grid);
+                                pendingUpdates.addForceUpdate(grid);
                             }
                             continue;
                         }
@@ -82,7 +83,7 @@ export class HighlightManager implements Disposable {
                         const tabSize = editor.options.tabSize as number;
 
                         if (cells.length) {
-                            pendingUpdates.addGridConditionalUpdate(
+                            pendingUpdates.addConditionalUpdate(
                                 grid,
                                 // Defer the update so that it can be done with the document lock
                                 () => {
@@ -119,7 +120,7 @@ export class HighlightManager implements Disposable {
         }
     }
 
-    private applyHLGridUpdates = (pendingUpdates: PendingHLUpdates): void => {
+    private applyHLGridUpdates = (pendingUpdates: PendingUpdates<number>): void => {
         for (const [grid, update] of pendingUpdates.entries()) {
             const gridOffset = this.main.viewportManager.getGridOffset(grid);
             const editor = this.main.bufferManager.getEditorFromGridId(grid);
@@ -144,51 +145,5 @@ export class HighlightManager implements Disposable {
 
     public dispose(): void {
         disposeAll(this.disposables);
-    }
-}
-
-class PendingHLUpdates {
-    // maps from grid number to a set of functions that indicate whether or not a grid should update
-    private pendingGridUpdates: Map<number, (() => boolean)[]>;
-
-    constructor() {
-        this.pendingGridUpdates = new Map();
-    }
-
-    size(): number {
-        return this.pendingGridUpdates.size;
-    }
-
-    entries(): [number, () => boolean][] {
-        return Array.from(this.pendingGridUpdates.entries()).map(([key, checks]) => {
-            const anyValid = () => this.evaluateChecks(checks);
-            return [key, anyValid];
-        });
-    }
-
-    addGridConditionalUpdate(grid: number, check: () => boolean) {
-        this.pushForGrid(grid, check);
-    }
-
-    addGridForceUpdate(grid: number) {
-        this.pushForGrid(grid, () => true);
-    }
-
-    private evaluateChecks(checks: (() => boolean)[]): boolean {
-        let someCheckTrue = false;
-        for (const check of checks) {
-            const checkRes = check();
-            if (checkRes) {
-                someCheckTrue = true;
-            }
-        }
-
-        return someCheckTrue;
-    }
-
-    private pushForGrid(grid: number, check: () => boolean): void {
-        const currentUpdates = this.pendingGridUpdates.get(grid) ?? [];
-        currentUpdates.push(check);
-        this.pendingGridUpdates.set(grid, currentUpdates);
     }
 }
