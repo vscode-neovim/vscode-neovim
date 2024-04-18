@@ -47,10 +47,12 @@ Note: some messages are not logged to the Output channel, to avoid infinite loop
 
 ### Run Unit Tests
 
+Unit tests run in node only (not vscode), and can call code directly (unlike the integration tests).
 You can run unit tests independently by doing `npm run test:unit`.
 
 ### Run Integration Tests
 
+Integration tests exercise a vscode instance which runs the vscode-neovim extension in a separate "extension host" process. These tests call the vscode API which indirectly exercises the extension; they cannot access the memory of the extension directly.
 You can run integration tests by running `npm run test:integration` or interactively through VSCode by:
 
 1. Open the repo in VSCode.
