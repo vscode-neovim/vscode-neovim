@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.8.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.8.2...v1.8.3) (2024-04-19)
+
+
+### Bug Fixes
+
+* highlight calculations race with buffer updates ([#1890](https://github.com/vscode-neovim/vscode-neovim/issues/1890)) ([53acfe5](https://github.com/vscode-neovim/vscode-neovim/commit/53acfe564012b9b1a20563d665791a8f28f810d5))
+
 ## [1.8.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.8.1...v1.8.2) (2024-04-14)
 
 
