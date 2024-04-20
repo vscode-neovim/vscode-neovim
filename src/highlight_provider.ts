@@ -13,9 +13,8 @@ import {
     window,
 } from "vscode";
 
-import { calculateEditorColFromVimScreenCol } from "./utils";
+import { calculateEditorColFromVimScreenCol, expandTabs } from "./utils";
 import { config } from "./config";
-import { expandTabs } from "./text";
 
 export interface VimHighlightUIAttributes {
     foreground?: number;

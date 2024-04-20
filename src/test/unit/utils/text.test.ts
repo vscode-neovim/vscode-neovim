@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { expandTabs } from "../../text";
+import { expandTabs } from "../../../utils/text";
 
 describe("expandTabs", () => {
     [
