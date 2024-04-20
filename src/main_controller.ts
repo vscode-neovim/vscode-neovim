@@ -1,7 +1,7 @@
 import { ChildProcess, spawn } from "child_process";
 import path from "path";
 
-import { attach, NeovimClient } from "neovim";
+import { attach, findNvim, NeovimClient } from "neovim";
 import vscode, { Disposable, Range, window, type ExtensionContext } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
@@ -11,6 +11,7 @@ import { BufferManager } from "./buffer_manager";
 import { CommandLineManager } from "./command_line_manager";
 import { CommandsController } from "./commands_controller";
 import { config } from "./config";
+import { NVIM_MIN_VERSION } from "./constants";
 import { CursorManager } from "./cursor_manager";
 import { DocumentChangeManager } from "./document_change_manager";
 import { eventBus } from "./eventBus";
@@ -104,6 +105,7 @@ export class MainController implements vscode.Disposable {
         this.client.on("request", this.onNeovimRequest);
         this.setClientInfo();
         await this.client.setVar("vscode_channel", await this.client.channelId);
+        await this.client.setVar("vscode_nvim_min_version", NVIM_MIN_VERSION);
 
         // This is an exception. Should avoid doing this.
         Object.defineProperty(actions, "client", { get: () => this.client, configurable: true });
@@ -184,8 +186,21 @@ export class MainController implements vscode.Disposable {
             }
         }
 
+        let neovimPath = config.neovimPath;
+        // Only try to find nvim if the path is the default one
+        // And if we are not using WSL
+        if (neovimPath === "nvim" && !config.useWsl) {
+            const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
+            logger.debug("Find nvim result: ", nvimResult);
+            const matched = nvimResult.matches.find((match) => !match.error);
+            if (!matched) {
+                throw new Error("Unable to find a suitable neovim executable. Please check your neovim installation.");
+            }
+            neovimPath = matched.path;
+        }
+
         args.push(
-            config.neovimPath,
+            neovimPath,
             "-N",
             "--embed",
             // load support script before user config (to allow to rebind keybindings/commands)

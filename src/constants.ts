@@ -1,3 +1,5 @@
+export const NVIM_MIN_VERSION = "0.9.0";
+
 export const GlyphChars = {
     COMMAND: "\u2318",
     SEARCH_FORWARD: "\u27f3",
