@@ -13,7 +13,7 @@ import {
     window,
 } from "vscode";
 
-import { calculateEditorColFromVimScreenCol } from "./utils";
+import { calculateEditorColFromVimScreenCol, expandTabs } from "./utils";
 import { config } from "./config";
 
 export interface VimHighlightUIAttributes {
@@ -237,7 +237,7 @@ export class HighlightProvider implements Disposable {
         }
 
         const getWidth = (text?: string) => {
-            const t = (text ?? "").replace(/\t/g, " ".repeat(tabSize));
+            const t = expandTabs(text ?? "", tabSize);
             return segment(t).reduce((p, c) => p + (isDouble(c) ? 2 : 1), 0);
         };
 
