@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { expandTabs } from "../../../utils/text";
+import { calculateEditorColFromVimScreenCol, expandTabs } from "../../../utils/text";
 
 describe("expandTabs", () => {
     [
@@ -43,5 +43,45 @@ describe("expandTabs", () => {
         it(testName, () => {
             assert.equal(expandTabs(line, 4), expected);
         });
+    });
+});
+
+describe("calculateEditorColFromVimScreenCol", () => {
+    [
+        {
+            testName: "start position is zero",
+            screenCol: 0,
+            expectedCol: 0,
+        },
+        {
+            testName: "position in non-tabbed text is number of chars",
+            screenCol: 2,
+            expectedCol: 2,
+        },
+        {
+            testName: "tab is worth the full tab width on a tab stop",
+            screenCol: 8, // the "w" in "world"
+            expectedCol: 5,
+        },
+        {
+            testName: "tab width is offset when not on a final tabstop",
+            screenCol: 16, // the first "!"
+            expectedCol: 11,
+        },
+    ].forEach(({ testName, screenCol, expectedCol }) => {
+        it(`reports positions in 'helo\tworld\t!!': ${testName}`, () => {
+            const editorCol = calculateEditorColFromVimScreenCol("helo\tworld\t!!", screenCol, 4);
+            assert.equal(editorCol, expectedCol);
+        });
+    });
+
+    it("returns zero for an empty line", () => {
+        const editorCol = calculateEditorColFromVimScreenCol("", 20, 4);
+        assert.equal(editorCol, 0);
+    });
+
+    it("returns zero columns if the column is zero", () => {
+        const editorCol = calculateEditorColFromVimScreenCol("hello world", 0, 4);
+        assert.equal(editorCol, 0);
     });
 });
