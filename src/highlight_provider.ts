@@ -15,6 +15,7 @@ import {
 
 import { calculateEditorColFromVimScreenCol } from "./utils";
 import { config } from "./config";
+import { expandTabs } from "./text";
 
 export interface VimHighlightUIAttributes {
     foreground?: number;
@@ -237,7 +238,7 @@ export class HighlightProvider implements Disposable {
         }
 
         const getWidth = (text?: string) => {
-            const t = (text ?? "").replace(/\t/g, " ".repeat(tabSize));
+            const t = expandTabs(text ?? "", tabSize);
             return segment(t).reduce((p, c) => p + (isDouble(c) ? 2 : 1), 0);
         };
 
