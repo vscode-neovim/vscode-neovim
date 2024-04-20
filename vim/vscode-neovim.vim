@@ -9,7 +9,7 @@ let s:runtimePath = fnamemodify(s:currDir, ':h') . '/runtime'
 let &runtimepath = &runtimepath . ',' . s:runtimePath
 
 lua << EOF
-local MIN_VERSION = "0.9.0"
+local MIN_VERSION = vim.g.vscode_nvim_min_version
 
 local outdated = not (vim.version and vim.version.parse)
 if not outdated then
