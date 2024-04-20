@@ -1,6 +1,5 @@
 import { Disposable, StatusBarAlignment, StatusBarItem, window } from "vscode";
 
-import actions from "./actions";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
@@ -10,7 +9,6 @@ enum StatusType {
     Mode, // msg_showmode
     Cmd, // msg_showcmd
     Msg, // msg_show, msg_clear
-    Custom, // custom status item
 }
 
 export class StatusLineManager implements Disposable {
@@ -20,10 +18,10 @@ export class StatusLineManager implements Disposable {
     private _modeText = "";
     private _cmdText = "";
     private _msgText = "";
-    // custom status items
-    private _customStatus: string[] = [];
 
     private statusBar: StatusBarItem;
+
+    private nvimStatusLine = "";
 
     private get client() {
         return this.main.client;
@@ -33,28 +31,38 @@ export class StatusLineManager implements Disposable {
         this.statusBar = window.createStatusBarItem(StatusBarAlignment.Left, -10);
         this.statusBar.show();
         this.disposables.push(this.statusBar, eventBus.on("redraw", this.handleRedraw, this));
-        actions.add("refresh-status-items", (items: string[]) => this.setStatus(items, StatusType.Custom));
+
+        const refreshNvimStatusLineTimer = setInterval(async () => {
+            let sl = (await this.client.lua(`
+            if vim.o.laststatus == 0 then return "" end
+            return vim.api.nvim_eval_statusline(vim.o.statusline, {}).str
+            `)) as any as string;
+            sl = sl.replace(/\n/g, " ").split(/\s+/g).join(" ");
+            if (this.nvimStatusLine !== sl) {
+                this.nvimStatusLine = sl;
+                this.updateStatus();
+            }
+        }, 120);
+        this.disposables.push(new Disposable(() => clearInterval(refreshNvimStatusLineTimer)));
     }
 
-    private setStatus(status: string[], type: StatusType.Custom): void;
-    private setStatus(status: string, type: Omit<StatusType, "Custom">): void;
-    private setStatus(status: string | string[], type: StatusType): void {
-        if (Array.isArray(status)) {
-            this._customStatus = status;
-        } else {
-            switch (type) {
-                case StatusType.Mode:
-                    this._modeText = status;
-                    break;
-                case StatusType.Cmd:
-                    this._cmdText = status;
-                    break;
-                case StatusType.Msg:
-                    this._msgText = status;
-                    break;
-            }
+    private setStatus(status: string, type: StatusType): void {
+        switch (type) {
+            case StatusType.Mode:
+                this._modeText = status;
+                break;
+            case StatusType.Cmd:
+                this._cmdText = status;
+                break;
+            case StatusType.Msg:
+                this._msgText = status;
+                break;
         }
-        this.statusBar.text = [this._modeText, this._cmdText, this._msgText, ...this._customStatus]
+        this.updateStatus();
+    }
+
+    private updateStatus() {
+        this.statusBar.text = [this.nvimStatusLine, this._modeText, this._cmdText, this._msgText]
             .map((i) => i.replace(/\n/g, " ").trim())
             .filter((i) => i.length)
             .join(config.statusLineSeparator);
