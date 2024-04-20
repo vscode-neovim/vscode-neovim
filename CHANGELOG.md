@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.9.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.8.3...v1.9.0) (2024-04-20)
+
+
+### Features
+
+* Auto find a suitable neovim executable ([#1894](https://github.com/vscode-neovim/vscode-neovim/issues/1894)) ([a0f5c25](https://github.com/vscode-neovim/vscode-neovim/commit/a0f5c253e3ce647f15040d063ec83cb31aa6acdc))
+
+
+### Bug Fixes
+
+* tabstops now considered when calculating line width for highlights ([#1897](https://github.com/vscode-neovim/vscode-neovim/issues/1897)) ([bd4cbca](https://github.com/vscode-neovim/vscode-neovim/commit/bd4cbca3dac2bca45ecb32fd32a6eff8895de093))
+
 ## [1.8.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.8.2...v1.8.3) (2024-04-19)
 
 
