@@ -1,6 +1,4 @@
-import GraphemeSplitter from "grapheme-splitter";
 import { cloneDeep } from "lodash-es";
-import wcswidth from "ts-wcwidth";
 import {
     DecorationOptions,
     DecorationRangeBehavior,
@@ -13,7 +11,7 @@ import {
     window,
 } from "vscode";
 
-import { expandTabs } from "./utils";
+import { getWidth } from "./utils";
 import { config } from "./config";
 import { Highlight, HighlightGrid, ValidCell } from "./highlight_grid";
 
@@ -99,16 +97,6 @@ function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): The
     newConfig.overviewRulerColor = normalizeThemeColor(newConfig.overviewRulerColor);
     return newConfig;
 }
-
-// 你 length:1 width:2
-// 🚀 length:2 width:2
-// 🕵️ length:3 width:2
-// ❤️ length:2 width:1
-const isDouble = (c?: string) => wcswidth(c) === 2 || (c ?? "").length > 1;
-const segment: (str: string) => string[] = (() => {
-    const splitter = new GraphemeSplitter();
-    return (str) => splitter.splitGraphemes(str);
-})();
 
 export class HighlightProvider implements Disposable {
     /**
@@ -209,16 +197,10 @@ export class HighlightProvider implements Disposable {
         }
         const gridHl = this.highlights.get(grid)!;
 
-        // TODO: Remove this from here
-        const getWidth = (text?: string) => {
-            const t = expandTabs(text ?? "", tabSize);
-            return segment(t).reduce((p, c) => p + (isDouble(c) ? 2 : 1), 0);
-        };
-
         // TODO: Break this out somehow
         const validCells: ValidCell[] = [];
         {
-            const idealMaxCells = Math.max(0, getWidth(lineText) - vimCol);
+            const idealMaxCells = Math.max(0, getWidth(lineText, tabSize) - vimCol);
             const currMaxCol = gridHl.maxColInRow(row);
             const maxValidCells = Math.max(idealMaxCells, currMaxCol);
             const eolCells: ValidCell[] = [];

@@ -1,7 +1,4 @@
-import wcswidth from "ts-wcwidth";
-import GraphemeSplitter from "grapheme-splitter";
-
-import { calculateEditorColFromVimScreenCol, expandTabs } from "./utils";
+import { calculateEditorColFromVimScreenCol, getWidth, isDouble, splitGraphemes } from "./utils";
 
 export interface ValidCell {
     text: string;
@@ -43,19 +40,14 @@ export class HighlightGrid {
         }
 
         const gridRow = this.grid[row];
-        const getWidth = (text?: string) => {
-            const t = expandTabs(text ?? "", tabSize);
-            return segment(t).reduce((p, c) => p + (isDouble(c) ? 2 : 1), 0);
-        };
-
-        const lineChars = segment(lineText);
+        const lineChars = splitGraphemes(lineText);
 
         // Calculates the number of spaces occupied by the tab
         const calcTabCells = (tabCol: number) => {
             let nearestTabIdx = lineChars.slice(0, tabCol).lastIndexOf("\t");
             nearestTabIdx = nearestTabIdx === -1 ? 0 : nearestTabIdx + 1;
             const center = lineChars.slice(nearestTabIdx, tabCol).join("");
-            return tabSize - (getWidth(center) % tabSize);
+            return tabSize - (getWidth(center, tabSize) % tabSize);
         };
 
         const editorCol = calculateEditorColFromVimScreenCol(lineText, vimCol, tabSize);
@@ -67,9 +59,9 @@ export class HighlightGrid {
         if (editorCol > 0) {
             const prevCol = editorCol - 1;
             const prevChar = lineChars[prevCol];
-            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : getWidth(prevChar);
+            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : getWidth(prevChar, tabSize);
             if (expectedCells > 1) {
-                const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""));
+                const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""), tabSize);
                 if (expectedVimCol > vimCol) {
                     const rightHls: Highlight[] = [];
                     for (let i = 0; i < expectedVimCol - vimCol; i++) {
@@ -87,9 +79,9 @@ export class HighlightGrid {
         // #endregion
 
         // Insert additional columns for characters with length greater than 1.
-        const filledLineText = segment(lineText).reduce((p, c) => p + c + " ".repeat(c.length - 1), "");
+        const filledLineText = splitGraphemes(lineText).reduce((p, c) => p + c + " ".repeat(c.length - 1), "");
 
-        const filledLineChars = segment(filledLineText);
+        const filledLineChars = splitGraphemes(filledLineText);
         let currCharCol = editorCol;
         let cell = cellIter.next();
         while (cell) {
@@ -229,13 +221,3 @@ class CellIter {
         }
     }
 }
-
-// 你 length:1 width:2
-// 🚀 length:2 width:2
-// 🕵️ length:3 width:2
-// ❤️ length:2 width:1
-const isDouble = (c?: string) => wcswidth(c) === 2 || (c ?? "").length > 1;
-const segment: (str: string) => string[] = (() => {
-    const splitter = new GraphemeSplitter();
-    return (str) => splitter.splitGraphemes(str);
-})();
