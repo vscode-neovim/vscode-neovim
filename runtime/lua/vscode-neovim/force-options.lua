@@ -16,9 +16,6 @@ vim.opt.cursorline = false
 vim.opt.signcolumn = "no"
 vim.opt.winblend = 0
 
---- Disable statusline and ruler since we don't need them anyway
-vim.opt.statusline = ""
-vim.opt.laststatus = 0
 vim.opt.ruler = false
 vim.opt.colorcolumn = nil
 

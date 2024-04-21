@@ -255,12 +255,10 @@ local vscode = require('vscode-neovim')
 7. `vscode.notify()`: shows a vscode message (see also Nvim's `vim.notify`).
 8. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/plugin/code_actions.lua) for the
    usage
-9. `vscode.get_status_item`: Gets a vscode statusbar item. Properties can be assigned, which magically updates the
-   statusbar item.
-10. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
-    `:h g:clipboard` for more details. Usage: `let g:clipboard = g:vscode_clipboard`
-11. `vscode.eval()`: evaluate javascript synchronously in vscode and return the result
-12. `vscode.eval_async()`: evaluate javascript asynchronously in vscode
+9. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
+   `:h g:clipboard` for more details. Usage: `let g:clipboard = g:vscode_clipboard`
+10. `vscode.eval()`: evaluate javascript synchronously in vscode and return the result
+11. `vscode.eval_async()`: evaluate javascript asynchronously in vscode
 
 ### vscode.action(name, opts)
 
@@ -463,20 +461,6 @@ You can set `vscode.notify` as your default notify function.
 
 ```lua
 vim.notify = vscode.notify
-```
-
-#### vscode.get_status_item(id)
-
-Creates a status item
-
--   `id` (string): The identifier of the item
-
-```lua
-local test = vscode.get_status_item('test')
-test.text = 'hello' -- Show the text
-test.text = '' -- Hide the item
-test.text = nil -- Close the item
-test.text = '' -- error: The status item "test" has been closed
 ```
 
 ### vscode.eval(code[, opts, timeout])

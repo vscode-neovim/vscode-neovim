@@ -30,8 +30,12 @@ local vscode = {
   notify = api.notify,
   -- operatorfunc helper
   to_op = api.to_op,
-  -- status item
-  get_status_item = api.get_status_item,
+
+  -- deprecated
+  get_status_item = function()
+    api.notify("Nvim statusline is now shown in vscode automatically. get_status_item was removed.")
+    return {}
+  end,
 }
 
 return vscode
