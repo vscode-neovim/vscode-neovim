@@ -1,5 +1,26 @@
 # Change Log
 
+## [1.10.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.9.0...v1.10.0) (2024-04-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* vscode.get_status_item has been removed.
+
+### Features
+
+* handle nvim statusline ([#1895](https://github.com/vscode-neovim/vscode-neovim/issues/1895)) ([fa5fc14](https://github.com/vscode-neovim/vscode-neovim/commit/fa5fc14389a0a5c5d97ec35458b826d052181a24))
+
+
+### Bug Fixes
+
+* **highlight:** timely win hl ns setup, disable treesitter highlighting ([#1898](https://github.com/vscode-neovim/vscode-neovim/issues/1898)) ([eff4e20](https://github.com/vscode-neovim/vscode-neovim/commit/eff4e20010531278894bd30eb663ea12bd43f6a7))
+
+
+### Miscellaneous Chores
+
+* release 1.10.0 ([95d3ca4](https://github.com/vscode-neovim/vscode-neovim/commit/95d3ca429febab9531551e222bf30ef0dc3ee74f))
+
 ## [1.9.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.8.3...v1.9.0) (2024-04-20)
 
 
