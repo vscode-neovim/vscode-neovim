@@ -121,7 +121,7 @@ local function setup_syntax_groups()
   end
 end
 
-local function set_win_hl_ns()
+local function setup_win_hl_ns()
   local ok, curr_ns, target_ns, vscode_controlled
   for _, win in ipairs(api.nvim_list_wins()) do
     local buf = api.nvim_win_get_buf(win)
@@ -139,17 +139,22 @@ local function set_win_hl_ns()
   end
 end
 
+local function setup_treesitter_highlighting()
+  -- We don't need any treesitter highlights
+  vim.treesitter.stop()
+end
+
 local function setup()
   local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
-  api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "WinNew", "WinScrolled" }, {
+  api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "WinScrolled" }, {
     group = group,
-    callback = set_win_hl_ns,
+    callback = setup_win_hl_ns,
   })
-  api.nvim_create_autocmd({ "VimEnter", "ColorScheme", "Syntax", "FileType" }, {
+  api.nvim_create_autocmd({ "ColorScheme", "Syntax", "FileType" }, {
     group = group,
     callback = function(ev)
       api.nvim_set_hl(0, "VSCodeNone", {})
-      if ev.event == "VimEnter" or ev.event == "ColorScheme" then
+      if ev.event == "ColorScheme" then
         setup_globals()
         -- highlights of custom namespace
         setup_syntax_overrides()
@@ -160,6 +165,20 @@ local function setup()
       else
         setup_syntax_groups()
       end
+    end,
+  })
+  api.nvim_create_autocmd({ "BufWinEnter", "BufEnter" }, {
+    group = group,
+    callback = setup_treesitter_highlighting,
+  })
+  api.nvim_create_autocmd({ "VimEnter", "UIEnter" }, {
+    group = group,
+    callback = function()
+      setup_treesitter_highlighting()
+      setup_globals()
+      setup_syntax_groups()
+      setup_syntax_overrides()
+      setup_win_hl_ns()
     end,
   })
 end
