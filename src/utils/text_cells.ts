@@ -18,6 +18,6 @@ export function isDouble(cellText: string): boolean {
 }
 
 export function getWidth(text: string, tabSize: number): number {
-    const t = expandTabs(text ?? "", tabSize);
+    const t = expandTabs(text, tabSize);
     return splitGraphemes(t).reduce((p, c) => p + (isDouble(c) ? 2 : 1), 0);
 }

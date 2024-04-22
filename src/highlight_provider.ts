@@ -266,41 +266,26 @@ export class HighlightProvider implements Disposable {
         };
 
         const gridHl = this.highlights.get(grid);
-        if (gridHl) {
-            gridHl.forEachRow((rowHighlights, row) => {
-                const line = row + topLine;
+        const highlightRanges = gridHl?.buildHighlightRanges(topLine) ?? [];
+        highlightRanges.forEach((range) => {
+            if (range.textType === "virtual") {
                 // FIXME: Possibly due to viewport desync
-                if (line >= editor.document.lineCount) {
+                if (range.line >= editor.document.lineCount) {
                     return;
                 }
-                const lineText = editor.document.lineAt(line).text;
-                let currHlId = 0;
-                let currStartCol = 0;
-                let currEndCol = 0;
-                rowHighlights.forEach((colHighlights, col) => {
-                    if (colHighlights.length > 1 || colHighlights[0].virtText) {
-                        this.createColVirtTextOptions(line, col, colHighlights, lineText).forEach((options, hlId) =>
-                            pushOptions(hlId, ...options),
-                        );
-                    } else {
-                        // Extend range highlights
-                        const { hlId } = colHighlights[0];
-                        if (currHlId === hlId && currEndCol === col - 1) {
-                            currEndCol = col;
-                        } else {
-                            if (currHlId)
-                                pushOptions(currHlId, { range: new Range(line, currStartCol, line, currEndCol + 1) });
-                            currHlId = hlId;
-                            currStartCol = col;
-                            currEndCol = col;
-                        }
-                    }
+
+                const lineText = editor.document.lineAt(range.line).text;
+                this.createColVirtTextOptions(range.line, range.col, range.highlights, lineText).forEach(
+                    (options, hlId) => {
+                        pushOptions(hlId, ...options);
+                    },
+                );
+            } else {
+                pushOptions(range.hlId, {
+                    range: new Range(range.line, range.startCol, range.line, range.endCol),
                 });
-                if (currHlId) {
-                    pushOptions(currHlId, { range: new Range(line, currStartCol, line, currEndCol + 1) });
-                }
-            });
-        }
+            }
+        });
 
         const result: [TextEditorDecorationType, DecorationOptions[]][] = [];
         hlId_options.forEach((options, hlId) => {
@@ -347,7 +332,7 @@ export class HighlightProvider implements Disposable {
         colHighlights.forEach(({ virtText, hlId, text }) => {
             // In certain edge cases, the right-side highlight may be appended later,
             // resulting in the column being converted to virt text type.
-            // So, the left-side highlight may not include virtText.
+            // So, the left-side highlight may not include vrtText.
             virtText ??= text;
             if (hlId === 0 && processedColHighlights.length > 0) {
                 processedColHighlights[processedColHighlights.length - 1].virtText += virtText;

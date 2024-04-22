@@ -1,4 +1,5 @@
-import { calculateEditorColFromVimScreenCol, getWidth, isDouble, splitGraphemes } from "./utils";
+import { getWidth, isDouble } from "./utils/text_cells";
+import { calculateEditorColFromVimScreenCol, splitGraphemes } from "./utils/text";
 
 export interface ValidCell {
     text: string;
@@ -7,6 +8,23 @@ export interface ValidCell {
 
 export interface Highlight extends ValidCell {
     virtText?: string;
+}
+
+export type HighlightRange = NormalTextHighlightRange | VirtualTextHighlightRange;
+
+export interface NormalTextHighlightRange {
+    textType: "normal";
+    hlId: number;
+    line: number;
+    startCol: number;
+    endCol: number;
+}
+
+export interface VirtualTextHighlightRange {
+    textType: "virtual";
+    highlights: Highlight[];
+    line: number;
+    col: number;
 }
 
 export interface HighlightCellsEvent {
@@ -58,8 +76,8 @@ export class HighlightGrid {
         // then the redraw cells may contain cells from the previous column.
         if (editorCol > 0) {
             const prevCol = editorCol - 1;
-            const prevChar = lineChars[prevCol];
-            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : getWidth(prevChar, tabSize);
+            const prevChar: string | undefined = lineChars[prevCol];
+            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : getWidth(prevChar ?? "", tabSize);
             if (expectedCells > 1) {
                 const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""), tabSize);
                 if (expectedVimCol > vimCol) {
@@ -149,6 +167,59 @@ export class HighlightGrid {
         return hasUpdates;
     }
 
+    buildHighlightRanges(topLine: number): HighlightRange[] {
+        const res: HighlightRange[] = [];
+        this.grid.forEach((rowHighlights, row) => {
+            const line = row + topLine;
+            let currHighlight: Highlight | null = null;
+            let currStartCol = 0;
+            let currEndCol = 0;
+            rowHighlights.forEach((colHighlights, col) => {
+                if (colHighlights.length > 1 || colHighlights[0].virtText) {
+                    res.push({
+                        textType: "virtual",
+                        highlights: colHighlights,
+                        line,
+                        col,
+                    });
+                } else {
+                    // Extend range highlights
+                    const highlight = colHighlights[0];
+                    if (currHighlight?.hlId === highlight.hlId && currEndCol === col - 1) {
+                        currEndCol = col;
+                    } else {
+                        if (currHighlight) {
+                            res.push({
+                                textType: "normal",
+                                hlId: currHighlight.hlId,
+                                line,
+                                startCol: currStartCol,
+                                endCol: currEndCol + 1,
+                            });
+                        }
+
+                        currHighlight = highlight;
+                        currStartCol = col;
+                        currEndCol = col;
+                    }
+                }
+            });
+            if (currHighlight) {
+                res.push({
+                    textType: "normal",
+                    // @ts-expect-error Typescript is wrong here. It asserts that currHighlight can never be non-null,
+                    //                  which is flagrantly incorrect. This is an artifact of the use of forEach.
+                    hlId: currHighlight.hlId,
+                    line,
+                    startCol: currStartCol,
+                    endCol: currEndCol + 1,
+                });
+            }
+        });
+
+        return res;
+    }
+
     shiftHighlights(by: number, from: number): void {
         if (by > 0) {
             // remove clipped out rows
@@ -199,10 +270,6 @@ export class HighlightGrid {
         });
 
         return currMaxCol;
-    }
-
-    forEachRow(func: (rowHighlights: Highlight[][], row: number) => void) {
-        this.grid.forEach(func);
     }
 }
 
