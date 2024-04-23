@@ -1,7 +1,7 @@
 import { Disposable, TextEditor } from "vscode";
 
 import { EventBusData, eventBus } from "./eventBus";
-import { HighlightProvider } from "./highlight_provider";
+import { HighlightProvider } from "./highlights/highlight_provider";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
 import { PendingUpdates } from "./pending_updates";

@@ -11,8 +11,9 @@ import {
     window,
 } from "vscode";
 
-import { getWidth } from "./utils";
-import { config } from "./config";
+import { getWidth } from "../utils";
+import { config } from "../config";
+
 import { Highlight, HighlightGrid, ValidCell } from "./highlight_grid";
 
 export interface VimHighlightUIAttributes {

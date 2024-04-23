@@ -1,5 +1,5 @@
-import { getWidth, isDouble } from "./utils/text_cells";
-import { calculateEditorColFromVimScreenCol, splitGraphemes } from "./utils/text";
+import { getWidth, isDouble } from "../utils/text_cells";
+import { calculateEditorColFromVimScreenCol, splitGraphemes } from "../utils/text";
 
 export interface ValidCell {
     text: string;

@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { HighlightCellsEvent, HighlightGrid, HighlightRange } from "../../highlight_grid";
+import { HighlightCellsEvent, HighlightGrid, HighlightRange } from "../../../highlights/highlight_grid";
 
 function sortRanges(ranges: HighlightRange[]) {
     ranges.sort((a, b) => {
