@@ -11,7 +11,6 @@ import {
     window,
 } from "vscode";
 
-import { getWidth } from "../utils";
 import { config } from "../config";
 
 import { Highlight, HighlightGrid, ValidCell } from "./highlight_grid";
@@ -201,7 +200,7 @@ export class HighlightProvider implements Disposable {
         // TODO: Break this out somehow
         const validCells: ValidCell[] = [];
         {
-            const idealMaxCells = Math.max(0, getWidth(lineText, tabSize) - vimCol);
+            const idealMaxCells = Math.max(0, HighlightGrid.getWidth(lineText, tabSize) - vimCol);
             const currMaxCol = gridHl.maxColInRow(row);
             const maxValidCells = Math.max(idealMaxCells, currMaxCol);
             const eolCells: ValidCell[] = [];

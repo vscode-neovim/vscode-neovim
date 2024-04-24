@@ -1,5 +1,7 @@
-import { getWidth, isDouble } from "../utils/text_cells";
-import { calculateEditorColFromVimScreenCol, splitGraphemes } from "../utils/text";
+import wcswidth from "ts-wcwidth";
+import GraphemeSplitter from "grapheme-splitter";
+
+import { calculateEditorColFromVimScreenCol, expandTabs } from "../utils/text";
 
 export interface ValidCell {
     text: string;
@@ -42,8 +44,43 @@ export class HighlightGrid {
      */
     private grid: Highlight[][][];
 
+    private static splitter = new GraphemeSplitter();
+
     constructor() {
         this.grid = [];
+    }
+
+    /**
+     * Checks whether or not the contents of a text cell should actually span two cells. For instance:
+     * a  length:1 width:1
+     * 你 length:1 width:2
+     * 🚀 length:2 width:2
+     * 🕵️ length:3 width:2
+     * ❤️ length:2 width:2
+     *
+     * @param cellText The cell text to check
+     * @returns Whether or not this cell is a double-width cell
+     */
+    static isDouble(cellText: string): boolean {
+        return wcswidth(cellText) === 2 || cellText.length > 1;
+    }
+
+    /**
+     * Get the width of a piece of text, in cells. Note that the use of tabs is
+     * position dependent, and this function must assume a line with tabs starts
+     * at position 0in the editor.
+     *
+     * @param text The text to get the width of
+     * @param tabSize The size of tab-widths
+     * @returns The width of the text, in cells
+     */
+    static getWidth(text: string, tabSize: number): number {
+        const t = expandTabs(text, tabSize);
+        return HighlightGrid.splitGraphemes(t).reduce((p, c) => p + (HighlightGrid.isDouble(c) ? 2 : 1), 0);
+    }
+
+    static splitGraphemes(str: string): string[] {
+        return HighlightGrid.splitter.splitGraphemes(str);
     }
 
     cleanRow(row: number) {
@@ -58,14 +95,14 @@ export class HighlightGrid {
         }
 
         const gridRow = this.grid[row];
-        const lineChars = splitGraphemes(lineText);
+        const lineChars = HighlightGrid.splitGraphemes(lineText);
 
         // Calculates the number of spaces occupied by the tab
         const calcTabCells = (tabCol: number) => {
             let nearestTabIdx = lineChars.slice(0, tabCol).lastIndexOf("\t");
             nearestTabIdx = nearestTabIdx === -1 ? 0 : nearestTabIdx + 1;
             const center = lineChars.slice(nearestTabIdx, tabCol).join("");
-            return tabSize - (getWidth(center, tabSize) % tabSize);
+            return tabSize - (HighlightGrid.getWidth(center, tabSize) % tabSize);
         };
 
         const editorCol = calculateEditorColFromVimScreenCol(lineText, vimCol, tabSize);
@@ -77,9 +114,10 @@ export class HighlightGrid {
         if (editorCol > 0) {
             const prevCol = editorCol - 1;
             const prevChar: string | undefined = lineChars[prevCol];
-            const expectedCells = prevChar === "\t" ? calcTabCells(prevCol) : getWidth(prevChar ?? "", tabSize);
+            const expectedCells =
+                prevChar === "\t" ? calcTabCells(prevCol) : HighlightGrid.getWidth(prevChar ?? "", tabSize);
             if (expectedCells > 1) {
-                const expectedVimCol = getWidth(lineChars.slice(0, editorCol).join(""), tabSize);
+                const expectedVimCol = HighlightGrid.getWidth(lineChars.slice(0, editorCol).join(""), tabSize);
                 if (expectedVimCol > vimCol) {
                     const rightHls: Highlight[] = [];
                     for (let i = 0; i < expectedVimCol - vimCol; i++) {
@@ -98,9 +136,12 @@ export class HighlightGrid {
         // #endregion
 
         // Insert additional columns for characters with length greater than 1.
-        const filledLineText = splitGraphemes(lineText).reduce((p, c) => p + c + " ".repeat(c.length - 1), "");
+        const filledLineText = HighlightGrid.splitGraphemes(lineText).reduce(
+            (p, c) => p + c + " ".repeat(c.length - 1),
+            "",
+        );
 
-        const filledLineChars = splitGraphemes(filledLineText);
+        const filledLineChars = HighlightGrid.splitGraphemes(filledLineText);
         let currCharCol = editorCol;
         let cell = cellIter.next();
         while (cell) {
@@ -123,14 +164,14 @@ export class HighlightGrid {
                     break;
                 }
 
-                if (currChar && isDouble(currChar)) {
+                if (currChar && HighlightGrid.isDouble(currChar)) {
                     if (currChar === cell.text) {
                         add(cell);
                         break;
                     }
 
                     add(cell, cell.text);
-                    if (!isDouble(cell.text)) {
+                    if (!HighlightGrid.isDouble(cell.text)) {
                         const nextCell = cellIter.next();
                         nextCell && add(nextCell, nextCell.text);
                         extraCols && add(nextCell ?? cell, " ".repeat(extraCols));
@@ -143,7 +184,7 @@ export class HighlightGrid {
                     add(cell);
                 } else {
                     add(cell, cell.text);
-                    if (isDouble(cell.text)) {
+                    if (HighlightGrid.isDouble(cell.text)) {
                         currCharCol++;
                     }
                 }

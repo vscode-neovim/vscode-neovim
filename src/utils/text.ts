@@ -1,4 +1,3 @@
-import GraphemeSplitter from "grapheme-splitter";
 import wcswidth from "ts-wcwidth";
 
 export function expandTabs(line: string, tabWidth: number): string {
@@ -16,11 +15,6 @@ export function expandTabs(line: string, tabWidth: number): string {
     );
 
     return expanded;
-}
-
-export function splitGraphemes(str: string): string[] {
-    const splitter = new GraphemeSplitter();
-    return splitter.splitGraphemes(str);
 }
 
 export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize: number): number {
