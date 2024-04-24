@@ -13,10 +13,9 @@ import {
     commands,
 } from "vscode";
 
-import { convertCharNumToByteNum } from "../utils";
 import { config } from "../config";
 
-import { convertByteNumToCharNum } from "./text";
+import { convertByteNumToCharNum, convertCharNumToByteNum } from "./text";
 
 /**
  * Stores last changes information for dot repeat
