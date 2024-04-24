@@ -91,6 +91,7 @@ export class HighlightGrid {
                         leftHls.push(...(gridRow[prevCol] ?? []).slice(0, expectedCells - rightHls.length));
                     }
                     gridRow[prevCol] = [...leftHls, ...rightHls];
+                    hasUpdates = true;
                 }
             }
         }
