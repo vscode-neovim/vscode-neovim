@@ -550,6 +550,39 @@ describe("processHighlightCellsEvent", () => {
                 },
             ],
         },
+        {
+            testName: "redrawing a virtual highlight over a double-wide character redraws both cells",
+            events: [
+                {
+                    row: 2,
+                    vimCol: 0,
+                    validCells: [
+                        { hlId: 2, text: "a" },
+                        { hlId: 2, text: "1" },
+                    ],
+                    lineText: "你",
+                    tabSize: 4,
+                },
+                {
+                    row: 2,
+                    vimCol: 1,
+                    validCells: [{ hlId: 2, text: "2" }],
+                    lineText: "你",
+                    tabSize: 4,
+                },
+            ],
+            expectedRanges: [
+                {
+                    textType: "virtual" as const,
+                    highlights: [
+                        { hlId: 2, text: "a", virtText: "a" },
+                        { hlId: 2, text: "2", virtText: "2" },
+                    ],
+                    line: 12,
+                    col: 0,
+                },
+            ],
+        },
     ].forEach(
         ({
             testName,
