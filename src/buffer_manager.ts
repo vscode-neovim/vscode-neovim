@@ -29,7 +29,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { LogLevel, createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, callAtomic, convertByteNumToCharNum, disposeAll, wait } from "./utils";
+import { ManualPromise, convertByteNumToCharNum, disposeAll, wait } from "./utils";
 
 // NOTE: document and editors in vscode events and namespace are reference stable
 // Integration notes:
@@ -602,22 +602,34 @@ export class BufferManager implements Disposable {
                     : docUri.fsPath
                 : docUri.toString();
 
-        const requests: [string, unknown[]][] = [
-            ["nvim_buf_set_lines", [bufId, 0, -1, false, lines]],
-            // set vscode controlled flag so we can check it neovim
-            ["nvim_buf_set_var", [bufId, "vscode_controlled", true]],
-            // In vscode same document can have different insertSpaces/tabSize settings per editor
-            // however in neovim it's per buffer. We make assumption here that these settings are same for all editors
-            ["nvim_buf_set_var", [bufId, "vscode_editor_options", makeEditorOptionsVariable(editor?.options)]],
-            ["nvim_buf_set_var", [bufId, "vscode_uri", docUri.toString()]],
-            ["nvim_buf_set_var", [bufId, "vscode_uri_data", docUri.toJSON()]],
-            ["nvim_buf_set_name", [bufId, bufname]],
-            ["nvim_buf_set_option", [bufId, "modifiable", !this.isExternalTextDocument(document)]],
-            // force nofile, just in case if the buffer was created externally
-            ["nvim_buf_set_option", [bufId, "buftype", "nofile"]],
-            ["nvim_buf_set_option", [bufId, "buflisted", true]],
-        ];
-        await callAtomic(this.client, requests, logger);
+        await this.client.lua(
+            `
+            local bufId, lines, vscode_editor_options, docUri, docUriJson, bufname, isExternalDoc = ...
+            vim.api.nvim_buf_set_lines(bufId, 0, -1, false, lines)
+            -- set vscode controlled flag so we can check it neovim
+            vim.api.nvim_buf_set_var(bufId, "vscode_controlled", true)
+            -- In vscode same document can have different insertSpaces/tabSize settings per editor
+            -- however in neovim it's per buffer. We make assumption here that these settings are same for all editors
+            vim.api.nvim_buf_set_var(bufId, "vscode_editor_options", vscode_editor_options)
+            vim.api.nvim_buf_set_var(bufId, "vscode_uri", docUri)
+            vim.api.nvim_buf_set_var(bufId, "vscode_uri_data", docUriJson)
+            vim.api.nvim_buf_set_name(bufId, bufname)
+            vim.api.nvim_buf_set_option(bufId, "modifiable", not isExternalDoc)
+            -- force nofile, just in case if the buffer was created externally
+            vim.api.nvim_buf_set_option(bufId, "buftype", "nofile")
+            vim.api.nvim_buf_set_option(bufId, "buflisted", true)
+        `,
+            [
+                bufId,
+                lines,
+                makeEditorOptionsVariable(editor?.options),
+                docUri.toString(),
+                docUri.toJSON(),
+                bufname,
+                this.isExternalTextDocument(document),
+            ],
+        );
+
         // Looks like need to be in separate request
         if (!this.isExternalTextDocument(document)) {
             await this.client.callFunction("VSCodeClearUndo", bufId);

@@ -138,8 +138,7 @@ VSCode-Neovim uses neovim's [`node-client`](https://neovim.io/node-client/index.
 neovim. This library is a wrapper around neovim's [msgpack-rpc API](https://neovim.io/doc/user/api.html). The library is
 used to send and receive messages to and from neovim. The library is also used to spawn neovim processes. Many functions
 are exposed, listed [here](https://neovim.io/node-client/classes/NeovimClient.html). However, the library is not kept up
-to date, so many API wrappers are missing. In these cases, the raw `call`, `callAtomic`, `lua`, and `command` commands
-are directly used.
+to date, so many API wrappers are missing. In those cases just use `call`, `lua`, and `command` instead.
 
 ### Neovim UI Protocol
 
@@ -194,7 +193,7 @@ editor with nvim, and roughly matches the nvim ui API. Managers can do the follo
 
 -   Listen to ui and custom events from nvim through `eventBus.on` (`src/eventBus.ts`).
 -   Listen to vscode events such as `window.onDidChangeTextEditorSelection` and `workspace.onDidChangeTextDocument`.
--   Access the lua API through `this.client.call` and `callAtomic`.
+-   Access the lua API through `this.client.call` and `this.client.lua`.
 
 ### ModeManager
 
