@@ -333,7 +333,7 @@ export class HighlightProvider implements Disposable {
         colHighlights.forEach(({ virtText, hlId, text }) => {
             // In certain edge cases, the right-side highlight may be appended later,
             // resulting in the column being converted to virt text type.
-            // So, the left-side highlight may not include vrtText.
+            // So, the left-side highlight may not include virtText.
             virtText ??= text;
             if (hlId === 0 && processedColHighlights.length > 0) {
                 processedColHighlights[processedColHighlights.length - 1].virtText += virtText;
