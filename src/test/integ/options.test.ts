@@ -72,10 +72,11 @@ describe("Synchronize editor options", () => {
 
     async function checkTab(editor: vscode.TextEditor): Promise<void> {
         const { insertSpaces, tabSize } = editor.options;
-        const [[expandtab, tabstop]] = await client.callAtomic([
-            ["nvim_buf_get_option", [0, "expandtab"]],
-            ["nvim_buf_get_option", [0, "tabstop"]],
-        ]);
+        const [expandtab, tabstop] = (await client.lua(`
+            local expandtab = vim.api.nvim_get_option_value('expandtab', { buf = 0 })
+            local tabstop = vim.api.nvim_get_option_value('tabstop', { buf = 0 })
+            return { expandtab, tabstop }
+        `)) as any[];
         assert.equal(insertSpaces, expandtab, "insertSpaces should be equal to expandtab");
         assert.equal(tabSize, tabstop, "tabSize should be equal to tabstop");
     }
