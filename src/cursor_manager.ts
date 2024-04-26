@@ -223,11 +223,12 @@ export class CursorManager implements Disposable {
             return;
         }
 
+        const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
+        const nvimActivePos = convertVimPositionToEditorPosition(editor, bytePos);
+
         let selections: Selection[] = [];
         if (!this.main.modeManager.isVisualMode) {
-            const bytePos = this.main.viewportManager.getCursorFromViewport(gridId);
-            const active = convertVimPositionToEditorPosition(editor, bytePos);
-            selections = [new Selection(active, active)];
+            selections = [new Selection(nvimActivePos, nvimActivePos)];
         } else {
             const win = this.main.bufferManager.getWinIdForTextEditor(editor);
             if (!win) {
@@ -254,9 +255,12 @@ export class CursorManager implements Disposable {
         ) {
             editor.selections = selections;
         }
+        // Store cursor position to reduce cursor synchronization
         this.neovimCursorPosition.set(editor, selections[0]);
         if (!selections[0].isEqual(prevSelections[0])) {
-            this.triggerMovementFunctions(editor, selections[0].active);
+            // 1. In normal mode, nvimActivePos equals to selections[0].active
+            // 2. nvimActivePos is always the active position that we want to reveal
+            this.triggerMovementFunctions(editor, nvimActivePos);
         }
 
         this.cursorUpdatePromise.get(editor)?.resolve();
