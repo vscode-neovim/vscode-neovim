@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.10.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.10.0...v1.10.1) (2024-04-26)
+
+
+### Bug Fixes
+
+* **cursor:** always reveal the nvim cursor position ([#1911](https://github.com/vscode-neovim/vscode-neovim/issues/1911)) ([37f3434](https://github.com/vscode-neovim/vscode-neovim/commit/37f343455425c2f6a758f31eb09f644697683e9a))
+
 ## [1.10.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.9.0...v1.10.0) (2024-04-21)
 
 
