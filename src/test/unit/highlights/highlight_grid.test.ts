@@ -197,15 +197,6 @@ describe("processHighlightCellsEvent", () => {
                     hlId: 2,
                     line: 12,
                     startCol: 6,
-                    endCol: 14,
-                },
-                // The rocket has a separate highlight range
-                // TODO: should it?
-                {
-                    textType: "normal" as const,
-                    hlId: 2,
-                    line: 12,
-                    startCol: 15,
                     endCol: 16,
                 },
             ],

@@ -271,55 +271,48 @@ export class HighlightGrid {
     }
 
     private rangesForRow(rowHighlights: Highlight[][], row: number, topLine: number): HighlightRange[] {
-        const res: HighlightRange[] = [];
-
         const line = row + topLine;
-        let currHighlight: Highlight | null = null;
-        let currStartCol = 0;
-        let currEndCol = 0;
+
+        const normalHighlights: Map<number, NormalTextHighlightRange> = new Map();
+        const virtualHighlights: VirtualTextHighlightRange[] = [];
         rowHighlights.forEach((colHighlights, col) => {
+            if (colHighlights.length === 0) {
+                // Should never happen, but defensive
+                return;
+            }
+
             if (colHighlights.length > 1 || colHighlights[0].virtText) {
-                res.push({
+                virtualHighlights.push({
                     textType: "virtual",
                     highlights: colHighlights,
                     line,
                     col,
                 });
-            } else {
-                // Extend range highlights
-                const highlight = colHighlights[0];
-                if (currHighlight?.hlId === highlight.hlId && currEndCol === col - 1) {
-                    currEndCol = col;
-                } else {
-                    if (currHighlight) {
-                        res.push({
-                            textType: "normal",
-                            hlId: currHighlight.hlId,
-                            line,
-                            startCol: currStartCol,
-                            endCol: currEndCol + 1,
-                        });
-                    }
+                return;
+            }
 
-                    currHighlight = highlight;
-                    currStartCol = col;
-                    currEndCol = col;
-                }
+            const colHighlight = colHighlights[0];
+            const existingHighlight = normalHighlights.get(colHighlight.hlId);
+            if (existingHighlight !== undefined) {
+                // Extend our existing highlight if we already have it
+                existingHighlight.endCol = col + 1;
+            } else {
+                const highlight = {
+                    textType: "normal" as const,
+                    hlId: colHighlight.hlId,
+                    line,
+                    startCol: col,
+                    endCol: col + 1,
+                };
+
+                normalHighlights.set(colHighlight.hlId, highlight);
             }
         });
-        if (currHighlight) {
-            res.push({
-                textType: "normal",
-                // @ts-expect-error Typescript is wrong here. It asserts that currHighlight can never be non-null,
-                //                  which is flagrantly incorrect. This is an artifact of the use of forEach.
-                hlId: currHighlight.hlId,
-                line,
-                startCol: currStartCol,
-                endCol: currEndCol + 1,
-            });
-        }
 
-        return res;
+        const ranges: HighlightRange[] = Array.from(normalHighlights.values());
+        ranges.push(...virtualHighlights);
+
+        return ranges;
     }
 }
 
