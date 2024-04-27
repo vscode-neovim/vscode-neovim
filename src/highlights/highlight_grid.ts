@@ -273,7 +273,7 @@ export class HighlightGrid {
     private rangesForRow(rowHighlights: Highlight[][], row: number, topLine: number): HighlightRange[] {
         const line = row + topLine;
 
-        const normalHighlights: Map<number, NormalTextHighlightRange> = new Map();
+        const normalHighlights: Map<number, NormalTextHighlightRange[]> = new Map();
         const virtualHighlights: VirtualTextHighlightRange[] = [];
         rowHighlights.forEach((colHighlights, col) => {
             if (colHighlights.length === 0) {
@@ -292,10 +292,18 @@ export class HighlightGrid {
             }
 
             const colHighlight = colHighlights[0];
-            const existingHighlight = normalHighlights.get(colHighlight.hlId);
-            if (existingHighlight !== undefined) {
+            const existingHighlights = normalHighlights.get(colHighlight.hlId) ?? [];
+            const matchingHighlight = rfind(
+                existingHighlights,
+                (hl) =>
+                    hl.endCol === col ||
+                    // double characters' start columns are offset by one (i.e. col is one higher)
+                    (HighlightGrid.isDouble(colHighlight.text) && hl.endCol === col - 1),
+            );
+
+            if (matchingHighlight) {
                 // Extend our existing highlight if we already have it
-                existingHighlight.endCol = col + 1;
+                matchingHighlight.endCol = col + 1;
             } else {
                 const highlight = {
                     textType: "normal" as const,
@@ -305,11 +313,13 @@ export class HighlightGrid {
                     endCol: col + 1,
                 };
 
-                normalHighlights.set(colHighlight.hlId, highlight);
+                existingHighlights.push(highlight);
             }
+
+            normalHighlights.set(colHighlight.hlId, existingHighlights);
         });
 
-        const ranges: HighlightRange[] = Array.from(normalHighlights.values());
+        const ranges: HighlightRange[] = Array.from(normalHighlights.values()).flat();
         ranges.push(...virtualHighlights);
 
         return ranges;
@@ -328,6 +338,14 @@ class CellIter {
     setNext(hlId: number, text: string) {
         if (this._index < this._cells.length) {
             this._cells[this._index] = { hlId, text };
+        }
+    }
+}
+
+function rfind<T>(arr: T[], finder: (item: T) => boolean): T | undefined {
+    for (let i = arr.length - 1; i >= 0; i--) {
+        if (finder(arr[i])) {
+            return arr[i];
         }
     }
 }

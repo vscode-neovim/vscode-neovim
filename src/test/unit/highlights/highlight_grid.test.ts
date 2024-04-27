@@ -574,6 +574,53 @@ describe("processHighlightCellsEvent", () => {
                 },
             ],
         },
+        {
+            testName: "two highlights on the same line and same hlId should produce two ranges",
+            events: [
+                {
+                    row: 2,
+                    vimCol: 0,
+                    validCells: [
+                        { hlId: 2, text: "h" },
+                        { hlId: 2, text: "e" },
+                        { hlId: 2, text: "l" },
+                        { hlId: 2, text: "l" },
+                        { hlId: 2, text: "o" },
+                    ],
+                    lineText: "hello world hello",
+                    tabSize: 4,
+                },
+                {
+                    row: 2,
+                    vimCol: 12,
+                    validCells: [
+                        { hlId: 2, text: "h" },
+                        { hlId: 2, text: "e" },
+                        { hlId: 2, text: "l" },
+                        { hlId: 2, text: "l" },
+                        { hlId: 2, text: "o" },
+                    ],
+                    lineText: "hello world hello",
+                    tabSize: 4,
+                },
+            ],
+            expectedRanges: [
+                {
+                    textType: "normal" as const,
+                    hlId: 2,
+                    line: 12,
+                    startCol: 0,
+                    endCol: 5,
+                },
+                {
+                    textType: "normal" as const,
+                    hlId: 2,
+                    line: 12,
+                    startCol: 12,
+                    endCol: 17,
+                },
+            ],
+        },
     ].forEach(
         ({
             testName,
