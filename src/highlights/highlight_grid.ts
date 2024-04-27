@@ -210,56 +210,12 @@ export class HighlightGrid {
     }
 
     buildHighlightRanges(topLine: number): HighlightRange[] {
-        const res: HighlightRange[] = [];
-        this.grid.forEach((rowHighlights, row) => {
-            const line = row + topLine;
-            let currHighlight: Highlight | null = null;
-            let currStartCol = 0;
-            let currEndCol = 0;
-            rowHighlights.forEach((colHighlights, col) => {
-                if (colHighlights.length > 1 || colHighlights[0].virtText) {
-                    res.push({
-                        textType: "virtual",
-                        highlights: colHighlights,
-                        line,
-                        col,
-                    });
-                } else {
-                    // Extend range highlights
-                    const highlight = colHighlights[0];
-                    if (currHighlight?.hlId === highlight.hlId && currEndCol === col - 1) {
-                        currEndCol = col;
-                    } else {
-                        if (currHighlight) {
-                            res.push({
-                                textType: "normal",
-                                hlId: currHighlight.hlId,
-                                line,
-                                startCol: currStartCol,
-                                endCol: currEndCol + 1,
-                            });
-                        }
+        return this.grid.reduce((ranges: HighlightRange[], rowHighlights: Highlight[][], row: number) => {
+            const rowRanges = this.rangesForRow(rowHighlights, row, topLine);
+            ranges.push(...rowRanges);
 
-                        currHighlight = highlight;
-                        currStartCol = col;
-                        currEndCol = col;
-                    }
-                }
-            });
-            if (currHighlight) {
-                res.push({
-                    textType: "normal",
-                    // @ts-expect-error Typescript is wrong here. It asserts that currHighlight can never be non-null,
-                    //                  which is flagrantly incorrect. This is an artifact of the use of forEach.
-                    hlId: currHighlight.hlId,
-                    line,
-                    startCol: currStartCol,
-                    endCol: currEndCol + 1,
-                });
-            }
-        });
-
-        return res;
+            return ranges;
+        }, []);
     }
 
     shiftHighlights(by: number, from: number): void {
@@ -312,6 +268,58 @@ export class HighlightGrid {
         });
 
         return currMaxCol;
+    }
+
+    private rangesForRow(rowHighlights: Highlight[][], row: number, topLine: number): HighlightRange[] {
+        const res: HighlightRange[] = [];
+
+        const line = row + topLine;
+        let currHighlight: Highlight | null = null;
+        let currStartCol = 0;
+        let currEndCol = 0;
+        rowHighlights.forEach((colHighlights, col) => {
+            if (colHighlights.length > 1 || colHighlights[0].virtText) {
+                res.push({
+                    textType: "virtual",
+                    highlights: colHighlights,
+                    line,
+                    col,
+                });
+            } else {
+                // Extend range highlights
+                const highlight = colHighlights[0];
+                if (currHighlight?.hlId === highlight.hlId && currEndCol === col - 1) {
+                    currEndCol = col;
+                } else {
+                    if (currHighlight) {
+                        res.push({
+                            textType: "normal",
+                            hlId: currHighlight.hlId,
+                            line,
+                            startCol: currStartCol,
+                            endCol: currEndCol + 1,
+                        });
+                    }
+
+                    currHighlight = highlight;
+                    currStartCol = col;
+                    currEndCol = col;
+                }
+            }
+        });
+        if (currHighlight) {
+            res.push({
+                textType: "normal",
+                // @ts-expect-error Typescript is wrong here. It asserts that currHighlight can never be non-null,
+                //                  which is flagrantly incorrect. This is an artifact of the use of forEach.
+                hlId: currHighlight.hlId,
+                line,
+                startCol: currStartCol,
+                endCol: currEndCol + 1,
+            });
+        }
+
+        return res;
     }
 }
 
