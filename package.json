@@ -400,6 +400,14 @@
                                 "command": "vscode-neovim.escape",
                                 "args": []
                             }
+                        },
+                        {
+                            "jk": {
+                                "command": "vscode-neovim.lua",
+                                "args": [
+                                    "vim.api.nvim_input('<ESC>') require('vscode-neovim').action('workbench.action.files.save')"
+                                ]
+                            }
                         }
                     ],
                     "patternProperties": {
@@ -417,7 +425,8 @@
                                 "command"
                             ]
                         }
-                    }
+                    },
+                    "description": "Composite key bindings"
                 }
             }
         },
