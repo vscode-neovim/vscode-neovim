@@ -3,7 +3,7 @@ import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode
 import { CompositeKeys, config } from "./config";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { disposeAll, ManualPromise, normalizeInputString } from "./utils";
+import { disposeAll, normalizeInputString } from "./utils";
 
 const logger = createLogger("TypingManager");
 
@@ -47,7 +47,6 @@ export class TypingManager implements Disposable {
     // logic variables
     private compositeMatchedFirstKey?: string;
     private compositeTimer?: NodeJS.Timeout;
-    private compositePromise?: ManualPromise;
 
     private get client() {
         return this.main.client;
@@ -152,13 +151,10 @@ export class TypingManager implements Disposable {
         if (!this.compositeMatchedFirstKey) {
             if (this.compositeFirstKeys.includes(key)) {
                 this.compositeMatchedFirstKey = key;
-                this.compositePromise?.resolve();
-                this.compositePromise = new ManualPromise();
                 this.compositeTimer = setTimeout(async () => {
                     this.compositeTimer = undefined;
                     this.compositeMatchedFirstKey = undefined;
                     await this.vscodeDefaultType(key);
-                    this.compositePromise?.resolve();
                 }, config.compositeTimeout);
             } else {
                 await this.vscodeDefaultType(key);
@@ -188,7 +184,6 @@ export class TypingManager implements Disposable {
             return;
         }
 
-        await this.compositePromise?.promise;
         await this.vscodeDefaultType(key);
     }
 
