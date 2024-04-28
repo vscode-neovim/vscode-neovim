@@ -385,6 +385,39 @@
                     "type": "string",
                     "default": "|",
                     "description": "Separator used by statusline"
+                },
+                "vscode-neovim.compositeTimeout": {
+                    "type": "number",
+                    "default": 300,
+                    "description": "Timeout in milliseconds to wait for the next key in a composite key sequence"
+                },
+                "vscode-neovim.compositeKeys": {
+                    "type": "object",
+                    "default": {},
+                    "examples": [
+                        {
+                            "jj": {
+                                "command": "vscode-neovim.escape",
+                                "args": []
+                            }
+                        }
+                    ],
+                    "patternProperties": {
+                        "^[a-zA-Z]{2}$": {
+                            "type": "object",
+                            "properties": {
+                                "command": {
+                                    "type": "string"
+                                },
+                                "args": {
+                                    "type": "array"
+                                }
+                            },
+                            "required": [
+                                "command"
+                            ]
+                        }
+                    }
                 }
             }
         },
@@ -412,14 +445,6 @@
             {
                 "command": "vscode-neovim.escape",
                 "title": "Neovim: Send escape key to neovim, or other keys that will exit insert mode"
-            },
-            {
-                "command": "vscode-neovim.compositeEscape1",
-                "title": "Neovim: Composite escape key 1"
-            },
-            {
-                "command": "vscode-neovim.compositeEscape2",
-                "title": "Neovim: Composite escape key 2"
             },
             {
                 "command": "vscode-neovim.commit-cmdline",

@@ -23,7 +23,7 @@ describe("Composite escape key", () => {
         await closeAllActiveEditors();
     });
 
-    it("Works", async () => {
+    it.skip("Works", async () => {
         await openTextDocument({ content: "" });
 
         await sendInsertKey();

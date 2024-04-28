@@ -2,7 +2,8 @@ import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode
 
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { disposeAll, normalizeInputString } from "./utils";
+import { disposeAll, ManualPromise, normalizeInputString } from "./utils";
+import { CompositeKeys, config } from "./config";
 
 const logger = createLogger("TypingManager");
 
@@ -25,10 +26,6 @@ export class TypingManager implements Disposable {
      */
     private pendingKeysAfterEnter = "";
     /**
-     * Timestamp when the first composite escape key was pressed. Using timestamp because timer may be delayed if the extension host is busy
-     */
-    private compositeEscapeFirstPressTimestamp?: number;
-    /**
      * Composing flag
      */
     private isInComposition = false;
@@ -38,6 +35,13 @@ export class TypingManager implements Disposable {
     private composingText = "";
 
     private takeOverVSCodeInput = false;
+
+    private compositeFirstKeys: string[] = [];
+    private compositeSecondKeysForFirstKey = new Map<string, string[]>();
+    private compositeMatchedFirstKey?: string;
+    private compositeTimer?: NodeJS.Timeout;
+    private compositePromise?: ManualPromise;
+    private compositeKeys: CompositeKeys;
 
     private get client() {
         return this.main.client;
@@ -54,6 +58,16 @@ export class TypingManager implements Disposable {
     private vscodeDefaultType = (text: string) => commands.executeCommand("default:type", { text });
 
     public constructor(private main: MainController) {
+        // Prepare configs for composite keys
+        this.compositeKeys = config.compositeKeys;
+        Object.keys(this.compositeKeys).forEach((key) => {
+            const [first, second] = key.split("");
+            this.compositeFirstKeys.push(first);
+            const secondKeys = this.compositeSecondKeysForFirstKey.get(first) || [];
+            secondKeys.push(second);
+            this.compositeSecondKeysForFirstKey.set(first, secondKeys);
+        });
+
         const warnOnEmptyKey = (method: (key: string) => Promise<void>): typeof method => {
             return (key: string) => {
                 if (key) {
@@ -83,8 +97,6 @@ export class TypingManager implements Disposable {
         registerCommand("vscode-neovim.send", warnOnEmptyKey(this.onSendCommand));
         registerCommand("vscode-neovim.send-blocking", warnOnEmptyKey(this.onSendBlockingCommand));
         registerCommand("vscode-neovim.escape", this.onEscapeKeyCommand);
-        registerCommand("vscode-neovim.compositeEscape1", warnOnEmptyKey(this.handleCompositeEscapeFirstKey));
-        registerCommand("vscode-neovim.compositeEscape2", warnOnEmptyKey(this.handleCompositeEscapeSecondKey));
         registerCommand("compositionStart", this.onCompositionStart);
         registerCommand("compositionEnd", this.onCompositionEnd);
         this.main.modeManager.onModeChange(this.onModeChange);
@@ -124,9 +136,55 @@ export class TypingManager implements Disposable {
         }
     };
 
+    async compositeInput(key: string) {
+        if (!this.compositeMatchedFirstKey) {
+            if (this.compositeFirstKeys.includes(key)) {
+                this.compositeMatchedFirstKey = key;
+                this.compositePromise?.resolve();
+                this.compositePromise = new ManualPromise();
+                this.compositeTimer = setTimeout(async () => {
+                    this.compositeTimer = undefined;
+                    this.compositeMatchedFirstKey = undefined;
+                    await this.vscodeDefaultType(key);
+                    this.compositePromise?.resolve();
+                }, config.compositeTimeout);
+            } else {
+                await this.vscodeDefaultType(key);
+            }
+            return;
+        }
+
+        const desiredSecondKeys = this.compositeSecondKeysForFirstKey.get(this.compositeMatchedFirstKey);
+        if (desiredSecondKeys?.includes(key)) {
+            clearTimeout(this.compositeTimer);
+            this.compositeTimer = undefined;
+
+            const matchedFirstKey = this.compositeMatchedFirstKey;
+            this.compositeMatchedFirstKey = undefined;
+            const { command, args } = this.compositeKeys[matchedFirstKey + key];
+            await commands.executeCommand(command, ...(args ? args : []));
+            return;
+        }
+
+        if (this.compositeTimer) {
+            clearTimeout(this.compositeTimer);
+            this.compositeTimer = undefined;
+
+            const matchedFirstKey = this.compositeMatchedFirstKey;
+            this.compositeMatchedFirstKey = undefined;
+            await this.vscodeDefaultType(matchedFirstKey + key);
+            return;
+        }
+
+        await this.compositePromise?.promise;
+        await this.vscodeDefaultType(key);
+    }
+
     private onVSCodeType = async (_editor: TextEditor, _edit: TextEditorEdit, { text }: { text: string }) => {
         if (!this.takeOverVSCodeInput) {
-            return this.vscodeDefaultType(text);
+            if (this.isInsertMode) this.compositeInput(text);
+            else this.vscodeDefaultType(text);
+            return;
         }
 
         if (this.isEnteringInsertMode) {
@@ -149,7 +207,7 @@ export class TypingManager implements Disposable {
             this.client.input(normalizeInputString(text, !this.isRecordingInInsertMode));
         } else {
             this.takeOverVSCodeInput = false;
-            this.vscodeDefaultType(text);
+            this.compositeInput(text);
         }
     };
 
@@ -186,29 +244,6 @@ export class TypingManager implements Disposable {
         // see https://github.com/asvetliakov/vscode-neovim/issues/324
         this.isExitingInsertMode = true;
         await this.onSendBlockingCommand(key);
-    };
-
-    private handleCompositeEscapeFirstKey = async (key: string): Promise<void> => {
-        const now = new Date().getTime();
-        if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
-            this.compositeEscapeFirstPressTimestamp = undefined;
-            await commands.executeCommand("deleteLeft");
-            await this.onEscapeKeyCommand();
-        } else {
-            this.compositeEscapeFirstPressTimestamp = now;
-            await commands.executeCommand("type", { text: key });
-        }
-    };
-
-    private handleCompositeEscapeSecondKey = async (key: string): Promise<void> => {
-        const now = new Date().getTime();
-        if (this.compositeEscapeFirstPressTimestamp && now - this.compositeEscapeFirstPressTimestamp <= 200) {
-            this.compositeEscapeFirstPressTimestamp = undefined;
-            await commands.executeCommand("deleteLeft");
-            await this.onEscapeKeyCommand();
-        } else {
-            await commands.executeCommand("type", { text: key });
-        }
     };
 
     private onReplacePreviousChar = (type: { text: string; replaceCharCnt: number }) => {
