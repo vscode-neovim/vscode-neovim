@@ -1,9 +1,9 @@
 import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode";
 
+import { CompositeKeys, config } from "./config";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { disposeAll, ManualPromise, normalizeInputString } from "./utils";
-import { CompositeKeys, config } from "./config";
 
 const logger = createLogger("TypingManager");
 
@@ -34,14 +34,20 @@ export class TypingManager implements Disposable {
      */
     private composingText = "";
 
+    /**
+     * Flag indicating that we should take over vscode input
+     * If false, we should forward all input received from "type" to "default:type"
+     */
     private takeOverVSCodeInput = false;
 
+    // configs
+    private compositeKeys: CompositeKeys;
     private compositeFirstKeys: string[] = [];
     private compositeSecondKeysForFirstKey = new Map<string, string[]>();
+    // logic variables
     private compositeMatchedFirstKey?: string;
     private compositeTimer?: NodeJS.Timeout;
     private compositePromise?: ManualPromise;
-    private compositeKeys: CompositeKeys;
 
     private get client() {
         return this.main.client;
