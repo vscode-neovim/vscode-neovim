@@ -126,21 +126,28 @@ export class TypingManager implements Disposable {
         if (!this.takeOverVSCodeInput) {
             return commands.executeCommand("default:type", { ...type });
         }
+
         if (this.isEnteringInsertMode) {
             this.pendingKeysAfterEnter += type.text;
-        } else if (this.isExitingInsertMode) {
+            return;
+        }
+        if (this.isExitingInsertMode) {
             this.pendingKeysAfterExit += type.text;
-        } else if (this.isInComposition) {
+            return;
+        }
+        if (this.isInComposition) {
             this.composingText += type.text;
-        } else if (this.main.modeManager.isInsertMode && !this.main.modeManager.isRecordingInInsertMode) {
-            if ((await this.client.mode).blocking) {
-                this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
-            } else {
-                this.takeOverVSCodeInput = false;
-                commands.executeCommand("default:type", { ...type });
-            }
-        } else {
+            return;
+        }
+        if (!this.main.modeManager.isInsertMode || this.main.modeManager.isRecordingInInsertMode) {
             this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
+            return;
+        }
+        if ((await this.client.mode).blocking) {
+            this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
+        } else {
+            this.takeOverVSCodeInput = false;
+            commands.executeCommand("default:type", { ...type });
         }
     };
 
