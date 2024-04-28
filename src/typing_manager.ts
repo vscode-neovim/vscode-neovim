@@ -43,6 +43,16 @@ export class TypingManager implements Disposable {
         return this.main.client;
     }
 
+    private get isInsertMode() {
+        return this.main.modeManager.isInsertMode;
+    }
+
+    private get isRecordingInInsertMode() {
+        return this.main.modeManager.isRecordingInInsertMode;
+    }
+
+    private vscodeDefaultType = (text: string) => commands.executeCommand("default:type", { text });
+
     public constructor(private main: MainController) {
         const warnOnEmptyKey = (method: (key: string) => Promise<void>): typeof method => {
             return (key: string) => {
@@ -81,11 +91,7 @@ export class TypingManager implements Disposable {
     }
 
     private onModeChange = async (): Promise<void> => {
-        if (
-            this.main.modeManager.isInsertMode &&
-            this.takeOverVSCodeInput &&
-            !this.main.modeManager.isRecordingInInsertMode
-        ) {
+        if (this.main.modeManager.isInsertMode && this.takeOverVSCodeInput && !this.isRecordingInInsertMode) {
             const editor = window.activeTextEditor;
             const documentPromise = editor && this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
             if (documentPromise) {
@@ -94,14 +100,14 @@ export class TypingManager implements Disposable {
                 this.isEnteringInsertMode = true;
                 documentPromise.then(async () => {
                     await this.main.cursorManager.waitForCursorUpdate(editor);
-                    if (this.main.modeManager.isInsertMode) {
+                    if (this.isInsertMode) {
                         this.takeOverVSCodeInput = false;
                     }
                     if (this.pendingKeysAfterEnter) {
                         logger.debug(
                             `Replaying pending keys after entering insert mode: ${this.pendingKeysAfterEnter}`,
                         );
-                        await commands.executeCommand(this.main.modeManager.isInsertMode ? "default:type" : "type", {
+                        await commands.executeCommand(this.isInsertMode ? "default:type" : "type", {
                             text: this.pendingKeysAfterEnter,
                         });
                         this.pendingKeysAfterEnter = "";
@@ -111,50 +117,46 @@ export class TypingManager implements Disposable {
             } else {
                 this.takeOverVSCodeInput = false;
             }
-        } else if (!this.main.modeManager.isInsertMode) {
+        } else if (!this.isInsertMode) {
             this.isEnteringInsertMode = false;
             this.isExitingInsertMode = false;
             this.takeOverVSCodeInput = true;
         }
     };
 
-    private onVSCodeType = async (
-        _editor: TextEditor,
-        _edit: TextEditorEdit,
-        type: { text: string },
-    ): Promise<void> => {
+    private onVSCodeType = async (_editor: TextEditor, _edit: TextEditorEdit, { text }: { text: string }) => {
         if (!this.takeOverVSCodeInput) {
-            return commands.executeCommand("default:type", { ...type });
+            return this.vscodeDefaultType(text);
         }
 
         if (this.isEnteringInsertMode) {
-            this.pendingKeysAfterEnter += type.text;
+            this.pendingKeysAfterEnter += text;
             return;
         }
         if (this.isExitingInsertMode) {
-            this.pendingKeysAfterExit += type.text;
+            this.pendingKeysAfterExit += text;
             return;
         }
         if (this.isInComposition) {
-            this.composingText += type.text;
+            this.composingText += text;
             return;
         }
-        if (!this.main.modeManager.isInsertMode || this.main.modeManager.isRecordingInInsertMode) {
-            this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
+        if (!this.isInsertMode || this.isRecordingInInsertMode) {
+            this.client.input(normalizeInputString(text, !this.isRecordingInInsertMode));
             return;
         }
         if ((await this.client.mode).blocking) {
-            this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
+            this.client.input(normalizeInputString(text, !this.isRecordingInInsertMode));
         } else {
             this.takeOverVSCodeInput = false;
-            commands.executeCommand("default:type", { ...type });
+            this.vscodeDefaultType(text);
         }
     };
 
     private onSendCommand = async (key: string): Promise<void> => {
         logger.debug(`Send for: ${key}`);
         this.main.cursorManager.wantInsertCursorUpdate = true;
-        if (this.main.modeManager.isInsertMode && !(await this.client.mode).blocking) {
+        if (this.isInsertMode && !(await this.client.mode).blocking) {
             logger.debug(`Syncing buffers with neovim (${key})`);
             await this.main.changeManager.documentChangeLock.waitForUnlock();
             if (window.activeTextEditor)
@@ -225,8 +227,8 @@ export class TypingManager implements Disposable {
     private onCompositionEnd = (): void => {
         this.isInComposition = false;
 
-        if (!this.main.modeManager.isInsertMode)
-            this.client.input(normalizeInputString(this.composingText, !this.main.modeManager.isRecordingInInsertMode));
+        if (!this.isInsertMode)
+            this.client.input(normalizeInputString(this.composingText, !this.isRecordingInInsertMode));
 
         this.composingText = "";
     };
