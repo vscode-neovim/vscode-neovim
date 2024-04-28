@@ -171,32 +171,37 @@ reporting it.
 
 ### Composite escape keys
 
-Since VSCode is responsible for insert mode, custom insert-mode Vim mappings don't work. To map composite escape keys,
-put into your keybindings.json:
+Related configurations:
 
-for <kbd>jj</kbd>
+-   `compositeTimeout`
+-   `compositeKeys`
 
-```json
-{
-    "command": "vscode-neovim.compositeEscape1",
-    "key": "j",
-    "when": "neovim.mode == insert && editorTextFocus",
-    "args": "j"
-}
-```
+Examples:
 
-to enable <kbd>jk</kbd> add also:
+1. <kbd>jj</kbd> to escape
 
 ```json
 {
-    "command": "vscode-neovim.compositeEscape2",
-    "key": "k",
-    "when": "neovim.mode == insert && editorTextFocus",
-    "args": "k"
+    "vscode-neovim.compositeKeys": {
+        "jj": {
+            "command": "vscode-neovim.escape"
+        }
+    }
 }
 ```
 
-Currently, there is no way to map both `jk` and `kj`, or to map `jk` without also mapping `jj`.
+2. <kbd>jk</kbd> to escape and save
+
+```json
+{
+    "vscode-neovim.compositeKeys": {
+        "jk": {
+            "command": "vscode-neovim.lua",
+            "args": ["vim.api.nvim_input('<ESC>')\nrequire('vscode-neovim').action('workbench.action.files.save')"]
+        }
+    }
+}
+```
 
 ### Jumplist
 
