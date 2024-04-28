@@ -1,83 +1,90 @@
-import vscode from "vscode";
 import { NeovimClient } from "neovim";
+import vscode from "vscode";
 
+import { strict as assert } from "assert";
 import {
-    attachTestNvimClient,
-    sendVSCodeCommand,
     assertContent,
-    wait,
+    attachTestNvimClient,
     closeAllActiveEditors,
     closeNvimClient,
-    sendEscapeKey,
     openTextDocument,
+    sendEscapeKey,
     sendInsertKey,
+    sendVSCodeKeys,
+    wait
 } from "./integrationUtils";
 
 describe("Composite escape key", () => {
     let client: NeovimClient;
     before(async () => {
+        await vscode.workspace.getConfiguration("vscode-neovim").update(
+            "compositeKeys",
+            {
+                jj: {
+                    command: "vscode-neovim.escape",
+                },
+                jk: {
+                    command: "vscode-neovim.lua",
+                    args: ["vim.g.__composite_escape_test = 'jk'"],
+                },
+            },
+            vscode.ConfigurationTarget.Global,
+        );
+        await vscode.commands.executeCommand("vscode-neovim.restart");
+        await wait(300);
         client = await attachTestNvimClient();
     });
     after(async () => {
         await closeNvimClient(client);
         await closeAllActiveEditors();
+        await vscode.workspace
+            .getConfiguration("vscode-neovim")
+            .update("compositeKeys", undefined, vscode.ConfigurationTarget.Global);
+        await vscode.commands.executeCommand("vscode-neovim.restart");
     });
 
-    it.skip("Works", async () => {
+    it("Works", async () => {
         await openTextDocument({ content: "" });
 
         await sendInsertKey();
-        await sendVSCodeCommand("vscode-neovim.compositeEscape1", "j");
-        await wait(500);
-        await sendVSCodeCommand("vscode-neovim.compositeEscape1", "j");
+        await sendVSCodeKeys("j", 500); // Default composite time is 300ms
         await assertContent(
             {
                 mode: "i",
-            },
-            client,
-        );
-        await sendEscapeKey();
-        await assertContent(
-            {
-                content: ["jj"],
-            },
-            client,
-        );
-        await sendInsertKey("A");
-        await sendVSCodeCommand("vscode-neovim.compositeEscape1", "j");
-        await wait(500);
-        await sendVSCodeCommand("vscode-neovim.compositeEscape2", "k");
-        await assertContent(
-            {
-                mode: "i",
-            },
-            client,
-        );
-        await sendEscapeKey();
-        await assertContent(
-            {
-                content: ["jjjk"],
-            },
-            client,
-        );
-        await sendInsertKey();
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
-        await assertContent(
-            {
-                content: ["jjjk"],
-                mode: "n",
+                content: ["j"],
             },
             client,
         );
 
-        await sendInsertKey();
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape1", "j");
-        await vscode.commands.executeCommand("vscode-neovim.compositeEscape2", "k");
+        await sendEscapeKey();
+        await sendInsertKey("A");
+        await sendVSCodeKeys("jj");
         await assertContent(
             {
-                content: ["jjjk"],
                 mode: "n",
+                content: ["j"],
+            },
+            client,
+        );
+
+        await sendInsertKey("A");
+        await sendVSCodeKeys("jk");
+        await assertContent(
+            {
+                mode: "i",
+                content: ["j"],
+            },
+            client,
+        );
+        const test = await client.getVar("__composite_escape_test");
+        assert.equal(test, "jk");
+
+        await sendVSCodeKeys("jljj0");
+        await assertContent(
+            {
+                mode: "n",
+                content: ["jjl"],
+                cursor: [0, 0],
             },
             client,
         );
