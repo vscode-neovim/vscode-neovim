@@ -9,14 +9,6 @@ const logger = createLogger("TypingManager");
 export class TypingManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
-     * Separate "type" command disposable since we init/dispose it often
-     */
-    private typeHandlerDisposable?: Disposable;
-    /**
-     * Separate "replacePrevChar" command disposable since we init/dispose it often
-     */
-    private replacePrevCharHandlerDisposable?: Disposable;
-    /**
      * Flag indicating that we're going to exit insert mode and sync buffers into neovim
      */
     private isExitingInsertMode = false;
@@ -45,6 +37,8 @@ export class TypingManager implements Disposable {
      */
     private composingText = "";
 
+    private takeOverVSCodeInput = false;
+
     private get client() {
         return this.main.client;
     }
@@ -66,8 +60,12 @@ export class TypingManager implements Disposable {
                 }
             };
         };
-        this.registerType();
-        this.registerReplacePrevChar();
+
+        this.takeOverVSCodeInput = true;
+        this.disposables.push(
+            commands.registerTextEditorCommand("type", this.onVSCodeType),
+            commands.registerCommand("replacePreviousChar", this.onReplacePreviousChar),
+        );
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const registerCommand = (cmd: string, cb: (...args: any[]) => any) => {
             this.disposables.push(commands.registerCommand(cmd, cb, this));
@@ -82,49 +80,10 @@ export class TypingManager implements Disposable {
         this.main.modeManager.onModeChange(this.onModeChange);
     }
 
-    public dispose(): void {
-        this.typeHandlerDisposable?.dispose();
-        this.replacePrevCharHandlerDisposable?.dispose();
-        disposeAll(this.disposables);
-    }
-
-    public registerType(): void {
-        if (!this.typeHandlerDisposable) {
-            logger.debug(`Enabling type handler`);
-            this.typeHandlerDisposable = commands.registerTextEditorCommand("type", this.onVSCodeType);
-        }
-    }
-
-    public disposeType(): void {
-        if (this.typeHandlerDisposable) {
-            logger.debug(`Disabling type handler`);
-            this.typeHandlerDisposable.dispose();
-            this.typeHandlerDisposable = undefined;
-        }
-    }
-
-    public registerReplacePrevChar(): void {
-        if (!this.replacePrevCharHandlerDisposable) {
-            logger.debug(`Enabling replacePrevChar handler`);
-            this.replacePrevCharHandlerDisposable = commands.registerCommand(
-                "replacePreviousChar",
-                this.onReplacePreviousChar,
-            );
-        }
-    }
-
-    public disposeReplacePrevChar(): void {
-        if (this.replacePrevCharHandlerDisposable) {
-            logger.debug(`Disabling replacePrevChar handler`);
-            this.replacePrevCharHandlerDisposable.dispose();
-            this.replacePrevCharHandlerDisposable = undefined;
-        }
-    }
-
     private onModeChange = async (): Promise<void> => {
         if (
             this.main.modeManager.isInsertMode &&
-            this.typeHandlerDisposable &&
+            this.takeOverVSCodeInput &&
             !this.main.modeManager.isRecordingInInsertMode
         ) {
             const editor = window.activeTextEditor;
@@ -136,8 +95,7 @@ export class TypingManager implements Disposable {
                 documentPromise.then(async () => {
                     await this.main.cursorManager.waitForCursorUpdate(editor);
                     if (this.main.modeManager.isInsertMode) {
-                        this.disposeType();
-                        this.disposeReplacePrevChar();
+                        this.takeOverVSCodeInput = false;
                     }
                     if (this.pendingKeysAfterEnter) {
                         logger.debug(
@@ -151,18 +109,23 @@ export class TypingManager implements Disposable {
                     this.isEnteringInsertMode = false;
                 });
             } else {
-                this.disposeType();
-                this.disposeReplacePrevChar();
+                this.takeOverVSCodeInput = false;
             }
         } else if (!this.main.modeManager.isInsertMode) {
             this.isEnteringInsertMode = false;
             this.isExitingInsertMode = false;
-            this.registerType();
-            this.registerReplacePrevChar();
+            this.takeOverVSCodeInput = true;
         }
     };
 
-    private onVSCodeType = async (_editor: TextEditor, edit: TextEditorEdit, type: { text: string }): Promise<void> => {
+    private onVSCodeType = async (
+        _editor: TextEditor,
+        _edit: TextEditorEdit,
+        type: { text: string },
+    ): Promise<void> => {
+        if (!this.takeOverVSCodeInput) {
+            return commands.executeCommand("default:type", { ...type });
+        }
         if (this.isEnteringInsertMode) {
             this.pendingKeysAfterEnter += type.text;
         } else if (this.isExitingInsertMode) {
@@ -173,9 +136,8 @@ export class TypingManager implements Disposable {
             if ((await this.client.mode).blocking) {
                 this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
             } else {
-                this.disposeType();
-                this.disposeReplacePrevChar();
-                commands.executeCommand("default:type", { text: type.text });
+                this.takeOverVSCodeInput = false;
+                commands.executeCommand("default:type", { ...type });
             }
         } else {
             this.client.input(normalizeInputString(type.text, !this.main.modeManager.isRecordingInInsertMode));
@@ -206,8 +168,7 @@ export class TypingManager implements Disposable {
     };
 
     private onSendBlockingCommand = async (key: string): Promise<void> => {
-        this.registerType();
-        this.registerReplacePrevChar();
+        this.takeOverVSCodeInput = true;
         await this.onSendCommand(key);
     };
 
@@ -241,7 +202,10 @@ export class TypingManager implements Disposable {
         }
     };
 
-    private onReplacePreviousChar = (type: { text: string; replaceCharCnt: number }): void => {
+    private onReplacePreviousChar = (type: { text: string; replaceCharCnt: number }) => {
+        if (!this.takeOverVSCodeInput) {
+            return commands.executeCommand("default:replacePreviousChar", { ...type });
+        }
         if (this.isInComposition)
             this.composingText =
                 this.composingText.substring(0, this.composingText.length - type.replaceCharCnt) + type.text;
@@ -259,4 +223,8 @@ export class TypingManager implements Disposable {
 
         this.composingText = "";
     };
+
+    public dispose() {
+        disposeAll(this.disposables);
+    }
 }
