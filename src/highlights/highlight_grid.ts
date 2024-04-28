@@ -135,19 +135,12 @@ export class HighlightGrid {
         }
         // #endregion
 
-        // Insert additional columns for characters with length greater than 1.
-        const filledLineText = HighlightGrid.splitGraphemes(lineText).reduce(
-            (p, c) => p + c + " ".repeat(c.length - 1),
-            "",
-        );
-
-        const filledLineChars = HighlightGrid.splitGraphemes(filledLineText);
         let currCharCol = editorCol;
         let cell = cellIter.next();
         while (cell) {
             const hls: Highlight[] = [];
             const add = (cell: ValidCell, virtText?: string) => hls.push({ ...cell, virtText });
-            const currChar = filledLineChars[currCharCol];
+            const currChar = lineChars[currCharCol];
             const extraCols = currChar ? currChar.length - 1 : 0;
             currCharCol += extraCols;
             // ... some emojis have text versions e.g. [..."❤️"] == ['❤', '️']
@@ -174,7 +167,6 @@ export class HighlightGrid {
                     if (!HighlightGrid.isDouble(cell.text)) {
                         const nextCell = cellIter.next();
                         nextCell && add(nextCell, nextCell.text);
-                        extraCols && add(nextCell ?? cell, " ".repeat(extraCols));
                     }
 
                     break;

@@ -500,17 +500,16 @@ describe("processHighlightCellsEvent", () => {
                     highlights: [
                         { hlId: 2, text: "h", virtText: "h" },
                         { hlId: 2, text: "e", virtText: "e" },
-                        // TODO: why is e repeated? Something to do with the double-wide char...
-                        { hlId: 2, text: "e", virtText: " " },
                     ],
                     line: 12,
                     col: 1,
                 },
                 {
-                    textType: "virtual" as const,
-                    highlights: [{ hlId: 2, text: "y", virtText: "y" }],
+                    textType: "normal" as const,
+                    hlId: 2,
                     line: 12,
-                    col: 2,
+                    startCol: 2,
+                    endCol: 3,
                 },
                 {
                     textType: "virtual" as const,
@@ -527,8 +526,7 @@ describe("processHighlightCellsEvent", () => {
             ],
         },
         {
-            testName:
-                "allows overlaying virtual text over double-wide chars with an early end by adding an extra space",
+            testName: "allows overlaying virtual text over double-wide chars with an early end",
             events: [
                 {
                     row: 2,
@@ -541,10 +539,7 @@ describe("processHighlightCellsEvent", () => {
             expectedRanges: [
                 {
                     textType: "virtual" as const,
-                    highlights: [
-                        { hlId: 2, text: "h", virtText: "h" },
-                        { hlId: 2, text: "h", virtText: " " },
-                    ],
+                    highlights: [{ hlId: 2, text: "h", virtText: "h" }],
                     line: 12,
                     col: 1,
                 },
