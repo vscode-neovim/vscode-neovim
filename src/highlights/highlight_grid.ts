@@ -293,7 +293,7 @@ export class HighlightGrid {
 
             const colHighlight = colHighlights[0];
             const existingHighlights = normalHighlights.get(colHighlight.hlId) ?? [];
-            const matchingHighlight = rfind(
+            const matchingHighlight = findLast(
                 existingHighlights,
                 (hl) =>
                     hl.endCol === col ||
@@ -342,7 +342,7 @@ class CellIter {
     }
 }
 
-function rfind<T>(arr: T[], finder: (item: T) => boolean): T | undefined {
+function findLast<T>(arr: T[], finder: (item: T) => boolean): T | undefined {
     for (let i = arr.length - 1; i >= 0; i--) {
         if (finder(arr[i])) {
             return arr[i];
