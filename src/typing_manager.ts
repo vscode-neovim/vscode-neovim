@@ -67,6 +67,12 @@ export class TypingManager implements Disposable {
         // Prepare configs for composite keys
         this.compositeKeys = config.compositeKeys;
         Object.keys(this.compositeKeys).forEach((key) => {
+            if (!/^[a-zA-Z]{2}$/.test(key)) {
+                window.showErrorMessage(
+                    `Invalid composite key: ${key}. Composite key must be exactly 2 characters long.`,
+                );
+                return;
+            }
             const [first, second] = key.split("");
             this.compositeFirstKeys.push(first);
             const secondKeys = this.compositeSecondKeysForFirstKey.get(first) || [];
