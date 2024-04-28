@@ -293,13 +293,7 @@ export class HighlightGrid {
 
             const colHighlight = colHighlights[0];
             const existingHighlights = normalHighlights.get(colHighlight.hlId) ?? [];
-            const matchingHighlight = findLast(
-                existingHighlights,
-                (hl) =>
-                    hl.endCol === col ||
-                    // double characters' start columns are offset by one (i.e. col is one higher)
-                    (HighlightGrid.isDouble(colHighlight.text) && hl.endCol === col - 1),
-            );
+            const matchingHighlight = findLast(existingHighlights, (hl) => hl.endCol === col);
 
             if (matchingHighlight) {
                 // Extend our existing highlight if we already have it
