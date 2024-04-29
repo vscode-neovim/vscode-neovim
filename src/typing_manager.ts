@@ -195,7 +195,7 @@ export class TypingManager implements Disposable {
 
     private onVSCodeType = async (_editor: TextEditor, _edit: TextEditorEdit, { text }: { text: string }) => {
         if (!this.takeOverVSCodeInput) {
-            if (this.isInsertMode) this.compositeInput(text);
+            if (this.isInsertMode && !this.isInComposition) this.compositeInput(text);
             else this.vscodeDefaultType(text);
             return;
         }
