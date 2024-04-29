@@ -41,7 +41,6 @@ export class Config implements Disposable {
         "neovimExecutablePaths.linux",
         "neovimExecutablePaths.win32",
         "afterInitConfig",
-        "compositeKeys",
     ].map((c) => `${this.root}.${c}`);
 
     dispose() {

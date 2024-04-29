@@ -31,8 +31,7 @@ describe("Composite escape key", () => {
             },
             vscode.ConfigurationTarget.Global,
         );
-        await vscode.commands.executeCommand("vscode-neovim.restart");
-        await wait(300);
+        await wait(200);
         client = await attachTestNvimClient();
     });
     after(async () => {
@@ -41,7 +40,6 @@ describe("Composite escape key", () => {
         await vscode.workspace
             .getConfiguration("vscode-neovim")
             .update("compositeKeys", undefined, vscode.ConfigurationTarget.Global);
-        await vscode.commands.executeCommand("vscode-neovim.restart");
     });
 
     it("Works", async () => {

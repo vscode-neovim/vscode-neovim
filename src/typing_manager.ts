@@ -1,4 +1,4 @@
-import { commands, Disposable, TextEditor, TextEditorEdit, window } from "vscode";
+import { commands, Disposable, TextEditor, TextEditorEdit, window, workspace } from "vscode";
 
 import { CompositeKeys, config } from "./config";
 import { createLogger } from "./logger";
@@ -41,9 +41,9 @@ export class TypingManager implements Disposable {
     private takeOverVSCodeInput = false;
 
     // configs
-    private compositeKeys: CompositeKeys;
-    private compositeFirstKeys: string[] = [];
-    private compositeSecondKeysForFirstKey = new Map<string, string[]>();
+    private compositeKeys!: CompositeKeys;
+    private compositeFirstKeys!: string[];
+    private compositeSecondKeysForFirstKey!: Map<string, string[]>;
     // logic variables
     private compositeMatchedFirstKey?: string;
     private compositeTimer?: NodeJS.Timeout;
@@ -63,21 +63,8 @@ export class TypingManager implements Disposable {
     private vscodeDefaultType = (text: string) => commands.executeCommand("default:type", { text });
 
     public constructor(private main: MainController) {
-        // Prepare configs for composite keys
-        this.compositeKeys = config.compositeKeys;
-        Object.keys(this.compositeKeys).forEach((key) => {
-            if (!/^[a-zA-Z]{2}$/.test(key)) {
-                window.showErrorMessage(
-                    `Invalid composite key: ${key}. Composite key must be exactly 2 characters long.`,
-                );
-                return;
-            }
-            const [first, second] = key.split("");
-            this.compositeFirstKeys.push(first);
-            const secondKeys = this.compositeSecondKeysForFirstKey.get(first) || [];
-            secondKeys.push(second);
-            this.compositeSecondKeysForFirstKey.set(first, secondKeys);
-        });
+        this.prepareCompositeKeys();
+        workspace.onDidChangeConfiguration(this.prepareCompositeKeys, this, this.disposables);
 
         const warnOnEmptyKey = (method: (key: string) => Promise<void>): typeof method => {
             return (key: string) => {
@@ -111,6 +98,25 @@ export class TypingManager implements Disposable {
         registerCommand("compositionStart", this.onCompositionStart);
         registerCommand("compositionEnd", this.onCompositionEnd);
         this.main.modeManager.onModeChange(this.onModeChange);
+    }
+
+    private prepareCompositeKeys() {
+        this.compositeKeys = config.compositeKeys;
+        this.compositeFirstKeys = [];
+        this.compositeSecondKeysForFirstKey = new Map();
+        Object.keys(this.compositeKeys).forEach((key) => {
+            if (!/^[a-zA-Z]{2}$/.test(key)) {
+                window.showErrorMessage(
+                    `Invalid composite key: ${key}. Composite key must be exactly 2 characters long.`,
+                );
+                return;
+            }
+            const [first, second] = key.split("");
+            this.compositeFirstKeys.push(first);
+            const secondKeys = this.compositeSecondKeysForFirstKey.get(first) || [];
+            secondKeys.push(second);
+            this.compositeSecondKeysForFirstKey.set(first, secondKeys);
+        });
     }
 
     private onModeChange = async (): Promise<void> => {
