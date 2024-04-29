@@ -19,6 +19,8 @@ type LegacySettingName = "neovimPath" | "neovimInitPath";
 type SettingPrefix = "neovimExecutablePaths" | "neovimInitVimPaths"; //this needs to be aligned with setting names in package.json
 type Platform = "win32" | "darwin" | "linux";
 
+export type CompositeKeys = { [key: string]: { command: string; args?: any[] } };
+
 export class Config implements Disposable {
     private disposables: Disposable[] = [];
     private readonly root = EXT_NAME;
@@ -181,6 +183,13 @@ export class Config implements Disposable {
     }
     get disableMouseSelection() {
         return this.mouseSelectionDebounceTime === 0;
+    }
+
+    get compositeTimeout(): number {
+        return this.cfg.get("compositeTimeout", 300);
+    }
+    get compositeKeys(): CompositeKeys {
+        return this.cfg.get("compositeKeys", {});
     }
 }
 
