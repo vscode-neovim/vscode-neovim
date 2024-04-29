@@ -29,6 +29,7 @@ mode and editor commands, making the best use of both editors.
     -   [Jumplist](#jumplist)
     -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
+    -   [Remote development](#remote-development)
 -   [⚡️ API](#%EF%B8%8F-api)
 -   [⌨️ Keybindings (shortcuts)](#%EF%B8%8F-keybindings-shortcuts)
     -   [Add keybindings](#add-keybindings)
@@ -242,6 +243,30 @@ See gif in action:
 
 The built-in multi-cursor support may not meet your needs. Please refer to the plugin
 [vscode-multi-cursor.nvim](https://github.com/vscode-neovim/vscode-multi-cursor.nvim) for more multi-cursor features
+
+### Remote development
+
+We intend to use vscode-neovim as a UI extension, so when you're using remote development, vscode-neovim is enabled in
+the Local Extension Host, and it should work out of the box.
+
+If you prefer to use Neovim in the remote environment, vscode-neovim should be installed in the Remote Extension Host.
+You can set the following in your VSCode `settings.json`:
+
+```json
+{
+    "remote.extensionKind": {
+        "asvetliakov.vscode-neovim": ["workspace"]
+    }
+}
+```
+
+Note: You will need to install neovim in the remote environment.
+
+For more information:
+
+-   [Remote Development](https://code.visualstudio.com/docs/remote/remote-overview)
+-   [Extension Host](https://code.visualstudio.com/api/advanced-topics/extension-host)
+-   [Remote Extensions](https://code.visualstudio.com/api/advanced-topics/remote-extensions)
 
 ## ⚡️ API
 
