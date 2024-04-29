@@ -389,6 +389,8 @@
                 "vscode-neovim.compositeTimeout": {
                     "type": "number",
                     "default": 300,
+                    "minimum": 100,
+                    "maximum": 1000,
                     "description": "Timeout in milliseconds to wait for the next key in a composite key sequence"
                 },
                 "vscode-neovim.compositeKeys": {
