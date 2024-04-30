@@ -249,8 +249,8 @@ The built-in multi-cursor support may not meet your needs. Please refer to the p
 We intend to use vscode-neovim as a UI extension, so when you're using remote development, vscode-neovim is enabled in
 the Local Extension Host, and it should work out of the box.
 
-If you prefer to use Neovim in the remote environment, vscode-neovim should be installed in the Remote Extension Host.
-You can set the following in your VSCode `settings.json`:
+If you prefer to use the remote environment's copy of Neovim, rather than the locally installed one, vscode-neovim
+should be installed in the Remote Extension Host. You can set the following in your VSCode `settings.json`:
 
 ```json
 {
