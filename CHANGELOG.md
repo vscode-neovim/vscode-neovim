@@ -1,5 +1,21 @@
 # Change Log
 
+## [1.11.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.10.1...v1.11.0) (2024-04-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* The old composite commands are removed.
+
+### Features
+
+* better composite key support ([#1917](https://github.com/vscode-neovim/vscode-neovim/issues/1917)) ([44808b3](https://github.com/vscode-neovim/vscode-neovim/commit/44808b399a17aa1c59f64313773c6ea7b5fe2385))
+
+
+### Miscellaneous Chores
+
+* release 1.11.0 ([dc8d622](https://github.com/vscode-neovim/vscode-neovim/commit/dc8d6224bb42d9889854c9f69277bfeb35d399a5))
+
 ## [1.10.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.10.0...v1.10.1) (2024-04-26)
 
 
