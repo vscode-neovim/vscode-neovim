@@ -105,7 +105,7 @@ export class TypingManager implements Disposable {
         this.compositeFirstKeys = [];
         this.compositeSecondKeysForFirstKey = new Map();
         Object.keys(this.compositeKeys).forEach((key) => {
-            if (!/^[a-zA-Z]{2}$/.test(key)) {
+            if (!/^[ -~]{2}$/.test(key)) {
                 window.showErrorMessage(
                     `Invalid composite key: ${key}. Composite key must be exactly 2 characters long.`,
                 );
