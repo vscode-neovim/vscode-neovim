@@ -413,7 +413,7 @@
                         }
                     ],
                     "patternProperties": {
-                        "^[a-zA-Z]{2}$": {
+                        "^[ -~]{2}$": {
                             "type": "object",
                             "properties": {
                                 "command": {
