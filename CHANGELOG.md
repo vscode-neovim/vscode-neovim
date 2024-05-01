@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.11.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.0...v1.11.1) (2024-05-01)
+
+
+### Bug Fixes
+
+* Match any ASCII characters in composite keys ([#1923](https://github.com/vscode-neovim/vscode-neovim/issues/1923)) ([51e2f11](https://github.com/vscode-neovim/vscode-neovim/commit/51e2f11c474ed7b1f9c2817f6e498805abca4ae2))
+
 ## [1.11.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.10.1...v1.11.0) (2024-04-30)
 
 
