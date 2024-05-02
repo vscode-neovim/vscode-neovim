@@ -38,7 +38,7 @@ export class TypingManager implements Disposable {
      * Flag indicating that we should take over vscode input
      * If false, we should forward all input received from "type" to "default:type"
      */
-    private takeOverVSCodeInput = false;
+    private _takeOverVSCodeInput = false;
 
     // configs
     private compositeKeys!: CompositeKeys;
@@ -47,6 +47,30 @@ export class TypingManager implements Disposable {
     // logic variables
     private compositeMatchedFirstKey?: string;
     private compositeTimer?: NodeJS.Timeout;
+
+    // Forwarding the arguments of replacePreviousChar to default:replacePreviousChar
+    // causes text jitter during ime composition, so dispose this command when
+    // the vscode input is not taken over
+    private replacePreviousCharHandler?: Disposable;
+
+    private get takeOverVSCodeInput() {
+        return this._takeOverVSCodeInput;
+    }
+
+    private set takeOverVSCodeInput(value: boolean) {
+        this._takeOverVSCodeInput = value;
+        if (!value) {
+            this.replacePreviousCharHandler?.dispose();
+            this.replacePreviousCharHandler = undefined;
+            return;
+        }
+        if (!this.replacePreviousCharHandler) {
+            this.replacePreviousCharHandler = commands.registerCommand(
+                "replacePreviousChar",
+                this.onReplacePreviousChar,
+            );
+        }
+    }
 
     private get client() {
         return this.main.client;
@@ -105,10 +129,7 @@ export class TypingManager implements Disposable {
         };
 
         this.takeOverVSCodeInput = true;
-        this.disposables.push(
-            commands.registerTextEditorCommand("type", this.onVSCodeType),
-            commands.registerCommand("replacePreviousChar", this.onReplacePreviousChar),
-        );
+        this.disposables.push(commands.registerTextEditorCommand("type", this.onVSCodeType));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const registerCommand = (cmd: string, cb: (...args: any[]) => any) => {
             this.disposables.push(commands.registerCommand(cmd, cb, this));
@@ -281,9 +302,6 @@ export class TypingManager implements Disposable {
     };
 
     private onReplacePreviousChar = (type: { text: string; replaceCharCnt: number }) => {
-        if (!this.takeOverVSCodeInput) {
-            return commands.executeCommand("default:replacePreviousChar", { ...type });
-        }
         if (this.isInComposition)
             this.composingText =
                 this.composingText.substring(0, this.composingText.length - type.replaceCharCnt) + type.text;
@@ -303,6 +321,7 @@ export class TypingManager implements Disposable {
     };
 
     public dispose() {
+        this.replacePreviousCharHandler?.dispose();
         disposeAll(this.disposables);
     }
 }
