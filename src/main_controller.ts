@@ -112,13 +112,14 @@ export class MainController implements vscode.Disposable {
 
         this.disposables.push(
             vscode.commands.registerCommand("_getNeovimClient", () => this.client),
-            vscode.commands.registerCommand("vscode-neovim.lua", async (lua) => {
-                if (!lua) {
+            vscode.commands.registerCommand("vscode-neovim.lua", async (code: string | string[]) => {
+                const luaCode = typeof code === "string" ? code : code.join("\n");
+                if (!luaCode.length) {
                     window.showWarningMessage("No lua code provided");
                     return;
                 }
                 try {
-                    await this.client.lua(lua);
+                    await this.client.lua(luaCode);
                 } catch (e) {
                     logger.error(e instanceof Error ? e.message : e);
                 }
