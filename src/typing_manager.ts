@@ -65,6 +65,8 @@ export class TypingManager implements Disposable {
     // 2. When composite keys are not needed, only register type and
     //    replacePreviousChar when it's necessary to take over vscode input.
 
+    // "type" and "replacePreviousChar" are commands that vscode provides to handle user typing.
+
     private typeHandler?: Disposable;
     private replacePreviousCharHandler?: Disposable;
 
