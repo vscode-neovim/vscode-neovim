@@ -172,14 +172,70 @@ reporting it.
 
 ### Composite escape keys
 
-Related configurations:
+#### Configurations
 
 -   `compositeTimeout`
 -   `compositeKeys`
 
-Examples:
+#### Examples
 
-1. <kbd>jj</kbd> to escape
+Add to your `settings.json`:
+
+-   <kbd>jj</kbd> to escape
+
+```jsonc
+{
+    "vscode-neovim.compositeKeys": {
+        "jj": {
+            "command": "vscode-neovim.escape"
+        }
+    }
+}
+```
+
+-   <kbd>jk</kbd> to escape and save
+
+```jsonc
+{
+    "vscode-neovim.compositeKeys": {
+        "jk": {
+            // Use lua to execute any logic
+            "command": "vscode-neovim.lua",
+            "args": [
+                [
+                    "local code = require('vscode-neovim')",
+                    "code.action('vscode-neovim.escape')",
+                    "code.action('workbench.action.files.save')"
+                ]
+            ]
+        }
+    }
+}
+```
+
+#### Migrate from the compositeEscape command
+
+"vscode-neovim.compositeEscape1" and "vscode-neovim.compositeEscape2" commands are deprecated. To migrate:
+
+1. Remove keybindings using `vscode-neovim.compositeEscape` in `keybindings.json`.
+2. Configure `compositeKeys` in `settings.json` to replace the removed keybindings.
+
+<details>
+
+<summary>Example</summary>
+
+If you have the following keybinding in `keybindings.json`:
+
+```json
+{
+    "key": "j",
+    "command": "vscode-neovim.compositeEscape",
+    "when": "neovim.mode == insert && editorTextFocus",
+    "args": "j"
+}
+```
+
+Then you should remove it and add the following configuration to `settings.json`:
 
 ```json
 {
@@ -191,18 +247,7 @@ Examples:
 }
 ```
 
-2. <kbd>jk</kbd> to escape and save
-
-```json
-{
-    "vscode-neovim.compositeKeys": {
-        "jk": {
-            "command": "vscode-neovim.lua",
-            "args": ["vim.api.nvim_input('<ESC>')\nrequire('vscode-neovim').action('workbench.action.files.save')"]
-        }
-    }
-}
-```
+</details>
 
 ### Jumplist
 
