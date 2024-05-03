@@ -63,6 +63,27 @@ export class TypingManager implements Disposable {
     private vscodeDefaultType = (text: string) => commands.executeCommand("default:type", { text });
 
     public constructor(private main: MainController) {
+        // Deprecation warning for old composite escape commands
+        const deprecatedWarning = () => {
+            window
+                .showWarningMessage(
+                    'The command "compositeEscape1" and "compositeEscape2" are deprecated. ',
+                    "Read More",
+                )
+                .then(
+                    (readMore) =>
+                        readMore &&
+                        commands.executeCommand(
+                            "vscode.open",
+                            "https://github.com/vscode-neovim/vscode-neovim/tree/master#composite-escape-keys",
+                        ),
+                );
+        };
+        this.disposables.push(
+            commands.registerCommand("vscode-neovim.compositeEscape1", deprecatedWarning),
+            commands.registerCommand("vscode-neovim.compositeEscape2", deprecatedWarning),
+        );
+
         this.prepareCompositeKeys();
         workspace.onDidChangeConfiguration(this.prepareCompositeKeys, this, this.disposables);
 
