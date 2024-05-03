@@ -1,3 +1,5 @@
+// Override vscode commands: "type", "replacePreviousChar", "compositionStart", "compositionEnd"
+// Learn more: https://github.com/microsoft/vscode-extension-samples/tree/main/vim-sample
 import { commands, Disposable, TextEditor, TextEditorEdit, window, workspace } from "vscode";
 
 import { CompositeKeys, config } from "./config";
