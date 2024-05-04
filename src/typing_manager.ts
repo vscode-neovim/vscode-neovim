@@ -1,3 +1,5 @@
+// Override vscode commands: "type", "replacePreviousChar", "compositionStart", "compositionEnd"
+// Learn more: https://github.com/microsoft/vscode-extension-samples/tree/main/vim-sample
 import { commands, Disposable, TextEditor, TextEditorEdit, window, workspace } from "vscode";
 
 import { CompositeKeys, config } from "./config";
@@ -35,18 +37,63 @@ export class TypingManager implements Disposable {
     private composingText = "";
 
     /**
-     * Flag indicating that we should take over vscode input
-     * If false, we should forward all input received from "type" to "default:type"
+     * Flag indicating that we should take over vscode input, where "take over"
+     * here means handling input by nvim.
+     * If false, we should forward all input received from "type" to "default:type",
+     * and "replacePreviousChar" to "default:replacePreviousChar".
      */
-    private takeOverVSCodeInput = false;
+    private _takeOverVSCodeInput = false;
 
     // configs
+    private useCompositeKeys!: boolean;
     private compositeKeys!: CompositeKeys;
     private compositeFirstKeys!: string[];
     private compositeSecondKeysForFirstKey!: Map<string, string[]>;
     // logic variables
     private compositeMatchedFirstKey?: string;
     private compositeTimer?: NodeJS.Timeout;
+
+    // Notes:
+    // 1. "type" and "replacePreviousChar" must be registered at the same time
+    // 2. Forwarding the arguments of replacePreviousChar to default:replacePreviousChar
+    //    causes text jitter during ime composition
+    //
+    // The compromise solution used here:
+    // 1. When composite keys are needed, always register type and
+    //    replacePreviousChar at the same time, which unavoidably causes text
+    //    flickering during ime composition.
+    // 2. When composite keys are not needed, only register type and
+    //    replacePreviousChar when it's necessary to take over vscode input.
+
+    // "type" and "replacePreviousChar" are commands that vscode provides to handle user typing.
+
+    private typeHandler?: Disposable;
+    private replacePreviousCharHandler?: Disposable;
+
+    private get takeOverVSCodeInput() {
+        return this._takeOverVSCodeInput;
+    }
+
+    private set takeOverVSCodeInput(takeOver: boolean) {
+        this._takeOverVSCodeInput = takeOver;
+
+        if (takeOver) {
+            if (!this.typeHandler) this.typeHandler = commands.registerTextEditorCommand("type", this.onVSCodeType);
+            if (!this.replacePreviousCharHandler)
+                this.replacePreviousCharHandler = commands.registerCommand(
+                    "replacePreviousChar",
+                    this.onReplacePreviousChar,
+                );
+            return;
+        }
+
+        if (!this.useCompositeKeys) {
+            this.typeHandler?.dispose();
+            this.typeHandler = undefined;
+            this.replacePreviousCharHandler?.dispose();
+            this.replacePreviousCharHandler = undefined;
+        }
+    }
 
     private get client() {
         return this.main.client;
@@ -105,10 +152,6 @@ export class TypingManager implements Disposable {
         };
 
         this.takeOverVSCodeInput = true;
-        this.disposables.push(
-            commands.registerTextEditorCommand("type", this.onVSCodeType),
-            commands.registerCommand("replacePreviousChar", this.onReplacePreviousChar),
-        );
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const registerCommand = (cmd: string, cb: (...args: any[]) => any) => {
             this.disposables.push(commands.registerCommand(cmd, cb, this));
@@ -138,6 +181,7 @@ export class TypingManager implements Disposable {
             secondKeys.push(second);
             this.compositeSecondKeysForFirstKey.set(first, secondKeys);
         });
+        this.useCompositeKeys = this.compositeFirstKeys.length > 0;
     }
 
     private onModeChange = async (): Promise<void> => {
@@ -181,10 +225,10 @@ export class TypingManager implements Disposable {
                 this.compositeTimer = setTimeout(async () => {
                     this.compositeTimer = undefined;
                     this.compositeMatchedFirstKey = undefined;
-                    await this.vscodeDefaultType(key);
+                    this.vscodeDefaultType(key);
                 }, config.compositeTimeout);
             } else {
-                await this.vscodeDefaultType(key);
+                this.vscodeDefaultType(key);
             }
             return;
         }
@@ -197,7 +241,7 @@ export class TypingManager implements Disposable {
             const matchedFirstKey = this.compositeMatchedFirstKey;
             this.compositeMatchedFirstKey = undefined;
             const { command, args } = this.compositeKeys[matchedFirstKey + key];
-            await commands.executeCommand(command, ...(args ? args : []));
+            commands.executeCommand(command, ...(args ? args : []));
             return;
         }
 
@@ -207,11 +251,11 @@ export class TypingManager implements Disposable {
 
             const matchedFirstKey = this.compositeMatchedFirstKey;
             this.compositeMatchedFirstKey = undefined;
-            await this.vscodeDefaultType(matchedFirstKey + key);
+            this.vscodeDefaultType(matchedFirstKey + key);
             return;
         }
 
-        await this.vscodeDefaultType(key);
+        this.vscodeDefaultType(key);
     }
 
     private onVSCodeType = async (_editor: TextEditor, _edit: TextEditorEdit, { text }: { text: string }) => {
@@ -282,7 +326,8 @@ export class TypingManager implements Disposable {
 
     private onReplacePreviousChar = (type: { text: string; replaceCharCnt: number }) => {
         if (!this.takeOverVSCodeInput) {
-            return commands.executeCommand("default:replacePreviousChar", { ...type });
+            commands.executeCommand("default:replacePreviousChar", type);
+            return;
         }
         if (this.isInComposition)
             this.composingText =
@@ -303,6 +348,8 @@ export class TypingManager implements Disposable {
     };
 
     public dispose() {
+        this.typeHandler?.dispose();
+        this.replacePreviousCharHandler?.dispose();
         disposeAll(this.disposables);
     }
 }
