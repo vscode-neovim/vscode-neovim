@@ -79,6 +79,7 @@ jobs:
                         { "type": "feat", "section": "Features", "hidden": false },
                         { "type": "fix", "section": "Bug Fixes", "hidden": false },
                         { "type": "docs", "section": "Documentation", "hidden": false },
+                        { "type": "refactor", "section": "Refactor", "hidden": false },
                         { "type": "perf", "section": "Performance Improvements", "hidden": false }
                       ]
                   token: ${{ secrets.RELEASE_PLEASE_KEY }}
