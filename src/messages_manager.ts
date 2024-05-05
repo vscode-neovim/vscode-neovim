@@ -14,51 +14,49 @@ export class MessagesManager implements Disposable {
         disposeAll(this.disposables);
     }
 
-    private handleRedraw(data: EventBusData<"redraw">): void {
-        for (const { name, args } of data) {
-            switch (name) {
-                case "msg_show": {
-                    let str = "";
-                    for (const [type, content, clear] of args) {
-                        if (type === "return_prompt") {
-                            continue;
-                        }
-                        if (clear) {
-                            this.channel.clear();
-                            str = "";
-                        }
-                        let contentStr = "";
-                        for (const c of content) {
-                            contentStr += c[1];
-                        }
-                        // sometimes neovim sends linebreaks, sometimes not ¯\_(ツ)_/¯
-                        str += (contentStr[0] === "\n" ? "" : "\n") + contentStr;
+    private handleRedraw({ name, args }: EventBusData<"redraw">): void {
+        switch (name) {
+            case "msg_show": {
+                let str = "";
+                for (const [type, content, clear] of args) {
+                    if (type === "return_prompt") {
+                        continue;
                     }
-                    // remove empty last line (since we always put \n at the end)
-                    const lines = str.split("\n").slice(1);
-                    if (lines.length > 2) {
-                        this.channel.show(true);
+                    if (clear) {
+                        this.channel.clear();
+                        str = "";
                     }
-                    this.channel.append(str);
-                    break;
+                    let contentStr = "";
+                    for (const c of content) {
+                        contentStr += c[1];
+                    }
+                    // sometimes neovim sends linebreaks, sometimes not ¯\_(ツ)_/¯
+                    str += (contentStr[0] === "\n" ? "" : "\n") + contentStr;
                 }
-                case "msg_history_show": {
-                    let str = "\n";
-                    for (const arg of args) {
-                        for (const list of arg) {
-                            for (const [commandName, content] of list) {
-                                let cmdContent = "";
-                                for (const c of content) {
-                                    cmdContent += c[1];
-                                }
-                                str += `${commandName}: ${cmdContent}\n`;
-                            }
-                        }
-                    }
+                // remove empty last line (since we always put \n at the end)
+                const lines = str.split("\n").slice(1);
+                if (lines.length > 2) {
                     this.channel.show(true);
-                    this.channel.append(str);
-                    break;
                 }
+                this.channel.append(str);
+                break;
+            }
+            case "msg_history_show": {
+                let str = "\n";
+                for (const arg of args) {
+                    for (const list of arg) {
+                        for (const [commandName, content] of list) {
+                            let cmdContent = "";
+                            for (const c of content) {
+                                cmdContent += c[1];
+                            }
+                            str += `${commandName}: ${cmdContent}\n`;
+                        }
+                    }
+                }
+                this.channel.show(true);
+                this.channel.append(str);
+                break;
             }
         }
     }

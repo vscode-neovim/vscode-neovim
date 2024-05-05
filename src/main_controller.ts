@@ -315,20 +315,21 @@ export class MainController implements vscode.Disposable {
                 const hasFlush = findLastEvent("flush", events);
                 if (hasFlush) {
                     const batch = [...this.currentRedrawBatch.splice(0), ...redrawEvents];
-                    const eventData = batch.map(
-                        (b) =>
-                            ({
-                                name: b[0],
-                                args: b.slice(1),
-                                get firstArg() {
-                                    return this.args[0];
-                                },
-                                get lastArg() {
-                                    return this.args[this.args.length - 1];
-                                },
-                            }) as any,
-                    );
-                    eventBus.fire("redraw", eventData);
+                    for (let i = batch.length - 1; i >= 0; i--) {
+                        const batchItem = batch[i];
+                        const eventData = {
+                            name: batchItem[0],
+                            args: batchItem.slice(1),
+                            get firstArg() {
+                                return this.args[0];
+                            },
+                            get lastArg() {
+                                return this.args[this.args.length - 1];
+                            },
+                        } as any;
+
+                        eventBus.fire("redraw", eventData);
+                    }
                 } else {
                     this.currentRedrawBatch.push(...redrawEvents);
                 }

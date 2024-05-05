@@ -112,34 +112,32 @@ export class CursorManager implements Disposable {
         );
     }
 
-    private handleRedraw(data: EventBusData<"redraw">): void {
-        for (const { name, args } of data) {
-            switch (name) {
-                case "grid_cursor_goto": {
-                    args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
-                    break;
-                }
-                // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
-                // If we received it we must shift current cursor position by given rows
-                case "grid_scroll": {
-                    args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
-                    break;
-                }
-                case "mode_info_set": {
-                    args.forEach((arg) =>
-                        arg[1].forEach((mode) => {
-                            if (mode.name && mode.cursor_shape) {
-                                this.cursorModes.set(mode.name, { cursorShape: mode.cursor_shape });
-                            }
-                        }),
-                    );
-                    break;
-                }
-                case "mode_change": {
-                    if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
-                    args.forEach((arg) => this.updateCursorStyle(arg[0]));
-                    break;
-                }
+    private handleRedraw({ name, args }: EventBusData<"redraw">): void {
+        switch (name) {
+            case "grid_cursor_goto": {
+                args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
+                break;
+            }
+            // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
+            // If we received it we must shift current cursor position by given rows
+            case "grid_scroll": {
+                args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
+                break;
+            }
+            case "mode_info_set": {
+                args.forEach((arg) =>
+                    arg[1].forEach((mode) => {
+                        if (mode.name && mode.cursor_shape) {
+                            this.cursorModes.set(mode.name, { cursorShape: mode.cursor_shape });
+                        }
+                    }),
+                );
+                break;
+            }
+            case "mode_change": {
+                if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
+                args.forEach((arg) => this.updateCursorStyle(arg[0]));
+                break;
             }
         }
         this.processCursorMoved();

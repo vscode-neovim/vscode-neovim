@@ -10,7 +10,7 @@ interface IRedrawEventArg<N, A extends unknown[] = []> {
     get lastArg(): A;
 }
 
-type RedrawEventArgs = (
+type RedrawEventArgs =
     | IRedrawEventArg<"win_close", [number]> // ["win_close", grid]
     // ["win_external_pos", grid, win]
     | IRedrawEventArg<"win_external_pos", [number, neovim.Window]>
@@ -98,8 +98,7 @@ type RedrawEventArgs = (
     // ["mouse_off"]
     | IRedrawEventArg<"mouse_off">
     | IRedrawEventArg<"wildmenu_show", [string[]]>
-    | IRedrawEventArg<"wildmenu_hide">
-)[];
+    | IRedrawEventArg<"wildmenu_hide">;
 // #endregion
 
 interface BufferInfo {

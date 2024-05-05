@@ -222,22 +222,20 @@ export class BufferManager implements Disposable {
         return this.externalTextDocuments.has(textDoc);
     }
 
-    private handleRedraw(data: EventBusData<"redraw">) {
-        for (const { name, args } of data) {
-            switch (name) {
-                case "win_external_pos":
-                case "win_pos": {
-                    for (const [grid, win] of args) {
-                        this.grids.set(grid, { winId: win.id });
-                    }
-                    break;
+    private handleRedraw({ name, args }: EventBusData<"redraw">) {
+        switch (name) {
+            case "win_external_pos":
+            case "win_pos": {
+                for (const [grid, win] of args) {
+                    this.grids.set(grid, { winId: win.id });
                 }
-                case "win_close": {
-                    for (const [grid] of args) {
-                        this.grids.delete(grid);
-                    }
-                    break;
+                break;
+            }
+            case "win_close": {
+                for (const [grid] of args) {
+                    this.grids.delete(grid);
                 }
+                break;
             }
         }
     }

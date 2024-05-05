@@ -30,53 +30,51 @@ export class CommandLineManager implements Disposable {
         disposeAll(this.disposables);
     }
 
-    private handleRedraw(data: EventBusData<"redraw">) {
-        for (const { name, args } of data) {
-            switch (name) {
-                case "cmdline_show": {
-                    const [content, _pos, firstc, prompt, _indent, _level] = args[0];
-                    const allContent = content.map(([, str]) => str).join("");
-                    // !note: neovim can send cmdline_hide followed by cmdline_show events
-                    // !since quickpick can be destroyed slightly at later time after handling cmdline_hide we want to create new command line
-                    // !controller and input for every visible cmdline_show event
-                    // !otherwise we may hit cmdline_show when it's being hidden
-                    // as alternative, it's possible to process batch and determine if we need show/hide or just redraw the command_line
-                    // but this won't handle the case when cmdline_show comes in next flush batch (is it possible?)
-                    // btw, easier to just recreate whole command line (and quickpick inside)
-                    if (this.cmdlineTimer) {
-                        clearTimeout(this.cmdlineTimer);
-                        this.cmdlineTimer = undefined;
-                        this.showCmd(allContent, firstc, prompt);
+    private handleRedraw({ name, args }: EventBusData<"redraw">) {
+        switch (name) {
+            case "cmdline_show": {
+                const [content, _pos, firstc, prompt, _indent, _level] = args[0];
+                const allContent = content.map(([, str]) => str).join("");
+                // !note: neovim can send cmdline_hide followed by cmdline_show events
+                // !since quickpick can be destroyed slightly at later time after handling cmdline_hide we want to create new command line
+                // !controller and input for every visible cmdline_show event
+                // !otherwise we may hit cmdline_show when it's being hidden
+                // as alternative, it's possible to process batch and determine if we need show/hide or just redraw the command_line
+                // but this won't handle the case when cmdline_show comes in next flush batch (is it possible?)
+                // btw, easier to just recreate whole command line (and quickpick inside)
+                if (this.cmdlineTimer) {
+                    clearTimeout(this.cmdlineTimer);
+                    this.cmdlineTimer = undefined;
+                    this.showCmd(allContent, firstc, prompt);
+                } else {
+                    // if there is initial content and it's not currently displayed then it may come
+                    // from some mapping. to prevent bad UI commandline transition we delay cmdline appearing here
+                    if (allContent !== "" && allContent !== "'<,'>" && !this.commandLine) {
+                        this.cmdlineTimer = setTimeout(() => this.showCmdOnTimer(allContent, firstc, prompt), 200);
                     } else {
-                        // if there is initial content and it's not currently displayed then it may come
-                        // from some mapping. to prevent bad UI commandline transition we delay cmdline appearing here
-                        if (allContent !== "" && allContent !== "'<,'>" && !this.commandLine) {
-                            this.cmdlineTimer = setTimeout(() => this.showCmdOnTimer(allContent, firstc, prompt), 200);
-                        } else {
-                            this.showCmd(allContent, firstc, prompt);
-                        }
+                        this.showCmd(allContent, firstc, prompt);
                     }
-                    break;
                 }
-                case "wildmenu_show": {
-                    this.commandLine?.setCompletionItems(args[0][0]);
-                    break;
+                break;
+            }
+            case "wildmenu_show": {
+                this.commandLine?.setCompletionItems(args[0][0]);
+                break;
+            }
+            case "wildmenu_hide": {
+                this.commandLine?.setCompletionItems([]);
+                break;
+            }
+            case "cmdline_hide": {
+                if (this.cmdlineTimer) {
+                    clearTimeout(this.cmdlineTimer);
+                    this.cmdlineTimer = undefined;
+                } else if (this.commandLine) {
+                    this.commandLine.cancel(true);
+                    this.commandLine.dispose();
+                    this.commandLine = undefined;
                 }
-                case "wildmenu_hide": {
-                    this.commandLine?.setCompletionItems([]);
-                    break;
-                }
-                case "cmdline_hide": {
-                    if (this.cmdlineTimer) {
-                        clearTimeout(this.cmdlineTimer);
-                        this.cmdlineTimer = undefined;
-                    } else if (this.commandLine) {
-                        this.commandLine.cancel(true);
-                        this.commandLine.dispose();
-                        this.commandLine = undefined;
-                    }
-                    break;
-                }
+                break;
             }
         }
     }

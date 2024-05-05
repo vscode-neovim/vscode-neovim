@@ -19,37 +19,35 @@ export class HighlightManager implements Disposable {
         this.disposables.push(eventBus.on("redraw", this.handleRedraw, this));
     }
 
-    private async handleRedraw(data: EventBusData<"redraw">): Promise<void> {
+    private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
         await this.main.viewportManager.isSyncDone;
 
         const pendingUpdates = new PendingUpdates<number>();
-        for (const { name, args } of data) {
-            switch (name) {
-                case "hl_attr_define": {
-                    for (const [id, uiAttrs, , info] of args) {
-                        this.highlightProvider.addHighlightGroup(
-                            id,
-                            uiAttrs,
-                            info.map((i) => i.hi_name),
-                        );
-                    }
-                    break;
+        switch (name) {
+            case "hl_attr_define": {
+                for (const [id, uiAttrs, , info] of args) {
+                    this.highlightProvider.addHighlightGroup(
+                        id,
+                        uiAttrs,
+                        info.map((i) => i.hi_name),
+                    );
                 }
-                // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
-                case "grid_scroll": {
-                    for (const [grid, top, , , , by] of args) {
-                        if (grid !== 1) {
-                            this.scrollHighlights(pendingUpdates, grid, top, by);
-                        }
+                break;
+            }
+            // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
+            case "grid_scroll": {
+                for (const [grid, top, , , , by] of args) {
+                    if (grid !== 1) {
+                        this.scrollHighlights(pendingUpdates, grid, top, by);
                     }
-                    break;
                 }
-                case "grid_line": {
-                    for (const [grid, row, col, cells] of args) {
-                        this.stageGridLineUpdates(pendingUpdates, grid, row, col, cells);
-                    }
-                    break;
+                break;
+            }
+            case "grid_line": {
+                for (const [grid, row, col, cells] of args) {
+                    this.stageGridLineUpdates(pendingUpdates, grid, row, col, cells);
                 }
+                break;
             }
         }
 
