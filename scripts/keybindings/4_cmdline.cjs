@@ -5,6 +5,10 @@ const [_add, keybinds] = addKeybinds();
 const add = (key, args, cmd = "vscode-neovim.send-cmdline") =>
     _add(key, "neovim.init && neovim.mode == cmdline", args, cmd);
 
+// up/down
+add("up", "<Up>");
+add("down", "<Down>");
+
 // ctrl keys
 [..."hwunplgtmj", "up", "down"].forEach((k) => {
     let key = `ctrl+${k}`;
