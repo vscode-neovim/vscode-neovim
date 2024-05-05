@@ -28,7 +28,7 @@ export class StatusLineManager implements Disposable {
     }
 
     public constructor(private main: MainController) {
-        this.statusBar = window.createStatusBarItem(StatusBarAlignment.Left, -10);
+        this.statusBar = window.createStatusBarItem("vscode-neovim-status", StatusBarAlignment.Left, -10);
         this.statusBar.show();
         this.disposables.push(this.statusBar, eventBus.on("redraw", this.handleRedraw, this));
 
