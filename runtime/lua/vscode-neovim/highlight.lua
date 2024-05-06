@@ -141,14 +141,19 @@ end
 
 local function setup_treesitter_highlighting()
   -- We don't need any treesitter highlights
-  vim.treesitter.stop()
+  for _, buf in ipairs(api.nvim_list_bufs()) do
+    vim.treesitter.stop(buf)
+  end
 end
 
 local function setup()
   local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
-  api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "WinScrolled" }, {
+  api.nvim_create_autocmd({ "WinNew", "WinEnter", "BufNew", "BufEnter", "BufWinEnter" }, {
     group = group,
-    callback = setup_win_hl_ns,
+    callback = function()
+      setup_win_hl_ns()
+      setup_treesitter_highlighting()
+    end,
   })
   api.nvim_create_autocmd({ "ColorScheme", "Syntax", "FileType" }, {
     group = group,
@@ -166,10 +171,6 @@ local function setup()
         setup_syntax_groups()
       end
     end,
-  })
-  api.nvim_create_autocmd({ "BufWinEnter", "BufEnter" }, {
-    group = group,
-    callback = setup_treesitter_highlighting,
   })
   api.nvim_create_autocmd({ "VimEnter", "UIEnter" }, {
     group = group,
