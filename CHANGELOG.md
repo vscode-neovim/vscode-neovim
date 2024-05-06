@@ -1,5 +1,24 @@
 # Change Log
 
+## [1.11.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.1...v1.11.2) (2024-05-06)
+
+
+### Bug Fixes
+
+* set an explicit id for status bar item ([#1941](https://github.com/vscode-neovim/vscode-neovim/issues/1941)) ([8c1f5a0](https://github.com/vscode-neovim/vscode-neovim/commit/8c1f5a093e13cf80638478f479c63807122d8bfd))
+* should setup highlights on WinNew,BufNew ([#1944](https://github.com/vscode-neovim/vscode-neovim/issues/1944)) ([178483c](https://github.com/vscode-neovim/vscode-neovim/commit/178483c4d6a7812976ffb0e7b88f84b25a425fed))
+
+
+### Documentation
+
+* Improve documentation and examples for composite keys ([#1933](https://github.com/vscode-neovim/vscode-neovim/issues/1933)) ([c0edf52](https://github.com/vscode-neovim/vscode-neovim/commit/c0edf52d042f477652778a75992fea08a62870fd))
+
+
+### Refactor
+
+* enable vscode-neovim.lua to accept an array of strings ([#1930](https://github.com/vscode-neovim/vscode-neovim/issues/1930)) ([8becac6](https://github.com/vscode-neovim/vscode-neovim/commit/8becac679ffed5ccfc86191d373c076d3abb2430))
+* register type commands only when needed ([#1931](https://github.com/vscode-neovim/vscode-neovim/issues/1931)) ([f25b899](https://github.com/vscode-neovim/vscode-neovim/commit/f25b8991993992987817a7a82185d63be3d1d2a1))
+
 ## [1.11.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.0...v1.11.1) (2024-05-01)
 
 
