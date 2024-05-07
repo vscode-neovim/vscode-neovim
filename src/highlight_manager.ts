@@ -1,9 +1,10 @@
 import { Disposable, TextEditor } from "vscode";
+import { WaitGroup } from "@jpwilliams/waitgroup";
 
 import { EventBusData, eventBus } from "./eventBus";
 import { HighlightProvider } from "./highlights/highlight_provider";
 import { MainController } from "./main_controller";
-import { WaitGroup, disposeAll } from "./utils";
+import { disposeAll } from "./utils";
 import { PendingUpdates } from "./pending_updates";
 
 type GridCell = [string, number, number];
@@ -70,7 +71,7 @@ export class HighlightManager implements Disposable {
     private async handleRedrawFlush() {
         // Wait for any redraw events that have been received to finish
         // their work, so that we can flush them
-        await this.redrawWaitGroup.promise;
+        await this.redrawWaitGroup.wait();
 
         if (this.pendingGridUpdates.size() === 0) {
             return;
