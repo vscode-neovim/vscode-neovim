@@ -25,6 +25,7 @@ import {
     ManualPromise,
     rangesToSelections,
 } from "./utils";
+import { PendingUpdates } from "./pending_updates";
 
 const logger = createLogger("CursorManager", false);
 
@@ -63,9 +64,9 @@ export class CursorManager implements Disposable {
      */
     public wantInsertCursorUpdate = true;
     /**
-     * Set of grid that needs to undergo cursor update
+     * Set of grids that needs to undergo cursor update
      */
-    private gridCursorUpdates: Set<number> = new Set();
+    private gridCursorUpdates: PendingUpdates<number> = new PendingUpdates();
 
     private debouncedCursorUpdates: WeakMap<TextEditor, DebouncedFunc<CursorManager["updateCursorPosInEditor"]>> =
         new WeakMap();
@@ -95,7 +96,7 @@ export class CursorManager implements Disposable {
             eventBus.on("flush-redraw", this.handleRedrawFlush, this),
             eventBus.on("visual-changed", ([winId]) => {
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
-                if (gridId) this.gridCursorUpdates.add(gridId);
+                if (gridId) this.gridCursorUpdates.addForceUpdate(gridId);
             }),
             {
                 dispose() {
@@ -116,13 +117,13 @@ export class CursorManager implements Disposable {
     private handleRedraw({ name, args }: EventBusData<"redraw">): void {
         switch (name) {
             case "grid_cursor_goto": {
-                args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
+                args.forEach((arg) => this.gridCursorUpdates.addForceUpdate(arg[0]));
                 break;
             }
             // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
             // If we received it we must shift current cursor position by given rows
             case "grid_scroll": {
-                args.forEach((arg) => this.gridCursorUpdates.add(arg[0]));
+                args.forEach((arg) => this.gridCursorUpdates.addForceUpdate(arg[0]));
                 break;
             }
             case "mode_info_set": {
@@ -145,6 +146,7 @@ export class CursorManager implements Disposable {
 
     private handleRedrawFlush(): void {
         this.processCursorMoved();
+        this.gridCursorUpdates.clear();
     }
 
     public async waitForCursorUpdate(editor: TextEditor): Promise<unknown> {
@@ -179,7 +181,11 @@ export class CursorManager implements Disposable {
      * Called when cursor update received. Waits for document changes to complete and then updates cursor position in editor.
      */
     private processCursorMoved(): void {
-        for (const gridId of this.gridCursorUpdates) {
+        for (const [gridId, shouldUpdate] of this.gridCursorUpdates.entries()) {
+            if (!shouldUpdate) {
+                continue;
+            }
+
             logger.debug(`Received cursor update from neovim, gridId: ${gridId}`);
             const editor = this.main.bufferManager.getEditorFromGridId(gridId);
             if (!editor) {
@@ -190,7 +196,6 @@ export class CursorManager implements Disposable {
             if (!this.cursorUpdatePromise.has(editor)) this.cursorUpdatePromise.set(editor, new ManualPromise());
             this.getDebouncedUpdateCursorPos(editor)(editor, gridId);
         }
-        this.gridCursorUpdates.clear();
     }
 
     // !Often, especially with complex multi-command operations, neovim sends multiple cursor updates in multiple batches
