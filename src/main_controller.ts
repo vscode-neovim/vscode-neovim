@@ -318,7 +318,7 @@ export class MainController implements vscode.Disposable {
                 // https://neovim.io/doc/user/ui.html
                 if (hasFlush) {
                     const batch = [...this.currentRedrawBatch.splice(0), ...redrawEvents];
-                    // Send out the non-flush events In order. Nvim insists we handle the events in order.
+                    // Send out the flush events in order. Nvim insists we handle the events in order.
                     // From the nvim UI docs: "Events must be handled in-order. Nvim sends a "flush" event when it has
                     // completed a redraw of the entire screen (so all windows have a consistent view of buffer state, options,
                     // etc.)."
@@ -327,8 +327,7 @@ export class MainController implements vscode.Disposable {
                     //       cause out-of-order execution. Ideally, this should be avoided, but it is not always
                     //       possible. At minimum, listeners should ensure that their `redraw` events complete fully
                     //       before they process `flush-redraw`.
-                    for (let i = batch.length - 1; i >= 0; i--) {
-                        const batchItem = batch[i];
+                    batch.forEach((batchItem) => {
                         const eventData = {
                             name: batchItem[0],
                             args: batchItem.slice(1),
@@ -341,7 +340,7 @@ export class MainController implements vscode.Disposable {
                         } as any;
 
                         eventBus.fire("redraw", eventData);
-                    }
+                    });
 
                     // Events are processed in order, so we will send a flush event
                     // once all the redraws have been sent
