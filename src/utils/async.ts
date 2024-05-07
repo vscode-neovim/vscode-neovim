@@ -30,10 +30,20 @@ export class ManualPromise {
     }
 }
 
+/**
+ * WaitGroup tracks the progress of multiple asynchronous tasks, allowing a caller to wait for all tasks to complete.
+ *
+ * Before each task is spawned, a consumer will call `add` for each spawned task, to indicate that there is a new task
+ * to wait for. Each task independently marks itself as done with the `done` method. Once the number of `done` calls
+ * equals the number of `add` calls, the promise resolves, and a consumer will know the tasks are complete.
+ */
 export class WaitGroup {
     private manualPromise: ManualPromise | null = null;
     private count: number = 0;
 
+    /**
+     * Add a task to the wait group
+     */
     add() {
         if (this.count === 0) {
             this.manualPromise = new ManualPromise();
@@ -42,6 +52,9 @@ export class WaitGroup {
         this.count++;
     }
 
+    /**
+     * Mark a previously `add`'d task as done.
+     */
     done() {
         if (this.count > 0) {
             this.count--;
@@ -56,6 +69,9 @@ export class WaitGroup {
         this.count = 0;
     }
 
+    /**
+     * A promise that is pending if there are outstanding tasks, and resolves when they are complete.
+     */
     get promise(): Promise<void> {
         if (this.manualPromise == null) {
             return Promise.resolve(undefined);
