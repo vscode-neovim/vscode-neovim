@@ -97,8 +97,6 @@ export class StatusLineManager implements Disposable {
                     // }
                     if (type === "return_prompt") {
                         acceptPrompt = true;
-                        // TODO: this doesn't work with this paradigm
-                        // hasMouseOnAfterReturnPrompt = !!data.slice(idx).find(({ name }) => name === "mouse_on");
                     }
                     if (content) {
                         for (const c of content) {
