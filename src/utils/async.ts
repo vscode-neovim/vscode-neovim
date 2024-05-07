@@ -30,6 +30,41 @@ export class ManualPromise {
     }
 }
 
+export class WaitGroup {
+    private manualPromise: ManualPromise | null = null;
+    private count: number = 0;
+
+    add() {
+        if (this.count === 0) {
+            this.manualPromise = new ManualPromise();
+        }
+
+        this.count++;
+    }
+
+    done() {
+        if (this.count > 0) {
+            this.count--;
+        }
+
+        if (!this.manualPromise || this.count > 0) {
+            return;
+        }
+
+        this.manualPromise.resolve();
+        // Should be true, but defensively we can ensure this doesn't go negative
+        this.count = 0;
+    }
+
+    get promise(): Promise<void> {
+        if (this.manualPromise == null) {
+            return Promise.resolve(undefined);
+        }
+
+        return this.manualPromise.promise;
+    }
+}
+
 /**
  * Wait for a given number of milliseconds
  * @param ms Number of milliseconds

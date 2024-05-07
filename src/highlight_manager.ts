@@ -3,7 +3,7 @@ import { Disposable, TextEditor } from "vscode";
 import { EventBusData, eventBus } from "./eventBus";
 import { HighlightProvider } from "./highlights/highlight_provider";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { WaitGroup, disposeAll } from "./utils";
 import { PendingUpdates } from "./pending_updates";
 
 type GridCell = [string, number, number];
@@ -13,48 +13,65 @@ export class HighlightManager implements Disposable {
 
     private highlightProvider: HighlightProvider;
     private pendingGridUpdates: PendingUpdates<number>;
+    private redrawWaitGroup: WaitGroup;
 
     public constructor(private main: MainController) {
         this.highlightProvider = new HighlightProvider();
         this.pendingGridUpdates = new PendingUpdates();
+        this.redrawWaitGroup = new WaitGroup();
+
         this.disposables.push(this.highlightProvider);
         this.disposables.push(eventBus.on("redraw", this.handleRedraw, this));
         this.disposables.push(eventBus.on("flush-redraw", this.handleRedrawFlush, this));
     }
 
     private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
+        // We must do this before the await, so that we ensure that this is queued before
+        // this function returns (and a flush event could begin)
+        this.redrawWaitGroup.add();
+
         await this.main.viewportManager.isSyncDone;
 
-        switch (name) {
-            case "hl_attr_define": {
-                for (const [id, uiAttrs, , info] of args) {
-                    this.highlightProvider.addHighlightGroup(
-                        id,
-                        uiAttrs,
-                        info.map((i) => i.hi_name),
-                    );
-                }
-                break;
-            }
-            // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
-            case "grid_scroll": {
-                for (const [grid, top, , , , by] of args) {
-                    if (grid !== 1) {
-                        this.scrollHighlights(grid, top, by);
+        try {
+            switch (name) {
+                case "hl_attr_define": {
+                    for (const [id, uiAttrs, , info] of args) {
+                        this.highlightProvider.addHighlightGroup(
+                            id,
+                            uiAttrs,
+                            info.map((i) => i.hi_name),
+                        );
                     }
+                    break;
                 }
-                break;
-            }
-            case "grid_line": {
-                for (const [grid, row, col, cells] of args) {
-                    this.stageGridLineUpdates(grid, row, col, cells);
+                // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
+                case "grid_scroll": {
+                    for (const [grid, top, , , , by] of args) {
+                        if (grid !== 1) {
+                            this.scrollHighlights(grid, top, by);
+                        }
+                    }
+                    break;
                 }
-                break;
+                case "grid_line": {
+                    for (const [grid, row, col, cells] of args) {
+                        this.stageGridLineUpdates(grid, row, col, cells);
+                    }
+                    break;
+                }
             }
+        } finally {
+            // We don't want to hold a flush up forever if there's
+            // an exception, so we wrap this in a try/finally
+            this.redrawWaitGroup.done();
         }
     }
 
-    private handleRedrawFlush() {
+    private async handleRedrawFlush() {
+        // Wait for any redraw events that have been received to finish
+        // their work, so that we can flush them
+        await this.redrawWaitGroup.promise;
+
         if (this.pendingGridUpdates.size() === 0) {
             return;
         }
