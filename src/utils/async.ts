@@ -36,6 +36,10 @@ export class ManualPromise {
  * Before each task is spawned, a consumer will call `add` for each spawned task, to indicate that there is a new task
  * to wait for. Each task independently marks itself as done with the `done` method. Once the number of `done` calls
  * equals the number of `add` calls, the promise resolves, and a consumer will know the tasks are complete.
+ *
+ * This is useful in contrast to `Promise.all`/`Promise.allSettled`, where it may not be easily determinable up front
+ * how many tasks you are waiting on (e.g. if you wish all event handler functions for event A to fully complete
+ * before an event handler for event B runs).
  */
 export class WaitGroup {
     private manualPromise: ManualPromise | null = null;
