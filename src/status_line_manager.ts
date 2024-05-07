@@ -71,9 +71,6 @@ export class StatusLineManager implements Disposable {
     private handleRedraw({ name, args, lastArg, firstArg }: EventBusData<"redraw">) {
         let acceptPrompt = false;
 
-        // if there is mouse_on event after return prompt, then we don't need automatically accept it
-        // use case: easymotion search with jumping
-        const hasMouseOnAfterReturnPrompt = false;
         switch (name) {
             case "msg_showcmd": {
                 const [content] = firstArg;
@@ -129,7 +126,7 @@ export class StatusLineManager implements Disposable {
                 break;
             }
         }
-        if (acceptPrompt && !hasMouseOnAfterReturnPrompt) {
+        if (acceptPrompt) {
             this.client.input("<CR>");
         }
     }
