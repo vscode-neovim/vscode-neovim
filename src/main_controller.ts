@@ -330,6 +330,10 @@ export class MainController implements vscode.Disposable {
 
                         eventBus.fire("redraw", eventData);
                     }
+
+                    // Events are processed in order, so we will send a flush event
+                    // once all the redraws have been sent
+                    eventBus.fire("flush-redraw", []);
                 } else {
                     this.currentRedrawBatch.push(...redrawEvents);
                 }

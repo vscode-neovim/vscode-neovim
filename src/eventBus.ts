@@ -111,6 +111,7 @@ type EventsMapping = {
     // nvim
     redraw: RedrawEventArgs;
     // custom
+    ["flush-redraw"]: [];
     ["open-file"]: [string, 1 | 0 | "all"];
     ["external-buffer"]: [BufferInfo, 1 | 0, number];
     ["window-changed"]: [number];

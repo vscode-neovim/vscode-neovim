@@ -16,6 +16,20 @@ export class PendingUpdates<K> {
     }
 
     /**
+     * @returns Whether or not this collection is empty
+     */
+    empty(): boolean {
+        return this.size() === 0;
+    }
+
+    /**
+     * Clear all pending updates
+     */
+    clear(): void {
+        this.pendingUpdates.clear();
+    }
+
+    /**
      * Get all resources pending updates, and functions which indicate whether or not the updates performed
      * any changes.
      *
