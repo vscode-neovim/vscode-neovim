@@ -27,6 +27,9 @@ export class HighlightManager implements Disposable {
     }
 
     private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
+        // Mark our `redraw` event as processing, so that `redraw-flush` will wait for all async
+        // execution to complete.
+        //
         // We must do this before the await, so that we ensure that this is queued before
         // this function returns (and a flush event could begin)
         this.redrawWaitGroup.add();
@@ -70,7 +73,7 @@ export class HighlightManager implements Disposable {
 
     private async handleRedrawFlush() {
         // Wait for any redraw events that have been received to finish
-        // their work, so that we can flush them
+        // their work, so that we can flush them only after their changes are staged.
         await this.redrawWaitGroup.wait();
 
         if (this.pendingGridUpdates.size() === 0) {
