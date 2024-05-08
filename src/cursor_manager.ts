@@ -182,7 +182,7 @@ export class CursorManager implements Disposable {
      */
     private processCursorMoved(): void {
         for (const [gridId, shouldUpdate] of this.gridCursorUpdates.entries()) {
-            if (!shouldUpdate) {
+            if (!shouldUpdate()) {
                 continue;
             }
 

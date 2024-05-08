@@ -331,12 +331,6 @@ export class MainController implements vscode.Disposable {
                         const eventData = {
                             name: batchItem[0],
                             args: batchItem.slice(1),
-                            get firstArg() {
-                                return this.args[0];
-                            },
-                            get lastArg() {
-                                return this.args[this.args.length - 1];
-                            },
                         } as any;
 
                         eventBus.fire("redraw", eventData);

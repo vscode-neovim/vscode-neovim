@@ -76,7 +76,7 @@ export class HighlightManager implements Disposable {
         // their work, so that we can flush them only after their changes are staged.
         await this.redrawWaitGroup.wait();
 
-        if (this.pendingGridUpdates.size() === 0) {
+        if (this.pendingGridUpdates.empty()) {
             return;
         }
 

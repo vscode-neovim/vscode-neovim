@@ -68,12 +68,12 @@ export class StatusLineManager implements Disposable {
             .join(config.statusLineSeparator);
     }
 
-    private handleRedraw({ name, args, lastArg, firstArg }: EventBusData<"redraw">) {
+    private handleRedraw({ name, args }: EventBusData<"redraw">) {
         let acceptPrompt = false;
 
         switch (name) {
             case "msg_showcmd": {
-                const [content] = firstArg;
+                const [content] = args[0];
                 let str = "";
                 if (content) {
                     for (const c of content) {
@@ -108,7 +108,7 @@ export class StatusLineManager implements Disposable {
                 break;
             }
             case "msg_showmode": {
-                const [content] = lastArg;
+                const [content] = args[args.length - 1];
                 let str = "";
                 if (content) {
                     for (const c of content) {

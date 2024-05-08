@@ -6,8 +6,6 @@ import { Disposable, EventEmitter } from "vscode";
 interface IRedrawEventArg<N, A extends unknown[] = []> {
     name: N;
     args: A["length"] extends 0 ? undefined : A[];
-    get firstArg(): A;
-    get lastArg(): A;
 }
 
 type RedrawEventArgs =
