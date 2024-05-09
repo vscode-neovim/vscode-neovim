@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.11.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.2...v1.11.3) (2024-05-09)
+
+
+### Bug Fixes
+
+* redraw events are processed in order ([#1940](https://github.com/vscode-neovim/vscode-neovim/issues/1940)) ([122eb56](https://github.com/vscode-neovim/vscode-neovim/commit/122eb56c9bd00570ea58b1da778fddb670437ae9))
+
 ## [1.11.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.1...v1.11.2) (2024-05-06)
 
 
