@@ -313,22 +313,32 @@ export class MainController implements vscode.Disposable {
             case "redraw": {
                 const redrawEvents = events as [string, ...any[]][];
                 const hasFlush = findLastEvent("flush", events);
+                // nvim will send us a 'flush' event when we should persist the updates to the editor.
+                // Until that point, we should disregard all events
+                // https://neovim.io/doc/user/ui.html
                 if (hasFlush) {
                     const batch = [...this.currentRedrawBatch.splice(0), ...redrawEvents];
-                    const eventData = batch.map(
-                        (b) =>
-                            ({
-                                name: b[0],
-                                args: b.slice(1),
-                                get firstArg() {
-                                    return this.args[0];
-                                },
-                                get lastArg() {
-                                    return this.args[this.args.length - 1];
-                                },
-                            }) as any,
-                    );
-                    eventBus.fire("redraw", eventData);
+                    // Send out the flush events in order. Nvim insists we handle the events in order.
+                    // From the nvim UI docs: "Events must be handled in-order. Nvim sends a "flush" event when it has
+                    // completed a redraw of the entire screen (so all windows have a consistent view of buffer state, options,
+                    // etc.)."
+                    //
+                    // NOTE: some of the listeners for `redraw` event will kick off asynchronous tasks, which may
+                    //       cause out-of-order execution. Ideally, this should be avoided, but it is not always
+                    //       possible. At minimum, listeners should ensure that their `redraw` events complete fully
+                    //       before they process `flush-redraw`.
+                    batch.forEach((batchItem) => {
+                        const eventData = {
+                            name: batchItem[0],
+                            args: batchItem.slice(1),
+                        } as any;
+
+                        eventBus.fire("redraw", eventData);
+                    });
+
+                    // Events are processed in order, so we will send a flush event
+                    // once all the redraws have been sent
+                    eventBus.fire("flush-redraw", []);
                 } else {
                     this.currentRedrawBatch.push(...redrawEvents);
                 }

@@ -8,6 +8,26 @@ describe("PendingUpdates", () => {
         assert.equal(updates.size(), 0);
     });
 
+    it("should be empty on initialization", () => {
+        const updates = new PendingUpdates<string>();
+        assert.equal(updates.empty(), true);
+    });
+
+    it("should not be empty when a resource is added", () => {
+        const updates = new PendingUpdates<string>();
+        updates.addConditionalUpdate("resource1", () => false);
+
+        assert.equal(updates.empty(), false);
+    });
+
+    it("should be empty after clearing", () => {
+        const updates = new PendingUpdates<string>();
+        updates.addConditionalUpdate("resource1", () => false);
+        updates.clear();
+
+        assert.equal(updates.empty(), true);
+    });
+
     it("size should increase by one for every unique resource", () => {
         const updates = new PendingUpdates<string>();
         updates.addConditionalUpdate("resource1", () => false);
@@ -63,5 +83,15 @@ describe("PendingUpdates", () => {
 
         const entries = Object.fromEntries(updates.entries());
         assert.equal(entries["alreadyUpdated"](), true);
+    });
+
+    it("should not execute any update function that has been cleared", () => {
+        const updates = new PendingUpdates<string>();
+        updates.addConditionalUpdate("resource1", () => {
+            assert.fail("This should never happen");
+        });
+        updates.clear();
+
+        assert.equal(updates.entries().length, 0);
     });
 });

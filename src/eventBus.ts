@@ -6,11 +6,9 @@ import { Disposable, EventEmitter } from "vscode";
 interface IRedrawEventArg<N, A extends unknown[] = []> {
     name: N;
     args: A["length"] extends 0 ? undefined : A[];
-    get firstArg(): A;
-    get lastArg(): A;
 }
 
-type RedrawEventArgs = (
+type RedrawEventArgs =
     | IRedrawEventArg<"win_close", [number]> // ["win_close", grid]
     // ["win_external_pos", grid, win]
     | IRedrawEventArg<"win_external_pos", [number, neovim.Window]>
@@ -98,8 +96,7 @@ type RedrawEventArgs = (
     // ["mouse_off"]
     | IRedrawEventArg<"mouse_off">
     | IRedrawEventArg<"wildmenu_show", [string[]]>
-    | IRedrawEventArg<"wildmenu_hide">
-)[];
+    | IRedrawEventArg<"wildmenu_hide">;
 // #endregion
 
 interface BufferInfo {
@@ -112,6 +109,7 @@ type EventsMapping = {
     // nvim
     redraw: RedrawEventArgs;
     // custom
+    ["flush-redraw"]: [];
     ["open-file"]: [string, 1 | 0 | "all"];
     ["external-buffer"]: [BufferInfo, 1 | 0, number];
     ["window-changed"]: [number];

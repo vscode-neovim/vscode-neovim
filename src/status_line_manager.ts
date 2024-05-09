@@ -68,17 +68,33 @@ export class StatusLineManager implements Disposable {
             .join(config.statusLineSeparator);
     }
 
-    private handleRedraw(data: EventBusData<"redraw">) {
+    private handleRedraw({ name, args }: EventBusData<"redraw">) {
         let acceptPrompt = false;
 
-        // if there is mouse_on event after return prompt, then we don't need automatically accept it
-        // use case: easymotion search with jumping
-        let hasMouseOnAfterReturnPrompt = false;
-        data.forEach(({ name, args, lastArg, firstArg }, idx) => {
-            switch (name) {
-                case "msg_showcmd": {
-                    const [content] = firstArg;
-                    let str = "";
+        switch (name) {
+            case "msg_showcmd": {
+                const [content] = args[0];
+                let str = "";
+                if (content) {
+                    for (const c of content) {
+                        const [, cmdStr] = c;
+                        if (cmdStr) {
+                            str += cmdStr;
+                        }
+                    }
+                }
+                this.setStatus(str, StatusType.Cmd);
+                break;
+            }
+            case "msg_show": {
+                let str = "";
+                for (const [type, content] of args) {
+                    // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
+                    //     this.nextInputBlocking = true;
+                    // }
+                    if (type === "return_prompt") {
+                        acceptPrompt = true;
+                    }
                     if (content) {
                         for (const c of content) {
                             const [, cmdStr] = c;
@@ -87,52 +103,30 @@ export class StatusLineManager implements Disposable {
                             }
                         }
                     }
-                    this.setStatus(str, StatusType.Cmd);
-                    break;
                 }
-                case "msg_show": {
-                    let str = "";
-                    for (const [type, content] of args) {
-                        // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
-                        //     this.nextInputBlocking = true;
-                        // }
-                        if (type === "return_prompt") {
-                            acceptPrompt = true;
-                            hasMouseOnAfterReturnPrompt = !!data.slice(idx).find(({ name }) => name === "mouse_on");
-                        }
-                        if (content) {
-                            for (const c of content) {
-                                const [, cmdStr] = c;
-                                if (cmdStr) {
-                                    str += cmdStr;
-                                }
-                            }
-                        }
-                    }
-                    this.setStatus(str, StatusType.Msg);
-                    break;
-                }
-                case "msg_showmode": {
-                    const [content] = lastArg;
-                    let str = "";
-                    if (content) {
-                        for (const c of content) {
-                            const [, modeStr] = c;
-                            if (modeStr) {
-                                str += modeStr;
-                            }
-                        }
-                    }
-                    this.setStatus(str, StatusType.Mode);
-                    break;
-                }
-                case "msg_clear": {
-                    this.setStatus("", StatusType.Msg);
-                    break;
-                }
+                this.setStatus(str, StatusType.Msg);
+                break;
             }
-        });
-        if (acceptPrompt && !hasMouseOnAfterReturnPrompt) {
+            case "msg_showmode": {
+                const [content] = args[args.length - 1];
+                let str = "";
+                if (content) {
+                    for (const c of content) {
+                        const [, modeStr] = c;
+                        if (modeStr) {
+                            str += modeStr;
+                        }
+                    }
+                }
+                this.setStatus(str, StatusType.Mode);
+                break;
+            }
+            case "msg_clear": {
+                this.setStatus("", StatusType.Msg);
+                break;
+            }
+        }
+        if (acceptPrompt) {
             this.client.input("<CR>");
         }
     }

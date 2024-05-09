@@ -1,4 +1,5 @@
 import { Disposable, TextEditor } from "vscode";
+import { WaitGroup } from "@jpwilliams/waitgroup";
 
 import { EventBusData, eventBus } from "./eventBus";
 import { HighlightProvider } from "./highlights/highlight_provider";
@@ -12,18 +13,30 @@ export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
 
     private highlightProvider: HighlightProvider;
+    private pendingGridUpdates: PendingUpdates<number>;
+    private redrawWaitGroup: WaitGroup;
 
     public constructor(private main: MainController) {
         this.highlightProvider = new HighlightProvider();
+        this.pendingGridUpdates = new PendingUpdates();
+        this.redrawWaitGroup = new WaitGroup();
+
         this.disposables.push(this.highlightProvider);
         this.disposables.push(eventBus.on("redraw", this.handleRedraw, this));
+        this.disposables.push(eventBus.on("flush-redraw", this.handleRedrawFlush, this));
     }
 
-    private async handleRedraw(data: EventBusData<"redraw">): Promise<void> {
+    private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
+        // Mark our `redraw` event as processing, so that `redraw-flush` will wait for all async
+        // execution to complete.
+        //
+        // We must do this before the await, so that we ensure that this is queued before
+        // this function returns (and a flush event could begin)
+        this.redrawWaitGroup.add();
+
         await this.main.viewportManager.isSyncDone;
 
-        const pendingUpdates = new PendingUpdates<number>();
-        for (const { name, args } of data) {
+        try {
             switch (name) {
                 case "hl_attr_define": {
                     for (const [id, uiAttrs, , info] of args) {
@@ -39,39 +52,46 @@ export class HighlightManager implements Disposable {
                 case "grid_scroll": {
                     for (const [grid, top, , , , by] of args) {
                         if (grid !== 1) {
-                            this.scrollHighlights(pendingUpdates, grid, top, by);
+                            this.scrollHighlights(grid, top, by);
                         }
                     }
                     break;
                 }
                 case "grid_line": {
                     for (const [grid, row, col, cells] of args) {
-                        this.stageGridLineUpdates(pendingUpdates, grid, row, col, cells);
+                        this.stageGridLineUpdates(grid, row, col, cells);
                     }
                     break;
                 }
             }
-        }
-
-        if (pendingUpdates.size() > 0) {
-            this.applyHLGridUpdates(pendingUpdates);
+        } finally {
+            // We don't want to hold a flush up forever if there's
+            // an exception, so we wrap this in a try/finally
+            this.redrawWaitGroup.done();
         }
     }
 
-    private scrollHighlights(pendingUpdates: PendingUpdates<number>, grid: number, top: number, by: number) {
+    private async handleRedrawFlush() {
+        // Wait for any redraw events that have been received to finish
+        // their work, so that we can flush them only after their changes are staged.
+        await this.redrawWaitGroup.wait();
+
+        if (this.pendingGridUpdates.empty()) {
+            return;
+        }
+
+        this.applyHLGridUpdates();
+        this.pendingGridUpdates.clear();
+    }
+
+    private scrollHighlights(grid: number, top: number, by: number) {
         // by > 0 - scroll down, must remove existing elements from first and shift row hl left
         // by < 0 - scroll up, must remove existing elements from right shift row hl right
         this.highlightProvider.shiftGridHighlights(grid, by, top);
-        pendingUpdates.addForceUpdate(grid);
+        this.pendingGridUpdates.addForceUpdate(grid);
     }
 
-    private stageGridLineUpdates(
-        pendingUpdates: PendingUpdates<number>,
-        grid: number,
-        row: number,
-        col: number,
-        cells: GridCell[],
-    ): void {
+    private stageGridLineUpdates(grid: number, row: number, col: number, cells: GridCell[]): void {
         const gridOffset = this.main.viewportManager.getGridOffset(grid);
         if (!gridOffset) {
             return;
@@ -87,7 +107,7 @@ export class HighlightManager implements Disposable {
         if (this.highlightLineOutOfBounds(editor, highlightLine)) {
             // Clear any highlights that we already know are out of bounds
             this.cleanHighlightLine(grid, row, highlightLine);
-            pendingUpdates.addForceUpdate(grid);
+            this.pendingGridUpdates.addForceUpdate(grid);
             return;
         }
 
@@ -100,7 +120,7 @@ export class HighlightManager implements Disposable {
         cells.splice(0, statusLineCells);
 
         const tabSize = editor.options.tabSize as number;
-        pendingUpdates.addConditionalUpdate(
+        this.pendingGridUpdates.addConditionalUpdate(
             grid,
             // Defer the update so that it can be done with the document lock
             () => {
@@ -135,8 +155,8 @@ export class HighlightManager implements Disposable {
         }
     }
 
-    private applyHLGridUpdates(pendingUpdates: PendingUpdates<number>): void {
-        for (const [grid, update] of pendingUpdates.entries()) {
+    private applyHLGridUpdates(): void {
+        for (const [grid, update] of this.pendingGridUpdates.entries()) {
             const gridOffset = this.main.viewportManager.getGridOffset(grid);
             const editor = this.main.bufferManager.getEditorFromGridId(grid);
             if (!editor || !gridOffset) {
