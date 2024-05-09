@@ -20,8 +20,6 @@ git clone https://github.com/vscode-neovim/vscode-neovim
 
 ```sh
 npm install
-pipx install pre-commit  # https://pre-commit.com/#installation
-pre-commit install
 ```
 
 3. Build the VSIX package:
@@ -64,9 +62,10 @@ by:
 
 ## Style and Tools
 
--   checks should be run before each commit. Run `pre-commit install` to enable them.
+-   checks should be run before each commit. They should be enabled upon dependency initialization, but if not, you can
+    run `npx husky` to install them.
 -   run `npm run format` to automatically format typescript and lua code.
--   run `npm run lint` to check for errors in typescript and lua code.
+-   run `npm run lint` to check for errors in typescript code.
 
 ## Design Principles
 
