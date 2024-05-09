@@ -1,0 +1,5 @@
+echo "Running pre-commit tasks..." >&2
+npm run lint:check || (echo 'Lint failed. Fix the above errors, and/or run `npm  run lint` to autofix where possible, then re-commit.' >&2 && exit 1)
+npm run format:check || (echo 'Bad TS/JS formatting. Run `npm run format`, then re-commit.' >&2 && exit 1)
+npm run stylua:check || (echo 'Bad Lua formatting. Run `npm run styleua`, then re-commit.' >&2 && exit 1)
+npm run test-compile || (echo 'Test compilation failed. Fix the above errors, then recommit.' >&2 && exit 1)
