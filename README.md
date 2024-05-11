@@ -187,9 +187,9 @@ Add to your `settings.json`:
 {
     "vscode-neovim.compositeKeys": {
         "jj": {
-            "command": "vscode-neovim.escape"
-        }
-    }
+            "command": "vscode-neovim.escape",
+        },
+    },
 }
 ```
 
@@ -205,11 +205,11 @@ Add to your `settings.json`:
                 [
                     "local code = require('vscode-neovim')",
                     "code.action('vscode-neovim.escape')",
-                    "code.action('workbench.action.files.save')"
-                ]
-            ]
-        }
-    }
+                    "code.action('workbench.action.files.save')",
+                ],
+            ],
+        },
+    },
 }
 ```
 
@@ -643,7 +643,7 @@ To pass custom bindings to Neovim, for example <kbd>C-h</kbd> in normal mode, ad
     // don't activate during insert mode
     "when": "editorTextFocus && neovim.mode != insert",
     // the input to send to Neovim
-    "args": "<C-h>"
+    "args": "<C-h>",
 }
 ```
 
