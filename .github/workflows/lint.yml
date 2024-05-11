@@ -17,11 +17,6 @@ jobs:
             - name: npm install
               run: npm ci --silent
 
-            - name: Check Lint
-              run: npm run lint:check
-
-            - name: Check Formatting
-              run: npm run format:check
-
-            - name: Check Lua Styling
-              run: npm run stylua:check
+            - run: npm run lint:check
+            - run: npm run format:check
+            - run: npm run stylua:check
