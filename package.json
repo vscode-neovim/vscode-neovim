@@ -2128,7 +2128,7 @@
         "format:check": "npm run prettier:check && npm run stylua:check",
         "prettier": "prettier --ignore-path .gitignore --ignore-path .prettierignore -w .",
         "prettier:check": "prettier --ignore-path .gitignore --ignore-path .prettierignore --check .",
-        "stylua": "npx @johnnymorganz/stylua-bin .",
+        "stylua": "stylua .",
         "stylua:check": "npx @johnnymorganz/stylua-bin .",
         "keybind": "node ./scripts/keybindings/index.cjs",
         "test": "npm run test:unit && npm run test:integration",
