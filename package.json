@@ -2129,7 +2129,7 @@
         "prettier": "prettier --ignore-path .gitignore --ignore-path .prettierignore -w .",
         "prettier:check": "prettier --ignore-path .gitignore --ignore-path .prettierignore --check .",
         "stylua": "stylua .",
-        "stylua:check": "npx @johnnymorganz/stylua-bin .",
+        "stylua:check": "stylua --check .",
         "keybind": "node ./scripts/keybindings/index.cjs",
         "test": "npm run test:unit && npm run test:integration",
         "test:unit": "mocha ./out/test/unit/*.js ./out/test/unit/**/*.js",
