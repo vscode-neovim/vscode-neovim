@@ -101,15 +101,10 @@ execute 'source ' . s:currDir . '/vscode-motion.vim'
 
 augroup VscodeGeneral
     autocmd!
-    " autocmd BufWinEnter,WinNew,WinEnter * :only
     autocmd BufWinEnter * call VSCodeExtensionNotify('external-buffer', getbufinfo(bufnr())[0], &et, &ts)
-    " Help and other buffer types may explicitly disable line numbers - reenable them, !important - set nowrap since it may be overriden and this option is crucial for now
-    " autocmd FileType * :setlocal conceallevel=0 | :setlocal number | :setlocal numberwidth=8 | :setlocal nowrap | :setlocal nofoldenable
     autocmd InsertEnter * call <SID>onInsertEnter()
     " Trigger filetype detection
     autocmd BufAdd * do BufRead
-    " Looks like external windows are coming with "set wrap" set automatically, disable them
-    " autocmd WinNew,WinEnter * :set nowrap
     autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
     autocmd VimEnter,ModeChanged * call VSCodeExtensionNotify('mode-changed', mode())
     autocmd WinEnter * call VSCodeExtensionNotify('window-changed', win_getid())
