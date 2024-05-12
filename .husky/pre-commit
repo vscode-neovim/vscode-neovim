@@ -1,4 +1,5 @@
 echo "Running pre-commit tasks..." >&2
+npm run keybind
 npm run lint:check || (echo 'Fix the above errors, and/or run `npm  run lint` to autofix where possible.' >&2 && exit 1)
 npm run format:check || (echo 'Run `npm run format` to autofix.' >&2 && exit 1)
 npm run test-compile
