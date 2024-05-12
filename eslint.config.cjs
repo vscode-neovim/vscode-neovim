@@ -71,7 +71,7 @@ module.exports = tseslint.config(
         files: ["src/test/**/*.test.ts"],
         languageOptions: {
             globals: {
-                ...globals.jest,
+                ...globals.mocha,
             },
         },
     },
