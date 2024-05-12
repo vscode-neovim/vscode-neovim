@@ -87,11 +87,10 @@ export class Logger implements Disposable {
             return p + (i > 0 ? " " : "") + c;
         }, "");
 
-        if (this.fd) {
-            fs.appendFileSync(this.fd, msg + "\n");
-        }
-        if (this.logToConsole) {
-            console[level == LogLevel.error ? "error" : "log"](`${getTimestamp()} ${scope}: ${msg}`);
+        if (this.fd || this.logToConsole) {
+            const logMsg = `${getTimestamp()} ${scope}: ${msg}`;
+            this.fd && fs.appendFileSync(this.fd, logMsg + "\n");
+            this.logToConsole && console[level == LogLevel.error ? "error" : "log"](logMsg);
         }
 
         // Half-baked attempt to avoid infinite loop.
