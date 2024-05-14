@@ -80,7 +80,6 @@ module.exports = tseslint.config(
             "@typescript-eslint/restrict-template-expressions": "off", // too jumpy
             "@typescript-eslint/no-floating-promises": "off", // jumpy; would be nice to turn on, but we have a lot of these
             "@typescript-eslint/unbound-method": "off", // jumpy, given how vscode's API binds this. Would be good to remove.
-            "@typescript-eslint/require-await": "off", // TODO: remove
         },
     },
     {

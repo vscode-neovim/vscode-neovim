@@ -184,7 +184,7 @@ export class TypingManager implements Disposable {
         this.useCompositeKeys = this.compositeFirstKeys.length > 0;
     }
 
-    private onModeChange = async (): Promise<void> => {
+    private onModeChange = (): void => {
         if (this.main.modeManager.isInsertMode && this.takeOverVSCodeInput && !this.isRecordingInInsertMode) {
             const editor = window.activeTextEditor;
             const documentPromise = editor && this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
@@ -218,11 +218,11 @@ export class TypingManager implements Disposable {
         }
     };
 
-    async compositeInput(key: string) {
+    compositeInput(key: string) {
         if (!this.compositeMatchedFirstKey) {
             if (this.compositeFirstKeys.includes(key)) {
                 this.compositeMatchedFirstKey = key;
-                this.compositeTimer = setTimeout(async () => {
+                this.compositeTimer = setTimeout(() => {
                     this.compositeTimer = undefined;
                     this.compositeMatchedFirstKey = undefined;
                     this.vscodeDefaultType(key);

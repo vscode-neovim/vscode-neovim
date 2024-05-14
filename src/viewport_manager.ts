@@ -97,7 +97,7 @@ export class ViewportManager implements Disposable {
         return new Position(view.topline, view.leftcol);
     }
 
-    private async handleRedraw({ name, args }: EventBusData<"redraw">) {
+    private handleRedraw({ name, args }: EventBusData<"redraw">) {
         switch (name) {
             case "win_viewport": {
                 for (const [grid, , topline, botline, curline, curcol] of args) {
@@ -164,7 +164,7 @@ export class ViewportManager implements Disposable {
             trailing: true,
         });
     }
-    private onDidChangeVisibleRange = async (e: TextEditorVisibleRangesChangeEvent): Promise<void> => {
+    private onDidChangeVisibleRange = (e: TextEditorVisibleRangesChangeEvent) => {
         if (!this.debouncedScrollNeovim) {
             this.refreshDebounceTime();
             this.refreshDebounceScroll();
