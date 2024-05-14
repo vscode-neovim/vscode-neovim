@@ -59,23 +59,21 @@ export class Logger implements Disposable {
         this.outputChannel = outputChannel;
         this.filePath = filePath;
 
-        this.listenForLogLevelChanges();
         this.setupLogFile();
+        this.outputChannel?.onDidChangeLogLevel(
+            (level: vscode.LogLevel) => this.onLogLevelChanged(level),
+            undefined,
+            this.disposables,
+        );
     }
 
     public dispose(): void {
         disposeAll(this.disposables);
     }
 
-    private listenForLogLevelChanges() {
-        this.outputChannel?.onDidChangeLogLevel(
-            (level) => {
-                this.level = level;
-                this.setupLogFile();
-            },
-            undefined,
-            this.disposables,
-        );
+    private onLogLevelChanged(level: vscode.LogLevel) {
+        this.level = level;
+        this.setupLogFile();
     }
 
     private setupLogFile() {
