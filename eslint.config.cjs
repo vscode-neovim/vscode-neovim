@@ -69,15 +69,13 @@ module.exports = tseslint.config(
             "@typescript-eslint/no-non-null-assertion": "off",
             "@typescript-eslint/no-explicit-any": "off",
 
-            "@typescript-eslint/no-misused-promises": "off",
             "@typescript-eslint/no-unsafe-argument": "off",
             "@typescript-eslint/no-unsafe-assignment": "off",
             "@typescript-eslint/no-unsafe-call": "off",
-            "@typescript-eslint/no-unsafe-declaration-merging": "off",
-            "@typescript-eslint/no-unsafe-enum-comparison": "off",
             "@typescript-eslint/no-unsafe-member-access": "off",
             "@typescript-eslint/no-unsafe-return": "off",
             "@typescript-eslint/restrict-template-expressions": "off", // too jumpy
+            "@typescript-eslint/no-misused-promises": "off", // too jumpy
             "@typescript-eslint/no-floating-promises": "off", // jumpy; would be nice to turn on, but we have a lot of these
             "@typescript-eslint/unbound-method": "off", // jumpy, given how vscode's API binds this. Would be good to remove.
         },
