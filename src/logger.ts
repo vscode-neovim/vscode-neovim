@@ -91,18 +91,20 @@ export class Logger implements Disposable {
 
         try {
             this.fd = fs.openSync(this.filePath, "w");
-            this.disposables.push({
-                dispose: () => {
-                    if (!this.fd) {
-                        return;
-                    }
-
-                    fs.closeSync(this.fd);
-                },
-            });
-        } catch {
-            // ignore
+        } catch (err) {
+            window.showErrorMessage(`Can not open log file at ${this.filePath}: ${err}`);
+            return;
         }
+
+        this.disposables.push({
+            dispose: () => {
+                if (!this.fd) {
+                    return;
+                }
+
+                fs.closeSync(this.fd);
+            },
+        });
     }
 
     private log(level: vscode.LogLevel, scope: string, logToOutputChannel: boolean, args: any[]): void {
