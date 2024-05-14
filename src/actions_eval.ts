@@ -24,7 +24,8 @@ void logger;
 export async function eval_for_client(code: string, args: any): Promise<any> {
     void args;
 
-    const result = await eval("async () => {" + code + "}")();
+    const func: () => Promise<any> = eval("async () => {" + code + "}");
+    const result = await func();
 
     let data: string | undefined;
     try {

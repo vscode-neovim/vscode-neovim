@@ -69,11 +69,12 @@ module.exports = tseslint.config(
             "@typescript-eslint/no-non-null-assertion": "off",
             "@typescript-eslint/no-explicit-any": "off",
 
+            // This codebase interacts with `any` a lot, so for now, all no-unsafe-* we violate are currently disabled
             "@typescript-eslint/no-unsafe-argument": "off",
             "@typescript-eslint/no-unsafe-assignment": "off",
-            "@typescript-eslint/no-unsafe-call": "off",
             "@typescript-eslint/no-unsafe-member-access": "off",
             "@typescript-eslint/no-unsafe-return": "off",
+
             "@typescript-eslint/restrict-template-expressions": "off", // too jumpy
             "@typescript-eslint/no-misused-promises": "off", // too jumpy
             "@typescript-eslint/no-floating-promises": "off", // jumpy; would be nice to turn on, but we have a lot of these
