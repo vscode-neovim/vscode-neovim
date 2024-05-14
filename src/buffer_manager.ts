@@ -9,6 +9,7 @@ import {
     Disposable,
     EndOfLine,
     EventEmitter,
+    LogLevel,
     NotebookDocument,
     Selection,
     TextDocument,
@@ -27,7 +28,7 @@ import {
 import actions from "./actions";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
-import { LogLevel, createLogger } from "./logger";
+import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { ManualPromise, convertByteNumToCharNum, disposeAll, wait } from "./utils";
 
@@ -265,7 +266,7 @@ export class BufferManager implements Disposable {
                 doc ??= await workspace.openTextDocument(uri);
             }
         } catch (error) {
-            logger.log(doc?.uri, LogLevel.error, `Error opening file ${fileName}, ${error}`);
+            logger.log(doc?.uri, LogLevel.Error, `Error opening file ${fileName}, ${error}`);
         }
         if (!doc) {
             return;
@@ -300,17 +301,17 @@ export class BufferManager implements Disposable {
         }
 
         const uri = Uri.parse(vscode_uri, true);
-        logger.log(uri, LogLevel.debug, `Buffer request for ${uri.fsPath}, bufId: ${bufnr}`);
+        logger.log(uri, LogLevel.Debug, `Buffer request for ${uri.fsPath}, bufId: ${bufnr}`);
         try {
             let doc = this.findDocFromUri(uri.toString());
             if (!doc) {
-                logger.log(uri, LogLevel.debug, `Opening a doc: ${uri.fsPath}`);
+                logger.log(uri, LogLevel.Debug, `Opening a doc: ${uri.fsPath}`);
                 doc = await workspace.openTextDocument(uri);
             }
             if (!this.textDocumentToBufferId.has(doc)) {
                 logger.log(
                     uri,
-                    LogLevel.debug,
+                    LogLevel.Debug,
                     `No doc -> buffer mapping exists, assigning mapping and init buffer options`,
                 );
                 const buffers = await this.client.buffers;
@@ -473,12 +474,12 @@ export class BufferManager implements Disposable {
         // Open/change neovim windows
         for (const editor of visibleEditors) {
             const { document: doc } = editor;
-            logger.log(doc.uri, LogLevel.debug, `Visible editor, viewColumn: ${editor.viewColumn}, doc: ${doc.uri}`);
+            logger.log(doc.uri, LogLevel.Debug, `Visible editor, viewColumn: ${editor.viewColumn}, doc: ${doc.uri}`);
             // create buffer first if not known to the system
             // creating initially not listed buffer to prevent firing autocmd events when
             // buffer name/lines are not yet set. We'll set buflisted after setup
             if (!this.textDocumentToBufferId.has(doc)) {
-                logger.log(doc.uri, LogLevel.debug, `Document not known, init in neovim`);
+                logger.log(doc.uri, LogLevel.Debug, `Document not known, init in neovim`);
                 const buf = await this.client.createBuffer(false, true);
                 if (typeof buf === "number") {
                     logger.error(`Cannot create a buffer, code: ${buf}`);
@@ -486,7 +487,7 @@ export class BufferManager implements Disposable {
                 }
                 await this.initBufferForDocument(doc, buf, editor);
 
-                logger.log(doc.uri, LogLevel.debug, `Document: ${doc.uri}, BufId: ${buf.id}`);
+                logger.log(doc.uri, LogLevel.Debug, `Document: ${doc.uri}, BufId: ${buf.id}`);
                 this.textDocumentToBufferId.set(doc, buf.id);
             }
             if (this.textEditorToWinId.has(editor)) continue;
@@ -494,16 +495,16 @@ export class BufferManager implements Disposable {
             try {
                 logger.log(
                     doc.uri,
-                    LogLevel.debug,
+                    LogLevel.Debug,
                     `Creating new window for ${editor.viewColumn} column (undefined is OK here)`,
                 );
                 const winId = await this.createNeovimWindow(editorBufferId);
-                logger.log(doc.uri, LogLevel.debug, `Created new window: ${winId} ViewColumn: ${editor.viewColumn}`);
+                logger.log(doc.uri, LogLevel.Debug, `Created new window: ${winId} ViewColumn: ${editor.viewColumn}`);
                 this.textEditorToWinId.set(editor, winId);
                 this.winIdToEditor.set(winId, editor);
                 await this.main.cursorManager.updateNeovimCursorPosition(editor, editor.selection.active);
             } catch (e) {
-                logger.log(doc.uri, LogLevel.error, (e as Error).message);
+                logger.log(doc.uri, LogLevel.Error, (e as Error).message);
             }
         }
     }
@@ -519,7 +520,7 @@ export class BufferManager implements Disposable {
             // when in normal mode
             logger.log(
                 uri,
-                LogLevel.error,
+                LogLevel.Error,
                 `Unable to determine neovim window id for editor, viewColumn: ${activeEditor.viewColumn}, docUri: ${uri}`,
             );
             return;
@@ -527,7 +528,7 @@ export class BufferManager implements Disposable {
         if ((await this.client.window).id === winId) return;
         logger.log(
             uri,
-            LogLevel.debug,
+            LogLevel.Debug,
             `Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
         );
         await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
@@ -535,7 +536,7 @@ export class BufferManager implements Disposable {
             // https://github.com/vscode-neovim/vscode-neovim/issues/1577
             logger.log(
                 uri,
-                LogLevel.debug,
+                LogLevel.Debug,
                 `Cancel visual mode to prevent selection from previous editor to carry over to active editor`,
             );
             await this.client.input("<Esc>");
@@ -543,7 +544,7 @@ export class BufferManager implements Disposable {
         try {
             await this.client.request("nvim_set_current_win", [winId]);
         } catch (e) {
-            logger.log(uri, LogLevel.error, (e as Error).message);
+            logger.log(uri, LogLevel.Error, (e as Error).message);
         }
     }
     // #endregion
@@ -574,11 +575,11 @@ export class BufferManager implements Disposable {
         // the event notifying the doc provider of any changes
         (async () => {
             const uri = this.buildExternalBufferUri(await buffer.name, buffer.id);
-            logger.log(uri, LogLevel.debug, `received buffer event for ${uri}`);
+            logger.log(uri, LogLevel.Debug, `received buffer event for ${uri}`);
             this.bufferProvider.documentDidChange.fire(uri);
             return uri;
         })().then(undefined, (e) => {
-            logger.log(undefined, LogLevel.error, `failed to notify document change: ${e}`);
+            logger.log(undefined, LogLevel.Error, `failed to notify document change: ${e}`);
         });
     };
 
@@ -588,7 +589,7 @@ export class BufferManager implements Disposable {
     private async initBufferForDocument(document: TextDocument, buffer: Buffer, editor?: TextEditor): Promise<void> {
         const bufId = buffer.id;
         const { uri: docUri } = document;
-        logger.log(docUri, LogLevel.debug, `Init buffer for ${bufId}, doc: ${docUri}`);
+        logger.log(docUri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${docUri}`);
 
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);

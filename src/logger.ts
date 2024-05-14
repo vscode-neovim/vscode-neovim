@@ -7,16 +7,8 @@ import * as vscode from "vscode";
 
 import { disposeAll } from "./utils";
 
-export enum LogLevel {
-    /** Disables all logging. */
-    none = 0,
-    error = 1,
-    warn = 2,
-    info = 3,
-    debug = 4,
-}
-
 export interface ILogger {
+    trace(...args: any[]): void;
     debug(...args: any[]): void;
     info(...args: any[]): void;
     warn(...args: any[]): void;
@@ -31,7 +23,7 @@ export interface ILogger {
      * @param level Log level.
      * @param logArgs Log message format string followed by values.
      */
-    log(uri: vscode.Uri | undefined, level: LogLevel, ...logArgs: any[]): void;
+    log(uri: vscode.Uri | undefined, level: vscode.LogLevel, ...logArgs: any[]): void;
 }
 
 function getTimestamp(): string {
@@ -40,9 +32,10 @@ function getTimestamp(): string {
 
 export class Logger implements Disposable {
     private disposables: Disposable[] = [];
-    private fd = 0;
+    private fd: number | undefined;
+    private filePath: string | undefined;
     private loggers: Map<string, ILogger> = new Map();
-    private level!: LogLevel;
+    private level!: vscode.LogLevel;
     private logToConsole!: boolean;
     private outputChannel?: vscode.LogOutputChannel;
 
@@ -50,32 +43,69 @@ export class Logger implements Disposable {
      * Setup logging for the extension. Logs are dropped unless one or more of
      * `filePath`, `logToConsole`, or `outputChannel` is given.
      *
-     * @param level Only log messages at or above this level, or never if set to `LogLevel.none`.
+     * @param level Only log messages at or above this level, or never if set to `vscode.LogLevel.Off`.
      * @param filePath Write messages to this file.
      * @param logToConsole Write messages to the `console` (Hint: run the "Developer: Toggle Developer Tools" vscode command to see the console).
      * @param outputChannel Write messages to this vscode output channel.
      */
-    public init(level: LogLevel, filePath: string, logToConsole = false, outputChannel?: vscode.LogOutputChannel) {
+    public init(
+        level: vscode.LogLevel,
+        filePath: string,
+        logToConsole = false,
+        outputChannel?: vscode.LogOutputChannel,
+    ) {
         this.level = level;
         this.logToConsole = logToConsole;
         this.outputChannel = outputChannel;
-        if (filePath && level !== LogLevel.none) {
-            try {
-                this.fd = fs.openSync(filePath, "w");
-                this.disposables.push({
-                    dispose: () => fs.closeSync(this.fd),
-                });
-            } catch {
-                // ignore
-            }
-        }
+        this.filePath = filePath;
+
+        this.setupLogFile();
+        this.outputChannel?.onDidChangeLogLevel(
+            (level: vscode.LogLevel) => this.onLogLevelChanged(level),
+            undefined,
+            this.disposables,
+        );
     }
 
     public dispose(): void {
         disposeAll(this.disposables);
     }
 
-    private log(level: LogLevel, scope: string, logToOutputChannel: boolean, args: any[]): void {
+    private onLogLevelChanged(level: vscode.LogLevel) {
+        this.level = level;
+        this.setupLogFile();
+    }
+
+    private setupLogFile() {
+        if (!this.filePath) {
+            return;
+        } else if (this.level !== vscode.LogLevel.Off && this.fd) {
+            return;
+        } else if (this.level === vscode.LogLevel.Off && this.fd) {
+            fs.closeSync(this.fd);
+            this.fd = undefined;
+            return;
+        }
+
+        try {
+            this.fd = fs.openSync(this.filePath, "w");
+        } catch (err) {
+            window.showErrorMessage(`Can not open log file at ${this.filePath}: ${err}`);
+            return;
+        }
+
+        this.disposables.push({
+            dispose: () => {
+                if (!this.fd) {
+                    return;
+                }
+
+                fs.closeSync(this.fd);
+            },
+        });
+    }
+
+    private log(level: vscode.LogLevel, scope: string, logToOutputChannel: boolean, args: any[]): void {
         const msg = args.reduce((p, c, i) => {
             if (typeof c === "object") {
                 try {
@@ -90,39 +120,38 @@ export class Logger implements Disposable {
         if (this.fd || this.logToConsole) {
             const logMsg = `${getTimestamp()} ${scope}: ${msg}`;
             this.fd && fs.appendFileSync(this.fd, logMsg + "\n");
-            this.logToConsole && console[level == LogLevel.error ? "error" : "log"](logMsg);
+            this.logToConsole && console[level == vscode.LogLevel.Error ? "error" : "log"](logMsg);
         }
 
         // Half-baked attempt to avoid infinite loop.
         // Preferred approach is for modules to decide this via `createLogger(…, logToOutputChannel=…)`.
         const activeDoc = window.activeTextEditor?.document; // "output:asvetliakov.vscode-neovim.vscode-neovim"
         const outputFocused = activeDoc?.uri.scheme === "output" || activeDoc?.fileName?.startsWith("output:");
-
         if (logToOutputChannel && this.outputChannel && activeDoc && !outputFocused) {
             const fullMsg = `${scope}: ${msg}`;
             switch (level) {
-                case LogLevel.error:
+                case vscode.LogLevel.Error:
                     this.outputChannel.error(fullMsg);
                     break;
-                case LogLevel.warn:
+                case vscode.LogLevel.Warning:
                     this.outputChannel.warn(fullMsg);
                     break;
-                case LogLevel.info:
-                case LogLevel.debug:
-                    // XXX: `vscode.LogOutputChannel` loglevel is currently readonly:
-                    //      https://github.com/microsoft/vscode/issues/170450
-                    //      https://github.com/PowerShell/vscode-powershell/issues/4441
-                    // So debug() drops messages unless the user has increased vscode's log-level.
-                    // Use info() until vscode adds a way to set the loglevel.
+                case vscode.LogLevel.Info:
                     this.outputChannel.info(fullMsg);
                     break;
-                case LogLevel.none:
-                    // Do nothing. This should never happen because the logger isn't setup for level=none.
+                case vscode.LogLevel.Debug:
+                    this.outputChannel.debug(fullMsg);
+                    break;
+                case vscode.LogLevel.Trace:
+                    this.outputChannel.trace(fullMsg);
+                    break;
+                case vscode.LogLevel.Off:
+                    // Do nothing. This should never happen because the logger isn't setup for level=off.
                     break;
             }
         }
 
-        if (level === LogLevel.error) {
+        if (level === vscode.LogLevel.Error) {
             window.showErrorMessage(msg);
         }
     }
@@ -131,27 +160,32 @@ export class Logger implements Disposable {
         const logger = this.loggers.has(scope)
             ? this.loggers.get(scope)!
             : {
+                  trace: (...args: any[]) => {
+                      if (this.level <= vscode.LogLevel.Trace) {
+                          this.log(vscode.LogLevel.Trace, scope, logToOutputChannel, args);
+                      }
+                  },
                   debug: (...args: any[]) => {
-                      if (this.level >= LogLevel.debug) {
-                          this.log(LogLevel.debug, scope, logToOutputChannel, args);
+                      if (this.level <= vscode.LogLevel.Debug) {
+                          this.log(vscode.LogLevel.Debug, scope, logToOutputChannel, args);
                       }
                   },
                   info: (...args: any[]) => {
-                      if (this.level >= LogLevel.info) {
-                          this.log(LogLevel.info, scope, logToOutputChannel, args);
+                      if (this.level <= vscode.LogLevel.Info) {
+                          this.log(vscode.LogLevel.Info, scope, logToOutputChannel, args);
                       }
                   },
                   warn: (...args: any[]) => {
-                      if (this.level >= LogLevel.warn) {
-                          this.log(LogLevel.warn, scope, logToOutputChannel, args);
+                      if (this.level <= vscode.LogLevel.Warning) {
+                          this.log(vscode.LogLevel.Warning, scope, logToOutputChannel, args);
                       }
                   },
                   error: (...args: any[]) => {
-                      if (this.level >= LogLevel.error) {
-                          this.log(LogLevel.error, scope, logToOutputChannel, args);
+                      if (this.level <= vscode.LogLevel.Error) {
+                          this.log(vscode.LogLevel.Error, scope, logToOutputChannel, args);
                       }
                   },
-                  log(uri: vscode.Uri | undefined, level: LogLevel, ...logArgs: any[]) {
+                  log(uri: vscode.Uri | undefined, level: vscode.LogLevel, ...logArgs: any[]) {
                       const isLogSink =
                           !uri ||
                           uri.scheme === "output" ||
@@ -166,18 +200,23 @@ export class Logger implements Disposable {
                       }
 
                       switch (level) {
-                          case LogLevel.error:
+                          case vscode.LogLevel.Error:
                               logger.error(...logArgs);
                               break;
-                          case LogLevel.warn:
+                          case vscode.LogLevel.Warning:
                               logger.warn(...logArgs);
                               break;
-                          case LogLevel.info:
-                          case LogLevel.debug:
+                          case vscode.LogLevel.Info:
+                              logger.info(...logArgs);
+                              break;
+                          case vscode.LogLevel.Debug:
                               logger.debug(...logArgs);
                               break;
-                          case LogLevel.none:
-                              // Do nothing. This should never happen because the logger isn't setup for level=none.
+                          case vscode.LogLevel.Trace:
+                              logger.trace(...logArgs);
+                              break;
+                          case vscode.LogLevel.Off:
+                              // Do nothing. This should never happen because the logger isn't setup for level=off.
                               break;
                       }
                   },
