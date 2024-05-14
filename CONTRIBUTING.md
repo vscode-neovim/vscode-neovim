@@ -37,11 +37,19 @@ npx vsce package -o vscode-neovim.vsix
 
 ### Logging
 
-You can observe the extension logs via the `vscode-neovim` Output channel or from the dev tools console (run the
-`Developer: Toggle Developer Tools` vscode command to see the console).
+You can view the extension logs in one of three locations
 
-Note: some messages are not logged to the Output channel, to avoid infinite loop. This is decided by the
-[`logToOutputChannel` parameter](https://github.com/vscode-neovim/vscode-neovim/blob/7337ffd5009067d074af5371171f277cb522aa9b/src/logger.ts#L184).
+1. Via the `vscode-neovim` Output channel
+
+    - **NOTE**: some messages are not logged to the Output channel, to avoid infinite loop. This is decided by the
+      [`logToOutputChannel` parameter](https://github.com/vscode-neovim/vscode-neovim/blob/7337ffd5009067d074af5371171f277cb522aa9b/src/logger.ts#L184).
+
+2. From the dev tools console (run the `Developer: Toggle Developer Tools` vscode command to see the console) by
+   enabling the `vscode-neovim.logOutputToConsole` setting.
+3. From a log file of your choosing, by configuring the `vscode-neovim.logPath` setting.
+
+VSCode, by default will only show messages at the "Info" level or above, but than can be changed by running the command
+"Developer Set Log Level..." -> "vscode-neovim" and selecting the desired log level.
 
 ### Run Unit Tests
 
