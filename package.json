@@ -295,18 +295,6 @@
                     "default": "",
                     "description": "Log file path"
                 },
-                "vscode-neovim.logLevel": {
-                    "type": "string",
-                    "default": "error",
-                    "enum": [
-                        "none",
-                        "error",
-                        "warn",
-                        "info",
-                        "debug"
-                    ],
-                    "markdownDescription": "Log Level. See also `vscode-neovim.logOutputToConsole`."
-                },
                 "vscode-neovim.logOutputToConsole": {
                     "type": "boolean",
                     "default": false,

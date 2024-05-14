@@ -4,7 +4,7 @@ import actions from "./actions";
 import { config } from "./config";
 import { EXT_ID, EXT_NAME } from "./constants";
 import { eventBus } from "./eventBus";
-import { LogLevel, createLogger, logger as rootLogger } from "./logger";
+import { createLogger, logger as rootLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { VSCodeContext, disposeAll } from "./utils";
 
@@ -31,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     disposables.push(outputChannel);
 
     config.init();
-    rootLogger.init(LogLevel[config.logLevel], config.logPath, config.outputToConsole, outputChannel);
+    rootLogger.init(vscode.env.logLevel, config.logPath, config.outputToConsole, outputChannel);
     eventBus.init();
     actions.init();
     context.subscriptions.push(
