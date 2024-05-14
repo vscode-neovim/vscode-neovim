@@ -164,12 +164,9 @@ local function setup()
         -- highlights of custom namespace
         setup_syntax_overrides()
       end
-      if ev.event == "Syntax" then
-        -- wait syntax things done
-        vim.defer_fn(setup_syntax_groups, 200)
-      else
-        setup_syntax_groups()
-      end
+      setup_syntax_groups()
+      -- wait syntax things done
+      vim.defer_fn(setup_syntax_groups, 200)
     end,
   })
   api.nvim_create_autocmd({ "VimEnter", "UIEnter" }, {
