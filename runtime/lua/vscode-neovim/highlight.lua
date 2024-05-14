@@ -148,6 +148,8 @@ end
 
 local function setup()
   local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
+  -- WinScrolled is perhaps not strictly necessary (or shouldn't be), but is useful in ensuring
+  -- we don't get syntax highlights in peek windows.
   api.nvim_create_autocmd({ "WinNew", "WinEnter", "WinScrolled", "BufNew", "BufEnter", "BufWinEnter" }, {
     group = group,
     callback = function()
