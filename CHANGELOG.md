@@ -1,5 +1,27 @@
 # Change Log
 
+## [1.11.4](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.3...v1.11.4) (2024-05-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* use VSCode log level instead of our own ([#1962](https://github.com/vscode-neovim/vscode-neovim/issues/1962))
+
+### chore
+
+* release 1.11.4 ([3137516](https://github.com/vscode-neovim/vscode-neovim/commit/3137516c221a40f83b67c703137aad84f76868a7))
+
+
+### Features
+
+* use VSCode log level instead of our own ([#1962](https://github.com/vscode-neovim/vscode-neovim/issues/1962)) ([5f1bc49](https://github.com/vscode-neovim/vscode-neovim/commit/5f1bc495c2499f97448752489e1e1b2f5d466b9a))
+
+
+### Bug Fixes
+
+* include time and scope in log file ([#1951](https://github.com/vscode-neovim/vscode-neovim/issues/1951)) ([cccdf99](https://github.com/vscode-neovim/vscode-neovim/commit/cccdf9936c03a091e39811d55876c4dfab0dc7fb))
+* setup highlights timely ([#1964](https://github.com/vscode-neovim/vscode-neovim/issues/1964)) ([6c220c7](https://github.com/vscode-neovim/vscode-neovim/commit/6c220c7dc3f036529492a1fef197a790a24c2077))
+
 ## [1.11.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.2...v1.11.3) (2024-05-09)
 
 
