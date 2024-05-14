@@ -1,5 +1,3 @@
-/* eslint-env es2019 */
-
 const eslint = require("@eslint/js");
 const tseslint = require("typescript-eslint");
 const eslintPluginPrettierRecommended = require("eslint-plugin-prettier/recommended");
@@ -13,6 +11,7 @@ module.exports = tseslint.config(
         plugins: {
             import: importsPlugin,
         },
+        ignores: ["eslint.config.cjs"],
         languageOptions: {
             ecmaVersion: 2019, // Allows for the parsing of modern ECMAScript features
             sourceType: "module", // Allows for the use of imports
