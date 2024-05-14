@@ -280,7 +280,7 @@ export class MainController implements vscode.Disposable {
     private onNeovimNotification = async (method: string, events: [string, ...any[]]) => {
         switch (method) {
             case "vscode-action": {
-                const action = events[0] as string;
+                const action = events[0];
                 let options = events[1] as VSCodeActionOptions | [];
                 if (Array.isArray(options)) options = {}; // empty lua table
 
@@ -353,7 +353,7 @@ export class MainController implements vscode.Disposable {
     ): Promise<void> => {
         switch (method) {
             case "vscode-action": {
-                const action = requestArgs[0] as string;
+                const action = requestArgs[0];
                 let options = requestArgs[1] as Omit<VSCodeActionOptions, "callback"> | [];
                 if (Array.isArray(options)) options = {}; // empty lua table
 

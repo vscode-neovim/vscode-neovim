@@ -8,7 +8,7 @@ const globals = require("globals");
 
 module.exports = tseslint.config(
     eslint.configs.recommended,
-    ...tseslint.configs.recommended,
+    ...tseslint.configs.recommendedTypeChecked,
     {
         plugins: {
             import: importsPlugin,
@@ -19,6 +19,10 @@ module.exports = tseslint.config(
             globals: {
                 ...globals.node,
                 ...globals.es6,
+            },
+            parserOptions: {
+                project: true,
+                tsconfigRootDir: __dirname,
             },
         },
         rules: {
@@ -65,6 +69,19 @@ module.exports = tseslint.config(
             "@typescript-eslint/explicit-function-return-type": "off",
             "@typescript-eslint/no-non-null-assertion": "off",
             "@typescript-eslint/no-explicit-any": "off",
+
+            "@typescript-eslint/no-misused-promises": "off",
+            "@typescript-eslint/no-unsafe-argument": "off",
+            "@typescript-eslint/no-unsafe-assignment": "off",
+            "@typescript-eslint/no-unsafe-call": "off",
+            "@typescript-eslint/no-unsafe-declaration-merging": "off",
+            "@typescript-eslint/no-unsafe-enum-comparison": "off",
+            "@typescript-eslint/no-unsafe-member-access": "off",
+            "@typescript-eslint/no-unsafe-return": "off",
+            "@typescript-eslint/restrict-template-expressions": "off", // too jumpy
+            "@typescript-eslint/no-floating-promises": "off", // jumpy; would be nice to turn on, but we have a lot of these
+            "@typescript-eslint/unbound-method": "off", // jumpy, given how vscode's API binds this. Would be good to remove.
+            "@typescript-eslint/require-await": "off", // TODO: remove
         },
     },
     {
