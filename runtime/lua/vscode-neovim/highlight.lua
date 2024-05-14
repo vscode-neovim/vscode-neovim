@@ -148,7 +148,7 @@ end
 
 local function setup()
   local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
-  api.nvim_create_autocmd({ "WinNew", "WinEnter", "BufNew", "BufEnter", "BufWinEnter" }, {
+  api.nvim_create_autocmd({ "WinNew", "WinEnter", "WinScrolled", "BufNew", "BufEnter", "BufWinEnter" }, {
     group = group,
     callback = function()
       setup_win_hl_ns()
