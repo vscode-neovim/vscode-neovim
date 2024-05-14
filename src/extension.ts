@@ -31,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     disposables.push(outputChannel);
 
     config.init();
-    rootLogger.init(vscode.env.logLevel, config.logPath, config.outputToConsole, outputChannel);
+    rootLogger.init(outputChannel.logLevel, config.logPath, config.outputToConsole, outputChannel);
     eventBus.init();
     actions.init();
     context.subscriptions.push(
