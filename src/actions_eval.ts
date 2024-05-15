@@ -26,12 +26,17 @@ export async function eval_for_client(code: string, args: any): Promise<any> {
 
     void args;
 
-    const value_type = typeof result;
-    if (value_type === "object") {
-        return String(result);
-    } else if (value_type === "function") {
-        return `[Function: ${result.name}]`;
-    } else {
-        return result;
+    if (typeof result === "object") {
+        let data: string;
+        try {
+            data = JSON.stringify(result);
+        } catch (_) {
+            throw new Error(`Failed to serialize result: ${result}`);
+        }
+        return JSON.parse(data);
     }
+
+    // When it's a function, neovim will throw an error.
+    // Returning a function doesn't make any sense, the user should know that.
+    return result;
 }
