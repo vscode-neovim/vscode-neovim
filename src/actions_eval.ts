@@ -22,21 +22,20 @@ void logger;
  * @returns the result of evaluating the code, serialized to send back to lua
  */
 export async function eval_for_client(code: string, args: any): Promise<any> {
-    const result = await eval("async () => {" + code + "}")();
-
     void args;
 
-    if (typeof result === "object") {
-        let data: string;
-        try {
-            data = JSON.stringify(result);
-        } catch (_) {
-            throw new Error(`Failed to serialize result: ${result}`);
-        }
-        return JSON.parse(data);
+    const result = await eval("async () => {" + code + "}")();
+
+    let data: string | undefined;
+    try {
+        data = JSON.stringify(result);
+    } catch (e) {
+        //
     }
 
-    // When it's a function, neovim will throw an error.
-    // Returning a function doesn't make any sense, the user should know that.
-    return result;
+    if (data === undefined) {
+        throw new Error(`Invalid data from eval data: ${result}`);
+    }
+
+    return JSON.parse(data);
 }
