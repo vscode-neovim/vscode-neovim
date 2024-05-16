@@ -30,12 +30,8 @@ export async function eval_for_client(code: string, args: any): Promise<any> {
     try {
         data = JSON.stringify(result);
     } catch (e) {
-        //
-    }
-
-    if (data === undefined) {
         throw new Error(`Invalid data from eval data: ${result}`);
     }
 
-    return JSON.parse(data);
+    return data ? JSON.parse(data) : data;
 }
