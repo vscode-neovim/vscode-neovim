@@ -1,16 +1,16 @@
+import { strict as assert } from "assert";
+import fs from "fs";
 import os from "os";
 import path from "path";
-import fs from "fs";
-import { strict as assert } from "assert";
 
 import { NeovimClient } from "neovim";
 
 import {
     attachTestNvimClient,
-    sendVSCodeCommand,
     closeAllActiveEditors,
     closeNvimClient,
     openTextDocument,
+    sendVSCodeCommand,
     wait,
 } from "./integrationUtils";
 
@@ -59,13 +59,12 @@ describe("Eval VSCode", () => {
         assert.equal(output, 123);
 
         output = await eval_from_nvim(client, "return {foo: 123};");
-        assert.equal(output, "[object Object]");
-
-        output = await eval_from_nvim(client, "return JSON.stringify({foo: 123});");
-        assert.equal(output, '{"foo":123}');
+        assert.deepEqual(output, { foo: 123 });
 
         output = await eval_from_nvim(client, "function foo() {}; return foo;");
-        assert.equal(output, "[Function: foo]");
+        assert.equal(output, null);
+
+        await assert.rejects(() => eval_from_nvim(client, "const a = {}; a.a = a; return a"));
 
         output = await eval_from_nvim(client, "function f(v) {return 100 + v;}; return f(2);");
         assert.equal(output, 102);
@@ -91,11 +90,8 @@ describe("Eval VSCode", () => {
 
         await openTextDocument(filePath);
 
-        let output = await eval_from_nvim(client, "return vscode.window");
-        assert.equal(output, "[object Object]");
-
-        output = await eval_from_nvim(client, "return vscode.window.showWarningMessage");
-        assert.equal(output, "[Function: showWarningMessage]");
+        let output = await eval_from_nvim(client, "return vscode.window.showWarningMessage");
+        assert.equal(output, null);
 
         output = await eval_from_nvim(client, "return vscode.window.activeTextEditor.document.fileName");
         assert.ok(pathsEqual(output, filePath), `${output} != ${filePath}`);

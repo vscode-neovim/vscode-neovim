@@ -22,16 +22,16 @@ void logger;
  * @returns the result of evaluating the code, serialized to send back to lua
  */
 export async function eval_for_client(code: string, args: any): Promise<any> {
-    const result = await eval("async () => {" + code + "}")();
-
     void args;
 
-    const value_type = typeof result;
-    if (value_type === "object") {
-        return String(result);
-    } else if (value_type === "function") {
-        return `[Function: ${result.name}]`;
-    } else {
-        return result;
+    const result = await eval("async () => {" + code + "}")();
+
+    let data: string | undefined;
+    try {
+        data = JSON.stringify(result);
+    } catch (e) {
+        throw new Error(`Invalid data from eval data: ${result}`);
     }
+
+    return data ? JSON.parse(data) : data;
 }
