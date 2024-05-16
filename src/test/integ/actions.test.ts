@@ -61,7 +61,10 @@ describe("Eval VSCode", () => {
         output = await eval_from_nvim(client, "return {foo: 123};");
         assert.deepEqual(output, { foo: 123 });
 
-        await assert.rejects(() => eval_from_nvim(client, "function foo() {}; return foo;"));
+        output = await eval_from_nvim(client, "function foo() {}; return foo;");
+        assert.equal(output, null);
+
+        await assert.rejects(() => eval_from_nvim(client, "const a = {}; a.a = a; return a"));
 
         output = await eval_from_nvim(client, "function f(v) {return 100 + v;}; return f(2);");
         assert.equal(output, 102);
@@ -87,9 +90,10 @@ describe("Eval VSCode", () => {
 
         await openTextDocument(filePath);
 
-        await assert.rejects(() => eval_from_nvim(client, "return vscode.window.showWarningMessage"));
+        let output = await eval_from_nvim(client, "return vscode.window.showWarningMessage");
+        assert.equal(output, null);
 
-        let output = await eval_from_nvim(client, "return vscode.window.activeTextEditor.document.fileName");
+        output = await eval_from_nvim(client, "return vscode.window.activeTextEditor.document.fileName");
         assert.ok(pathsEqual(output, filePath), `${output} != ${filePath}`);
 
         output = await eval_from_nvim(client, "return vscode.window.tabGroups.activeTabGroup.activeTab.isPinned");
