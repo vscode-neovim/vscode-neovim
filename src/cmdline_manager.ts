@@ -1,10 +1,11 @@
 import { Disposable } from "vscode";
 
-import { CommandLineController } from "./command_line";
+import { CommandLineController } from "./cmdline/cmdline_controller";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll, normalizeInputString } from "./utils";
+import { disposeAll } from "./utils";
+import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
 
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -16,6 +17,11 @@ export class CommandLineManager implements Disposable {
      * Commandline timeout
      */
     private cmdlineTimer?: NodeJS.Timeout;
+
+    /**
+     * The last text typed in the UI, used to calculate changes
+     */
+    private lastTypedText: string = "";
 
     private get client() {
         return this.main.client;
@@ -80,6 +86,8 @@ export class CommandLineManager implements Disposable {
     }
 
     private showCmd = (content: string, firstc: string, prompt: string): void => {
+        this.lastTypedText = content;
+
         if (!this.commandLine) {
             this.commandLine = new CommandLineController(
                 this.client,
@@ -99,12 +107,15 @@ export class CommandLineManager implements Disposable {
         this.cmdlineTimer = undefined;
     };
 
-    private onCmdChange = async (e: string, complete: boolean): Promise<void> => {
-        let keys = "<C-u>" + normalizeInputString(e);
+    private onCmdChange = async (text: string, complete: boolean): Promise<void> => {
+        let toType = calculateInputAfterTextChange(this.lastTypedText, text);
+        this.lastTypedText = text;
+
         if (complete) {
-            keys += "<C-e>";
+            toType += "<C-e>";
         }
-        await this.client.input(keys);
+
+        await this.client.input(toType);
     };
 
     private onCmdCancel = async (): Promise<void> => {
