@@ -111,6 +111,7 @@ export class CursorManager implements Disposable {
                     window.visibleTextEditors.forEach((e) => (e.options.cursorStyle = style));
                 },
             },
+            main.viewportManager.onCursorChanged((grid) => this.gridCursorUpdates.addForceUpdate(grid)),
         );
     }
 
