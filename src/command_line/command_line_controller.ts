@@ -1,9 +1,9 @@
 import { NeovimClient } from "neovim";
 import { Disposable, QuickPick, QuickPickItem, commands, window } from "vscode";
 
-import { GlyphChars } from "./constants";
-import { createLogger } from "./logger";
-import { VSCodeContext, disposeAll } from "./utils";
+import { GlyphChars } from "../constants";
+import { createLogger } from "../logger";
+import { VSCodeContext, disposeAll } from "../utils";
 
 const logger = createLogger("CmdLine");
 

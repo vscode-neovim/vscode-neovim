@@ -1,10 +1,11 @@
 import { Disposable } from "vscode";
 
-import { CommandLineController } from "./command_line";
+import { CommandLineController } from "./command_line/command_line_controller";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { diffLineText, disposeAll, normalizeInputString } from "./utils";
+import { disposeAll, normalizeInputString } from "./utils";
+import { diffLineText } from "./command_line/command_line_text";
 
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
