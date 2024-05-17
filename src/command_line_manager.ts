@@ -4,8 +4,8 @@ import { CommandLineController } from "./command_line/command_line_controller";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll, normalizeInputString } from "./utils";
-import { diffLineText } from "./command_line/command_line_text";
+import { disposeAll } from "./utils";
+import { calculateInputAfterTextChange } from "./command_line/command_line_text";
 
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -108,7 +108,7 @@ export class CommandLineManager implements Disposable {
     };
 
     private onCmdChange = async (text: string, complete: boolean): Promise<void> => {
-        let toType = this.calculateInputForCommandChange(text);
+        let toType = calculateInputAfterTextChange(this.lastTypedText, text);
         this.lastTypedText = text;
 
         if (complete) {
@@ -125,19 +125,4 @@ export class CommandLineManager implements Disposable {
     private onCmdAccept = (): void => {
         this.client.input("<CR>");
     };
-
-    private calculateInputForCommandChange(newText: string): string {
-        const change = diffLineText(this.lastTypedText, newText);
-        if (change.action === "added") {
-            return normalizeInputString(change.char);
-        } else if (change.action === "removed") {
-            return "<BS>";
-        } else if (change.action === "none") {
-            // If no change, type nothing.
-            return "";
-        } else {
-            // Rewrite the line if it's not a simple change
-            return `<C-u>${normalizeInputString(newText)}`;
-        }
-    }
 }

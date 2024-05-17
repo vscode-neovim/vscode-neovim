@@ -1,16 +1,33 @@
-export type TextChange = NoTextChange | TextEndChange | OtherTextChange;
+import { normalizeInputString } from "../utils/text";
 
-export interface TextEndChange {
+type TextChange = NoTextChange | TextEndChange | OtherTextChange;
+
+interface TextEndChange {
     action: "added" | "removed";
     char: string;
 }
 
-export interface NoTextChange {
+interface NoTextChange {
     action: "none";
 }
 
-export interface OtherTextChange {
+interface OtherTextChange {
     action: "other";
+}
+
+export function calculateInputAfterTextChange(oldText: string, newText: string): string {
+    const change = diffLineText(oldText, newText);
+    if (change.action === "added") {
+        return normalizeInputString(change.char);
+    } else if (change.action === "removed") {
+        return "<BS>";
+    } else if (change.action === "none") {
+        // If no change, type nothing.
+        return "";
+    } else {
+        // Rewrite the line if it's not a simple change
+        return `<C-u>${normalizeInputString(newText)}`;
+    }
 }
 
 export function diffLineText(oldLine: string, newLine: string): TextChange {

@@ -1,22 +1,37 @@
 import { strict as assert } from "assert";
 
-import { commandInputIsCompletable, diffLineText } from "../../../command_line/command_line_text";
+import { calculateInputAfterTextChange, commandInputIsCompletable } from "../../../command_line/command_line_text";
 
-describe("calculateTextChange", () => {
-    it("should return 'NoTextChange' when the text hasn't changed", () => {
-        assert.deepEqual(diffLineText("hello", "hello"), { action: "none" });
-    });
-
-    it("should return 'added' when a character has been typed", () => {
-        assert.deepEqual(diffLineText("worl", "world"), { action: "added", char: "d" });
-    });
-
-    it("should return 'removed' when a character has been deleted", () => {
-        assert.deepEqual(diffLineText("world", "worl"), { action: "removed", char: "d" });
-    });
-
-    it("should return 'other' if a change is performed somewhere in the middle of the text", () => {
-        assert.deepEqual(diffLineText("wrld", "wold"), { action: "other" });
+describe("calculateInputAfterTextChange", () => {
+    [
+        {
+            name: "should return an empty string if the text is unchanged",
+            oldText: "",
+            newText: "",
+            expected: "",
+        },
+        {
+            name: "should return the newly typed character if a single character is added to the end",
+            oldText: "%s/worl",
+            newText: "%s/world",
+            expected: "d",
+        },
+        {
+            name: "should return <BS> if a single character is removed from the end",
+            oldText: "%s/world",
+            newText: "%s/worl",
+            expected: "<BS>",
+        },
+        {
+            name: "should force the line to be rewritten if some other change happens",
+            oldText: "%s/hello",
+            newText: ".s/hello",
+            expected: "<C-u>.s/hello",
+        },
+    ].forEach(({ name, oldText, newText, expected }) => {
+        it(name, () => {
+            assert.equal(calculateInputAfterTextChange(oldText, newText), expected);
+        });
     });
 });
 
