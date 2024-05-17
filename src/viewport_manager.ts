@@ -1,5 +1,13 @@
 import { DebouncedFunc, debounce } from "lodash-es";
-import { Disposable, Position, TextEditor, TextEditorVisibleRangesChangeEvent, window, workspace } from "vscode";
+import {
+    Disposable,
+    EventEmitter,
+    Position,
+    TextEditor,
+    TextEditorVisibleRangesChangeEvent,
+    window,
+    workspace,
+} from "vscode";
 
 import actions from "./actions";
 import { config } from "./config";
@@ -30,12 +38,18 @@ export class ViewportManager implements Disposable {
 
     private syncViewportPromise?: ManualPromise;
 
+    // TODO: Temporary solution. Need to refactor cursor manager and viewport manager.
+    // Related issue: https://github.com/neovim/neovim/issues/28800
+    private cursorChanged = new EventEmitter<number>();
+    public onCursorChanged = this.cursorChanged.event;
+
     private get client() {
         return this.main.client;
     }
 
     public constructor(private main: MainController) {
         this.disposables.push(
+            this.cursorChanged,
             window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange),
             eventBus.on("redraw", this.handleRedraw, this),
             eventBus.on("window-scroll", ([winId, saveView]) => {
@@ -88,10 +102,14 @@ export class ViewportManager implements Disposable {
             case "win_viewport": {
                 for (const [grid, , topline, botline, curline, curcol] of args) {
                     const view = this.getViewport(grid);
+                    const { line, col } = view;
                     view.topline = topline;
                     view.botline = botline;
                     view.line = curline;
                     view.col = curcol;
+                    if (line !== curline || col !== curcol) {
+                        this.cursorChanged.fire(grid);
+                    }
                 }
                 // HACK: See #1575
                 // Don't await, as it may result in processing different events in the wrong order.
@@ -103,11 +121,15 @@ export class ViewportManager implements Disposable {
                             const grid = this.main.bufferManager.getGridIdForWinId(currWin);
                             if (!grid) return;
                             const view = this.getViewport(grid);
+                            const { line, col } = view;
                             view.line = currView.lnum - 1;
                             view.col = currView.col;
                             view.topline = currView.topline - 1;
                             view.leftcol = currView.leftcol;
                             view.skipcol = currView.skipcol;
+                            if (line !== view.line || col !== view.col) {
+                                this.cursorChanged.fire(grid);
+                            }
                         })
                         .finally(() => {
                             this.syncViewportPromise?.resolve();
