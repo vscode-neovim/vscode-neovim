@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { calculateInputAfterTextChange, commandInputIsCompletable } from "../../../command_line/command_line_text";
+import { calculateInputAfterTextChange, commandInputIsCompletable } from "../../../cmdline/cmdline_text";
 
 describe("calculateInputAfterTextChange", () => {
     [

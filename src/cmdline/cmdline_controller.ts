@@ -5,7 +5,7 @@ import { GlyphChars } from "../constants";
 import { createLogger } from "../logger";
 import { VSCodeContext, disposeAll } from "../utils";
 
-import { commandInputIsCompletable } from "./command_line_text";
+import { commandInputIsCompletable } from "./cmdline_text";
 
 const logger = createLogger("CmdLine");
 

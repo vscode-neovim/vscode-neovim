@@ -8,7 +8,7 @@ import { transports as loggerTransports, createLogger as winstonCreateLogger } f
 
 import actions from "./actions";
 import { BufferManager } from "./buffer_manager";
-import { CommandLineManager } from "./command_line_manager";
+import { CommandLineManager } from "./cmdline_manager";
 import { CommandsController } from "./commands_controller";
 import { config } from "./config";
 import { NVIM_MIN_VERSION } from "./constants";
