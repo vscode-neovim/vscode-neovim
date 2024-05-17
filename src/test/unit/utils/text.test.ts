@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { calculateEditorColFromVimScreenCol, expandTabs } from "../../../utils/text";
+import { calculateEditorColFromVimScreenCol, diffLineText, expandTabs } from "../../../utils/text";
 
 describe("expandTabs", () => {
     [
@@ -83,5 +83,23 @@ describe("calculateEditorColFromVimScreenCol", () => {
     it("returns zero columns if the column is zero", () => {
         const editorCol = calculateEditorColFromVimScreenCol("hello world", 0, 4);
         assert.equal(editorCol, 0);
+    });
+});
+
+describe("calculateTextChange", () => {
+    it("should return 'NoTextChange' when the text hasn't changed", () => {
+        assert.deepEqual(diffLineText("hello", "hello"), { action: "none" });
+    });
+
+    it("should return 'added' when a character has been typed", () => {
+        assert.deepEqual(diffLineText("worl", "world"), { action: "added", char: "d" });
+    });
+
+    it("should return 'removed' when a character has been deleted", () => {
+        assert.deepEqual(diffLineText("world", "worl"), { action: "removed", char: "d" });
+    });
+
+    it("should return 'other' if a change is performed somewhere in the middle of the text", () => {
+        assert.deepEqual(diffLineText("wrld", "wold"), { action: "other" });
     });
 });

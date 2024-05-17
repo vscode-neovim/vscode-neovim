@@ -4,7 +4,7 @@ import { CommandLineController } from "./command_line";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll, normalizeInputString } from "./utils";
+import { diffLineText, disposeAll, normalizeInputString } from "./utils";
 
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -16,6 +16,11 @@ export class CommandLineManager implements Disposable {
      * Commandline timeout
      */
     private cmdlineTimer?: NodeJS.Timeout;
+
+    /**
+     * The last text typed in the UI, used to calculate changes
+     */
+    private lastTypedText: string = "";
 
     private get client() {
         return this.main.client;
@@ -80,6 +85,8 @@ export class CommandLineManager implements Disposable {
     }
 
     private showCmd = (content: string, firstc: string, prompt: string): void => {
+        this.lastTypedText = content;
+
         if (!this.commandLine) {
             this.commandLine = new CommandLineController(
                 this.client,
@@ -99,12 +106,15 @@ export class CommandLineManager implements Disposable {
         this.cmdlineTimer = undefined;
     };
 
-    private onCmdChange = async (e: string, complete: boolean): Promise<void> => {
-        let keys = "<C-u>" + normalizeInputString(e);
+    private onCmdChange = async (text: string, complete: boolean): Promise<void> => {
+        let toType = this.calculateInputForCommandChange(text);
+        this.lastTypedText = text;
+
         if (complete) {
-            keys += "<C-e>";
+            toType += "<C-e>";
         }
-        await this.client.input(keys);
+
+        await this.client.input(toType);
     };
 
     private onCmdCancel = async (): Promise<void> => {
@@ -114,4 +124,19 @@ export class CommandLineManager implements Disposable {
     private onCmdAccept = (): void => {
         this.client.input("<CR>");
     };
+
+    private calculateInputForCommandChange(newText: string): string {
+        const change = diffLineText(this.lastTypedText, newText);
+        if (change.action === "added") {
+            return normalizeInputString(change.char);
+        } else if (change.action === "removed") {
+            return "<BS>";
+        } else if (change.action === "none") {
+            // If no change, type nothing.
+            return "";
+        } else {
+            // Rewrite the line if it's not a simple change
+            return `<C-u>${normalizeInputString(newText)}`;
+        }
+    }
 }
