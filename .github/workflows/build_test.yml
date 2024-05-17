@@ -35,7 +35,7 @@ jobs:
             - name: Webpack
               run: npm run webpack
             - name: Test
-              uses: GabrielBB/xvfb-action@v1
+              uses: coactions/setup-xvfb@v1
               env:
                   NEOVIM_PATH: ${{ steps.vim.outputs.executable }}
                   NEOVIM_DEBUG: 1
