@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { diffLineText } from "../../../command_line/command_line_text";
+import { commandInputIsCompletable, diffLineText } from "../../../command_line/command_line_text";
 
 describe("calculateTextChange", () => {
     it("should return 'NoTextChange' when the text hasn't changed", () => {
@@ -17,5 +17,30 @@ describe("calculateTextChange", () => {
 
     it("should return 'other' if a change is performed somewhere in the middle of the text", () => {
         assert.deepEqual(diffLineText("wrld", "wold"), { action: "other" });
+    });
+});
+
+describe("commandInputIsCompletable", () => {
+    [
+        "substitute/blah",
+        "substitute/",
+        "s/blah",
+        "s/",
+        "g/blah",
+        "global/",
+        "v/",
+        "v/blah",
+        "vglobal/",
+        "vglobal/blah",
+    ].forEach((input) => {
+        it(`should not produce completions for user-input commands: '${input}'`, () => {
+            assert.equal(commandInputIsCompletable(input), false);
+        });
+    });
+
+    ["p", "Ins", "nno"].forEach((input) => {
+        it(`should produce completions for normal commands: '${input}'`, () => {
+            assert.equal(commandInputIsCompletable(input), true);
+        });
     });
 });

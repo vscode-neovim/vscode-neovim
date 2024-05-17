@@ -5,6 +5,8 @@ import { GlyphChars } from "../constants";
 import { createLogger } from "../logger";
 import { VSCodeContext, disposeAll } from "../utils";
 
+import { commandInputIsCompletable } from "./command_line_text";
+
 const logger = createLogger("CmdLine");
 
 export interface CommandLineCallbacks {
@@ -135,16 +137,7 @@ export class CommandLineController implements Disposable {
             this.input.items = [];
             this.completionItems = [];
         }
-        const useCompletion =
-            mode === ":" &&
-            e.charAt(0) !== "?" &&
-            e.charAt(0) !== "/" &&
-            !e.includes("s/") &&
-            !e.includes("substitute/") &&
-            !e.includes("g/") &&
-            !e.includes("global/") &&
-            !e.includes("v/") &&
-            !e.includes("vglobal/");
+        const useCompletion = mode === ":" && commandInputIsCompletable(e);
         if (!useCompletion) {
             this.cancelCompletions();
         }
