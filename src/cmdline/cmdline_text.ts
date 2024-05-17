@@ -17,16 +17,17 @@ interface OtherTextChange {
 
 export function calculateInputAfterTextChange(oldText: string, newText: string): string {
     const change = diffLineText(oldText, newText);
-    if (change.action === "added") {
-        return normalizeInputString(change.char);
-    } else if (change.action === "removed") {
-        return "<BS>";
-    } else if (change.action === "none") {
-        // If no change, type nothing.
-        return "";
-    } else {
-        // Rewrite the line if it's not a simple change
-        return `<C-u>${normalizeInputString(newText)}`;
+    switch (change.action) {
+        case "added":
+            return normalizeInputString(change.char);
+        case "removed":
+            return "<BS>";
+        case "none":
+            // If no change, type nothing.
+            return "";
+        case "other":
+            // Rewrite the line if it's not a simple change
+            return `<C-u>${normalizeInputString(newText)}`;
     }
 }
 
