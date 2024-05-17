@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.11.5](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.4...v1.11.5) (2024-05-17)
+
+
+### Bug Fixes
+
+* **eval:** try serializing the object result ([#1966](https://github.com/vscode-neovim/vscode-neovim/issues/1966)) ([b387d29](https://github.com/vscode-neovim/vscode-neovim/commit/b387d29568ca7976851fa7a1b485e204b7d34b08))
+* **incsearch:** win cursor not properly revealed ([#1971](https://github.com/vscode-neovim/vscode-neovim/issues/1971)) ([116abdd](https://github.com/vscode-neovim/vscode-neovim/commit/116abddcb70a2daccf6fd9e29b51b08724c3141c))
+* reduce text jumpiness when using the substitute command ([#1973](https://github.com/vscode-neovim/vscode-neovim/issues/1973)) ([d6e44dd](https://github.com/vscode-neovim/vscode-neovim/commit/d6e44dda9d46463879ae5733ee157dbae3c90a23))
+
 ## [1.11.4](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.3...v1.11.4) (2024-05-14)
 
 
