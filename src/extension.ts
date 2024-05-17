@@ -61,7 +61,7 @@ export function deactivate(isRestart = false) {
     if (!isRestart) disposeAll(disposables);
 }
 
-async function verifyExperimentalAffinity(): Promise<void> {
+function verifyExperimentalAffinity(): void {
     const extensionsConfiguration = vscode.workspace.getConfiguration("extensions");
     const affinityConfiguration = extensionsConfiguration.inspect<{ [key: string]: [number] }>("experimental.affinity");
 

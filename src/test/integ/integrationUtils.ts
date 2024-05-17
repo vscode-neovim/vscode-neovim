@@ -49,13 +49,12 @@ export async function attachTestNvimClient(): Promise<NeovimClient> {
     const client = attach({ writer: conn, reader: conn });
     // wait for connection
     await client.channelId;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (client as any).testConn = conn;
     return client;
 }
 
 export async function closeNvimClient(client: NeovimClient): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conn: net.Socket = (client as any).testConn;
 
     // Try to gracefully close the socket first, this prevents noisy errors if it works.

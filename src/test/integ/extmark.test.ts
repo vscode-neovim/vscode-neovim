@@ -26,7 +26,7 @@ describe("Test ext mark", () => {
         await closeNvimClient(client);
     });
 
-    afterEach(async () => {
+    afterEach(() => {
         restoreWindow();
     });
 

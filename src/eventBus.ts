@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import neovim from "neovim";
 import { Disposable, EventEmitter } from "vscode";
 

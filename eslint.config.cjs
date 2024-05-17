@@ -1,5 +1,3 @@
-/* eslint-env es2019 */
-
 const eslint = require("@eslint/js");
 const tseslint = require("typescript-eslint");
 const eslintPluginPrettierRecommended = require("eslint-plugin-prettier/recommended");
@@ -8,11 +6,12 @@ const globals = require("globals");
 
 module.exports = tseslint.config(
     eslint.configs.recommended,
-    ...tseslint.configs.recommended,
+    ...tseslint.configs.recommendedTypeChecked,
     {
         plugins: {
             import: importsPlugin,
         },
+        ignores: ["eslint.config.cjs"],
         languageOptions: {
             ecmaVersion: 2019, // Allows for the parsing of modern ECMAScript features
             sourceType: "module", // Allows for the use of imports
@@ -20,6 +19,13 @@ module.exports = tseslint.config(
                 ...globals.node,
                 ...globals.es6,
             },
+            parserOptions: {
+                project: true,
+                tsconfigRootDir: __dirname,
+            },
+        },
+        linterOptions: {
+            reportUnusedDisableDirectives: "error",
         },
         rules: {
             // Place to specify ESLint rules. Can be used to overwrite rules specified from the extended configs
@@ -65,6 +71,16 @@ module.exports = tseslint.config(
             "@typescript-eslint/explicit-function-return-type": "off",
             "@typescript-eslint/no-non-null-assertion": "off",
             "@typescript-eslint/no-explicit-any": "off",
+            "@typescript-eslint/restrict-template-expressions": "off", // too jumpy
+            "@typescript-eslint/no-misused-promises": "off", // too jumpy
+            "@typescript-eslint/no-floating-promises": "off", // jumpy; would be nice to turn on, but we have a lot of these
+            "@typescript-eslint/unbound-method": "off", // jumpy, given how vscode's API binds this. Would be good to remove.
+
+            // This codebase interacts with `any` a lot, so for now, all no-unsafe-* we violate are currently disabled
+            "@typescript-eslint/no-unsafe-argument": "off",
+            "@typescript-eslint/no-unsafe-assignment": "off",
+            "@typescript-eslint/no-unsafe-member-access": "off",
+            "@typescript-eslint/no-unsafe-return": "off",
         },
     },
     {
