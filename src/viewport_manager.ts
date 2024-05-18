@@ -53,11 +53,15 @@ export class ViewportManager implements Disposable {
                     return;
                 }
                 const view = this.getViewport(gridId);
+                const { line: oldLine, col: oldCol } = view;
                 view.line = saveView.lnum - 1;
                 view.col = saveView.col;
                 view.topline = saveView.topline;
                 view.leftcol = saveView.leftcol;
                 view.skipcol = saveView.skipcol;
+                if (oldLine !== view.line || oldCol !== view.col) {
+                    this.cursorChanged.fire(gridId);
+                }
             }),
         );
     }
