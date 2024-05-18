@@ -65,7 +65,7 @@ local function vscode_ui_select(items, opts, on_choice)
   }
 
   -- open the select dialog
-  vscode.eval_async("return JSON.stringify(await vscode.window.showQuickPick(args.items, args.opts))", {
+  vscode.eval_async("return await vscode.window.showQuickPick(args.items, args.opts)", {
     args = {
       items = vscode_items,
       opts = vscode_opts,
@@ -74,7 +74,6 @@ local function vscode_ui_select(items, opts, on_choice)
       if err or res == vim.NIL then -- vim.NIL if cancelled
         on_choice(nil, nil)
       else
-        res = vim.json.decode(res)
         on_choice(items[res.idx], res.idx)
       end
     end,
