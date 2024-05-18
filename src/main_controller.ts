@@ -2,7 +2,7 @@ import { ChildProcess, spawn } from "child_process";
 import path from "path";
 
 import { attach, findNvim, NeovimClient } from "neovim";
-import vscode, { Disposable, Range, window, type ExtensionContext } from "vscode";
+import vscode, { Disposable, Range, window, workspace, type ExtensionContext } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
@@ -38,10 +38,15 @@ interface VSCodeActionOptions {
 }
 
 export class MainController implements vscode.Disposable {
+    private disposables: vscode.Disposable[] = [];
+
     private nvimProc!: ChildProcess;
     public client!: NeovimClient;
 
-    private disposables: vscode.Disposable[] = [];
+    /**
+     * Clickable status bar item
+     */
+    private status!: vscode.StatusBarItem;
 
     /**
      * Neovim API states that multiple redraw batches could be sent following flush() after last batch
@@ -61,7 +66,23 @@ export class MainController implements vscode.Disposable {
     public messagesManager!: MessagesManager;
     public viewportManager!: ViewportManager;
 
-    public constructor(private extContext: ExtensionContext) {}
+    public constructor(private extContext: ExtensionContext) {
+        // #region Setup status bar item
+        const commandId = "vscode-neovim.selectNeovim";
+        this.status = vscode.window.createStatusBarItem(
+            "vscode-neovim-click-status",
+            vscode.StatusBarAlignment.Right,
+            100,
+        );
+        this.status.text = "Nvim";
+        this.status.command = commandId;
+        this.status.show();
+        this.disposables.push(
+            this.status,
+            vscode.commands.registerCommand(commandId, () => this.selectNeovim()),
+        );
+        // #endregion
+    }
 
     public async init(outputChannel: vscode.LogOutputChannel): Promise<void> {
         const [cmd, args] = this.buildSpawnArgs();
@@ -185,18 +206,8 @@ export class MainController implements vscode.Disposable {
             }
         }
 
-        let neovimPath = config.neovimPath;
-        // Only try to find nvim if the path is the default one
-        // And if we are not using WSL
-        if (neovimPath === "nvim" && !config.useWsl) {
-            const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
-            logger.debug("Find nvim result: ", nvimResult);
-            const matched = nvimResult.matches.find((match) => !match.error);
-            if (!matched) {
-                throw new Error("Unable to find a suitable neovim executable. Please check your neovim installation.");
-            }
-            neovimPath = matched.path;
-        }
+        const neovimPath = this.getNeovimPath();
+        this.status.tooltip = neovimPath;
 
         args.push(
             neovimPath,
@@ -240,6 +251,54 @@ export class MainController implements vscode.Disposable {
             }
         }
         return [args[0], args.slice(1)];
+    }
+
+    private getNeovimPath(): string {
+        let neovimPath = config.neovimPath;
+        // Only try to find nvim if the path is the default one
+        // And if we are not using WSL
+        if (neovimPath === "nvim" && !config.useWsl) {
+            const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
+            logger.debug("Find nvim result: ", nvimResult);
+            const matched = nvimResult.matches.find((match) => !match.error);
+            if (!matched) {
+                throw new Error("Unable to find a suitable neovim executable. Please check your neovim installation.");
+            }
+            neovimPath = matched.path;
+        }
+        return neovimPath;
+    }
+
+    private selectNeovim() {
+        const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
+        const matches = nvimResult.matches.filter((match) => !match.error);
+        const picker = window.createQuickPick();
+        picker.title = "Select Neovim";
+        picker.matchOnDescription = true;
+        if (typeof this.status.tooltip === "string") {
+            picker.placeholder = "Currently using: " + this.status.tooltip;
+        }
+        picker.items = [
+            {
+                label: "Use default",
+                description: config.neovimPath,
+            },
+            ...matches.map((match) => ({
+                label: match.nvimVersion!,
+                description: match.path,
+            })),
+        ];
+        picker.onDidHide(() => picker.dispose());
+        picker.onDidAccept(async () => {
+            const activeItem = picker.selectedItems[0];
+            if (activeItem.label === "Use default") {
+                await workspace.fs.createDirectory(this.extContext.globalStorageUri);
+                //
+            }
+            window.showInformationMessage("Selected: " + picker.selectedItems[0].description);
+            picker.hide();
+        });
+        picker.show();
     }
 
     private async runAction(action: string, options: Omit<VSCodeActionOptions, "callback">): Promise<any> {
@@ -401,6 +460,7 @@ export class MainController implements vscode.Disposable {
     }
 
     dispose() {
+        // word
         disposeAll(this.disposables);
     }
 }

@@ -429,6 +429,10 @@
                 "title": "Neovim: Execute lua code"
             },
             {
+                "command": "vscode-neovim.selectNeovim",
+                "title": "Neovim: Select Neovim Executable"
+            },
+            {
                 "command": "vscode-neovim.send",
                 "title": "Neovim: Send key to neovim, syncing if in insert mode"
             },
