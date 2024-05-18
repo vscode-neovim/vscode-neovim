@@ -11,6 +11,7 @@ import {
     openTextDocument,
     sendNeovimKeys,
     sendVSCodeKeys,
+    wait,
 } from "./integrationUtils";
 
 describe("Test incsearch", () => {
@@ -35,7 +36,7 @@ describe("Test incsearch", () => {
     });
 
     it("Cursor is ok for incsearch even if register / is not empty", async function () {
-        this.retries(1);
+        this.retries(0);
         await openTextDocument(path.join(__dirname, "../../../test_fixtures/incsearch-scroll.ts"));
 
         await sendVSCodeKeys("gg");
@@ -44,6 +45,8 @@ describe("Test incsearch", () => {
         await sendNeovimKeys(client, "<cr>");
         await assertContent({ cursor: [115, 16] }, client);
         await sendNeovimKeys(client, "/h2");
+        await client.command("mode");
+        await wait(500);
         await assertContent({ cursor: [170, 21] }, client);
     });
 });
