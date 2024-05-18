@@ -118,9 +118,9 @@ type EventsMapping = {
     ["move-cursor"]: ["top" | "middle" | "bottom"];
     scroll: ["page" | "halfPage", "up" | "down"];
     ["scroll-line"]: ["up" | "down"];
-    ["window-scroll"]: [
-        number,
+    ["viewport-changed"]: [
         {
+            winid: number;
             lnum: number;
             col: number;
             coladd: number;

@@ -105,7 +105,6 @@ augroup VscodeGeneral
     autocmd InsertEnter * call <SID>onInsertEnter()
     " Trigger filetype detection
     autocmd BufAdd * do BufRead
-    autocmd WinScrolled * call VSCodeExtensionNotify('window-scroll', win_getid(), winsaveview())
     autocmd VimEnter,ModeChanged * call VSCodeExtensionNotify('mode-changed', mode())
     autocmd WinEnter * call VSCodeExtensionNotify('window-changed', win_getid())
     " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.

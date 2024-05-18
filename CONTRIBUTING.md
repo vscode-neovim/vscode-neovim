@@ -225,8 +225,8 @@ HighlightManager listens to the `ext_linegrid` API and renders highlights using 
 ### ViewportManager
 
 ViewportManager is responsible for syncing the viewport (editor window, scroll position) between vscode and nvim. It
-listens to the `win_viewport` event, and supplements it with the custom `window-scroll` event triggered by the
-`WinScrolled` autocommand. It also keeps track of the cursor position more reliably than `grid_cursor_goto`.
+listens to the `win_viewport` event, and supplements it with the custom `viewport-changed` event. It also keeps track of
+the cursor position more reliably than `grid_cursor_goto`.
 
 ### CursorManager
 
