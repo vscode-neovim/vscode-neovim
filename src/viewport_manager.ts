@@ -52,15 +52,21 @@ export class ViewportManager implements Disposable {
             this.cursorChanged,
             window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange),
             eventBus.on("redraw", this.handleRedraw, this),
-            eventBus.on("viewport-changed", ([ctx]) => this.handleViewportChanged(ctx)),
+            eventBus.on("viewport-changed", ([view]) => this.handleViewportChanged(view)),
         );
     }
 
-    private handleViewportChanged(ctx: EventBusData<"viewport-changed">[0]) {
+    private handleViewportChanged({
+        winid,
+        leftcol,
+        skipcol,
+        lnum,
+        col,
+        topline,
+    }: EventBusData<"viewport-changed">[0]) {
         this.viewportChangedPromise?.resolve();
         this.viewportChangedPromise = new ManualPromise();
 
-        const { winid, leftcol, skipcol, lnum, col, topline } = ctx;
         const gridId = this.main.bufferManager.getGridIdForWinId(winid);
         if (!gridId) {
             logger.warn(`Unable to update scrolled view. No grid for winId: ${winid}`);
@@ -69,7 +75,7 @@ export class ViewportManager implements Disposable {
 
         const view = this.getViewport(gridId);
         const { line: oldLine, col: oldCol } = view;
-        view.line = lnum - 1;
+        view.line = lnum;
         view.col = col;
         view.topline = topline;
         view.leftcol = leftcol;

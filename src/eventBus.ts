@@ -120,6 +120,7 @@ type EventsMapping = {
     ["scroll-line"]: ["up" | "down"];
     ["viewport-changed"]: [
         {
+            // All positions are 0-based
             winid: number;
             lnum: number;
             col: number;
