@@ -4,11 +4,13 @@ local default_optons = require("vscode-neovim.default-options")
 local cursor = require("vscode-neovim.cursor")
 local highlight = require("vscode-neovim.highlight")
 local sync_options = require("vscode-neovim.sync-options")
+local viewport = require("vscode-neovim.viewport")
 
 default_optons.setup()
 cursor.setup()
 highlight.setup()
 sync_options.setup()
+viewport.setup()
 
 local vscode = {
   -- actions
