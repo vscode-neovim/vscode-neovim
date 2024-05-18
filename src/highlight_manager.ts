@@ -34,8 +34,6 @@ export class HighlightManager implements Disposable {
         // this function returns (and a flush event could begin)
         this.redrawWaitGroup.add();
 
-        await this.main.viewportManager.isSyncDone;
-
         try {
             switch (name) {
                 case "hl_attr_define": {

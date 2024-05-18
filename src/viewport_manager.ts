@@ -14,7 +14,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, disposeAll } from "./utils";
+import { disposeAll } from "./utils";
 
 const logger = createLogger("ViewportManager");
 
@@ -36,16 +36,10 @@ export class ViewportManager implements Disposable {
      */
     private gridViewport: Map<number, Viewport> = new Map();
 
-    private syncViewportPromise?: ManualPromise;
-
     // TODO: Temporary solution. Need to refactor cursor manager and viewport manager.
     // Related issue: https://github.com/neovim/neovim/issues/28800
     private cursorChanged = new EventEmitter<number>();
     public onCursorChanged = this.cursorChanged.event;
-
-    private get client() {
-        return this.main.client;
-    }
 
     public constructor(private main: MainController) {
         this.disposables.push(
@@ -63,10 +57,6 @@ export class ViewportManager implements Disposable {
                 view.skipcol = saveView.skipcol;
             }),
         );
-    }
-
-    public get isSyncDone(): Promise<void> {
-        return Promise.resolve(this.syncViewportPromise?.promise);
     }
 
     /**
@@ -110,31 +100,6 @@ export class ViewportManager implements Disposable {
                     if (line !== curline || col !== curcol) {
                         this.cursorChanged.fire(grid);
                     }
-                }
-                // HACK: See #1575
-                // Don't await, as it may result in processing different events in the wrong order.
-                if (this.main.modeManager.isCmdlineMode && !this.syncViewportPromise) {
-                    this.syncViewportPromise = new ManualPromise();
-                    const _lua = "return {vim.api.nvim_get_current_win(), vim.fn.winsaveview()}";
-                    (this.client.lua(_lua) as Promise<[number, any]>)
-                        .then(([currWin, currView]) => {
-                            const grid = this.main.bufferManager.getGridIdForWinId(currWin);
-                            if (!grid) return;
-                            const view = this.getViewport(grid);
-                            const { line, col } = view;
-                            view.line = currView.lnum - 1;
-                            view.col = currView.col;
-                            view.topline = currView.topline - 1;
-                            view.leftcol = currView.leftcol;
-                            view.skipcol = currView.skipcol;
-                            if (line !== view.line || col !== view.col) {
-                                this.cursorChanged.fire(grid);
-                            }
-                        })
-                        .finally(() => {
-                            this.syncViewportPromise?.resolve();
-                            this.syncViewportPromise = undefined;
-                        });
                 }
                 break;
             }
