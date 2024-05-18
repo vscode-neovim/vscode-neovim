@@ -14,7 +14,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { ManualPromise, disposeAll } from "./utils";
 
 const logger = createLogger("ViewportManager");
 
@@ -31,6 +31,12 @@ export class Viewport {
 export class ViewportManager implements Disposable {
     private disposables: Disposable[] = [];
 
+    private viewportChangedPromise?: ManualPromise;
+
+    public get isSyncDone(): Promise<unknown> {
+        return Promise.resolve(this.viewportChangedPromise?.promise);
+    }
+
     /**
      * Current grid viewport, indexed by grid
      */
@@ -46,24 +52,35 @@ export class ViewportManager implements Disposable {
             this.cursorChanged,
             window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange),
             eventBus.on("redraw", this.handleRedraw, this),
-            eventBus.on("viewport-changed", ([{ winid, leftcol, skipcol, lnum, col, topline }]) => {
-                const gridId = this.main.bufferManager.getGridIdForWinId(winid);
-                if (!gridId) {
-                    logger.warn(`Unable to update scrolled view. No grid for winId: ${winid}`);
-                    return;
-                }
-                const view = this.getViewport(gridId);
-                const { line: oldLine, col: oldCol } = view;
-                view.line = lnum - 1;
-                view.col = col;
-                view.topline = topline;
-                view.leftcol = leftcol;
-                view.skipcol = skipcol;
-                if (oldLine !== view.line || oldCol !== view.col) {
-                    this.cursorChanged.fire(gridId);
-                }
-            }),
+            eventBus.on("viewport-changed", ([ctx]) => this.handleViewportChanged(ctx)),
         );
+    }
+
+    private handleViewportChanged(ctx: EventBusData<"viewport-changed">[0]) {
+        this.viewportChangedPromise?.resolve();
+        this.viewportChangedPromise = new ManualPromise();
+
+        const { winid, leftcol, skipcol, lnum, col, topline } = ctx;
+        const gridId = this.main.bufferManager.getGridIdForWinId(winid);
+        if (!gridId) {
+            logger.warn(`Unable to update scrolled view. No grid for winId: ${winid}`);
+            return;
+        }
+
+        const view = this.getViewport(gridId);
+        const { line: oldLine, col: oldCol } = view;
+        view.line = lnum - 1;
+        view.col = col;
+        view.topline = topline;
+        view.leftcol = leftcol;
+        view.skipcol = skipcol;
+
+        if (oldLine !== view.line || oldCol !== view.col) {
+            this.cursorChanged.fire(gridId);
+        }
+
+        this.viewportChangedPromise.resolve();
+        this.viewportChangedPromise = undefined;
     }
 
     /**
