@@ -53,6 +53,9 @@ export class ViewportManager implements Disposable {
                     return;
                 }
                 const view = this.getViewport(gridId);
+                view.line = saveView.lnum - 1;
+                view.col = saveView.col;
+                view.topline = saveView.topline;
                 view.leftcol = saveView.leftcol;
                 view.skipcol = saveView.skipcol;
             }),
