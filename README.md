@@ -550,9 +550,8 @@ Tips:
 -   Make sure to `await` on asynchronous functions when accessing the API.
 -   Use the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim (logging level
     controlled with the `vscode-neovim.logLevel` setting).
--   Plain data such as strings, integers etc can be returned directly, but even simple objects such as `{foo: 123}` are
-    converted to strings and returned as `"[object Object]"`. `JSON.stringify()` can be used to serialize plain objects
-    to JSON that can be deserialized with `vim.json.decode()` in lua.
+-   JSON serializable values (primitives and simple objects) can be returned and will be automatically serialized and
+    deserialized to an equivalent lua value. Returned values that are not JSON serializable will instead become `null`.
 -   `globalThis['some_name'] = ...` can be used to persist values between calls.
 
 Parameters:
@@ -566,8 +565,7 @@ Parameters:
 
 Returns:
 
--   Return the result of executing the provided code. The result is converted to a string if the value is not
-    representable in lua (i.e. an object or function).
+-   The result of executing the provided code.
 
 Examples:
 
