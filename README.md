@@ -550,8 +550,8 @@ Tips:
 -   Make sure to `await` on asynchronous functions when accessing the API.
 -   Use the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim (logging level
     controlled with the `vscode-neovim.logLevel` setting).
--   JSON serializable values (primitives and simple objects) can be returned and will be automatically serialized and
-    deserialized to an equivalent lua value. Returned values that are not JSON serializable will instead become `null`.
+-   JSON serializable values (primitives and simple objects) can be returned and will be automatically serialized then
+    deserialized to an equivalent lua value. If the return value is not JSON serializable then an error will be raised.
 -   `globalThis['some_name'] = ...` can be used to persist values between calls.
 
 Parameters:

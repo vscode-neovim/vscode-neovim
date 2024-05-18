@@ -64,7 +64,13 @@ describe("Eval VSCode", () => {
         output = await eval_from_nvim(client, "function foo() {}; return foo;");
         assert.equal(output, null);
 
-        await assert.rejects(() => eval_from_nvim(client, "const a = {}; a.a = a; return a"));
+        output = await eval_from_nvim(client, "function foo() {}; return {a: foo, b: 123};");
+        assert.deepEqual(output, { b: 123 });
+
+        await assert.rejects(
+            () => eval_from_nvim(client, "const a = {}; a.a = a; return a"),
+            /Error executing lua Return value of eval not JSON serializable: TypeError: Converting circular structure to JSON.*/,
+        );
 
         output = await eval_from_nvim(client, "function f(v) {return 100 + v;}; return f(2);");
         assert.equal(output, 102);
