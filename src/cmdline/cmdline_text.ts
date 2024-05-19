@@ -36,6 +36,7 @@ export function commandInputIsCompletable(command: string): boolean {
         command.charAt(0) !== "?" &&
         command.charAt(0) !== "/" &&
         !command.includes("s/") &&
+        !command.includes("su/") &&
         !command.includes("substitute/") &&
         !command.includes("g/") &&
         !command.includes("global/") &&

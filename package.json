@@ -114,7 +114,7 @@
                 },
                 "vscode-neovim.completionDelay": {
                     "type": "number",
-                    "default": 1500,
+                    "default": 1000,
                     "title": "Completion Delay",
                     "description": "The delay in ms until the wildmenu completions are shown. This is to not bother you when you write :w or :noh."
                 },
