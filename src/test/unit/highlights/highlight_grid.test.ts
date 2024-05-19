@@ -650,6 +650,26 @@ describe("processHighlightCellsEvent", () => {
                 },
             ],
         },
+        {
+            testName: "calculateEditorColFromVimScreenCol eolCol >= 0",
+            events: [
+                {
+                    row: 2,
+                    vimCol: 3,
+                    validCells: [{ hlId: 2, text: "!" }],
+                    lineText: "\t你",
+                    tabSize: 2,
+                },
+            ],
+            expectedRanges: [
+                {
+                    textType: "virtual" as const,
+                    highlights: [{ hlId: 2, text: "!", virtText: "!" }],
+                    line: 12,
+                    col: 1,
+                },
+            ],
+        },
     ].forEach(
         ({
             testName,
