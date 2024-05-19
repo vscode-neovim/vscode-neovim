@@ -331,16 +331,16 @@
                     },
                     "default": {
                         "IncSearch": {
-                            "backgroundColor": "theme.editor.findMatchBackground",
-                            "borderColor": "theme.editor.findMatchBorder"
+                            "backgroundColor": "theme.editor.findMatchBackground"
                         },
                         "CurSearch": {
-                            "backgroundColor": "theme.editor.findMatchBackground",
-                            "borderColor": "theme.editor.findMatchBorder"
+                            "backgroundColor": "theme.editor.findMatchBackground"
                         },
                         "Search": {
-                            "backgroundColor": "theme.editor.findMatchHighlightBackground",
-                            "borderColor": "theme.editor.findMatchHighlightBorder"
+                            "backgroundColor": "theme.editor.findMatchHighlightBackground"
+                        },
+                        "Substitute": {
+                            "backgroundColor": "theme.editor.findMatchBackground"
                         }
                     }
                 },

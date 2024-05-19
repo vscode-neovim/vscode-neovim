@@ -55,7 +55,6 @@ local function setup_globals()
     Visual       = {},
     VisualNC     = {},
     VisualNOS    = {},
-    Substitute   = {},
     Whitespace   = {},
     LineNr       = {},
     LineNrAbove  = {},
