@@ -31,7 +31,7 @@ export async function eval_for_client(code: string, args: any): Promise<any> {
     try {
         data = JSON.stringify(result);
     } catch (e) {
-        throw new Error(`Invalid data from eval data: ${result}`);
+        throw new Error(`Return value of eval not JSON serializable: ${e}`);
     }
 
     return data ? JSON.parse(data) : data;
