@@ -24,6 +24,7 @@ export function calculateEditorColFromVimScreenCol(line: string, screenCol: numb
     if (screenCol === 0 || !line) {
         return 0;
     }
+
     let currentCharIdx = 0;
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
