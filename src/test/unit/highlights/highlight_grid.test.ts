@@ -630,6 +630,46 @@ describe("processHighlightCellsEvent", () => {
                 },
             ],
         },
+        {
+            testName: "virtual highlights can exceed line length",
+            events: [
+                {
+                    row: 2,
+                    vimCol: 6,
+                    validCells: [{ hlId: 2, text: "!" }],
+                    lineText: "hello",
+                    tabSize: 4,
+                },
+            ],
+            expectedRanges: [
+                {
+                    textType: "virtual" as const,
+                    highlights: [{ hlId: 2, text: "!", virtText: "!" }],
+                    line: 12,
+                    col: 6,
+                },
+            ],
+        },
+        {
+            testName: "calculateEditorColFromVimScreenCol eolCol >= 0",
+            events: [
+                {
+                    row: 2,
+                    vimCol: 3,
+                    validCells: [{ hlId: 2, text: "!" }],
+                    lineText: "\t你",
+                    tabSize: 2,
+                },
+            ],
+            expectedRanges: [
+                {
+                    textType: "virtual" as const,
+                    highlights: [{ hlId: 2, text: "!", virtText: "!" }],
+                    line: 12,
+                    col: 1,
+                },
+            ],
+        },
     ].forEach(
         ({
             testName,
