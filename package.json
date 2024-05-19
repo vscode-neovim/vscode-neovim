@@ -338,9 +338,6 @@
                         },
                         "Search": {
                             "backgroundColor": "theme.editor.findMatchHighlightBackground"
-                        },
-                        "Substitute": {
-                            "backgroundColor": "theme.editor.findMatchBackground"
                         }
                     }
                 },
