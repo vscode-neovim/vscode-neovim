@@ -630,6 +630,26 @@ describe("processHighlightCellsEvent", () => {
                 },
             ],
         },
+        {
+            testName: "virtual highlights can exceed line length",
+            events: [
+                {
+                    row: 2,
+                    vimCol: 6,
+                    validCells: [{ hlId: 2, text: "!" }],
+                    lineText: "hello",
+                    tabSize: 4,
+                },
+            ],
+            expectedRanges: [
+                {
+                    textType: "virtual" as const,
+                    highlights: [{ hlId: 2, text: "!", virtText: "!" }],
+                    line: 12,
+                    col: 6,
+                },
+            ],
+        },
     ].forEach(
         ({
             testName,

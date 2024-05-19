@@ -21,6 +21,7 @@ export function calculateEditorColFromVimScreenCol(line: string, screenCol: numb
     if (screenCol === 0 || !line) {
         return 0;
     }
+
     let currentCharIdx = 0;
     let currentVimCol = 0;
     while (currentVimCol < screenCol) {
@@ -32,8 +33,8 @@ export function calculateEditorColFromVimScreenCol(line: string, screenCol: numb
             currentCharIdx++;
         }
 
-        if (currentCharIdx >= line.length) {
-            return currentCharIdx;
+        if (currentCharIdx >= wcswidth(line)) {
+            return currentCharIdx + (screenCol - currentVimCol);
         }
     }
     return currentCharIdx;
