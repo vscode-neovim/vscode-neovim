@@ -16,11 +16,17 @@ jobs:
         runs-on: ${{ matrix.os }}
         steps:
             - uses: actions/checkout@v4
+
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
                   node-version: "18"
                   cache: "npm"
+
+            - name: Update Homebrew Caches
+              if: matrix.os == 'macos-latest'
+              run: brew update
+
             - name: Install Neovim
               uses: rhysd/action-setup-vim@v1
               id: vim
@@ -30,10 +36,13 @@ jobs:
                   # version: v0.9.0
             - name: npm install
               run: npm ci --silent
+
             - name: Build
               run: npm run test-compile
+
             - name: Webpack
               run: npm run webpack
+
             - name: Test
               uses: coactions/setup-xvfb@v1
               env:
