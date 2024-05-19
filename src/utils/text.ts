@@ -17,6 +17,9 @@ export function expandTabs(line: string, tabWidth: number): string {
     return expanded;
 }
 
+/**
+ * Note: This function is for use by the highlight module only.
+ */
 export function calculateEditorColFromVimScreenCol(line: string, screenCol: number, tabSize: number): number {
     if (screenCol === 0 || !line) {
         return 0;
@@ -33,7 +36,18 @@ export function calculateEditorColFromVimScreenCol(line: string, screenCol: numb
         }
 
         if (currentCharIdx >= line.length) {
-            return currentCharIdx;
+            //  The basic logic of highlighting is to store them according
+            //  to the editor column. For EOL highlights, the end-of-line position
+            //  is always used as the decoration position, use CSS
+            //  position offset for display.
+
+            //  Typically, the starting vim column in the grid_line event only exceeds the
+            //  line text length when there are EOL highlights, so the offset
+            //  needs to be added directly here. Otherwise, the parts exceeding the
+            //  line text length will use the same editor column, causing EOL highlights
+            //  to be incorrectly covered.
+            const eolCol = Math.max(screenCol - currentVimCol, 0);
+            return currentCharIdx + eolCol;
         }
     }
     return currentCharIdx;
