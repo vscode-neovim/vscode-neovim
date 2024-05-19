@@ -73,12 +73,6 @@ export class CommandLineController implements Disposable {
             this.completionAllowed = false;
             this.completionItems = [];
             this.input.items = [];
-
-            if (this.completionDelay === 0) {
-                this.processCompletionTimer();
-            } else {
-                this.completionTimer = setTimeout(this.processCompletionTimer, this.completionDelay);
-            }
         } else {
             const newTitle = prompt || this.getTitle(mode);
             if (newTitle !== this.input.title) {
@@ -93,6 +87,11 @@ export class CommandLineController implements Disposable {
             } else {
                 logger.debug(`Ignoring cmdline_show because no redraw expected: ${content}`);
             }
+        }
+        if (this.completionDelay === 0) {
+            this.processCompletionTimer();
+        } else {
+            this.completionTimer = setTimeout(this.processCompletionTimer, this.completionDelay);
         }
     }
 
