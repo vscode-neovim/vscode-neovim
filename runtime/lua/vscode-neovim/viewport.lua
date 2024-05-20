@@ -45,9 +45,9 @@ local function setup_viewport_changed()
   api.nvim_create_autocmd({ "WinClosed" }, {
     group = M.event_group,
     callback = function()
-      local wins = api.nvim_list_wins()
-      for win in pairs(view_cache) do
-        if not vim.tbl_contains(win, wins) then
+      local wins = vim.tbl_keys(view_cache)
+      for _, win in ipairs(wins) do
+        if not api.nvim_win_is_valid(win) then
           view_cache[win] = nil
         end
       end
