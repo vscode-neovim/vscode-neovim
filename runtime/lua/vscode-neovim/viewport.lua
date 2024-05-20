@@ -56,7 +56,12 @@ local function setup_viewport_changed()
 end
 
 function M.setup()
-  setup_viewport_changed()
+  -- Highlighting needs to wait for the viewport-changed event to complete.
+  -- When the UI attaches, there are numerous highlight events (hl_attr_define, grid_line) to process.
+  --
+  -- Without delaying the setup, the viewport-changed event will cause frequent
+  -- pauses in highlight processing, resulting in screen flickering.
+  vim.defer_fn(setup_viewport_changed, 2000)
 end
 
 return M
