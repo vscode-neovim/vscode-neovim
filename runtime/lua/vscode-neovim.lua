@@ -3,15 +3,11 @@ local api = require("vscode-neovim.api")
 local default_optons = require("vscode-neovim.default-options")
 local cursor = require("vscode-neovim.cursor")
 local highlight = require("vscode-neovim.highlight")
-local filetype = require("vscode-neovim.filetype")
-local autocmds = require("vscode-neovim.autocmds")
 local sync_options = require("vscode-neovim.sync-options")
 
 default_optons.setup()
 cursor.setup()
 highlight.setup()
-filetype.setup()
-autocmds.setup()
 sync_options.setup()
 
 local vscode = {
