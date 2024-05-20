@@ -122,11 +122,13 @@ type EventsMapping = {
         {
             // All positions are 0-based
             winid: number;
+            bufnr: number;
             lnum: number;
             col: number;
             coladd: number;
             curswant: number;
             topline: number;
+            botline: number;
             topfill: number;
             leftcol: number;
             skipcol: number;

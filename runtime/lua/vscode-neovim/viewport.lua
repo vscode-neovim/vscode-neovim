@@ -6,32 +6,36 @@ M.event_group = api.nvim_create_augroup("vscode-neovim.viewport", { clear = true
 M.viewport_changed_ns = api.nvim_create_namespace("vscode-neovim.viewport.changed")
 
 ---@class WinView All positions are 0-based
+---@field winid integer
+---@field bufnr integer
 ---@field lnum integer
 ---@field col integer
 ---@field coladd integer
 ---@field curswant integer
 ---@field topline integer
+---@field botline integer
 ---@field topfill integer
 ---@field leftcol integer
 ---@field skipcol integer
----@field winid integer
-
----@return WinView
-local function get_winview()
-  local view = fn.winsaveview()
-  view.lnum = view.lnum - 1
-  view.topline = view.topline - 1
-  view.winid = api.nvim_get_current_win()
-  return view
-end
 
 local function setup_viewport_changed()
   ---@type table<integer, WinView>
   local view_cache = {}
 
   api.nvim_set_decoration_provider(M.viewport_changed_ns, {
-    on_win = function()
-      local view = get_winview()
+    on_win = function(_, win, buf, topline, botline)
+      -- We don't need the first window.
+      if win == 1000 then
+        return
+      end
+      ---@type WinView
+      local view = api.nvim_win_call(win, fn.winsaveview)
+      view.winid = win
+      view.bufnr = buf
+      view.topline = topline
+      view.botline = botline
+      view.lnum = view.lnum - 1
+
       local cache = view_cache[view.winid]
       if cache and vim.deep_equal(view, cache) then
         return
