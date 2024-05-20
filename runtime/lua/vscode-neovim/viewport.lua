@@ -61,7 +61,13 @@ function M.setup()
   --
   -- Without delaying the setup, the viewport-changed event will cause frequent
   -- pauses in highlight processing, resulting in screen flickering.
-  vim.defer_fn(setup_viewport_changed, 2000)
+  api.nvim_create_autocmd({ "UIEnter" }, {
+    once = true,
+    callback = function()
+      -- Don't worry about whether it's set too late.
+      vim.defer_fn(setup_viewport_changed, 1000)
+    end,
+  })
 end
 
 return M
