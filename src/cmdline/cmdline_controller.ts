@@ -88,9 +88,7 @@ export class CommandLineController implements Disposable {
                 logger.debug(`Ignoring cmdline_show because no redraw expected: ${content}`);
             }
         }
-        if (this.completionDelay === 0) {
-            this.processCompletionTimer();
-        } else {
+        if (!this.completionAllowed && !this.completionTimer) {
             this.completionTimer = setTimeout(this.processCompletionTimer, this.completionDelay);
         }
     }
