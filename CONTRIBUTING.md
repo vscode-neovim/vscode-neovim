@@ -46,9 +46,14 @@ You can view the extension logs in one of three locations
 
 2. From the dev tools console (run the `Developer: Toggle Developer Tools` vscode command to see the console) by
    enabling the `vscode-neovim.logOutputToConsole` setting.
+
+    - If you ran the extension from the `Run Extension` button (see above), you can also view logs in the
+      `Debug Console` of your original VSCode window, but you will still need to enable
+      `vscode-neovim.logOutputToConsole`.
+
 3. From a log file of your choosing, by configuring the `vscode-neovim.logPath` setting.
 
-VSCode, by default will only show messages at the "Info" level or above, but than can be changed by running the command
+VSCode, by default, will only show messages at the "Info" level or above, but than can be changed by running the command
 `Developer Set Log Level...` -> `vscode-neovim` and selecting the desired log level. You can also do this by clicking
 the gear icon in the output pane, with `vscode-neovim` selected.
 
