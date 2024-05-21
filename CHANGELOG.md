@@ -1,5 +1,35 @@
 # Change Log
 
+## [1.12.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.5...v1.12.0) (2024-05-21)
+
+
+### Features
+
+* Support inccommand, including "split" ([c01e149](https://github.com/vscode-neovim/vscode-neovim/commit/c01e1496e1ec5a46872297cabb3ed0a46ecc6f1c))
+
+
+### Bug Fixes
+
+* cursor position after scrolling with incsearch ([5fedba5](https://github.com/vscode-neovim/vscode-neovim/commit/5fedba50aff4de3fb742ba1877a07cdbbee581d3))
+* **highlight:** forward search / matching in long lines ([#1976](https://github.com/vscode-neovim/vscode-neovim/issues/1976)) ([5fedba5](https://github.com/vscode-neovim/vscode-neovim/commit/5fedba50aff4de3fb742ba1877a07cdbbee581d3))
+* set highlight group Subsitute ([#1983](https://github.com/vscode-neovim/vscode-neovim/issues/1983)) ([479638f](https://github.com/vscode-neovim/vscode-neovim/commit/479638fb0bac36d1d9f003e593f6ab43ca0d59b9))
+* sometimes eol highlight being displayed incorrectly ([#1988](https://github.com/vscode-neovim/vscode-neovim/issues/1988)) ([9e208f2](https://github.com/vscode-neovim/vscode-neovim/commit/9e208f24f50137e6899bb4c6743e09cc4adedc9d))
+* wildmenu items are being set repeatedly ([#1989](https://github.com/vscode-neovim/vscode-neovim/issues/1989)) ([fc48f03](https://github.com/vscode-neovim/vscode-neovim/commit/fc48f03d405f4a3a0e77d9ed4ead7efa8292f05e))
+* wildmenu sometimes not showing ([c01e149](https://github.com/vscode-neovim/vscode-neovim/commit/c01e1496e1ec5a46872297cabb3ed0a46ecc6f1c))
+
+
+### Documentation
+
+* indicate you can view logs in the Debug Console ([#1995](https://github.com/vscode-neovim/vscode-neovim/issues/1995)) ([c00e7dc](https://github.com/vscode-neovim/vscode-neovim/commit/c00e7dc7141ad9c160e72701c393a53aeffa22d0))
+
+
+### Refactor
+
+* don't hardcode substitute highlight ([#1991](https://github.com/vscode-neovim/vscode-neovim/issues/1991)) ([1b6bb7b](https://github.com/vscode-neovim/vscode-neovim/commit/1b6bb7b917ce31594826fea541547effc4622e7d))
+* **lua:** move autocmds,filetype to runtime/modules ([#1990](https://github.com/vscode-neovim/vscode-neovim/issues/1990)) ([c81e64d](https://github.com/vscode-neovim/vscode-neovim/commit/c81e64dd0f0502f79b14fe2430d7d442f347fd85))
+* remove the border of the custom highlights ([479638f](https://github.com/vscode-neovim/vscode-neovim/commit/479638fb0bac36d1d9f003e593f6ab43ca0d59b9))
+* remove viewport hack when in cmdline mode ([5fedba5](https://github.com/vscode-neovim/vscode-neovim/commit/5fedba50aff4de3fb742ba1877a07cdbbee581d3))
+
 ## [1.11.5](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.4...v1.11.5) (2024-05-17)
 
 
