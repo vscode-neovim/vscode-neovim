@@ -29,7 +29,6 @@ export class Config implements Disposable {
         "highlightGroups.highlights",
         "neovimClean",
         "NVIM_APPNAME",
-        "logLevel",
         "logOutputToConsole",
         "neovimWidth",
         "useWSL",
@@ -164,9 +163,6 @@ export class Config implements Disposable {
     }
     get logPath() {
         return this.cfg.get("logPath", "");
-    }
-    get logLevel(): "none" | "error" | "warn" | "debug" {
-        return this.cfg.get("logLevel", "none");
     }
     get outputToConsole() {
         return this.cfg.get("logOutputToConsole", false);
