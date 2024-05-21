@@ -25,7 +25,15 @@ npm install
 3. Build the VSIX package:
 
 ```sh
-npx vsce package -o vscode-neovim.vsix
+npm run build
+```
+
+If you are developing the extension, and want to install your changes in your VSCode editor, it may be useful to instead
+run the following, so that VSCode does not cache your custom VSIX as the VSIX corresponding to an existing marketplace
+version:
+
+```sh
+npm run build:dev
 ```
 
 4. From VSCode, use the `Extensions: Install from VSIX` command to install the package.

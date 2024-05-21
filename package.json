@@ -2125,7 +2125,9 @@
         "webpack": "webpack --mode development",
         "webpack-dev": "webpack --mode development --watch",
         "test-compile": "tsc -p ./",
-        "prepare": "husky"
+        "prepare": "husky",
+        "build": "vsce package -o vscode-neovim.vsix",
+        "build:dev": "vsce package --no-update-package-json -o vscode-neovim.vsix $(node -e 'console.log(`${process.env.npm_package_version}-dev`)')"
     },
     "devDependencies": {
         "@johnnymorganz/stylua-bin": "^0.20.0",
