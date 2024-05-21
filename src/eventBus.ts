@@ -118,14 +118,17 @@ type EventsMapping = {
     ["move-cursor"]: ["top" | "middle" | "bottom"];
     scroll: ["page" | "halfPage", "up" | "down"];
     ["scroll-line"]: ["up" | "down"];
-    ["window-scroll"]: [
-        number,
+    ["viewport-changed"]: [
         {
+            // All positions are 0-based
+            winid: number;
+            bufnr: number;
             lnum: number;
             col: number;
             coladd: number;
             curswant: number;
             topline: number;
+            botline: number;
             topfill: number;
             leftcol: number;
             skipcol: number;

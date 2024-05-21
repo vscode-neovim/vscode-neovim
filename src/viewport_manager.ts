@@ -31,42 +31,64 @@ export class Viewport {
 export class ViewportManager implements Disposable {
     private disposables: Disposable[] = [];
 
+    private viewportChangedPromise?: ManualPromise;
+
+    public get isSyncDone(): Promise<unknown> {
+        return Promise.resolve(this.viewportChangedPromise?.promise);
+    }
+
     /**
      * Current grid viewport, indexed by grid
      */
     private gridViewport: Map<number, Viewport> = new Map();
-
-    private syncViewportPromise?: ManualPromise;
 
     // TODO: Temporary solution. Need to refactor cursor manager and viewport manager.
     // Related issue: https://github.com/neovim/neovim/issues/28800
     private cursorChanged = new EventEmitter<number>();
     public onCursorChanged = this.cursorChanged.event;
 
-    private get client() {
-        return this.main.client;
-    }
-
     public constructor(private main: MainController) {
         this.disposables.push(
             this.cursorChanged,
             window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange),
             eventBus.on("redraw", this.handleRedraw, this),
-            eventBus.on("window-scroll", ([winId, saveView]) => {
-                const gridId = this.main.bufferManager.getGridIdForWinId(winId);
-                if (!gridId) {
-                    logger.warn(`Unable to update scrolled view. No grid for winId: ${winId}`);
-                    return;
-                }
-                const view = this.getViewport(gridId);
-                view.leftcol = saveView.leftcol;
-                view.skipcol = saveView.skipcol;
-            }),
+            eventBus.on("viewport-changed", ([view]) => this.handleViewportChanged(view)),
         );
     }
 
-    public get isSyncDone(): Promise<void> {
-        return Promise.resolve(this.syncViewportPromise?.promise);
+    private handleViewportChanged({
+        winid,
+        leftcol,
+        skipcol,
+        lnum,
+        col,
+        topline,
+    }: EventBusData<"viewport-changed">[0]) {
+        this.viewportChangedPromise?.resolve();
+        this.viewportChangedPromise = undefined;
+
+        const gridId = this.main.bufferManager.getGridIdForWinId(winid);
+        if (!gridId) {
+            logger.warn(`Unable to update scrolled view. No grid for winId: ${winid}`);
+            return;
+        }
+
+        this.viewportChangedPromise = new ManualPromise();
+
+        const view = this.getViewport(gridId);
+        const { line: oldLine, col: oldCol } = view;
+        view.line = lnum;
+        view.col = col;
+        view.topline = topline;
+        view.leftcol = leftcol;
+        view.skipcol = skipcol;
+
+        if (oldLine !== view.line || oldCol !== view.col) {
+            this.cursorChanged.fire(gridId);
+        }
+
+        this.viewportChangedPromise.resolve();
+        this.viewportChangedPromise = undefined;
     }
 
     /**
@@ -110,31 +132,6 @@ export class ViewportManager implements Disposable {
                     if (line !== curline || col !== curcol) {
                         this.cursorChanged.fire(grid);
                     }
-                }
-                // HACK: See #1575
-                // Don't await, as it may result in processing different events in the wrong order.
-                if (this.main.modeManager.isCmdlineMode && !this.syncViewportPromise) {
-                    this.syncViewportPromise = new ManualPromise();
-                    const _lua = "return {vim.api.nvim_get_current_win(), vim.fn.winsaveview()}";
-                    (this.client.lua(_lua) as Promise<[number, any]>)
-                        .then(([currWin, currView]) => {
-                            const grid = this.main.bufferManager.getGridIdForWinId(currWin);
-                            if (!grid) return;
-                            const view = this.getViewport(grid);
-                            const { line, col } = view;
-                            view.line = currView.lnum - 1;
-                            view.col = currView.col;
-                            view.topline = currView.topline - 1;
-                            view.leftcol = currView.leftcol;
-                            view.skipcol = currView.skipcol;
-                            if (line !== view.line || col !== view.col) {
-                                this.cursorChanged.fire(grid);
-                            }
-                        })
-                        .finally(() => {
-                            this.syncViewportPromise?.resolve();
-                            this.syncViewportPromise = undefined;
-                        });
                 }
                 break;
             }

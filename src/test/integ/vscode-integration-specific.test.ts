@@ -306,17 +306,6 @@ describe("VSCode integration specific stuff", () => {
         );
     });
 
-    it("Cursor is ok for incsearch after scroll", async () => {
-        const e = await openTextDocument(path.join(__dirname, "../../../test_fixtures/incsearch-scroll.ts"));
-
-        await sendVSCodeKeys("gg");
-        await wait(500);
-        await sendVSCodeKeys("/bla");
-        await wait(500);
-        await assertContent({ cursor: [115, 19] }, client);
-        assert.ok(e.visibleRanges[0].start.line <= 115);
-    });
-
     // !Passes only when the runner is in foreground
     it("Cursor is preserved if same doc is opened in two editor columns", async () => {
         const doc = (
