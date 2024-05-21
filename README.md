@@ -128,8 +128,7 @@ have built-in support for `cond = vim.g.vscode`. See
 
 ### Troubleshooting
 
--   Set the `vscode-neovim.logLevel` setting to "info", then restart vscode. View the logs via
-    `Output: Focus on Output View` and select `vscode-neovim`.
+-   View the logs via `Output: Focus on Output View` and select `vscode-neovim`.
 -   Enable `vscode-neovim.neovimClean` in VSCode settings, which starts Nvim _without_ your plugins (`nvim --clean`).
     Nvim plugins can do _anything_. Visual effects in particular can cause visual artifacts. vscode-neovim does its best
     to merge the visual effects of Nvim and VSCode, but it's far from perfect. You may need to disable some Nvim plugins
@@ -548,8 +547,7 @@ can be used). Use a `return` statement to return a value back to lua. Arguments 
 Tips:
 
 -   Make sure to `await` on asynchronous functions when accessing the API.
--   Use the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim (logging level
-    controlled with the `vscode-neovim.logLevel` setting).
+-   Use the global `logger` (e.g. `logger.info(...)`) to log messages to the output of vscode-neovim.
 -   JSON serializable values (primitives and simple objects) can be returned and will be automatically serialized then
     deserialized to an equivalent lua value. If the return value is not JSON serializable then an error will be raised.
 -   `globalThis['some_name'] = ...` can be used to persist values between calls.

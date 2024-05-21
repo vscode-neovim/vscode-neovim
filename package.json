@@ -298,7 +298,7 @@
                 "vscode-neovim.logOutputToConsole": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Log to vscode developer console (not output channel!). \n- Hint: Run the `Developer: Toggle Developer Tools` command to see the console. \n- Hint: Adjust the `vscode-neovim.logLevel` setting to see more messages."
+                    "markdownDescription": "Log to vscode developer console (not output channel!). \n- Hint: Run the `Developer: Toggle Developer Tools` command to see the console."
                 },
                 "vscode-neovim.highlightGroups.highlights": {
                     "type": "object",
