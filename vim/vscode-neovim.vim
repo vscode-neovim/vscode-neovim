@@ -114,5 +114,5 @@ augroup VscodeGeneral
 augroup END
 
 
-lua require("vscode-neovim")
+lua package.loaded["vscode"] = require("vscode-neovim")
 runtime! modules/**/*.{vim,lua}

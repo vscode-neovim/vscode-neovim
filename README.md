@@ -309,8 +309,14 @@ For more information:
 Load the module:
 
 ```lua
-local vscode = require('vscode-neovim')
+local vscode = require('vscode')
 ```
+
+<!-- prettier-ignore-start -->
+> [!TIP]
+> "vscode" is an alias for "vscode-neovim" module.
+> So don't be confused if "vscode-neovim" is used in the below examples.
+<!-- prettier-ignore-end -->
 
 1. `vscode.action()`: asynchronously executes a vscode command.
 2. `vscode.call()`: synchronously executes a vscode command.
