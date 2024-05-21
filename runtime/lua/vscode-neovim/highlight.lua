@@ -55,11 +55,7 @@ local function setup_globals()
     Visual       = {},
     VisualNC     = {},
     VisualNOS    = {},
-    -- By default, it's linked to Search.
-    -- But Search highlighting defaults to using VSCode ThemeColor, potentially with some opacity.
-    -- When the decoration is "virtText", having a background color with opacity can
-    -- cause the virtual text to blend with the original content.
-    Substitute   = { fg='#282c34', bg='#98c379' },
+    Substitute   = {},
     Whitespace   = {},
     LineNr       = {},
     LineNrAbove  = {},
