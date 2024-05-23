@@ -4,7 +4,6 @@ import { CommandLineController } from "./cmdline/cmdline_controller";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
-import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
 
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -12,11 +11,6 @@ export class CommandLineManager implements Disposable {
      * Simple command line UI
      */
     private commandLine?: CommandLineController;
-
-    /**
-     * The last text typed in the UI, used to calculate changes
-     */
-    private lastTypedText: string = "";
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -33,13 +27,8 @@ export class CommandLineManager implements Disposable {
                 const [content, _pos, firstc, prompt, _indent, _level] = args[0];
                 const allContent = content.map(([, str]) => str).join("");
                 if (!this.commandLine) {
-                    this.commandLine = new CommandLineController(this.main.client, {
-                        onAccepted: this.onCmdAccept,
-                        onCanceled: this.onCmdCancel,
-                        onChanged: this.onCmdChange,
-                    });
+                    this.commandLine = new CommandLineController(this.main.client);
                 }
-                this.lastTypedText = allContent;
                 this.commandLine.show(allContent, firstc, prompt);
                 break;
             }
@@ -66,18 +55,4 @@ export class CommandLineManager implements Disposable {
             }
         }
     }
-
-    private onCmdChange = async (text: string): Promise<void> => {
-        const toType = calculateInputAfterTextChange(this.lastTypedText, text);
-        this.lastTypedText = text;
-        await this.main.client.input(toType);
-    };
-
-    private onCmdCancel = async (): Promise<void> => {
-        await this.main.client.input("<Esc>");
-    };
-
-    private onCmdAccept = (): void => {
-        this.main.client.input("<CR>");
-    };
 }

@@ -5,13 +5,9 @@ import { GlyphChars } from "../constants";
 import { createLogger } from "../logger";
 import { disposeAll } from "../utils";
 
-const logger = createLogger("CmdLine");
+import { calculateInputAfterTextChange } from "./cmdline_text";
 
-export interface CommandLineCallbacks {
-    onAccepted(): void;
-    onChanged(str: string): void;
-    onCanceled(): void;
-}
+const logger = createLogger("CmdLine");
 
 export class CommandLineController implements Disposable {
     public isDisplayed = false;
@@ -20,17 +16,18 @@ export class CommandLineController implements Disposable {
 
     private disposables: Disposable[] = [];
 
+    /**
+     * The last text typed in the UI, used to calculate changes
+     */
+    private lastTypedText: string = "";
+
     private ignoreHideEvent = false;
 
     private redrawExpected = false; // whether to accept incoming cmdline_show
 
     private updatedFromNvim = false; // whether to replace nvim cmdline with new content
 
-    public constructor(
-        private client: NeovimClient,
-        private callbacks: CommandLineCallbacks,
-    ) {
-        this.callbacks = callbacks;
+    public constructor(private client: NeovimClient) {
         this.input = window.createQuickPick();
         (this.input as any).sortByLabel = false;
         this.input.ignoreFocusOut = true;
@@ -45,7 +42,8 @@ export class CommandLineController implements Disposable {
         );
     }
 
-    public show(content = "", mode: string, prompt = ""): void {
+    public show(content: string, mode: string, prompt = ""): void {
+        this.lastTypedText = content;
         if (!this.isDisplayed) {
             this.input.value = "";
             this.input.items = [];
@@ -93,28 +91,29 @@ export class CommandLineController implements Disposable {
         disposeAll(this.disposables);
     }
 
-    private onAccept = (): void => {
+    private onAccept = async (): Promise<void> => {
         if (!this.isDisplayed) {
             return;
         }
-        this.callbacks.onChanged(this.input.value);
-        this.callbacks.onAccepted();
+        await this.client.input("<CR>");
     };
 
-    private onChange = (e: string): void => {
+    private onChange = async (text: string): Promise<void> => {
         if (!this.isDisplayed) {
             return;
         }
         if (this.updatedFromNvim) {
             this.updatedFromNvim = false;
-            logger.debug(`Skipped updating cmdline because change originates from nvim: ${e}`);
+            logger.debug(`Skipped updating cmdline because change originates from nvim: ${text}`);
         } else {
-            logger.debug(`Sending cmdline to nvim: ${e}`);
-            this.callbacks.onChanged(e);
+            logger.debug(`Sending cmdline to nvim: ${text}`);
+            const toType = calculateInputAfterTextChange(this.lastTypedText, text);
+            this.lastTypedText = text;
+            await this.client.input(toType);
         }
     };
 
-    private onHide = (): void => {
+    private onHide = async (): Promise<void> => {
         if (!this.isDisplayed) {
             return;
         }
@@ -123,7 +122,7 @@ export class CommandLineController implements Disposable {
             this.ignoreHideEvent = false;
             return;
         }
-        this.callbacks.onCanceled();
+        await this.client.input("<Esc>");
     };
 
     private getTitle(modeOrPrompt: string): string {
