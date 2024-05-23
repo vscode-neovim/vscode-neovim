@@ -6,21 +6,25 @@ import { HighlightProvider } from "./highlights/highlight_provider";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
 import { PendingUpdates } from "./pending_updates";
+import { HighlightGroupManager } from "./highlights/group_manager";
 
 type GridCell = [string, number, number];
 
 export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
 
+    private groupManager: HighlightGroupManager;
     private highlightProvider: HighlightProvider;
     private pendingGridUpdates: PendingUpdates<number>;
     private redrawWaitGroup: WaitGroup;
 
     public constructor(private main: MainController) {
-        this.highlightProvider = new HighlightProvider();
+        this.groupManager = new HighlightGroupManager();
+        this.highlightProvider = new HighlightProvider(this.groupManager);
         this.pendingGridUpdates = new PendingUpdates();
         this.redrawWaitGroup = new WaitGroup();
 
+        this.disposables.push(this.groupManager);
         this.disposables.push(this.highlightProvider);
         this.disposables.push(eventBus.on("redraw", this.handleRedraw, this));
         this.disposables.push(eventBus.on("flush-redraw", this.handleRedrawFlush, this));
@@ -40,7 +44,7 @@ export class HighlightManager implements Disposable {
             switch (name) {
                 case "hl_attr_define": {
                     for (const [id, uiAttrs, , info] of args) {
-                        this.highlightProvider.addHighlightGroup(
+                        this.groupManager.addHighlightGroup(
                             id,
                             uiAttrs,
                             info.map((i) => i.hi_name),
