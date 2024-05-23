@@ -10,8 +10,6 @@ import { calculateInputAfterTextChange } from "./cmdline_text";
 const logger = createLogger("CmdLine");
 
 export class CommandLineController implements Disposable {
-    public isDisplayed = false;
-
     private input: QuickPick<QuickPickItem>;
 
     private disposables: Disposable[] = [];
@@ -23,7 +21,7 @@ export class CommandLineController implements Disposable {
 
     private ignoreHideEvent = false;
 
-    private redrawExpected = false; // whether to accept incoming cmdline_show
+    private redrawExpected = true; // whether to accept incoming cmdline_show
 
     private updatedFromNvim = false; // whether to replace nvim cmdline with new content
 
@@ -31,6 +29,10 @@ export class CommandLineController implements Disposable {
         this.input = window.createQuickPick();
         (this.input as any).sortByLabel = false;
         this.input.ignoreFocusOut = true;
+        this.input.value = "";
+        this.input.items = [];
+        this.input.activeItems = [];
+        this.input.show();
         this.disposables.push(
             this.input,
             this.input.onDidAccept(this.onAccept),
@@ -44,30 +46,14 @@ export class CommandLineController implements Disposable {
 
     public show(content: string, mode: string, prompt = ""): void {
         this.lastTypedText = content;
-        if (!this.isDisplayed) {
-            this.input.value = "";
-            this.input.items = [];
-            this.input.activeItems = [];
-            this.isDisplayed = true;
-            this.input.title = prompt || this.getTitle(mode);
-            this.input.show();
-            // display content after cmdline appears - otherwise it will be preselected that is not good when calling from visual mode
-            if (content) {
-                this.input.value = content;
-            }
+        this.input.title = prompt || this.getTitle(mode);
+        // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
+        if (this.redrawExpected && this.input.value !== content) {
+            this.input.value = content;
+            this.redrawExpected = false;
+            this.updatedFromNvim = true;
         } else {
-            const newTitle = prompt || this.getTitle(mode);
-            if (newTitle !== this.input.title) {
-                this.input.title = newTitle;
-            }
-            // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
-            if (this.redrawExpected && this.input.value !== content) {
-                this.input.value = content;
-                this.redrawExpected = false;
-                this.updatedFromNvim = true;
-            } else {
-                logger.debug(`Ignoring cmdline_show because no redraw expected: ${content}`);
-            }
+            logger.debug(`Ignoring cmdline_show because no redraw expected: ${content}`);
         }
     }
 
@@ -92,16 +78,10 @@ export class CommandLineController implements Disposable {
     }
 
     private onAccept = async (): Promise<void> => {
-        if (!this.isDisplayed) {
-            return;
-        }
         await this.client.input("<CR>");
     };
 
     private onChange = async (text: string): Promise<void> => {
-        if (!this.isDisplayed) {
-            return;
-        }
         if (this.updatedFromNvim) {
             this.updatedFromNvim = false;
             logger.debug(`Skipped updating cmdline because change originates from nvim: ${text}`);
@@ -114,9 +94,6 @@ export class CommandLineController implements Disposable {
     };
 
     private onHide = async (): Promise<void> => {
-        if (!this.isDisplayed) {
-            return;
-        }
         this.clean();
         if (this.ignoreHideEvent) {
             this.ignoreHideEvent = false;
@@ -139,7 +116,6 @@ export class CommandLineController implements Disposable {
     }
 
     private clean(): void {
-        this.isDisplayed = false;
         this.input.value = "";
         this.input.title = "";
         this.input.items = [];
