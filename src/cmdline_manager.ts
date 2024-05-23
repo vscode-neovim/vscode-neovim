@@ -25,10 +25,6 @@ export class CommandLineManager implements Disposable {
     // However, bindings are expected to cause the cmdline content to change, so we use this flag to listen to those updates.
     private redrawExpected = true;
 
-    // When we get an update from nvim, we want to skip sending that update back to nivm. This flag controls whether to replace nvim cmdline with new content.
-    // TODO: necessary?
-    private updatedFromNvim = false;
-
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
         this.input = window.createQuickPick();
@@ -54,7 +50,6 @@ export class CommandLineManager implements Disposable {
         this.lastTypedText = "";
         this.ignoreHideEvent = false;
         this.redrawExpected = true;
-        this.updatedFromNvim = false;
         this.input.value = "";
         this.input.title = "";
         this.input.items = [];
@@ -68,15 +63,14 @@ export class CommandLineManager implements Disposable {
                 const allContent = content.map(([, str]) => str).join("");
                 this.lastTypedText = allContent;
                 this.input.title = prompt || this.getTitle(firstc);
+                this.input.show();
                 // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
                 if (this.redrawExpected && this.input.value !== allContent) {
                     this.input.value = allContent;
                     this.redrawExpected = false;
-                    this.updatedFromNvim = true;
                 } else {
                     logger.debug(`Ignoring cmdline_show because no redraw expected: ${content}`);
                 }
-                this.input.show();
                 break;
             }
             case "popupmenu_show": {
@@ -112,15 +106,10 @@ export class CommandLineManager implements Disposable {
     };
 
     private onChange = async (text: string): Promise<void> => {
-        if (this.updatedFromNvim) {
-            this.updatedFromNvim = false;
-            logger.debug(`Skipped updating cmdline because change originates from nvim: ${text}`);
-        } else {
-            logger.debug(`Sending cmdline to nvim: ${text}`);
-            const toType = calculateInputAfterTextChange(this.lastTypedText, text);
-            this.lastTypedText = text;
-            await this.main.client.input(toType);
-        }
+        logger.debug(`Sending cmdline to nvim: ${text}`);
+        const toType = calculateInputAfterTextChange(this.lastTypedText, text);
+        this.lastTypedText = text;
+        await this.main.client.input(toType);
     };
 
     private onHide = async (): Promise<void> => {
