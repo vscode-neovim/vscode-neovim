@@ -1,5 +1,3 @@
-import { execSync } from "child_process";
-
 import { calcPatch } from "fast-myers-diff";
 import {
     Disposable,
@@ -12,8 +10,6 @@ import {
     TextEditor,
     commands,
 } from "vscode";
-
-import { config } from "../config";
 
 import { convertByteNumToCharNum, convertCharNumToByteNum } from "./text";
 
@@ -226,17 +222,6 @@ export function rangesToSelections(
     });
 }
 
-/**
- * Translate from a Windows path to a WSL path
- * @param path Windows path
- * @returns WSL path
- */
-export const wslpath = (path: string) => {
-    // execSync returns a newline character at the end
-    const distro = config.wslDistribution.length ? `-d ${config.wslDistribution}` : "";
-    return execSync(`C:\\Windows\\system32\\wsl.exe ${distro} wslpath '${path}'`).toString().trim();
-};
-
 // Credit: https://github.com/VSCodeVim/Vim/blob/5dc9fbf9e7c31a523a348066e61605ed6caf62da/src/util/vscodeContext.ts
 type VSCodeContextValue = boolean | string | string[];
 /**
@@ -268,5 +253,13 @@ export abstract class VSCodeContext {
             commands.executeCommand("setContext", key, undefined);
         }
         this.cache.clear();
+    }
+}
+
+export abstract class CustomDisposable implements Disposable {
+    protected disposables: Disposable[] = [];
+
+    public dispose() {
+        disposeAll(this.disposables);
     }
 }

@@ -1,22 +1,20 @@
-import { Disposable, TextEditor } from "vscode";
 import { WaitGroup } from "@jpwilliams/waitgroup";
+import { TextEditor } from "vscode";
 
 import { EventBusData, eventBus } from "./eventBus";
 import { HighlightProvider } from "./highlights/highlight_provider";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
-import { PendingUpdates } from "./pending_updates";
+import { CustomDisposable, PendingUpdates } from "./utils";
 
 type GridCell = [string, number, number];
 
-export class HighlightManager implements Disposable {
-    private disposables: Disposable[] = [];
-
+export class HighlightManager extends CustomDisposable {
     private highlightProvider: HighlightProvider;
     private pendingGridUpdates: PendingUpdates<number>;
     private redrawWaitGroup: WaitGroup;
 
     public constructor(private main: MainController) {
+        super();
         this.highlightProvider = new HighlightProvider();
         this.pendingGridUpdates = new PendingUpdates();
         this.redrawWaitGroup = new WaitGroup();
@@ -180,9 +178,5 @@ export class HighlightManager implements Disposable {
 
     private highlightLineOutOfBounds(editor: TextEditor, editorHighlightLine: number): boolean {
         return editorHighlightLine >= editor.document.lineCount || editorHighlightLine < 0;
-    }
-
-    public dispose(): void {
-        disposeAll(this.disposables);
     }
 }

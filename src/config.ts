@@ -1,6 +1,5 @@
 import {
     ConfigurationChangeEvent,
-    Disposable,
     ExtensionKind,
     ThemableDecorationRenderOptions,
     WorkspaceConfiguration,
@@ -11,7 +10,7 @@ import {
 } from "vscode";
 
 import { CTRL_KEYS, EXT_ID, EXT_NAME } from "./constants";
-import { VSCodeContext, disposeAll } from "./utils";
+import { CustomDisposable, VSCodeContext } from "./utils";
 
 const isWindows = process.platform == "win32";
 
@@ -21,8 +20,7 @@ type Platform = "win32" | "darwin" | "linux";
 
 export type CompositeKeys = { [key: string]: { command: string; args?: any[] } };
 
-export class Config implements Disposable {
-    private disposables: Disposable[] = [];
+export class Config extends CustomDisposable {
     private readonly root = EXT_NAME;
     private cfg!: WorkspaceConfiguration;
     private readonly requireRestartConfigs = [
@@ -41,10 +39,6 @@ export class Config implements Disposable {
         "neovimExecutablePaths.win32",
         "afterInitConfig",
     ].map((c) => `${this.root}.${c}`);
-
-    dispose() {
-        disposeAll(this.disposables);
-    }
 
     public init() {
         this.onConfigurationChanged();

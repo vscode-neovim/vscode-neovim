@@ -21,8 +21,9 @@ import { MessagesManager } from "./messages_manager";
 import { ModeManager } from "./mode_manager";
 import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
-import { disposeAll, findLastEvent, VSCodeContext, wslpath } from "./utils";
+import { CustomDisposable, findLastEvent, VSCodeContext } from "./utils";
 import { ViewportManager } from "./viewport_manager";
+import { wslpath } from "./utils/wsl";
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
@@ -37,11 +38,9 @@ interface VSCodeActionOptions {
     callback?: string;
 }
 
-export class MainController implements vscode.Disposable {
+export class MainController extends CustomDisposable {
     private nvimProc!: ChildProcess;
     public client!: NeovimClient;
-
-    private disposables: vscode.Disposable[] = [];
 
     /**
      * Neovim API states that multiple redraw batches could be sent following flush() after last batch
@@ -61,7 +60,9 @@ export class MainController implements vscode.Disposable {
     public messagesManager!: MessagesManager;
     public viewportManager!: ViewportManager;
 
-    public constructor(private extContext: ExtensionContext) {}
+    public constructor(private extContext: ExtensionContext) {
+        super();
+    }
 
     public async init(outputChannel: vscode.LogOutputChannel): Promise<void> {
         const [cmd, args] = this.buildSpawnArgs();
@@ -403,9 +404,5 @@ export class MainController implements vscode.Disposable {
             logger.error(
                 `Cannot read $VIMRUNTIME directory "${runtimeDir}". Ensure that VSCode has access to that directory. Also try :checkhealth.`,
             );
-    }
-
-    dispose() {
-        disposeAll(this.disposables);
     }
 }

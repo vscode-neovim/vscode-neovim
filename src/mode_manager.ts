@@ -2,7 +2,7 @@ import { Disposable, EventEmitter } from "vscode";
 
 import { eventBus, EventBusData } from "./eventBus";
 import { createLogger } from "./logger";
-import { disposeAll, VSCodeContext } from "./utils";
+import { CustomDisposable, VSCodeContext } from "./utils";
 
 const logger = createLogger("ModeManager");
 
@@ -47,8 +47,7 @@ export class Mode {
         return this.name === "cmdline";
     }
 }
-export class ModeManager implements Disposable {
-    private disposables: Disposable[] = [];
+export class ModeManager extends CustomDisposable {
     /**
      * Current neovim mode
      */
@@ -60,6 +59,7 @@ export class ModeManager implements Disposable {
     private eventEmitter = new EventEmitter();
 
     constructor() {
+        super();
         this.disposables.push(
             eventBus.on("mode-changed", this.handleModeChanged, this),
             eventBus.on(
@@ -112,9 +112,5 @@ export class ModeManager implements Disposable {
         VSCodeContext.set("neovim.mode", this.mode.name);
         logger.debug(`Setting mode context to ${this.mode.name}`);
         this.eventEmitter.fire(null);
-    }
-
-    dispose() {
-        disposeAll(this.disposables);
     }
 }

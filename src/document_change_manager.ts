@@ -1,7 +1,7 @@
 import { Mutex } from "async-mutex";
 import {
-    Disposable,
     EndOfLine,
+    LogLevel,
     Position,
     ProgressLocation,
     Selection,
@@ -9,7 +9,6 @@ import {
     TextDocumentChangeEvent,
     window,
     workspace,
-    LogLevel,
 } from "vscode";
 
 import actions from "./actions";
@@ -17,12 +16,12 @@ import { BufferManager } from "./buffer_manager";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import {
+    CustomDisposable,
     DotRepeatChange,
     ManualPromise,
     accumulateDotRepeatChange,
     calcDiffWithPosition,
     convertCharNumToByteNum,
-    disposeAll,
     getDocumentLineArray,
     isChangeSubsequentToChange,
     isCursorChange,
@@ -31,8 +30,7 @@ import {
 
 const logger = createLogger("DocumentChangeManager");
 
-export class DocumentChangeManager implements Disposable {
-    private disposables: Disposable[] = [];
+export class DocumentChangeManager extends CustomDisposable {
     /**
      * Array of pending events to apply in batch
      * ! vscode text editor operations are async and can't be executed in parallel.
@@ -85,13 +83,10 @@ export class DocumentChangeManager implements Disposable {
     }
 
     public constructor(private main: MainController) {
+        super();
         this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
         this.main.bufferManager.onBufferInit = this.onBufferInit;
         this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));
-    }
-
-    public dispose(): void {
-        disposeAll(this.disposables);
     }
 
     public eatDocumentCursorAfterChange(doc: TextDocument): Position | undefined {

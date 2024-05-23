@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { PendingUpdates } from "../../pending_updates";
+import { PendingUpdates } from "../../utils/pending_updates";
 
 describe("PendingUpdates", () => {
     it("size should be zero on initialization", () => {

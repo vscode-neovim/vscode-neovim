@@ -1,9 +1,9 @@
 import { NeovimClient } from "neovim";
-import { Disposable, QuickPick, QuickPickItem, commands, window } from "vscode";
+import { QuickPick, QuickPickItem, commands, window } from "vscode";
 
 import { GlyphChars } from "../constants";
 import { createLogger } from "../logger";
-import { VSCodeContext, disposeAll } from "../utils";
+import { CustomDisposable, VSCodeContext } from "../utils";
 
 import { commandInputIsCompletable } from "./cmdline_text";
 
@@ -15,12 +15,10 @@ export interface CommandLineCallbacks {
     onCanceled(): void;
 }
 
-export class CommandLineController implements Disposable {
+export class CommandLineController extends CustomDisposable {
     public isDisplayed = false;
 
     private input: QuickPick<QuickPickItem>;
-
-    private disposables: Disposable[] = [];
 
     private completionAllowed = false;
 
@@ -43,6 +41,7 @@ export class CommandLineController implements Disposable {
         private callbacks: CommandLineCallbacks,
         private completionDelay: number,
     ) {
+        super();
         this.callbacks = callbacks;
         this.input = window.createQuickPick();
         this.input.ignoreFocusOut = true;
@@ -111,10 +110,6 @@ export class CommandLineController implements Disposable {
     public cancel(ignoreHideEvent = false): void {
         this.ignoreHideEvent = ignoreHideEvent;
         this.input.hide();
-    }
-
-    public dispose(): void {
-        disposeAll(this.disposables);
     }
 
     private onAccept = (): void => {

@@ -3,7 +3,7 @@ import { Disposable, StatusBarAlignment, StatusBarItem, window } from "vscode";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { CustomDisposable } from "./utils";
 
 enum StatusType {
     Mode, // msg_showmode
@@ -11,9 +11,7 @@ enum StatusType {
     Msg, // msg_show, msg_clear
 }
 
-export class StatusLineManager implements Disposable {
-    private disposables: Disposable[] = [];
-
+export class StatusLineManager extends CustomDisposable {
     // ui events
     private _modeText = "";
     private _cmdText = "";
@@ -28,6 +26,7 @@ export class StatusLineManager implements Disposable {
     }
 
     public constructor(private main: MainController) {
+        super();
         this.statusBar = window.createStatusBarItem("vscode-neovim-status", StatusBarAlignment.Left, -10);
         this.statusBar.show();
         this.disposables.push(this.statusBar, eventBus.on("redraw", this.handleRedraw, this));
@@ -129,9 +128,5 @@ export class StatusLineManager implements Disposable {
         if (acceptPrompt) {
             this.client.input("<CR>");
         }
-    }
-
-    dispose() {
-        disposeAll(this.disposables);
     }
 }

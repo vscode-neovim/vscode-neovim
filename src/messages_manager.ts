@@ -1,17 +1,12 @@
-import { Disposable, LogOutputChannel } from "vscode";
+import { LogOutputChannel } from "vscode";
 
 import { EventBusData, eventBus } from "./eventBus";
-import { disposeAll } from "./utils";
+import { CustomDisposable } from "./utils";
 
-export class MessagesManager implements Disposable {
-    private disposables: Disposable[] = [];
-
+export class MessagesManager extends CustomDisposable {
     public constructor(readonly channel: LogOutputChannel) {
+        super();
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
-    }
-
-    public dispose(): void {
-        disposeAll(this.disposables);
     }
 
     private handleRedraw({ name, args }: EventBusData<"redraw">): void {

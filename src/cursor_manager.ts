@@ -1,7 +1,6 @@
 import { debounce, DebouncedFunc } from "lodash-es";
 import {
     commands,
-    Disposable,
     Position,
     Selection,
     TextEditor,
@@ -21,11 +20,11 @@ import { MainController } from "./main_controller";
 import {
     convertEditorPositionToVimPosition,
     convertVimPositionToEditorPosition,
-    disposeAll,
     ManualPromise,
     rangesToSelections,
+    PendingUpdates,
+    CustomDisposable,
 } from "./utils";
-import { PendingUpdates } from "./pending_updates";
 
 const logger = createLogger("CursorManager", false);
 
@@ -33,8 +32,7 @@ interface CursorInfo {
     cursorShape: "block" | "horizontal" | "vertical";
 }
 
-export class CursorManager implements Disposable {
-    private disposables: Disposable[] = [];
+export class CursorManager extends CustomDisposable {
     /**
      * Vim cursor mode mappings
      */
@@ -82,6 +80,7 @@ export class CursorManager implements Disposable {
     }
 
     public constructor(private main: MainController) {
+        super();
         const updateCursorStyle = () => {
             this.updateCursorStyle();
             // Sometimes the cursor is reset to the default style.
@@ -437,8 +436,4 @@ export class CursorManager implements Disposable {
         editor.revealRange(new Selection(pos, pos), type);
         this.main.viewportManager.scrollNeovim(editor);
     };
-
-    public dispose(): void {
-        disposeAll(this.disposables);
-    }
 }

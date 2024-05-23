@@ -5,12 +5,11 @@ import { commands, Disposable, TextEditor, TextEditorEdit, window, workspace } f
 import { CompositeKeys, config } from "./config";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { disposeAll, normalizeInputString } from "./utils";
+import { CustomDisposable, normalizeInputString } from "./utils";
 
 const logger = createLogger("TypingManager");
 
-export class TypingManager implements Disposable {
-    private disposables: Disposable[] = [];
+export class TypingManager extends CustomDisposable {
     /**
      * Flag indicating that we're going to exit insert mode and sync buffers into neovim
      */
@@ -110,6 +109,7 @@ export class TypingManager implements Disposable {
     private vscodeDefaultType = (text: string) => commands.executeCommand("default:type", { text });
 
     public constructor(private main: MainController) {
+        super();
         // Deprecation warning for old composite escape commands
         const deprecatedWarning = () => {
             window
@@ -152,6 +152,12 @@ export class TypingManager implements Disposable {
         };
 
         this.takeOverVSCodeInput = true;
+        this.disposables.push({
+            dispose: () => {
+                this.typeHandler?.dispose();
+                this.replacePreviousCharHandler?.dispose();
+            },
+        });
 
         const registerCommand = (cmd: string, cb: (...args: any[]) => any) => {
             this.disposables.push(commands.registerCommand(cmd, cb, this));
@@ -346,10 +352,4 @@ export class TypingManager implements Disposable {
 
         this.composingText = "";
     };
-
-    public dispose() {
-        this.typeHandler?.dispose();
-        this.replacePreviousCharHandler?.dispose();
-        disposeAll(this.disposables);
-    }
 }

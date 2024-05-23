@@ -1,20 +1,12 @@
 import { DebouncedFunc, debounce } from "lodash-es";
-import {
-    Disposable,
-    EventEmitter,
-    Position,
-    TextEditor,
-    TextEditorVisibleRangesChangeEvent,
-    window,
-    workspace,
-} from "vscode";
+import { EventEmitter, Position, TextEditor, TextEditorVisibleRangesChangeEvent, window, workspace } from "vscode";
 
 import actions from "./actions";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, disposeAll } from "./utils";
+import { CustomDisposable, ManualPromise } from "./utils";
 
 const logger = createLogger("ViewportManager");
 
@@ -28,9 +20,7 @@ export class Viewport {
     skipcol = 0; // skip col (maybe left col)
 }
 
-export class ViewportManager implements Disposable {
-    private disposables: Disposable[] = [];
-
+export class ViewportManager extends CustomDisposable {
     private viewportChangedPromise?: ManualPromise;
 
     public get isSyncDone(): Promise<unknown> {
@@ -48,6 +38,7 @@ export class ViewportManager implements Disposable {
     public onCursorChanged = this.cursorChanged.event;
 
     public constructor(private main: MainController) {
+        super();
         this.disposables.push(
             this.cursorChanged,
             window.onDidChangeTextEditorVisibleRanges(this.onDidChangeVisibleRange),
@@ -196,9 +187,5 @@ export class ViewportManager implements Disposable {
         if (viewport && startLine != viewport?.topline && currentLine == viewport?.line) {
             actions.lua("scroll_viewport", Math.max(startLine, 0), endLine);
         }
-    }
-
-    dispose() {
-        disposeAll(this.disposables);
     }
 }

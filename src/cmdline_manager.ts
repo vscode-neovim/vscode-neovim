@@ -1,14 +1,11 @@
-import { Disposable } from "vscode";
-
 import { CommandLineController } from "./cmdline/cmdline_controller";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { CustomDisposable } from "./utils";
 import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
 
-export class CommandLineManager implements Disposable {
-    private disposables: Disposable[] = [];
+export class CommandLineManager extends CustomDisposable {
     /**
      * Simple command line UI
      */
@@ -28,12 +25,9 @@ export class CommandLineManager implements Disposable {
     }
 
     public constructor(private main: MainController) {
+        super();
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
-    }
-
-    public dispose() {
-        this.commandLine?.dispose();
-        disposeAll(this.disposables);
+        this.disposables.push({ dispose: () => this.commandLine?.dispose() });
     }
 
     private handleRedraw({ name, args }: EventBusData<"redraw">) {

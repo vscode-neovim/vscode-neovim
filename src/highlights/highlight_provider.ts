@@ -2,7 +2,6 @@ import { cloneDeep } from "lodash-es";
 import {
     DecorationOptions,
     DecorationRangeBehavior,
-    Disposable,
     Range,
     TextEditor,
     TextEditorDecorationType,
@@ -12,6 +11,7 @@ import {
 } from "vscode";
 
 import { config } from "../config";
+import { CustomDisposable } from "../utils";
 
 import { Highlight, HighlightGrid, ValidCell } from "./highlight_grid";
 
@@ -98,7 +98,7 @@ function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): The
     return newConfig;
 }
 
-export class HighlightProvider implements Disposable {
+export class HighlightProvider extends CustomDisposable {
     /**
      * key is the grid id and values is a grid representing those highlights
      */
@@ -120,17 +120,12 @@ export class HighlightProvider implements Disposable {
     private visualHighlightIds: number[] = [];
 
     public constructor() {
+        super();
         const highlights: HighlightConfiguration["highlights"] = {};
         for (const [key, opts] of Object.entries(config.highlights)) {
             highlights[key] = normalizeDecorationConfig(opts);
         }
         this.configuration = { highlights };
-    }
-
-    dispose() {
-        for (const decoration of this.highlighIdToDecorator.values()) {
-            decoration.dispose();
-        }
     }
 
     private createDecoratorForHighlightId(id: number, options: ThemableDecorationRenderOptions): void {
@@ -141,6 +136,7 @@ export class HighlightProvider implements Disposable {
             ...options,
             rangeBehavior: DecorationRangeBehavior.ClosedClosed,
         });
+        this.disposables.push(decorator);
         this.decoratorConfigurations.set(decorator, options);
         this.highlighIdToDecorator.set(id, decorator);
     }

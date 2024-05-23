@@ -1,6 +1,8 @@
 import neovim from "neovim";
 import { Disposable, EventEmitter } from "vscode";
 
+import { CustomDisposable } from "./utils";
+
 // #region RedrawEventArgs
 interface IRedrawEventArg<N, A extends unknown[] = []> {
     name: N;
@@ -144,19 +146,16 @@ export interface Event<T extends keyof EventsMapping = keyof EventsMapping> {
 
 export type EventBusData<T extends keyof EventsMapping> = EventsMapping[T];
 
-class EventBus implements Disposable {
+class EventBus extends CustomDisposable {
     /**
      * All Nvim events are dispatched by this single EventEmitter.
      * Components can subscribe to event broadcasts using `EventBus.on()`.
      */
     private emitter!: EventEmitter<Event>;
 
-    dispose() {
-        this.emitter.dispose();
-    }
-
     init() {
         this.emitter = new EventEmitter<Event>();
+        this.disposables.push(this.emitter);
     }
 
     /**

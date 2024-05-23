@@ -1,14 +1,13 @@
-import vscode, { Disposable, commands } from "vscode";
+import vscode, { commands } from "vscode";
 
 import { config } from "./config";
 import { eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { CustomDisposable } from "./utils";
 
-export class CommandsController implements Disposable {
-    private disposables: Disposable[] = [];
-
+export class CommandsController extends CustomDisposable {
     public constructor(private main: MainController) {
+        super();
         void this.main;
         this.disposables.push(
             commands.registerCommand("vscode-neovim.ctrl-f", () => this.scrollPage("page", "down")),
@@ -22,10 +21,6 @@ export class CommandsController implements Disposable {
             eventBus.on("scroll", ([by, to]) => this.scrollPage(by, to)),
             eventBus.on("scroll-line", ([to]) => this.scrollLine(to)),
         );
-    }
-
-    public dispose(): void {
-        disposeAll(this.disposables);
     }
 
     /// SCROLL COMMANDS ///

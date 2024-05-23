@@ -6,7 +6,6 @@ import { ATTACH } from "neovim/lib/api/Buffer";
 import {
     CancellationToken,
     CancellationTokenSource,
-    Disposable,
     EndOfLine,
     EventEmitter,
     LogLevel,
@@ -30,7 +29,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, convertByteNumToCharNum, disposeAll, wait } from "./utils";
+import { CustomDisposable, ManualPromise, convertByteNumToCharNum, wait } from "./utils";
 
 // NOTE: document and editors in vscode events and namespace are reference stable
 // Integration notes:
@@ -68,8 +67,7 @@ function makeEditorOptionsVariable(options?: TextEditorOptions) {
 /**
  * Manages neovim windows & buffers and maps them to vscode editors & documents
  */
-export class BufferManager implements Disposable {
-    private disposables: Disposable[] = [];
+export class BufferManager extends CustomDisposable {
     /**
      * Internal sync promise
      */
@@ -121,6 +119,7 @@ export class BufferManager implements Disposable {
     }
 
     public constructor(private main: MainController) {
+        super();
         this.bufferProvider = new BufferProvider(this.client, this.receivedBufferEvent);
         this.disposables.push(
             window.onDidChangeVisibleTextEditors(this.onEditorLayoutChanged),
@@ -158,10 +157,6 @@ export class BufferManager implements Disposable {
                 editor.options = { tabSize, insertSpaces, lineNumbers };
             },
         );
-    }
-
-    public dispose(): void {
-        disposeAll(this.disposables);
     }
 
     public async forceSyncLayout(): Promise<void> {
@@ -543,8 +538,11 @@ export class BufferManager implements Disposable {
         }
         try {
             await this.client.request("nvim_set_current_win", [winId]);
+            if ((await this.client.window).id !== winId) {
+                logger.error(`Failed to set current window to ${winId}`);
+            }
         } catch (e) {
-            logger.log(uri, LogLevel.Error, (e as Error).message);
+            logger.error(uri, LogLevel.Error, (e as Error).message);
         }
     }
     // #endregion

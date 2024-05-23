@@ -1,27 +1,26 @@
 import { NeovimClient } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
-import { ConfigurationTarget, Disposable, Range, commands, window, workspace } from "vscode";
+import { ConfigurationTarget, Range, commands, window, workspace } from "vscode";
 
 import { eval_for_client } from "./actions_eval";
-import { VSCodeContext, disposeAll, rangesToSelections } from "./utils";
+import { CustomDisposable, VSCodeContext, rangesToSelections } from "./utils";
 
 function getActionName(action: string) {
     return `neovim:${action}`;
 }
 
-class ActionManager implements Disposable {
-    private disposables: Disposable[] = [];
+class ActionManager extends CustomDisposable {
     private actions: string[] = [];
     private client!: NeovimClient;
 
     init() {
         this.initActions();
         this.initHooks();
-    }
-
-    dispose() {
-        this.actions = [];
-        disposeAll(this.disposables);
+        this.disposables.push({
+            dispose: () => {
+                this.actions = [];
+            },
+        });
     }
 
     /**

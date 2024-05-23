@@ -1,10 +1,10 @@
 import fs from "fs";
 import { inspect } from "util";
 
-import { Disposable, window } from "vscode";
 import * as vscode from "vscode";
+import { window } from "vscode";
 
-import { disposeAll } from "./utils";
+import { CustomDisposable } from "./utils";
 
 export interface ILogger {
     trace(...args: any[]): void;
@@ -29,8 +29,7 @@ function getTimestamp(): string {
     return new Date().toISOString();
 }
 
-export class Logger implements Disposable {
-    private disposables: Disposable[] = [];
+export class Logger extends CustomDisposable {
     private fd: number | undefined;
     private filePath: string | undefined;
     private loggers: Map<string, ILogger> = new Map();
@@ -64,10 +63,6 @@ export class Logger implements Disposable {
             undefined,
             this.disposables,
         );
-    }
-
-    public dispose(): void {
-        disposeAll(this.disposables);
     }
 
     private onLogLevelChanged(level: vscode.LogLevel) {
