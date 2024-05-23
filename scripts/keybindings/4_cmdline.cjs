@@ -5,11 +5,13 @@ const [_add, keybinds] = addKeybinds();
 const add = (key, args, cmd = "vscode-neovim.send-cmdline") =>
     _add(key, "neovim.init && neovim.mode == cmdline", args, cmd);
 
+// special keys
+["tab", "shift+tab", "down", "up", "shift+down", "shift+up"].forEach((key) => add(key, key2arg(key)));
+
 // ctrl keys
 [..."hwunplgtmj", "up", "down"].forEach((k) => {
     let key = `ctrl+${k}`;
     let args = key2arg(key);
-    let cmd = "vscode-neovim.send-cmdline";
 
     switch (k) {
         case "b": {
@@ -22,17 +24,9 @@ const add = (key, args, cmd = "vscode-neovim.send-cmdline") =>
             cmd = "cursorEnd";
             break;
         }
-        case "n": {
-            args = "<Down>";
-            break;
-        }
-        case "p": {
-            args = "<Up>";
-            break;
-        }
     }
 
-    add(key, args, cmd);
+    add(key, args);
 });
 
 // ctrl+r number
@@ -79,6 +73,5 @@ add("ctrl+r -", "<C-r>-");
 add("ctrl+r .", "<C-r>.");
 add("ctrl+r =", "<C-r>=");
 add("ctrl+\\ e", "<C-\\>e");
-add("tab", null, "vscode-neovim.complete-selection-cmdline");
 
 module.exports = keybinds;

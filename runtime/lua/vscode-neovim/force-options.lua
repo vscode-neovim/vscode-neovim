@@ -3,8 +3,8 @@ local api = vim.api
 
 -- ------------------------- forced global options ------------------------- --
 vim.opt.cmdheight = 1
-vim.opt.wildmode = "list"
-vim.cmd([[set wildchar=<C-e>]])
+vim.opt.wildmode = "longest:full,full"
+vim.cmd([[set wildchar=<Tab>]])
 vim.opt.mouse = "a"
 
 vim.opt.backup = false

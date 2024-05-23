@@ -31,20 +31,6 @@ export function calculateInputAfterTextChange(oldText: string, newText: string):
     }
 }
 
-export function commandInputIsCompletable(command: string): boolean {
-    return (
-        command.charAt(0) !== "?" &&
-        command.charAt(0) !== "/" &&
-        !command.includes("s/") &&
-        !command.includes("su/") &&
-        !command.includes("substitute/") &&
-        !command.includes("g/") &&
-        !command.includes("global/") &&
-        !command.includes("v/") &&
-        !command.includes("vglobal/")
-    );
-}
-
 function diffLineText(oldLine: string, newLine: string): TextChange {
     const lengthDifference = newLine.length - oldLine.length;
 

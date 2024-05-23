@@ -112,12 +112,6 @@
                     "title": "Neovim width",
                     "description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
                 },
-                "vscode-neovim.completionDelay": {
-                    "type": "number",
-                    "default": 1000,
-                    "title": "Completion Delay",
-                    "description": "The delay in ms until the wildmenu completions are shown. This is to not bother you when you write :w or :noh."
-                },
                 "vscode-neovim.neovimViewportHeightExtend": {
                     "type": "number",
                     "default": 1,
@@ -997,6 +991,42 @@
             },
             {
                 "command": "vscode-neovim.send-cmdline",
+                "key": "tab",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<tab>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "shift+tab",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<S-tab>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "down",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<down>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "up",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<up>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "shift+down",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<S-down>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "shift+up",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<S-up>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+h",
                 "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-h>"
@@ -1017,13 +1047,13 @@
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+n",
                 "when": "neovim.init && neovim.mode == cmdline",
-                "args": "<Down>"
+                "args": "<C-n>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+p",
                 "when": "neovim.init && neovim.mode == cmdline",
-                "args": "<Up>"
+                "args": "<C-p>"
             },
             {
                 "command": "vscode-neovim.send-cmdline",
@@ -1446,11 +1476,6 @@
                 "args": "<C-\\>e"
             },
             {
-                "command": "vscode-neovim.complete-selection-cmdline",
-                "key": "tab",
-                "when": "neovim.init && neovim.mode == cmdline"
-            },
-            {
                 "key": "j",
                 "command": "list.focusDown",
                 "when": "listFocus && !inputFocus"
@@ -1643,12 +1668,12 @@
             {
                 "command": "workbench.action.quickOpenSelectNext",
                 "key": "ctrl+n",
-                "when": "inQuickOpen && (neovim.mode != cmdline || neovim.wildMenuVisible)"
+                "when": "inQuickOpen && neovim.mode != cmdline"
             },
             {
                 "command": "workbench.action.quickOpenSelectPrevious",
                 "key": "ctrl+p",
-                "when": "inQuickOpen && (neovim.mode != cmdline || neovim.wildMenuVisible)"
+                "when": "inQuickOpen && neovim.mode != cmdline"
             },
             {
                 "key": "ctrl+n",

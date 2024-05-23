@@ -94,8 +94,9 @@ type RedrawEventArgs =
     | IRedrawEventArg<"mouse_on">
     // ["mouse_off"]
     | IRedrawEventArg<"mouse_off">
-    | IRedrawEventArg<"wildmenu_show", [string[]]>
-    | IRedrawEventArg<"wildmenu_hide">;
+    | IRedrawEventArg<"popupmenu_show", [[string, string, string, string][], number, number, number, number]>
+    | IRedrawEventArg<"popupmenu_select", [number]>
+    | IRedrawEventArg<"popupmenu_hide">;
 // #endregion
 
 interface BufferInfo {

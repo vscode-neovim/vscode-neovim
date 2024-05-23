@@ -149,7 +149,6 @@ export class MainController implements vscode.Disposable {
             ext_multigrid: true,
             ext_popupmenu: true,
             ext_tabline: true,
-            ext_wildmenu: true,
         });
 
         await this.bufferManager.forceSyncLayout();

@@ -143,9 +143,6 @@ export class Config implements Disposable {
     get neovimViewportWidth() {
         return this.neovimWidth;
     }
-    get completionDelay() {
-        return this.cfg.get("completionDelay", 1000);
-    }
     get neovimViewportHeightExtend() {
         return this.cfg.get("neovimViewportHeightExtend", 1);
     }

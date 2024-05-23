@@ -27,7 +27,6 @@ mode and editor commands, making the best use of both editors.
     -   [Troubleshooting](#troubleshooting)
     -   [Composite escape keys](#composite-escape-keys)
     -   [Jumplist](#jumplist)
-    -   [Wildmenu completion](#wildmenu-completion)
     -   [Multiple cursors](#multiple-cursors)
     -   [Remote development](#remote-development)
 -   [⚡️ API](#%EF%B8%8F-api)
@@ -255,13 +254,6 @@ definition, etc) navigable through the jumplist.
 
 Make sure to bind to `workbench.action.navigateBack` / `workbench.action.navigateForward` if you're using custom
 mappings. Marks (both upper & lowercased) should work fine.
-
-### Wildmenu completion
-
-Command menu has the wildmenu completion on type. The completion options appear after 1.5s (to not bother you when you
-write `:w` or `:noh`). <kbd>Up</kbd>/<kbd>Down</kbd> selects the option and <kbd>Tab</kbd> accepts it. See the gif:
-
-![wildmenu](/images/wildmenu.gif)
 
 ### Multiple cursors
 
