@@ -1,4 +1,4 @@
-import { Disposable, QuickPick, QuickPickItem, commands, window } from "vscode";
+import { Disposable, QuickInputButton, QuickPick, QuickPickItem, ThemeIcon, commands, window } from "vscode";
 
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
@@ -18,6 +18,8 @@ export class CommandLineManager implements Disposable {
     // The last text typed in the UI, used to calculate changes
     private lastTypedText: string = "";
 
+    // On suggestion selection, we don't want to send <CR> to nvim, so we ignore the accept event.
+    private ignoreAcceptEvent = false;
     // On cmdline_hide, we close the quickpick. This flag is used to ignore that event so we don't send an <Esc> to nvim.
     private ignoreHideEvent = false;
 
@@ -30,12 +32,24 @@ export class CommandLineManager implements Disposable {
         this.input = window.createQuickPick();
         (this.input as any).sortByLabel = false;
         this.input.ignoreFocusOut = true;
+        this.input.buttons = [
+            {
+                iconPath: new ThemeIcon("close"),
+                tooltip: "Cancel",
+            },
+            {
+                iconPath: new ThemeIcon("check"),
+                tooltip: "Accept",
+            },
+        ];
         this.reset();
         this.disposables.push(
             this.input,
             this.input.onDidAccept(this.onAccept),
             this.input.onDidChangeValue(this.onChange),
             this.input.onDidHide(this.onHide),
+            this.input.onDidChangeSelection(this.onSelection),
+            this.input.onDidTriggerButton(this.onButton),
             commands.registerCommand("vscode-neovim.commit-cmdline", this.onAccept),
             commands.registerCommand("vscode-neovim.send-cmdline", this.sendRedraw),
             commands.registerCommand("vscode-neovim.test-cmdline", this.testCmdline),
@@ -48,6 +62,7 @@ export class CommandLineManager implements Disposable {
 
     private reset() {
         this.lastTypedText = "";
+        this.ignoreAcceptEvent = false;
         this.ignoreHideEvent = false;
         this.redrawExpected = true;
         this.input.value = "";
@@ -102,13 +117,16 @@ export class CommandLineManager implements Disposable {
     }
 
     private onAccept = async (): Promise<void> => {
-        await this.main.client.input("<CR>");
+        if (!this.ignoreAcceptEvent) {
+            await this.main.client.input("<CR>");
+        }
+        this.ignoreAcceptEvent = false;
     };
 
     private onChange = async (text: string): Promise<void> => {
-        logger.debug(`Sending cmdline to nvim: ${text}`);
         const toType = calculateInputAfterTextChange(this.lastTypedText, text);
         this.lastTypedText = text;
+        logger.debug(`Sending cmdline to nvim: "${toType}" -> "${text}"`);
         await this.main.client.input(toType);
     };
 
@@ -118,6 +136,24 @@ export class CommandLineManager implements Disposable {
             await this.main.client.input("<Esc>");
         }
         this.ignoreHideEvent = false;
+    };
+
+    private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
+        if (e.length === 0) {
+            return;
+        }
+        logger.debug(`Selected: "${e[0].label}"`);
+        this.ignoreAcceptEvent = true;
+        this.redrawExpected = true;
+        await this.onChange(e[0].label);
+    };
+
+    private onButton = async (button: QuickInputButton): Promise<void> => {
+        if (button.tooltip === "Cancel") {
+            this.input.hide();
+        } else if (button.tooltip === "Accept") {
+            await this.onAccept();
+        }
     };
 
     // use this function for keybindings in command line that cause content to update
