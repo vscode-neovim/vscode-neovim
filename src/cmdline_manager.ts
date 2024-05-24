@@ -1,5 +1,4 @@
 import { Disposable, QuickInputButton, QuickPick, QuickPickItem, ThemeIcon, commands, window } from "vscode";
-import { debounce } from "lodash-es";
 
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
@@ -9,16 +8,6 @@ import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
 import { GlyphChars } from "./constants";
 
 const logger = createLogger("CmdLine", false);
-
-// Much effort was put into this to make sure that race conditions behave as expected.
-// There may be room for improvement (without using debouncing), but this seems to work for 99% of cases.
-// Design constraints:
-// - The user must be able to type rapidly without being interrupted. The user must also be able to type and immediately switch to using a binding like CR or C-h.
-// - Suggestions must be selectable at a very fast rate.
-// The problem with quickly selecting suggestions is that the input box will be updated with the selected suggestion,
-// which will trigger an onChange event, which can conflict if it writes back to nvim.
-// Thus, we need to debounce the onChange event when the changes are coming from nvim, but not when the changes are coming from the user.
-// We do this by setting a flag when keyboard shortcuts are used (and so we expect update from nvim). When the flag is not set, we flush the debounce.
 
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -37,6 +26,10 @@ export class CommandLineManager implements Disposable {
     // When we type, we send updates to nvim. We want to ignore updates coming from nvim, because it may interfere with typing.
     // However, bindings are expected to cause the cmdline content to change, so we use this flag to listen to those updates.
     private redrawExpected = true;
+
+    // When updates come from nvim, we write to the input field.
+    // We don't want to send those updates back to nvim, so we use this counter to keep track of the number of onChange to ignore.
+    private pendingNvimUpdates = 0;
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -57,7 +50,7 @@ export class CommandLineManager implements Disposable {
         this.disposables.push(
             this.input,
             this.input.onDidAccept(this.onAccept),
-            this.input.onDidChangeValue(this.onChangeDebounced),
+            this.input.onDidChangeValue(this.onChange),
             this.input.onDidHide(this.onHide),
             this.input.onDidChangeSelection(this.onSelection),
             this.input.onDidTriggerButton(this.onButton),
@@ -72,11 +65,11 @@ export class CommandLineManager implements Disposable {
     }
 
     private reset() {
-        this.onChangeDebouncedInner.cancel();
         this.lastTypedText = "";
         this.ignoreAcceptEvent = false;
         this.ignoreHideEvent = false;
         this.redrawExpected = true;
+        this.pendingNvimUpdates = 0;
         this.input.value = "";
         this.input.title = "";
         this.input.items = [];
@@ -92,17 +85,17 @@ export class CommandLineManager implements Disposable {
                 this.lastTypedText = content;
                 this.input.title = prompt || this.getTitle(firstc);
                 // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
-                if (this.redrawExpected && this.input.value !== content) {
-                    this.onChangeDebouncedInner.cancel(); // just in case show takes time
-                    this.input.show();
+                if (!this.redrawExpected) {
+                    logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
+                    break;
+                }
+                this.redrawExpected = false;
+                this.input.show();
+                if (this.input.value !== content) {
+                    this.pendingNvimUpdates++;
                     const activeItems = this.input.activeItems; // backup selections
                     this.input.value = content; // update content
                     this.input.activeItems = activeItems; // restore selections
-                } else {
-                    this.input.show();
-                    if (!this.redrawExpected) {
-                        logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
-                    }
                 }
                 break;
             }
@@ -136,7 +129,6 @@ export class CommandLineManager implements Disposable {
     }
 
     private onAccept = async (): Promise<void> => {
-        await this.onChangeDebouncedInner.flush();
         if (!this.ignoreAcceptEvent) {
             await this.main.client.input("<CR>");
         }
@@ -144,24 +136,17 @@ export class CommandLineManager implements Disposable {
     };
 
     private onChange = async (text: string): Promise<void> => {
-        this.redrawExpected = false;
+        if (this.pendingNvimUpdates) {
+            this.pendingNvimUpdates--;
+            logger.debug(
+                `onChange: skip updating cmdline because change originates from nvim: "${this.lastTypedText}"`,
+            );
+            return;
+        }
         const toType = calculateInputAfterTextChange(this.lastTypedText, text);
-        if (toType !== "") {
-            logger.debug(`onChange: sending cmdline to nvim: "${this.lastTypedText}" + "${toType}" -> "${text}"`);
-            await this.main.client.input(toType);
-            this.lastTypedText = text;
-        } else {
-            logger.debug(`onChange: skip sending cmdline to nvim: "${this.lastTypedText}"`);
-        }
-    };
-
-    private onChangeDebouncedInner = debounce(this.onChange, 100, { leading: false, trailing: true });
-
-    private onChangeDebounced = (text: string): void => {
-        this.onChangeDebouncedInner(text);
-        if (!this.redrawExpected) {
-            this.onChangeDebouncedInner.flush();
-        }
+        logger.debug(`onChange: sending cmdline to nvim: "${this.lastTypedText}" + "${toType}" -> "${text}"`);
+        await this.main.client.input(toType);
+        this.lastTypedText = text;
     };
 
     private onHide = async (): Promise<void> => {
