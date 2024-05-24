@@ -83,12 +83,9 @@ export class CommandLineManager implements Disposable {
                 // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
                 if (this.redrawExpected && this.input.value !== content) {
                     this.redrawExpected = false;
-                    // backup selections
-                    const activeItems = this.input.activeItems;
-                    // update content
-                    this.input.value = content;
-                    // restore selections
-                    this.input.activeItems = activeItems;
+                    const activeItems = this.input.activeItems; // backup selections
+                    this.input.value = content; // update content
+                    this.input.activeItems = activeItems; // restore selections
                 } else {
                     if (!this.redrawExpected) {
                         logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
@@ -134,9 +131,13 @@ export class CommandLineManager implements Disposable {
 
     private onChange = async (text: string): Promise<void> => {
         const toType = calculateInputAfterTextChange(this.lastTypedText, text);
-        logger.debug(`onChange: sending cmdline to nvim: "${this.lastTypedText}" -> "${text}": "${toType}"`);
-        await this.main.client.input(toType);
-        this.lastTypedText = text;
+        if (toType !== "") {
+            logger.debug(`onChange: sending cmdline to nvim: "${this.lastTypedText}" + "${toType}" -> "${text}"`);
+            await this.main.client.input(toType);
+            this.lastTypedText = text;
+        } else {
+            logger.debug(`onChange: skip sending cmdline to nvim: "${this.lastTypedText}"`);
+        }
     };
 
     private onHide = async (): Promise<void> => {
@@ -167,6 +168,7 @@ export class CommandLineManager implements Disposable {
 
     // use this function for keybindings in command line that cause content to update
     private sendRedraw = (keys: string): void => {
+        logger.debug(`sendRedraw: "${keys}"`);
         this.redrawExpected = true;
         this.main.client.input(keys);
     };
