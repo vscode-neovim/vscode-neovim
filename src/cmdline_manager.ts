@@ -157,14 +157,15 @@ export class CommandLineManager implements Disposable {
         this.ignoreHideEvent = false;
     };
 
-    private onSelection = (e: readonly QuickPickItem[]): void => {
+    private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
         if (e.length === 0) {
             return;
         }
         logger.debug(`onSelection: "${e[0].label}"`);
         this.ignoreAcceptEvent = true;
         this.redrawExpected = true;
-        this.input.value = e[0].label;
+        const index = this.input.items.indexOf(e[0]);
+        await this.main.client.request("nvim_select_popupmenu_item", [index, false, false, {}]);
     };
 
     private onButton = async (button: QuickInputButton): Promise<void> => {
