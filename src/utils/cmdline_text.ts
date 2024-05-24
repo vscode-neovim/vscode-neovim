@@ -1,4 +1,4 @@
-import { normalizeInputString } from "../utils/text";
+import { normalizeInputString } from "./text";
 
 type TextChange = NoTextChange | TextEndChange | OtherTextChange;
 

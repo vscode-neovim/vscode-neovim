@@ -4,7 +4,7 @@ import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
 import { createLogger } from "./logger";
-import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
+import { calculateInputAfterTextChange } from "./utils/cmdline_text";
 import { GlyphChars } from "./constants";
 
 const logger = createLogger("CmdLine", false);
@@ -101,17 +101,23 @@ export class CommandLineManager implements Disposable {
             }
             case "popupmenu_show": {
                 const [items, selected, _row, _col, _grid] = args[0];
-                logger.debug(
-                    `popupmenu_show: "${items.length}[${selected}]: ${selected === -1 ? "unselected" : items[selected]}"`,
-                );
+                logger.debug(`popupmenu_show: ${items.length} items`);
                 this.input.items = items.map((item) => ({ label: item[0], alwaysShow: true }));
-                this.input.activeItems = [this.input.items[selected]];
+                if (selected === -1) {
+                    this.input.activeItems = [];
+                } else {
+                    this.input.activeItems = [this.input.items[selected]];
+                }
                 break;
             }
             case "popupmenu_select": {
                 const [selected] = args[0];
                 logger.debug(`popupmenu_select: "${selected}"`);
-                this.input.activeItems = [this.input.items[selected]];
+                if (selected === -1) {
+                    this.input.activeItems = [];
+                } else {
+                    this.input.activeItems = [this.input.items[selected]];
+                }
                 break;
             }
             case "popupmenu_hide": {
