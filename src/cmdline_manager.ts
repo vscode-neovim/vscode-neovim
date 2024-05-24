@@ -1,4 +1,5 @@
 import { Disposable, QuickInputButton, QuickPick, QuickPickItem, ThemeIcon, commands, window } from "vscode";
+import { debounce } from "lodash-es";
 
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
@@ -46,7 +47,7 @@ export class CommandLineManager implements Disposable {
         this.disposables.push(
             this.input,
             this.input.onDidAccept(this.onAccept),
-            this.input.onDidChangeValue(this.onChange),
+            this.input.onDidChangeValue(this.onChangeDebounced),
             this.input.onDidHide(this.onHide),
             this.input.onDidChangeSelection(this.onSelection),
             this.input.onDidTriggerButton(this.onButton),
@@ -61,6 +62,7 @@ export class CommandLineManager implements Disposable {
     }
 
     private reset() {
+        this.onChangeDebounced.cancel();
         this.lastTypedText = "";
         this.ignoreAcceptEvent = false;
         this.ignoreHideEvent = false;
@@ -79,14 +81,16 @@ export class CommandLineManager implements Disposable {
                 logger.debug(`cmdline_show: "${content}"`);
                 this.lastTypedText = content;
                 this.input.title = prompt || this.getTitle(firstc);
-                this.input.show();
                 // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
                 if (this.redrawExpected && this.input.value !== content) {
+                    this.onChangeDebounced.cancel();
+                    this.input.show();
                     this.redrawExpected = false;
                     const activeItems = this.input.activeItems; // backup selections
                     this.input.value = content; // update content
                     this.input.activeItems = activeItems; // restore selections
                 } else {
+                    this.input.show();
                     if (!this.redrawExpected) {
                         logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
                     }
@@ -123,6 +127,7 @@ export class CommandLineManager implements Disposable {
     }
 
     private onAccept = async (): Promise<void> => {
+        await this.onChangeDebounced.flush();
         if (!this.ignoreAcceptEvent) {
             await this.main.client.input("<CR>");
         }
@@ -140,6 +145,8 @@ export class CommandLineManager implements Disposable {
         }
     };
 
+    private onChangeDebounced = debounce(this.onChange, 100, { leading: false, trailing: true });
+
     private onHide = async (): Promise<void> => {
         this.reset();
         if (!this.ignoreHideEvent) {
@@ -148,14 +155,14 @@ export class CommandLineManager implements Disposable {
         this.ignoreHideEvent = false;
     };
 
-    private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
+    private onSelection = (e: readonly QuickPickItem[]): void => {
         if (e.length === 0) {
             return;
         }
         logger.debug(`onSelection: "${e[0].label}"`);
         this.ignoreAcceptEvent = true;
         this.redrawExpected = true;
-        await this.onChange(e[0].label);
+        this.input.value = e[0].label;
     };
 
     private onButton = async (button: QuickInputButton): Promise<void> => {
