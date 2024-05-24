@@ -10,6 +10,16 @@ import { GlyphChars } from "./constants";
 
 const logger = createLogger("CmdLine", false);
 
+// Much effort was put into this to make sure that race conditions behave as expected.
+// There may be room for improvement (without using debouncing), but this seems to work for 99% of cases.
+// Design constraints:
+// - The user must be able to type rapidly without being interrupted. The user must also be able to type and immediately switch to using a binding like CR or C-h.
+// - Suggestions must be selectable at a very fast rate.
+// The problem with quickly selecting suggestions is that the input box will be updated with the selected suggestion,
+// which will trigger an onChange event, which can conflict if it writes back to nvim.
+// Thus, we need to debounce the onChange event when the changes are coming from nvim, but not when the changes are coming from the user.
+// We do this by setting a flag when keyboard shortcuts are used (and so we expect update from nvim). When the flag is not set, we flush the debounce.
+
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
 
@@ -27,16 +37,6 @@ export class CommandLineManager implements Disposable {
     // When we type, we send updates to nvim. We want to ignore updates coming from nvim, because it may interfere with typing.
     // However, bindings are expected to cause the cmdline content to change, so we use this flag to listen to those updates.
     private redrawExpected = true;
-
-    // Much effort was put into this to make sure that race conditions behave as expected.
-    // There may be room for improvement (without using debouncing), but this seems to work for 99% of cases.
-    // Design constraints:
-    // - The user must be able to type rapidly without being interrupted. The user must also be able to type and immediately switch to using a binding like CR or C-h.
-    // - Suggestions must be selectable at a very fast rate.
-    // The problem with quickly selecting suggestions is that the input box will be updated with the selected suggestion,
-    // which will trigger an onChange event, which can conflict if it writes back to nvim.
-    // Thus, we need to debounce the onChange event when the changes are coming from nvim, but not when the changes are coming from the user.
-    private updatedFromNvim = false;
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -77,7 +77,6 @@ export class CommandLineManager implements Disposable {
         this.ignoreAcceptEvent = false;
         this.ignoreHideEvent = false;
         this.redrawExpected = true;
-        this.updatedFromNvim = false;
         this.input.value = "";
         this.input.title = "";
         this.input.items = [];
@@ -96,8 +95,6 @@ export class CommandLineManager implements Disposable {
                 if (this.redrawExpected && this.input.value !== content) {
                     this.onChangeDebouncedInner.cancel(); // just in case show takes time
                     this.input.show();
-                    this.redrawExpected = false;
-                    this.updatedFromNvim = true;
                     const activeItems = this.input.activeItems; // backup selections
                     this.input.value = content; // update content
                     this.input.activeItems = activeItems; // restore selections
@@ -147,7 +144,7 @@ export class CommandLineManager implements Disposable {
     };
 
     private onChange = async (text: string): Promise<void> => {
-        this.updatedFromNvim = false;
+        this.redrawExpected = false;
         const toType = calculateInputAfterTextChange(this.lastTypedText, text);
         if (toType !== "") {
             logger.debug(`onChange: sending cmdline to nvim: "${this.lastTypedText}" + "${toType}" -> "${text}"`);
@@ -162,7 +159,7 @@ export class CommandLineManager implements Disposable {
 
     private onChangeDebounced = (text: string): void => {
         this.onChangeDebouncedInner(text);
-        if (!this.updatedFromNvim) {
+        if (!this.redrawExpected) {
             this.onChangeDebouncedInner.flush();
         }
     };
