@@ -1,39 +1,76 @@
-import { Disposable } from "vscode";
+import { Disposable, QuickInputButton, QuickPick, QuickPickItem, ThemeIcon, commands, window } from "vscode";
 
-import { CommandLineController } from "./cmdline/cmdline_controller";
-import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
-import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
+import { createLogger } from "./logger";
+import { calculateInputAfterTextChange } from "./utils/cmdline_text";
+import { GlyphChars } from "./constants";
+
+const logger = createLogger("CmdLine", false);
+
+class CmdlineState {
+    // The last text typed in the UI, used to calculate changes
+    lastTypedText: string = "";
+
+    // On suggestion selection, we don't want to send <CR> to nvim, so we ignore the accept event.
+    ignoreAcceptEvent = false;
+    // On cmdline_hide, we close the quickpick. This flag is used to ignore that event so we don't send an <Esc> to nvim.
+    ignoreHideEvent = false;
+
+    // When we type, we send updates to nvim. We want to ignore updates coming from nvim, because it may interfere with typing.
+    // However, bindings are expected to cause the cmdline content to change, so we use this flag to listen to those updates.
+    redrawExpected = true;
+
+    // When updates come from nvim, we write to the input field.
+    // We don't want to send those updates back to nvim, so we use this counter to keep track of the number of onChange to ignore.
+    pendingNvimUpdates = 0;
+}
 
 export class CommandLineManager implements Disposable {
     private disposables: Disposable[] = [];
-    /**
-     * Simple command line UI
-     */
-    private commandLine?: CommandLineController;
-    /**
-     * Commandline timeout
-     */
-    private cmdlineTimer?: NodeJS.Timeout;
 
-    /**
-     * The last text typed in the UI, used to calculate changes
-     */
-    private lastTypedText: string = "";
-
-    private get client() {
-        return this.main.client;
-    }
+    private input: QuickPick<QuickPickItem>;
+    private state = new CmdlineState();
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+        this.input = window.createQuickPick();
+        (this.input as any).sortByLabel = false;
+        this.input.ignoreFocusOut = true;
+        this.input.buttons = [
+            {
+                iconPath: new ThemeIcon("close"),
+                tooltip: "Cancel",
+            },
+            {
+                iconPath: new ThemeIcon("check"),
+                tooltip: "Accept",
+            },
+        ];
+        this.disposables.push(
+            this.input,
+            this.input.onDidAccept(this.onAccept),
+            this.input.onDidChangeValue(this.onChange),
+            this.input.onDidHide(this.onHide),
+            this.input.onDidChangeSelection(this.onSelection),
+            this.input.onDidTriggerButton(this.onButton),
+            commands.registerCommand("vscode-neovim.commit-cmdline", this.onAccept),
+            commands.registerCommand("vscode-neovim.send-cmdline", this.sendRedraw),
+            commands.registerCommand("vscode-neovim.test-cmdline", this.testCmdline),
+        );
     }
 
     public dispose() {
-        this.commandLine?.dispose();
         disposeAll(this.disposables);
+    }
+
+    private reset() {
+        this.state = new CmdlineState();
+        this.input.value = "";
+        this.input.title = "";
+        this.input.items = [];
+        this.input.activeItems = [];
     }
 
     private handleRedraw({ name, args }: EventBusData<"redraw">) {
@@ -41,88 +78,132 @@ export class CommandLineManager implements Disposable {
             case "cmdline_show": {
                 const [content, _pos, firstc, prompt, _indent, _level] = args[0];
                 const allContent = content.map(([, str]) => str).join("");
-                // !note: neovim can send cmdline_hide followed by cmdline_show events
-                // !since quickpick can be destroyed slightly at later time after handling cmdline_hide we want to create new command line
-                // !controller and input for every visible cmdline_show event
-                // !otherwise we may hit cmdline_show when it's being hidden
-                // as alternative, it's possible to process batch and determine if we need show/hide or just redraw the command_line
-                // but this won't handle the case when cmdline_show comes in next flush batch (is it possible?)
-                // btw, easier to just recreate whole command line (and quickpick inside)
-                if (this.cmdlineTimer) {
-                    clearTimeout(this.cmdlineTimer);
-                    this.cmdlineTimer = undefined;
-                    this.showCmd(allContent, firstc, prompt);
-                } else {
-                    // if there is initial content and it's not currently displayed then it may come
-                    // from some mapping. to prevent bad UI commandline transition we delay cmdline appearing here
-                    if (allContent !== "" && allContent !== "'<,'>" && !this.commandLine) {
-                        this.cmdlineTimer = setTimeout(() => this.showCmdOnTimer(allContent, firstc, prompt), 200);
-                    } else {
-                        this.showCmd(allContent, firstc, prompt);
-                    }
-                }
+                logger.debug(`cmdline_show: "${content}"`);
+                this.cmdlineShow(allContent, firstc, prompt);
                 break;
             }
-            case "wildmenu_show": {
-                this.commandLine?.setCompletionItems(args[0][0]);
+            case "popupmenu_show": {
+                const [items, selected, _row, _col, _grid] = args[0];
+                logger.debug(`popupmenu_show: ${items.length} items`);
+                this.input.items = items.map((item) => ({ label: item[0], alwaysShow: true }));
+                this.setSelection(selected);
                 break;
             }
-            case "wildmenu_hide": {
-                this.commandLine?.setCompletionItems([]);
+            case "popupmenu_select": {
+                const [selected] = args[0];
+                logger.debug(`popupmenu_select: "${selected}"`);
+                this.setSelection(selected);
+                break;
+            }
+            case "popupmenu_hide": {
+                logger.debug(`popupmenu_hide`);
+                this.input.items = [];
                 break;
             }
             case "cmdline_hide": {
-                if (this.cmdlineTimer) {
-                    clearTimeout(this.cmdlineTimer);
-                    this.cmdlineTimer = undefined;
-                } else if (this.commandLine) {
-                    this.commandLine.cancel(true);
-                    this.commandLine.dispose();
-                    this.commandLine = undefined;
-                }
+                logger.debug(`cmdline_hide`);
+                this.state.ignoreHideEvent = true;
+                this.input.hide();
                 break;
             }
         }
     }
 
-    private showCmd = (content: string, firstc: string, prompt: string): void => {
-        this.lastTypedText = content;
+    private cmdlineShow = (content: string, firstc: string, prompt: string): void => {
+        this.state.lastTypedText = content;
+        this.input.title = prompt || this.getTitle(firstc);
+        // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
+        if (!this.state.redrawExpected) {
+            logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
+            return;
+        }
+        this.state.redrawExpected = false;
+        this.input.show();
+        if (this.input.value !== content) {
+            this.state.pendingNvimUpdates++;
+            const activeItems = this.input.activeItems; // backup selections
+            this.input.value = content; // update content
+            this.input.activeItems = activeItems; // restore selections
+        }
+    };
 
-        if (!this.commandLine) {
-            this.commandLine = new CommandLineController(
-                this.client,
-                {
-                    onAccepted: this.onCmdAccept,
-                    onCanceled: this.onCmdCancel,
-                    onChanged: this.onCmdChange,
-                },
-                config.completionDelay,
+    private setSelection = (index: number): void => {
+        if (index === -1) {
+            this.input.activeItems = [];
+        } else {
+            this.input.activeItems = [this.input.items[index]];
+        }
+    };
+
+    private onAccept = async (): Promise<void> => {
+        if (!this.state.ignoreAcceptEvent) {
+            await this.main.client.input("<CR>");
+        }
+        this.state.ignoreAcceptEvent = false;
+    };
+
+    private onChange = async (text: string): Promise<void> => {
+        if (this.state.pendingNvimUpdates) {
+            this.state.pendingNvimUpdates = Math.max(0, this.state.pendingNvimUpdates - 1);
+            logger.debug(
+                `onChange: skip updating cmdline because change originates from nvim: "${this.state.lastTypedText}"`,
             );
+            return;
         }
-        this.commandLine.show(content, firstc, prompt);
+        const toType = calculateInputAfterTextChange(this.state.lastTypedText, text);
+        logger.debug(`onChange: sending cmdline to nvim: "${this.state.lastTypedText}" + "${toType}" -> "${text}"`);
+        await this.main.client.input(toType);
+        this.state.lastTypedText = text;
     };
 
-    private showCmdOnTimer = (initialContent: string, firstc: string, prompt: string): void => {
-        this.showCmd(initialContent, firstc, prompt);
-        this.cmdlineTimer = undefined;
-    };
-
-    private onCmdChange = async (text: string, complete: boolean): Promise<void> => {
-        let toType = calculateInputAfterTextChange(this.lastTypedText, text);
-        this.lastTypedText = text;
-
-        if (complete) {
-            toType += "<C-e>";
+    private onHide = async (): Promise<void> => {
+        this.reset();
+        if (!this.state.ignoreHideEvent) {
+            await this.main.client.input("<Esc>");
         }
-
-        await this.client.input(toType);
+        this.state.ignoreHideEvent = false;
     };
 
-    private onCmdCancel = async (): Promise<void> => {
-        await this.client.input("<Esc>");
+    private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
+        if (e.length === 0) {
+            return;
+        }
+        logger.debug(`onSelection: "${e[0].label}"`);
+        this.state.ignoreAcceptEvent = true;
+        this.state.redrawExpected = true;
+        const index = this.input.items.indexOf(e[0]);
+        await this.main.client.request("nvim_select_popupmenu_item", [index, false, false, {}]);
     };
 
-    private onCmdAccept = (): void => {
-        this.client.input("<CR>");
+    private onButton = async (button: QuickInputButton): Promise<void> => {
+        if (button.tooltip === "Cancel") {
+            this.input.hide();
+        } else if (button.tooltip === "Accept") {
+            await this.onAccept();
+        }
     };
+
+    // use this function for keybindings in command line that cause content to update
+    private sendRedraw = (keys: string): void => {
+        logger.debug(`sendRedraw: "${keys}"`);
+        this.state.redrawExpected = true;
+        this.main.client.input(keys);
+    };
+
+    private testCmdline = (e: string): void => {
+        this.input.value += e;
+    };
+
+    private getTitle(modeOrPrompt: string): string {
+        switch (modeOrPrompt) {
+            case "/":
+                return `${GlyphChars.SEARCH_FORWARD} Forward Search:`;
+            case "?":
+                return `${GlyphChars.SEARCH_BACKWARD} Backward Search:`;
+            case ":":
+                return `${GlyphChars.COMMAND} VIM Command Line:`;
+            default:
+                return modeOrPrompt;
+        }
+    }
 }

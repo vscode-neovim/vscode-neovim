@@ -2,7 +2,7 @@
 
 local api, fn = vim.api, vim.fn
 
-local function get_items()
+local function get_lines()
   -- Find preview buffer --
 
   local preview_buf
@@ -38,17 +38,19 @@ local function refresh_completion()
   then
     return
   end
-  local items = get_items()
-  if items then
-    vim.rpcnotify(vim.g.vscode_channel, "redraw", { "wildmenu_show", { items } })
+  local lines = get_lines()
+  if lines then
+    local items = {}
+    for _, line in ipairs(lines) do
+      table.insert(items, { line, "", "", "" })
+    end
+    vim.rpcnotify(vim.g.vscode_channel, "redraw", { "popupmenu_show", { items, -1, 0, 0, -1 } })
   end
 end
 
 api.nvim_create_autocmd({ "CmdlineChanged" }, {
   group = api.nvim_create_augroup("vscode.inccommand", {}),
   callback = function()
-    refresh_completion()
-    -- Sometimes CmdlineChanged not correctly triggered
-    vim.defer_fn(refresh_completion, 500)
+    vim.schedule(refresh_completion)
   end,
 })

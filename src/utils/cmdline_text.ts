@@ -1,4 +1,4 @@
-import { normalizeInputString } from "../utils/text";
+import { normalizeInputString } from "./text";
 
 type TextChange = NoTextChange | TextEndChange | OtherTextChange;
 
@@ -29,20 +29,6 @@ export function calculateInputAfterTextChange(oldText: string, newText: string):
             // Rewrite the line if it's not a simple change
             return `<C-u>${normalizeInputString(newText)}`;
     }
-}
-
-export function commandInputIsCompletable(command: string): boolean {
-    return (
-        command.charAt(0) !== "?" &&
-        command.charAt(0) !== "/" &&
-        !command.includes("s/") &&
-        !command.includes("su/") &&
-        !command.includes("substitute/") &&
-        !command.includes("g/") &&
-        !command.includes("global/") &&
-        !command.includes("v/") &&
-        !command.includes("vglobal/")
-    );
 }
 
 function diffLineText(oldLine: string, newLine: string): TextChange {

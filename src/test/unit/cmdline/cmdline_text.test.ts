@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { calculateInputAfterTextChange, commandInputIsCompletable } from "../../../cmdline/cmdline_text";
+import { calculateInputAfterTextChange } from "../../../utils/cmdline_text";
 
 describe("calculateInputAfterTextChange", () => {
     [
@@ -31,31 +31,6 @@ describe("calculateInputAfterTextChange", () => {
     ].forEach(({ name, oldText, newText, expected }) => {
         it(name, () => {
             assert.equal(calculateInputAfterTextChange(oldText, newText), expected);
-        });
-    });
-});
-
-describe("commandInputIsCompletable", () => {
-    [
-        "substitute/blah",
-        "substitute/",
-        "s/blah",
-        "s/",
-        "g/blah",
-        "global/",
-        "v/",
-        "v/blah",
-        "vglobal/",
-        "vglobal/blah",
-    ].forEach((input) => {
-        it(`should not produce completions for user-input commands: '${input}'`, () => {
-            assert.equal(commandInputIsCompletable(input), false);
-        });
-    });
-
-    ["p", "Ins", "nno"].forEach((input) => {
-        it(`should produce completions for normal commands: '${input}'`, () => {
-            assert.equal(commandInputIsCompletable(input), true);
         });
     });
 });
