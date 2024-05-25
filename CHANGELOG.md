@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.13.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.13.0...v1.13.1) (2024-05-25)
+
+
+### Bug Fixes
+
+* **cmdline:** allow enter to accept cmdline after completion selected ([#2007](https://github.com/vscode-neovim/vscode-neovim/issues/2007)) ([d09891f](https://github.com/vscode-neovim/vscode-neovim/commit/d09891ff80c1088c5f8ab510a392ae682fc04bb1))
+
 ## [1.13.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.12.0...v1.13.0) (2024-05-25)
 
 
