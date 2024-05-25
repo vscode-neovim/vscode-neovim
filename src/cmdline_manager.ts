@@ -13,8 +13,6 @@ class CmdlineState {
     // The last text typed in the UI, used to calculate changes
     lastTypedText: string = "";
 
-    // On suggestion selection, we don't want to send <CR> to nvim, so we ignore the accept event.
-    ignoreAcceptEvent = false;
     // On cmdline_hide, we close the quickpick. This flag is used to ignore that event so we don't send an <Esc> to nvim.
     ignoreHideEvent = false;
 
@@ -136,10 +134,7 @@ export class CommandLineManager implements Disposable {
     };
 
     private onAccept = async (): Promise<void> => {
-        if (!this.state.ignoreAcceptEvent) {
-            await this.main.client.input("<CR>");
-        }
-        this.state.ignoreAcceptEvent = false;
+        await this.main.client.input("<CR>");
     };
 
     private onChange = async (text: string): Promise<void> => {
@@ -169,7 +164,6 @@ export class CommandLineManager implements Disposable {
             return;
         }
         logger.debug(`onSelection: "${e[0].label}"`);
-        this.state.ignoreAcceptEvent = true;
         this.state.redrawExpected = true;
         const index = this.input.items.indexOf(e[0]);
         await this.main.client.request("nvim_select_popupmenu_item", [index, false, false, {}]);
