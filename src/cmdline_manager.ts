@@ -79,45 +79,23 @@ export class CommandLineManager implements Disposable {
     private handleRedraw({ name, args }: EventBusData<"redraw">) {
         switch (name) {
             case "cmdline_show": {
-                const [icontent, _pos, firstc, prompt, _indent, _level] = args[0];
-                const content = icontent.map(([, str]) => str).join("");
+                const [content, _pos, firstc, prompt, _indent, _level] = args[0];
+                const allContent = content.map(([, str]) => str).join("");
                 logger.debug(`cmdline_show: "${content}"`);
-                this.lastTypedText = content;
-                this.input.title = prompt || this.getTitle(firstc);
-                // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
-                if (!this.redrawExpected) {
-                    logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
-                    break;
-                }
-                this.redrawExpected = false;
-                this.input.show();
-                if (this.input.value !== content) {
-                    this.pendingNvimUpdates++;
-                    const activeItems = this.input.activeItems; // backup selections
-                    this.input.value = content; // update content
-                    this.input.activeItems = activeItems; // restore selections
-                }
+                this.cmdlineShow(allContent, firstc, prompt);
                 break;
             }
             case "popupmenu_show": {
                 const [items, selected, _row, _col, _grid] = args[0];
                 logger.debug(`popupmenu_show: ${items.length} items`);
                 this.input.items = items.map((item) => ({ label: item[0], alwaysShow: true }));
-                if (selected === -1) {
-                    this.input.activeItems = [];
-                } else {
-                    this.input.activeItems = [this.input.items[selected]];
-                }
+                this.setSelection(selected);
                 break;
             }
             case "popupmenu_select": {
                 const [selected] = args[0];
                 logger.debug(`popupmenu_select: "${selected}"`);
-                if (selected === -1) {
-                    this.input.activeItems = [];
-                } else {
-                    this.input.activeItems = [this.input.items[selected]];
-                }
+                this.setSelection(selected);
                 break;
             }
             case "popupmenu_hide": {
@@ -133,6 +111,32 @@ export class CommandLineManager implements Disposable {
             }
         }
     }
+
+    private cmdlineShow = (content: string, firstc: string, prompt: string): void => {
+        this.lastTypedText = content;
+        this.input.title = prompt || this.getTitle(firstc);
+        // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
+        if (!this.redrawExpected) {
+            logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
+            return;
+        }
+        this.redrawExpected = false;
+        this.input.show();
+        if (this.input.value !== content) {
+            this.pendingNvimUpdates++;
+            const activeItems = this.input.activeItems; // backup selections
+            this.input.value = content; // update content
+            this.input.activeItems = activeItems; // restore selections
+        }
+    };
+
+    private setSelection = (index: number): void => {
+        if (index === -1) {
+            this.input.activeItems = [];
+        } else {
+            this.input.activeItems = [this.input.items[index]];
+        }
+    };
 
     private onAccept = async (): Promise<void> => {
         if (!this.ignoreAcceptEvent) {
