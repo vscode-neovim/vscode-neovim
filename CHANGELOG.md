@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.13.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.12.0...v1.13.0) (2024-05-25)
+
+
+### Features
+
+* **cmdline:** integrate with native neovim completions ([#2001](https://github.com/vscode-neovim/vscode-neovim/issues/2001)) ([9ed0be0](https://github.com/vscode-neovim/vscode-neovim/commit/9ed0be0b0901d36509b79e1eab57aba136dbc722))
+
 ## [1.12.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.11.5...v1.12.0) (2024-05-21)
 
 
