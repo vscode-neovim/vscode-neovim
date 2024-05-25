@@ -9,27 +9,29 @@ import { GlyphChars } from "./constants";
 
 const logger = createLogger("CmdLine", false);
 
-export class CommandLineManager implements Disposable {
-    private disposables: Disposable[] = [];
-
-    // The quickpick used to render the command line
-    private input: QuickPick<QuickPickItem>;
-
+class CmdlineState {
     // The last text typed in the UI, used to calculate changes
-    private lastTypedText: string = "";
+    lastTypedText: string = "";
 
     // On suggestion selection, we don't want to send <CR> to nvim, so we ignore the accept event.
-    private ignoreAcceptEvent = false;
+    ignoreAcceptEvent = false;
     // On cmdline_hide, we close the quickpick. This flag is used to ignore that event so we don't send an <Esc> to nvim.
-    private ignoreHideEvent = false;
+    ignoreHideEvent = false;
 
     // When we type, we send updates to nvim. We want to ignore updates coming from nvim, because it may interfere with typing.
     // However, bindings are expected to cause the cmdline content to change, so we use this flag to listen to those updates.
-    private redrawExpected = true;
+    redrawExpected = true;
 
     // When updates come from nvim, we write to the input field.
     // We don't want to send those updates back to nvim, so we use this counter to keep track of the number of onChange to ignore.
-    private pendingNvimUpdates = 0;
+    pendingNvimUpdates = 0;
+}
+
+export class CommandLineManager implements Disposable {
+    private disposables: Disposable[] = [];
+
+    private input: QuickPick<QuickPickItem>;
+    private state = new CmdlineState();
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -46,7 +48,6 @@ export class CommandLineManager implements Disposable {
                 tooltip: "Accept",
             },
         ];
-        this.reset();
         this.disposables.push(
             this.input,
             this.input.onDidAccept(this.onAccept),
@@ -65,11 +66,7 @@ export class CommandLineManager implements Disposable {
     }
 
     private reset() {
-        this.lastTypedText = "";
-        this.ignoreAcceptEvent = false;
-        this.ignoreHideEvent = false;
-        this.redrawExpected = true;
-        this.pendingNvimUpdates = 0;
+        this.state = new CmdlineState();
         this.input.value = "";
         this.input.title = "";
         this.input.items = [];
@@ -105,7 +102,7 @@ export class CommandLineManager implements Disposable {
             }
             case "cmdline_hide": {
                 logger.debug(`cmdline_hide`);
-                this.ignoreHideEvent = true;
+                this.state.ignoreHideEvent = true;
                 this.input.hide();
                 break;
             }
@@ -113,17 +110,17 @@ export class CommandLineManager implements Disposable {
     }
 
     private cmdlineShow = (content: string, firstc: string, prompt: string): void => {
-        this.lastTypedText = content;
+        this.state.lastTypedText = content;
         this.input.title = prompt || this.getTitle(firstc);
         // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
-        if (!this.redrawExpected) {
+        if (!this.state.redrawExpected) {
             logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
             return;
         }
-        this.redrawExpected = false;
+        this.state.redrawExpected = false;
         this.input.show();
         if (this.input.value !== content) {
-            this.pendingNvimUpdates++;
+            this.state.pendingNvimUpdates++;
             const activeItems = this.input.activeItems; // backup selections
             this.input.value = content; // update content
             this.input.activeItems = activeItems; // restore selections
@@ -139,32 +136,32 @@ export class CommandLineManager implements Disposable {
     };
 
     private onAccept = async (): Promise<void> => {
-        if (!this.ignoreAcceptEvent) {
+        if (!this.state.ignoreAcceptEvent) {
             await this.main.client.input("<CR>");
         }
-        this.ignoreAcceptEvent = false;
+        this.state.ignoreAcceptEvent = false;
     };
 
     private onChange = async (text: string): Promise<void> => {
-        if (this.pendingNvimUpdates) {
-            this.pendingNvimUpdates = Math.max(0, this.pendingNvimUpdates - 1);
+        if (this.state.pendingNvimUpdates) {
+            this.state.pendingNvimUpdates = Math.max(0, this.state.pendingNvimUpdates - 1);
             logger.debug(
-                `onChange: skip updating cmdline because change originates from nvim: "${this.lastTypedText}"`,
+                `onChange: skip updating cmdline because change originates from nvim: "${this.state.lastTypedText}"`,
             );
             return;
         }
-        const toType = calculateInputAfterTextChange(this.lastTypedText, text);
-        logger.debug(`onChange: sending cmdline to nvim: "${this.lastTypedText}" + "${toType}" -> "${text}"`);
+        const toType = calculateInputAfterTextChange(this.state.lastTypedText, text);
+        logger.debug(`onChange: sending cmdline to nvim: "${this.state.lastTypedText}" + "${toType}" -> "${text}"`);
         await this.main.client.input(toType);
-        this.lastTypedText = text;
+        this.state.lastTypedText = text;
     };
 
     private onHide = async (): Promise<void> => {
         this.reset();
-        if (!this.ignoreHideEvent) {
+        if (!this.state.ignoreHideEvent) {
             await this.main.client.input("<Esc>");
         }
-        this.ignoreHideEvent = false;
+        this.state.ignoreHideEvent = false;
     };
 
     private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
@@ -172,8 +169,8 @@ export class CommandLineManager implements Disposable {
             return;
         }
         logger.debug(`onSelection: "${e[0].label}"`);
-        this.ignoreAcceptEvent = true;
-        this.redrawExpected = true;
+        this.state.ignoreAcceptEvent = true;
+        this.state.redrawExpected = true;
         const index = this.input.items.indexOf(e[0]);
         await this.main.client.request("nvim_select_popupmenu_item", [index, false, false, {}]);
     };
@@ -189,7 +186,7 @@ export class CommandLineManager implements Disposable {
     // use this function for keybindings in command line that cause content to update
     private sendRedraw = (keys: string): void => {
         logger.debug(`sendRedraw: "${keys}"`);
-        this.redrawExpected = true;
+        this.state.redrawExpected = true;
         this.main.client.input(keys);
     };
 
