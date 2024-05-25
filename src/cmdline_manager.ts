@@ -147,7 +147,7 @@ export class CommandLineManager implements Disposable {
 
     private onChange = async (text: string): Promise<void> => {
         if (this.pendingNvimUpdates) {
-            this.pendingNvimUpdates--;
+            this.pendingNvimUpdates = Math.max(0, this.pendingNvimUpdates - 1);
             logger.debug(
                 `onChange: skip updating cmdline because change originates from nvim: "${this.lastTypedText}"`,
             );
