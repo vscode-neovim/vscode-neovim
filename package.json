@@ -94,7 +94,7 @@
                         "type": "string"
                     },
                     "title": "After init config",
-                    "markdownDescription": "Config to be sourced after init config. e.g. : `[\"echo 'hello'\", \"lua << EOF\", \"require'vscode-neovim'.notify('world')\", \"EOF\"]`"
+                    "markdownDescription": "Config to be sourced after init config. e.g. : `[\"echo 'hello'\", \"lua << EOF\", \"require'vscode'.notify('world')\", \"EOF\"]`"
                 },
                 "vscode-neovim.neovimClean": {
                     "type": "boolean",
@@ -390,7 +390,7 @@
                             "jk": {
                                 "command": "vscode-neovim.lua",
                                 "args": [
-                                    "vim.api.nvim_input('<ESC>') require('vscode-neovim').action('workbench.action.files.save')"
+                                    "vim.api.nvim_input('<ESC>') require('vscode').action('workbench.action.files.save')"
                                 ]
                             }
                         }

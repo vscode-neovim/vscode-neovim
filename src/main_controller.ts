@@ -175,7 +175,7 @@ export class MainController implements vscode.Disposable {
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
         const neovimPreScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
-        const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode-neovim/force-options.lua");
+        const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode/force-options.lua");
 
         const args = [];
 
@@ -287,7 +287,7 @@ export class MainController implements vscode.Disposable {
                 if (callbackId) {
                     this.client.handleRequest("vscode-action", events, {
                         send: (resp: any, isError?: boolean): void => {
-                            this.client.executeLua('require"vscode-neovim.api".invoke_callback(...)', [
+                            this.client.executeLua('require"vscode.api".invoke_callback(...)', [
                                 callbackId,
                                 resp,
                                 !!isError,

@@ -3,9 +3,9 @@
 -- Copy global highlights and overrides highlights to the custom namespace, only external buffers use global namespace
 
 local api = vim.api
-local vscode = require("vscode-neovim.api")
+local vscode = require("vscode.api")
 
-local NS = api.nvim_create_namespace("vscode-neovim-highlight")
+local NS = api.nvim_create_namespace("vscode-highlight")
 
 vim.opt.conceallevel = 0
 vim.g.html_ignore_conceal = 1
@@ -30,7 +30,7 @@ local function set_hl(id, name, value)
 end
 
 local function setup_globals()
-  local custom_hls = vscode.get_config("vscode-neovim.highlightGroups.highlights")
+  local custom_hls = vscode.get_config("vscode.highlightGroups.highlights")
   if type(custom_hls) ~= "table" then
     custom_hls = {}
   end

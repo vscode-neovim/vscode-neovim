@@ -1,4 +1,4 @@
-local vscode = require("vscode-neovim")
+local vscode = require("vscode")
 
 local function esc()
   local key = vim.api.nvim_replace_termcodes("<esc>", true, true, true)

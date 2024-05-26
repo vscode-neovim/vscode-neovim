@@ -10,7 +10,7 @@
 ]]
 
 local api = vim.api
-local vscode = require("vscode-neovim.api")
+local vscode = require("vscode.api")
 
 local M = {}
 

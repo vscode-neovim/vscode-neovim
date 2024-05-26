@@ -1,6 +1,6 @@
 local api, fn = vim.api, vim.fn
 
-local util = require("vscode-neovim.util")
+local util = require("vscode.util")
 
 local M = {}
 

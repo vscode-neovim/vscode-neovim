@@ -1,10 +1,10 @@
-local api = require("vscode-neovim.api")
+local api = require("vscode.api")
 
-local default_optons = require("vscode-neovim.default-options")
-local cursor = require("vscode-neovim.cursor")
-local highlight = require("vscode-neovim.highlight")
-local sync_options = require("vscode-neovim.sync-options")
-local viewport = require("vscode-neovim.viewport")
+local default_optons = require("vscode.default-options")
+local cursor = require("vscode.cursor")
+local highlight = require("vscode.highlight")
+local sync_options = require("vscode.sync-options")
+local viewport = require("vscode.viewport")
 
 default_optons.setup()
 cursor.setup()

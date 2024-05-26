@@ -1,4 +1,4 @@
-local code = require("vscode-neovim")
+local code = require("vscode")
 
 vim.api.nvim_create_autocmd("InsertLeave", {
   group = vim.api.nvim_create_augroup("VSCodeCloseCompletionWidgets", { clear = true }),

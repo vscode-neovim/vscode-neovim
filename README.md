@@ -115,7 +115,7 @@ have built-in support for `cond = vim.g.vscode`. See
     VSCode commands and behavior may be different ([see below](#%EF%B8%8F--keybindings-shortcuts)).
     -   **Do not** use vim commands like `:w` in scripts/keybindings, they won't work. If you're using them in some
         custom commands/mappings, you might need to rebind them to call VSCode commands from Neovim with
-        `require('vscode-neovim').call()` (see [API](#%EF%B8%8F-api)).
+        `require('vscode').call()` (see [API](#%EF%B8%8F-api)).
 -   When you type some commands they may be substituted for another, like `:write` will be replaced by `:Write`.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
@@ -201,7 +201,7 @@ Add to your `settings.json`:
             "command": "vscode-neovim.lua",
             "args": [
                 [
-                    "local code = require('vscode-neovim')",
+                    "local code = require('vscode')",
                     "code.action('vscode-neovim.escape')",
                     "code.action('workbench.action.files.save')",
                 ],
@@ -376,19 +376,19 @@ Returns: the result of the action
 
 -   Format selection (default binding):
     ```vim
-    xnoremap = <Cmd>lua require('vscode-neovim').call('editor.action.formatSelection')<CR>
-    nnoremap = <Cmd>lua require('vscode-neovim').call('editor.action.formatSelection')<CR><Esc>
-    nnoremap == <Cmd>lua require('vscode-neovim').call('editor.action.formatSelection')<CR>
+    xnoremap = <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR>
+    nnoremap = <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR><Esc>
+    nnoremap == <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR>
     ```
 -   Open definition aside (default binding):
     ```vim
-    nnoremap <C-w>gd <Cmd>lua require('vscode-neovim').action('editor.action.revealDefinitionAside')<CR>
+    nnoremap <C-w>gd <Cmd>lua require('vscode').action('editor.action.revealDefinitionAside')<CR>
     ```
 -   Find in files for word under cursor (see the
     [vscode command definition](https://github.com/microsoft/vscode/blob/43b0558cc1eec2528a9a1b9ee1c7a559823bda31/src/vs/workbench/contrib/search/browser/searchActionsFind.ts#L177-L197)
     for the expected parameter format):
     ```vim
-    nnoremap ? <Cmd>lua require('vscode-neovim').action('workbench.action.findInFiles', { args = { query = vim.fn.expand('<cword>') } })<CR>
+    nnoremap ? <Cmd>lua require('vscode').action('workbench.action.findInFiles', { args = { query = vim.fn.expand('<cword>') } })<CR>
     ```
 
 Currently, two built-in actions are provided for testing purposes:
@@ -593,11 +593,11 @@ Parameters:
 
 > **Note:** Since 1.0.0, vimscript functions are deprecated. Use the [Lua](#%EF%B8%8F-api) api instead.
 
--   `VSCodeNotify()`/`VSCodeCall()`: deprecated, use [Lua](#%EF%B8%8F-api) `require('vscode-neovim').call()` instead.
+-   `VSCodeNotify()`/`VSCodeCall()`: deprecated, use [Lua](#%EF%B8%8F-api) `require('vscode').call()` instead.
 -   `VSCodeNotifyRange()`/`VSCodeCallRange()`: deprecated, use [Lua](#%EF%B8%8F-api)
-    `require('vscode-neovim').call(…, {range:…})` instead.
+    `require('vscode').call(…, {range:…})` instead.
 -   `VSCodeNotifyRangePos()`/`VSCodeCallRangePos()`: deprecated, use [Lua](#%EF%B8%8F-api)
-    `require('vscode-neovim').call(…, {range:…})` instead.
+    `require('vscode').call(…, {range:…})` instead.
 
 ## ⌨️ Keybindings (shortcuts)
 

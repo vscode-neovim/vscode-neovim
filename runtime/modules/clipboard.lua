@@ -1,4 +1,4 @@
-local code = require("vscode-neovim")
+local code = require("vscode")
 
 local last_item = nil
 

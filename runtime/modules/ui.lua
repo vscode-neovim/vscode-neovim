@@ -1,4 +1,4 @@
-local vscode = require("vscode-neovim")
+local vscode = require("vscode")
 
 --- Prompts the user to pick from a list of items, allowing arbitrary (potentially asynchronous)
 --- work until `on_choice`.

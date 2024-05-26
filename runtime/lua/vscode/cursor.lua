@@ -1,7 +1,7 @@
 local api, fn = vim.api, vim.fn
 
-local vscode = require("vscode-neovim.api")
-local util = require("vscode-neovim.util")
+local vscode = require("vscode.api")
+local util = require("vscode.util")
 
 -- this module is responsible for creating multiple cursors, triggering a visual update, and displaying the fake visual cursor
 local M = {}
@@ -82,7 +82,7 @@ end
 function M.setup_visual_changed(group)
   -- Simulate VisualChanged event
   -- TODO: https://github.com/neovim/neovim/issues/19708
-  local visual_ns = api.nvim_create_namespace("vscode-neovim.visual.changed")
+  local visual_ns = api.nvim_create_namespace("vscode.visual.changed")
 
   local is_visual, last_visual_pos, last_curr_pos
 
