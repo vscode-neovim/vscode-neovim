@@ -114,5 +114,5 @@ augroup VscodeGeneral
 augroup END
 
 
-lua package.loaded["vscode"] = require("vscode")
+lua require("vscode")
 runtime! modules/**/*.{vim,lua}

@@ -28,12 +28,15 @@ local vscode = {
   notify = api.notify,
   -- operatorfunc helper
   to_op = api.to_op,
-
-  -- deprecated
-  get_status_item = function()
-    api.notify("Nvim statusline is now shown in vscode automatically. get_status_item was removed.")
-    return {}
-  end,
 }
 
-return vscode
+-- Backward compatibility
+package.loaded["vscode-neovim"] = vscode
+
+return setmetatable(vscode, {
+  __index = function(_, key)
+    local msg = ([[The "vscode.%s" is missing. If you have a Lua module named "vscode", please rename it.]]):format(key)
+    vscode.notify(msg, vim.log.levels.ERROR)
+    return setmetatable({}, { __call = function() end })
+  end,
+})
