@@ -314,8 +314,8 @@ local vscode = require('vscode')
 
 <!-- prettier-ignore-start -->
 > [!TIP]
-> "vscode" is an alias for "vscode-neovim" module.
-> So don't be confused if "vscode-neovim" is used in the below examples.
+> The previously used module named "vscode-neovim" is now deprecated.
+> So don't be confused if "vscode-neovim" is used in old discussions or other resources.
 <!-- prettier-ignore-end -->
 
 1. `vscode.action()`: asynchronously executes a vscode command.
@@ -325,7 +325,7 @@ local vscode = require('vscode')
 5. `vscode.get_config()`: gets a vscode setting value.
 6. `vscode.update_config()`: sets a vscode setting.
 7. `vscode.notify()`: shows a vscode message (see also Nvim's `vim.notify`).
-8. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/plugin/code_actions.lua) for the
+8. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/modules/code_actions.lua) for the
    usage
 9. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
    `:h g:clipboard` for more details. Usage: `let g:clipboard = g:vscode_clipboard`
