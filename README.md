@@ -328,7 +328,7 @@ local vscode = require('vscode')
 8. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/modules/code_actions.lua) for the
    usage
 9. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
-   `:h g:clipboard` for more details. Usage: `let g:clipboard = g:vscode_clipboard`
+   `:h g:clipboard` for more details. Usage: `vim.g.clipboard = vim.g.vscode_clipboard`
 10. `vscode.eval()`: evaluate javascript synchronously in vscode and return the result
 11. `vscode.eval_async()`: evaluate javascript asynchronously in vscode
 
