@@ -591,13 +591,7 @@ Parameters:
 
 ### VimScript
 
-> **Note:** Since 1.0.0, vimscript functions are deprecated. Use the [Lua](#%EF%B8%8F-api) api instead.
-
--   `VSCodeNotify()`/`VSCodeCall()`: deprecated, use [Lua](#%EF%B8%8F-api) `require('vscode').call()` instead.
--   `VSCodeNotifyRange()`/`VSCodeCallRange()`: deprecated, use [Lua](#%EF%B8%8F-api)
-    `require('vscode').call(…, {range:…})` instead.
--   `VSCodeNotifyRangePos()`/`VSCodeCallRangePos()`: deprecated, use [Lua](#%EF%B8%8F-api)
-    `require('vscode').call(…, {range:…})` instead.
+You can use `v:lua.require("vscode")` to access the API from VimScript.
 
 ## ⌨️ Keybindings (shortcuts)
 

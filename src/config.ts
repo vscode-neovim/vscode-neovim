@@ -15,9 +15,7 @@ import { VSCodeContext, disposeAll } from "./utils";
 
 const isWindows = process.platform == "win32";
 
-type LegacySettingName = "neovimPath" | "neovimInitPath";
 type SettingPrefix = "neovimExecutablePaths" | "neovimInitVimPaths"; //this needs to be aligned with setting names in package.json
-type Platform = "win32" | "darwin" | "linux";
 
 export type CompositeKeys = { [key: string]: { command: string; args?: any[] } };
 
@@ -74,40 +72,19 @@ export class Config implements Disposable {
             });
     }
 
-    private getSystemSpecificSetting(
-        settingPrefix: SettingPrefix,
-        legacySetting: { environmentVariableName?: "NEOVIM_PATH"; vscodeSettingName: LegacySettingName },
-    ): string | undefined {
+    private getSystemSpecificSetting(settingPrefix: SettingPrefix): string | undefined {
         //https://github.com/microsoft/vscode/blob/master/src/vs/base/common/platform.ts#L63
-        const platform = process.platform as "win32" | "darwin" | "linux";
-
-        const legacyEnvironmentVariable =
-            legacySetting.environmentVariableName && process.env[legacySetting.environmentVariableName];
-
-        //some system specific settings can be loaded from process.env and value from env will override setting value
-        const legacySettingValue = legacyEnvironmentVariable || this.cfg.get(legacySetting.vscodeSettingName);
-        if (legacySettingValue) {
-            return legacySettingValue;
-        } else if (this.useWsl && platform === "win32") {
-            return this.cfg.get(`${settingPrefix}.${"linux" as Platform}`);
-        } else {
-            return this.cfg.get(`${settingPrefix}.${platform}`);
-        }
+        let platform = process.platform as "win32" | "darwin" | "linux";
+        platform = this.useWsl && platform === "win32" ? "linux" : platform;
+        return this.cfg.get(`${settingPrefix}.${platform}`);
     }
 
     private getNeovimPath(): string {
-        const legacySettingInfo = {
-            vscodeSettingName: "neovimPath",
-            environmentVariableName: "NEOVIM_PATH",
-        } as const;
-        return this.getSystemSpecificSetting("neovimExecutablePaths", legacySettingInfo) ?? "nvim";
+        return this.getSystemSpecificSetting("neovimExecutablePaths") ?? "nvim";
     }
 
     private getNeovimInitPath(): string | undefined {
-        const legacySettingInfo = {
-            vscodeSettingName: "neovimInitPath",
-        } as const;
-        return this.getSystemSpecificSetting("neovimInitVimPaths", legacySettingInfo);
+        return this.getSystemSpecificSetting("neovimInitVimPaths");
     }
 
     get highlights(): { [key: string]: ThemableDecorationRenderOptions } {
@@ -115,12 +92,9 @@ export class Config implements Disposable {
     }
     // #region Keybindings
     get ctrlKeysNormalMode(): string[] {
-        // deprecated
-        if (!this.cfg.get("useCtrlKeysForNormalMode", true)) return [];
         return this.cfg.get<string[]>("ctrlKeysForNormalMode")!;
     }
     get ctrlKeysInsertMode(): string[] {
-        if (!this.cfg.get("useCtrlKeysForInsertMode", true)) return [];
         return this.cfg.get<string[]>("ctrlKeysForInsertMode")!;
     }
     get editorLangIdExclusions(): string[] {

@@ -39,12 +39,6 @@
         "configuration": {
             "title": "Neovim",
             "properties": {
-                "vscode-neovim.neovimPath": {
-                    "type": "string",
-                    "default": "",
-                    "title": "Neovim path",
-                    "deprecationMessage": "Remove this setting and use neovimExecutablePaths.win32/linux/darwin instead. If you continue to use this setting, keep in mind this setting takes precedence over neovimExecutablePaths.windows/linux/darwin and those settings won't work. If you want them to work, just remove this setting from your settings.json or make its input box in User Settings empty"
-                },
                 "vscode-neovim.neovimExecutablePaths.win32": {
                     "type": "string",
                     "default": "nvim",
@@ -62,12 +56,6 @@
                     "default": "nvim",
                     "title": "Neovim executable path on Linux (and in WSL)",
                     "markdownDescription": "Path to Nvim executable if running VS Code on Linux or WSL. \n- Example: `/usr/bin/nvim`\n- If `useWSL` setting is checked, vscode-neovim will look for this path in default WSL distro."
-                },
-                "vscode-neovim.neovimInitPath": {
-                    "type": "string",
-                    "default": "",
-                    "title": "Custom init.vim path",
-                    "deprecationMessage": "Use neovimInitVimPaths.win32/linux/darwin instead. If you continue to use this setting, keep in mind this setting takes precedence over neovimInitVimPaths.win32/linux/darwin and those settings won't work. If you want them to work, just remove this setting from your settings.json or make its input box in User Settings empty"
                 },
                 "vscode-neovim.neovimInitVimPaths.win32": {
                     "type": "string",
@@ -117,16 +105,6 @@
                     "default": 1,
                     "title": "Neovim viewport height extend",
                     "description": "How much to extend neovim viewport on each side beyond vscode editor size. Increase if you are not seeing decorations or highlights on the edges of the editor."
-                },
-                "vscode-neovim.useCtrlKeysForNormalMode": {
-                    "deprecationMessage": "Use `vscode-neovim.ctrlKeysForNormalMode` instead (Set it to empty)",
-                    "type": "boolean",
-                    "default": true
-                },
-                "vscode-neovim.useCtrlKeysForInsertMode": {
-                    "deprecationMessage": "Use `vscode-neovim.ctrlKeysForInsertMode` instead (Set it to empty)",
-                    "type": "boolean",
-                    "default": true
                 },
                 "vscode-neovim.ctrlKeysForNormalMode": {
                     "type": "array",
