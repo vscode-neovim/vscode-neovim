@@ -178,7 +178,6 @@ export class MainController implements vscode.Disposable {
     }
 
     private _stop(msg: string) {
-        logger.error(msg);
         vscode.commands.executeCommand("vscode-neovim.stop");
         vscode.window.showErrorMessage(msg, "Restart", "Select Neovim").then((value) => {
             if (value == "Restart") vscode.commands.executeCommand("vscode-neovim.restart");
