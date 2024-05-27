@@ -275,7 +275,7 @@ To spawn multiple cursors from visual line/block modes type <kbd>ma</kbd>/<kbd>m
 
 See gif in action:
 
-![multicursors](/images/multicursor.gif)
+![multicursor](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/72b3f2b3-6d80-4ace-b6f4-b211baad74d1)
 
 The built-in multi-cursor support may not meet your needs. Please refer to the plugin
 [vscode-multi-cursor.nvim](https://github.com/vscode-neovim/vscode-multi-cursor.nvim) for more multi-cursor features
