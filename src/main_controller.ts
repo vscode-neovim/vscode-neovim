@@ -1,5 +1,6 @@
 import { ChildProcess, spawn } from "child_process";
 import path from "path";
+import { readFileSync } from "fs";
 
 import { attach, findNvim, NeovimClient } from "neovim";
 import vscode, { Disposable, Range, window, workspace, type ExtensionContext } from "vscode";
@@ -253,20 +254,40 @@ export class MainController implements vscode.Disposable {
         return [args[0], args.slice(1)];
     }
 
+    private get neovimCachePath(): vscode.Uri {
+        return vscode.Uri.joinPath(this.extContext.globalStorageUri, "neovim_path");
+    }
+
     private getNeovimPath(): string {
-        let neovimPath = config.neovimPath;
-        // Only try to find nvim if the path is the default one
-        // And if we are not using WSL
-        if (neovimPath === "nvim" && !config.useWsl) {
-            const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
-            logger.debug("Find nvim result: ", nvimResult);
-            const matched = nvimResult.matches.find((match) => !match.error);
-            if (!matched) {
-                throw new Error("Unable to find a suitable neovim executable. Please check your neovim installation.");
-            }
-            neovimPath = matched.path;
+        const neovimPath = config.neovimPath;
+        // 1. Use the user specified path
+        // Not dealing with WSL for now
+        if (neovimPath !== "nvim" || config.useWsl) {
+            logger.debug("Using user specified neovim path: ", neovimPath);
+            return neovimPath;
         }
-        return neovimPath;
+
+        // 2. Use cached path if it exists
+        let cachedPath: string | undefined;
+        try {
+            cachedPath = readFileSync(this.neovimCachePath.fsPath).toString().trim();
+        } catch {
+            //
+        }
+        if (cachedPath) {
+            logger.debug("Using cached neovim path: ", cachedPath);
+            return cachedPath;
+        }
+
+        // 3. Find a suitable neovim executable
+        const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
+        logger.debug("Find nvim result: ", nvimResult);
+        const matched = nvimResult.matches.find((match) => !match.error);
+        if (!matched) {
+            throw new Error("Unable to find a suitable neovim executable. Please check your neovim installation.");
+        }
+        logger.debug("Using found neovim path: ", matched.path);
+        return matched.path;
     }
 
     private selectNeovim() {
@@ -290,13 +311,20 @@ export class MainController implements vscode.Disposable {
         ];
         picker.onDidHide(() => picker.dispose());
         picker.onDidAccept(async () => {
-            const activeItem = picker.selectedItems[0];
-            if (activeItem.label === "Use default") {
-                await workspace.fs.createDirectory(this.extContext.globalStorageUri);
-                //
-            }
-            window.showInformationMessage("Selected: " + picker.selectedItems[0].description);
             picker.hide();
+            const selectedItem = picker.selectedItems[0];
+            await workspace.fs.createDirectory(this.extContext.globalStorageUri);
+            const neovimCachePath = this.neovimCachePath;
+            if (selectedItem.label === "Use default") {
+                try {
+                    await workspace.fs.delete(neovimCachePath);
+                } catch {
+                    //
+                }
+            } else {
+                await workspace.fs.writeFile(neovimCachePath, Buffer.from(selectedItem.description!));
+            }
+            vscode.commands.executeCommand("vscode-neovim.restart");
         });
         picker.show();
     }
