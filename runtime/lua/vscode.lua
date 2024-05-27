@@ -1,15 +1,17 @@
 local api = require("vscode.api")
 
 local default_optons = require("vscode.default-options")
+local force_options = require("vscode.force-options")
+local sync_options = require("vscode.sync-options")
 local cursor = require("vscode.cursor")
 local highlight = require("vscode.highlight")
-local sync_options = require("vscode.sync-options")
 local viewport = require("vscode.viewport")
 
 default_optons.setup()
+force_options.setup()
+sync_options.setup()
 cursor.setup()
 highlight.setup()
-sync_options.setup()
 viewport.setup()
 
 local vscode = {

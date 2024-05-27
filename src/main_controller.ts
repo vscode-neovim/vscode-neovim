@@ -175,7 +175,6 @@ export class MainController implements vscode.Disposable {
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
         const neovimPreScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
-        const neovimPostScriptPath = path.posix.join(extensionPath, "runtime/lua", "vscode/force-options.lua");
 
         const args = [];
 
@@ -203,12 +202,9 @@ export class MainController implements vscode.Disposable {
             neovimPath,
             "-N",
             "--embed",
-            // load support script before user config (to allow to rebind keybindings/commands)
+            // Initialize vscode neovim modules
             "--cmd",
             `source ${neovimPreScriptPath}`,
-            // load options after user config
-            "-S",
-            neovimPostScriptPath,
         );
 
         const workspaceFolder = vscode.workspace.workspaceFolders;
