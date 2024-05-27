@@ -130,4 +130,4 @@ augroup END
 
 
 lua require("vscode")
-runtime! modules/**/*.{vim,lua}
+runtime! vscode/**/*.{vim,lua}
