@@ -443,7 +443,6 @@ export class MainController implements vscode.Disposable {
     }
 
     dispose() {
-        // word
         disposeAll(this.disposables);
     }
 }
