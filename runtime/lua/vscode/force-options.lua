@@ -1,23 +1,5 @@
---- This file is used to force set options which may break the extension. Loaded after user config by main_controller.
-local api = vim.api
-
--- ------------------------- forced global options ------------------------- --
-vim.opt.cmdheight = 1
-vim.opt.wildmode = "longest:full,full"
-vim.cmd([[set wildchar=<Tab>]])
-vim.opt.mouse = "a"
-
-vim.opt.backup = false
-vim.opt.wb = false
-vim.opt.swapfile = false
-vim.opt.autoread = false
-vim.opt.autowrite = false
-vim.opt.cursorline = false
-vim.opt.signcolumn = "no"
-vim.opt.winblend = 0
-
-vim.opt.ruler = false
-vim.opt.colorcolumn = nil
+--- This file is used to force set options which may break the extension.
+local M = {}
 
 -- --------------------- forced global and local critical options -------------------- --
 local function forceoptions(opt)
@@ -40,14 +22,45 @@ local function forceoptions(opt)
   opt.lazyredraw = false
 end
 
--- force global options on startup
-forceoptions(vim.opt)
+local function force_global_options()
+  vim.opt.cmdheight = 1
+  vim.opt.wildmode = "longest:full,full"
+  vim.cmd([[set wildchar=<Tab>]])
+  vim.opt.mouse = "a"
 
-local group = api.nvim_create_augroup("vscode.force-options", { clear = true })
--- force local options on buffer load
-api.nvim_create_autocmd({ "BufEnter", "FileType" }, {
-  group = group,
-  callback = function()
-    forceoptions(vim.opt_local)
-  end,
-})
+  vim.opt.backup = false
+  vim.opt.wb = false
+  vim.opt.swapfile = false
+  vim.opt.autoread = false
+  vim.opt.autowrite = false
+  vim.opt.cursorline = false
+  vim.opt.signcolumn = "no"
+  vim.opt.winblend = 0
+
+  vim.opt.ruler = false
+  vim.opt.colorcolumn = nil
+
+  forceoptions(vim.opt)
+end
+
+local function force_local_options()
+  forceoptions(vim.opt_local)
+end
+
+function M.setup()
+  -- force options on startup
+  force_global_options()
+  force_local_options()
+
+  local group = vim.api.nvim_create_augroup("vscode.force-options", { clear = true })
+  vim.api.nvim_create_autocmd({ "VimEnter" }, {
+    group = group,
+    callback = force_global_options,
+  })
+  vim.api.nvim_create_autocmd({ "VimEnter", "BufEnter", "FileType" }, {
+    group = group,
+    callback = force_local_options,
+  })
+end
+
+return M
