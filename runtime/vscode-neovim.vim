@@ -4,7 +4,7 @@ let g:vscode = 1
 let s:currDir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
 let &runtimepath = &runtimepath . ',' . s:currDir
 
-" Load atltercmd
+" Load altercmd
 " {{{
 " altercmd - Alter built-in Ex commands by your own ones
 " Version: 0.0.1
