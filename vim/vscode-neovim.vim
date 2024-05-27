@@ -40,30 +40,30 @@ endfunction
 " apis
 
 function! VSCodeCall(cmd, ...) abort
-    call luaeval('require"vscode-neovim".call(_A[1], {args = _A[2]})', [a:cmd, a:000])
+    call luaeval('require"vscode".call(_A[1], {args = _A[2]})', [a:cmd, a:000])
 endfunction
 
 function! VSCodeNotify(cmd, ...)
-    call luaeval('require"vscode-neovim".action(_A[1], {args = _A[2]})', [a:cmd, a:000])
+    call luaeval('require"vscode".action(_A[1], {args = _A[2]})', [a:cmd, a:000])
 endfunction
 
 function! VSCodeCallRange(cmd, line1, line2, leaveSelection, ...) abort
-    call luaeval('require"vscode-neovim".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+    call luaeval('require"vscode".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
           \ [a:cmd, [a:line1 - 1, a:line2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeNotifyRange(cmd, line1, line2, leaveSelection, ...)
-    call luaeval('require"vscode-neovim".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+    call luaeval('require"vscode".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
           \ [a:cmd, [a:line1 - 1, a:line2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeCallRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...) abort
-    call luaeval('require"vscode-neovim".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+    call luaeval('require"vscode".call(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
           \ [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
 function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ...)
-    call luaeval('require"vscode-neovim".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
+    call luaeval('require"vscode".action(_A[1], { range = _A[2], restore_selection=_A[3], args = _A[4] })',
           \ [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
@@ -110,9 +110,9 @@ augroup VscodeGeneral
     " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.
     autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:runtimePath
     " Source config "afterInitConfig"
-    autocmd VimEnter * call nvim_exec2(join(v:lua.require("vscode-neovim").get_config("vscode-neovim.afterInitConfig"), "\n"), {})
+    autocmd VimEnter * call nvim_exec2(join(v:lua.require("vscode").get_config("vscode-neovim.afterInitConfig"), "\n"), {})
 augroup END
 
 
-lua require("vscode-neovim")
+lua require("vscode")
 runtime! modules/**/*.{vim,lua}

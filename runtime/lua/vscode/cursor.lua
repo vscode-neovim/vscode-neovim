@@ -1,7 +1,7 @@
 local api, fn = vim.api, vim.fn
 
-local vscode = require("vscode-neovim.api")
-local util = require("vscode-neovim.util")
+local vscode = require("vscode.api")
+local util = require("vscode.util")
 
 -- this module is responsible for creating multiple cursors, triggering a visual update, and displaying the fake visual cursor
 local M = {}
@@ -82,7 +82,7 @@ end
 function M.setup_visual_changed(group)
   -- Simulate VisualChanged event
   -- TODO: https://github.com/neovim/neovim/issues/19708
-  local visual_ns = api.nvim_create_namespace("vscode-neovim.visual.changed")
+  local visual_ns = api.nvim_create_namespace("vscode.visual.changed")
 
   local is_visual, last_visual_pos, last_curr_pos
 
@@ -122,7 +122,7 @@ end
 
 -- --------------------------- fake visual cursor --------------------------- --
 -- in visual mode, decorate a fake cursor so that vscode can use the primary cursor for selection
-local fake_cursor_ns = api.nvim_create_namespace("vscode-fake-visual-cursor")
+local fake_cursor_ns = api.nvim_create_namespace("vscode.fake-visual-cursor")
 local fake_cursor = nil
 local function highlight_fake_cursor()
   if fake_cursor then
@@ -152,7 +152,7 @@ end
 
 -- ------------------------------ setup ------------------------------ --
 function M.setup()
-  local group = vim.api.nvim_create_augroup("VSCodeCursorIntegration", { clear = true })
+  local group = vim.api.nvim_create_augroup("vscode.cursor", { clear = true })
   M.setup_multi_cursor(group)
   M.setup_visual_changed(group)
   M.setup_fake_cursor(group)

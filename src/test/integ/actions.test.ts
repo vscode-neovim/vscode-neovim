@@ -15,14 +15,12 @@ import {
 } from "./integrationUtils";
 
 async function eval_from_nvim(client: NeovimClient, code: string): Promise<any> {
-    return JSON.parse(
-        await client.commandOutput(`lua print(vim.fn.json_encode(require'vscode-neovim'.eval('${code}')))`),
-    );
+    return JSON.parse(await client.commandOutput(`lua print(vim.fn.json_encode(require'vscode'.eval('${code}')))`));
 }
 
 async function eval_from_nvim_with_opts(client: NeovimClient, code: string, opts: string): Promise<any> {
     return JSON.parse(
-        await client.commandOutput(`lua print(vim.fn.json_encode(require'vscode-neovim'.eval('${code}', ${opts})))`),
+        await client.commandOutput(`lua print(vim.fn.json_encode(require'vscode'.eval('${code}', ${opts})))`),
     );
 }
 
@@ -136,7 +134,7 @@ describe("Eval VSCode", () => {
         assert.equal(output, "nil");
 
         await client.commandOutput(
-            `lua require'vscode-neovim'.eval_async(\
+            `lua require'vscode'.eval_async(\
             'await new Promise((resolve) => setTimeout(resolve, 250));\
             globalThis["async_ran"] = args; return args;', \
             { args = "yes", callback = function(err, ret) vim.g.async_callback_ran = ret end })`,

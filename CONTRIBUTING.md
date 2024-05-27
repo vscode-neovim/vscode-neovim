@@ -264,7 +264,7 @@ lock is removed.
 In the case that the mode is visual, a different selection is created that represents the visual selection. However,
 this means that sometimes the primary selection needed to select the visual range is not the same selection needed to
 show the cursor at the correct position. For this reason, during insert mode, the vscode cursor is hidden and instead a
-"fake cursor" is rendered as a text decoration using the highlight API in `runtime/lua/vscode-neovim/cursor.lua`.
+"fake cursor" is rendered as a text decoration using the highlight API in `runtime/lua/vscode/cursor.lua`.
 
 #### VSCode -> Neovim
 

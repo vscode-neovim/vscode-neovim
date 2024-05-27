@@ -2,8 +2,8 @@ local M = {}
 
 local api, fn = vim.api, vim.fn
 
-M.event_group = api.nvim_create_augroup("vscode-neovim.viewport", { clear = true })
-M.viewport_changed_ns = api.nvim_create_namespace("vscode-neovim.viewport.changed")
+M.event_group = api.nvim_create_augroup("vscode.viewport", { clear = true })
+M.viewport_changed_ns = api.nvim_create_namespace("vscode.viewport.changed")
 
 ---@class WinView All positions are 0-based
 ---@field winid integer
