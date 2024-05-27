@@ -603,10 +603,10 @@ Parameters:
 
 Default commands and bindings available for file/scroll/window/tab management:
 
--   See [vscode-scrolling.vim](/vim/vscode-scrolling.vim) for scrolling commands reference
--   See [vscode-file-commands.vim](/vim/vscode-file-commands.vim) for file commands reference
--   See [vscode-tab-commands.vim](/vim/vscode-tab-commands.vim) for tab commands reference
--   See [vscode-window-commands.vim](/vim/vscode-window-commands.vim) for window commands reference
+-   See [vscode-scrolling.vim](/runtime/vscode/overrides/vscode-scrolling.vim) for scrolling commands reference
+-   See [vscode-file-commands.vim](/runtime/vscode/overrides/vscode-file-commands.vim) for file commands reference
+-   See [vscode-tab-commands.vim](/runtime/vscode/overrides/vscode-tab-commands.vim) for tab commands reference
+-   See [vscode-window-commands.vim](/runtime/vscode/overrides/vscode-window-commands.vim) for window commands reference
 
 > 💡 "With bang" refers to adding a "!" to the end of a command.
 
