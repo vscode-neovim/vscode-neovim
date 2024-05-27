@@ -5,7 +5,7 @@
 local api = vim.api
 local vscode = require("vscode.api")
 
-local NS = api.nvim_create_namespace("vscode-highlight")
+local NS = api.nvim_create_namespace("vscode.highlight")
 
 vim.opt.conceallevel = 0
 vim.g.html_ignore_conceal = 1
@@ -147,7 +147,7 @@ local function setup_treesitter_highlighting()
 end
 
 local function setup()
-  local group = api.nvim_create_augroup("VSCodeNeovimHighlight", { clear = true })
+  local group = api.nvim_create_augroup("vscode.highlight", { clear = true })
   -- WinScrolled is perhaps not strictly necessary (or shouldn't be), but is useful in ensuring
   -- we don't get syntax highlights in peek windows.
   api.nvim_create_autocmd({ "WinNew", "WinEnter", "WinScrolled", "BufNew", "BufEnter", "BufWinEnter" }, {

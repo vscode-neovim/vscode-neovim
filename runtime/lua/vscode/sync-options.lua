@@ -142,7 +142,7 @@ function M.setup()
     end
   end)
 
-  local group = api.nvim_create_augroup("VSCodeSyncEditorOptions", { clear = true })
+  local group = api.nvim_create_augroup("vscode.sync-editor-options", { clear = true })
   -- options
   api.nvim_create_autocmd({ "OptionSet" }, {
     group = group,

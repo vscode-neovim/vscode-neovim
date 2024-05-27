@@ -1,6 +1,6 @@
 -- TODO: Figure out why Treesitter doesn't parse.
 vim.api.nvim_create_autocmd({ "TextChanged", "InsertLeave" }, {
-  group = vim.api.nvim_create_augroup("VSCodeAutoTresitterParse", {}),
+  group = vim.api.nvim_create_augroup("vscode.treesitter", {}),
   callback = (function()
     local timer
     return function()
