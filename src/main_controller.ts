@@ -1,9 +1,9 @@
 import { ChildProcess, spawn } from "child_process";
-import path from "path";
 import { readFileSync } from "fs";
+import path from "path";
 
 import { attach, findNvim, NeovimClient } from "neovim";
-import vscode, { Disposable, Range, window, workspace, type ExtensionContext } from "vscode";
+import vscode, { Disposable, Range, window, type ExtensionContext } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
@@ -69,19 +69,15 @@ export class MainController implements vscode.Disposable {
 
     public constructor(private extContext: ExtensionContext) {
         // #region Setup status bar item
-        const commandId = "vscode-neovim.selectNeovim";
         this.status = vscode.window.createStatusBarItem(
             "vscode-neovim-click-status",
             vscode.StatusBarAlignment.Right,
             100,
         );
         this.status.text = "Nvim";
-        this.status.command = commandId;
+        this.status.command = "vscode-neovim.selectNeovim";
         this.status.show();
-        this.disposables.push(
-            this.status,
-            vscode.commands.registerCommand(commandId, () => this.selectNeovim()),
-        );
+        this.disposables.push(this.status);
         // #endregion
     }
 
@@ -184,8 +180,9 @@ export class MainController implements vscode.Disposable {
     private _stop(msg: string) {
         logger.error(msg);
         vscode.commands.executeCommand("vscode-neovim.stop");
-        vscode.window.showErrorMessage(msg, "Restart").then((value) => {
+        vscode.window.showErrorMessage(msg, "Restart", "Select Neovim").then((value) => {
             if (value == "Restart") vscode.commands.executeCommand("vscode-neovim.restart");
+            else if (value == "Select Neovim") vscode.commands.executeCommand("vscode-neovim.selectNeovim");
         });
     }
 
@@ -254,10 +251,6 @@ export class MainController implements vscode.Disposable {
         return [args[0], args.slice(1)];
     }
 
-    private get neovimCachePath(): vscode.Uri {
-        return vscode.Uri.joinPath(this.extContext.globalStorageUri, "neovim_path");
-    }
-
     private getNeovimPath(): string {
         const neovimPath = config.neovimPath;
         // 1. Use the user specified path
@@ -268,9 +261,10 @@ export class MainController implements vscode.Disposable {
         }
 
         // 2. Use cached path if it exists
+        const neovimCachePath = vscode.Uri.joinPath(this.extContext.globalStorageUri, "neovim_path").fsPath;
         let cachedPath: string | undefined;
         try {
-            cachedPath = readFileSync(this.neovimCachePath.fsPath).toString().trim();
+            cachedPath = readFileSync(neovimCachePath).toString().trim();
         } catch {
             //
         }
@@ -288,45 +282,6 @@ export class MainController implements vscode.Disposable {
         }
         logger.debug("Using found neovim path: ", matched.path);
         return matched.path;
-    }
-
-    private selectNeovim() {
-        const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
-        const matches = nvimResult.matches.filter((match) => !match.error);
-        const picker = window.createQuickPick();
-        picker.title = "Select Neovim";
-        picker.matchOnDescription = true;
-        if (typeof this.status.tooltip === "string") {
-            picker.placeholder = "Currently using: " + this.status.tooltip;
-        }
-        picker.items = [
-            {
-                label: "Use default",
-                description: config.neovimPath,
-            },
-            ...matches.map((match) => ({
-                label: match.nvimVersion!,
-                description: match.path,
-            })),
-        ];
-        picker.onDidHide(() => picker.dispose());
-        picker.onDidAccept(async () => {
-            picker.hide();
-            const selectedItem = picker.selectedItems[0];
-            await workspace.fs.createDirectory(this.extContext.globalStorageUri);
-            const neovimCachePath = this.neovimCachePath;
-            if (selectedItem.label === "Use default") {
-                try {
-                    await workspace.fs.delete(neovimCachePath);
-                } catch {
-                    //
-                }
-            } else {
-                await workspace.fs.writeFile(neovimCachePath, Buffer.from(selectedItem.description!));
-            }
-            vscode.commands.executeCommand("vscode-neovim.restart");
-        });
-        picker.show();
     }
 
     private async runAction(action: string, options: Omit<VSCodeActionOptions, "callback">): Promise<any> {

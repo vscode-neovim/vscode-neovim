@@ -1,8 +1,9 @@
+import { findNvim } from "neovim";
 import * as vscode from "vscode";
 
 import actions from "./actions";
 import { config } from "./config";
-import { EXT_ID, EXT_NAME } from "./constants";
+import { EXT_ID, EXT_NAME, NVIM_MIN_VERSION } from "./constants";
 import { eventBus } from "./eventBus";
 import { createLogger, logger as rootLogger } from "./logger";
 import { MainController } from "./main_controller";
@@ -23,6 +24,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
                 deactivate(true);
                 disposeAll(context.subscriptions);
             }),
+            vscode.commands.registerCommand("vscode-neovim.selectNeovim", () => selectNeovim(context.globalStorageUri)),
         );
         verifyExperimentalAffinity();
     }
@@ -47,18 +49,54 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         context.subscriptions.push(plugin);
         await plugin.init(outputChannel);
     } catch (e) {
-        vscode.window
-            .showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`, "Restart")
-            .then((value) => {
-                if (value == "Restart") {
-                    vscode.commands.executeCommand("vscode-neovim.restart");
-                }
-            });
+        const ret = await vscode.window.showErrorMessage(
+            `[Failed to start nvim] ${e instanceof Error ? e.message : e}`,
+            "Restart",
+            "Select Neovim",
+        );
+        if (ret == "Restart") vscode.commands.executeCommand("vscode-neovim.restart");
+        else if (ret == "Select Neovim") vscode.commands.executeCommand("vscode-neovim.selectNeovim");
     }
 }
 
 export function deactivate(isRestart = false) {
     if (!isRestart) disposeAll(disposables);
+}
+
+function selectNeovim(storageUri: vscode.Uri) {
+    const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
+    const matches = nvimResult.matches.filter((match) => !match.error);
+    const picker = vscode.window.createQuickPick();
+    picker.title = "Select Neovim";
+    picker.matchOnDescription = true;
+    picker.items = [
+        {
+            label: "Use default",
+            description: config.neovimPath,
+        },
+        ...matches.map((match) => ({
+            label: match.nvimVersion!,
+            description: match.path,
+        })),
+    ];
+    picker.onDidHide(() => picker.dispose());
+    picker.onDidAccept(async () => {
+        picker.hide();
+        const selectedItem = picker.selectedItems[0];
+        await vscode.workspace.fs.createDirectory(storageUri);
+        const neovimCachePath = vscode.Uri.joinPath(storageUri, "neovim_path");
+        if (selectedItem.label === "Use default") {
+            try {
+                await vscode.workspace.fs.delete(neovimCachePath);
+            } catch {
+                //
+            }
+        } else {
+            await vscode.workspace.fs.writeFile(neovimCachePath, Buffer.from(selectedItem.description!));
+        }
+        vscode.commands.executeCommand("vscode-neovim.restart");
+    });
+    picker.show();
 }
 
 function verifyExperimentalAffinity(): void {
