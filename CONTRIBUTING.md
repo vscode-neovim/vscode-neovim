@@ -47,7 +47,7 @@ npm run build:dev
 
 You can view the extension logs in one of three locations
 
-1. Via the `vscode-neovim` Output channel
+1. Via the `vscode-neovim (logs)` Output channel
 
     - Note: some messages are not logged to the Output channel, to avoid infinite loop. This is decided by the
       [`logToOutputChannel` parameter](https://github.com/vscode-neovim/vscode-neovim/blob/7337ffd5009067d074af5371171f277cb522aa9b/src/logger.ts#L184).
