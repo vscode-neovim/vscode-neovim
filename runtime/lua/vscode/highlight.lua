@@ -30,7 +30,7 @@ local function set_hl(id, name, value)
 end
 
 local function setup_globals()
-  local custom_hls = vscode.get_config("vscode.highlightGroups.highlights")
+  local custom_hls = vscode.get_config("vscode-neovim.highlightGroups.highlights")
   if type(custom_hls) ~= "table" then
     custom_hls = {}
   end
