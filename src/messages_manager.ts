@@ -67,7 +67,11 @@ export class MessagesManager implements Disposable {
     }
 
     private writeMessage(msg: string) {
+        if (msg.length === 0) {
+            return;
+        }
+
         logger.info(msg);
-        this.channel.append(msg);
+        this.channel.replace(msg);
     }
 }
