@@ -20,54 +20,71 @@ export class MessagesManager implements Disposable {
     private handleRedraw({ name, args }: EventBusData<"redraw">): void {
         switch (name) {
             case "msg_show": {
-                let str = "";
+                const lines: string[] = [];
                 for (const [type, content, clear] of args) {
                     if (type === "return_prompt") {
                         continue;
                     }
+
                     if (clear) {
-                        this.channel.clear();
-                        str = "";
+                        // Remove all stored lines, we will clear the output console on the way out.
+                        lines.splice(0, lines.length);
                     }
-                    let contentStr = "";
-                    for (const c of content) {
-                        contentStr += c[1];
+
+                    const segments = content.map((c) => c[1]);
+                    if (segments.length > 0) {
+                        segments[0] = segments[0].replace(/^\n+/, "");
                     }
-                    // sometimes neovim sends linebreaks, sometimes not ¯\_(ツ)_/¯
-                    str += (contentStr[0] === "\n" ? "" : "\n") + contentStr;
+
+                    lines.push(...segments);
                 }
-                // remove empty last line (since we always put \n at the end)
-                const lines = str.split("\n").slice(1);
-                if (lines.length > 2) {
+
+                if (lines.length >= 2) {
                     this.channel.show(true);
                 }
 
-                this.writeMessage(str);
+                this.writeMessage(lines.join("\n"));
                 break;
             }
+
             case "msg_history_show": {
-                let str = "\n";
+                const lines = [];
                 for (const arg of args) {
                     for (const list of arg) {
                         for (const [commandName, content] of list) {
-                            let cmdContent = "";
-                            for (const c of content) {
-                                cmdContent += c[1];
+                            const cmdContent = content.map((c) => c[1]).join("");
+
+                            if (commandName.length === 0) {
+                                lines.push(cmdContent);
+                            } else {
+                                lines.push(`${commandName}: ${cmdContent}`);
                             }
-                            str += `${commandName}: ${cmdContent}\n`;
                         }
                     }
                 }
 
                 this.channel.show(true);
-                this.writeMessage(str);
+                this.writeMessage(lines.join("\n"));
                 break;
             }
         }
     }
 
-    private writeMessage(msg: string) {
+    private writeMessage(msg: string): void {
+        if (msg.length === 0) {
+            return;
+        }
+
         logger.info(msg);
-        this.channel.append(msg);
+        const outputMsg = this.ensureEOL(msg);
+        this.channel.replace(outputMsg);
+    }
+
+    private ensureEOL(msg: string): string {
+        if (msg.length === 0 || msg[msg.length - 1] === "\n") {
+            return msg;
+        }
+
+        return msg + "\n";
     }
 }
