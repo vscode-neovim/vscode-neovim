@@ -54,7 +54,11 @@ export class MessagesManager implements Disposable {
                         for (const [commandName, content] of list) {
                             const cmdContent = content.map((c) => c[1]).join("");
 
-                            lines.push(`${commandName}: ${cmdContent}`);
+                            if (commandName.length === 0) {
+                                lines.push(cmdContent);
+                            } else {
+                                lines.push(`${commandName}: ${cmdContent}`);
+                            }
                         }
                     }
                 }
