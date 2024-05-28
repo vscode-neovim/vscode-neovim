@@ -28,7 +28,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     }
 
     const logOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} (logs)`, { log: true });
-    const userMessageOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} (messages)`);
+    const messageOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} (messages)`);
     disposables.push(logOutputChannel);
 
     config.init();
@@ -46,7 +46,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     try {
         const plugin = new MainController(context);
         context.subscriptions.push(plugin);
-        await plugin.init(userMessageOutputChannel);
+        await plugin.init(messageOutputChannel);
     } catch (e) {
         vscode.window
             .showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`, "Restart")
