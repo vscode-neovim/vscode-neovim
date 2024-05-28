@@ -1,12 +1,15 @@
-import { Disposable, LogOutputChannel } from "vscode";
+import { Disposable, OutputChannel } from "vscode";
 
 import { EventBusData, eventBus } from "./eventBus";
 import { disposeAll } from "./utils";
+import { createLogger } from "./logger";
+
+const logger = createLogger("MessagesManager");
 
 export class MessagesManager implements Disposable {
     private disposables: Disposable[] = [];
 
-    public constructor(readonly channel: LogOutputChannel) {
+    public constructor(readonly channel: OutputChannel) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
     }
 
@@ -38,7 +41,8 @@ export class MessagesManager implements Disposable {
                 if (lines.length > 2) {
                     this.channel.show(true);
                 }
-                this.channel.append(str);
+
+                this.writeMessage(str);
                 break;
             }
             case "msg_history_show": {
@@ -54,10 +58,16 @@ export class MessagesManager implements Disposable {
                         }
                     }
                 }
+
                 this.channel.show(true);
-                this.channel.append(str);
+                this.writeMessage(str);
                 break;
             }
         }
+    }
+
+    private writeMessage(msg: string) {
+        logger.info(msg);
+        this.channel.append(msg);
     }
 }

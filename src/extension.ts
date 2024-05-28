@@ -27,11 +27,12 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         verifyExperimentalAffinity();
     }
 
-    const outputChannel = vscode.window.createOutputChannel(EXT_NAME, { log: true });
-    disposables.push(outputChannel);
+    const logOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} logs`, { log: true });
+    const messageOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} messages`);
+    disposables.push(logOutputChannel, messageOutputChannel);
 
     config.init();
-    rootLogger.init(outputChannel.logLevel, config.logPath, config.outputToConsole, outputChannel);
+    rootLogger.init(logOutputChannel.logLevel, config.logPath, config.outputToConsole, logOutputChannel);
     eventBus.init();
     actions.init();
     context.subscriptions.push(
@@ -45,7 +46,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
     try {
         const plugin = new MainController(context);
         context.subscriptions.push(plugin);
-        await plugin.init(outputChannel);
+        await plugin.init(messageOutputChannel);
     } catch (e) {
         vscode.window
             .showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`, "Restart")
