@@ -27,8 +27,8 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         verifyExperimentalAffinity();
     }
 
-    const logOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} (logs)`, { log: true });
-    const messageOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} (messages)`);
+    const logOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} logs`, { log: true });
+    const messageOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} messages`);
     disposables.push(logOutputChannel, messageOutputChannel);
 
     config.init();
