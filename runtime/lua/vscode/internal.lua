@@ -1,6 +1,7 @@
 local api, fn = vim.api, vim.fn
 
 local util = require("vscode.util")
+local diagnostics = require("vscode.diagnostics")
 
 local M = {}
 
@@ -278,6 +279,10 @@ function M.wslpath(path)
     return path
   end
   return vim.trim(ret)
+end
+
+function M.set_diagnostics(bufnr, diags)
+  diagnostics.set_diagnostics(bufnr, diags)
 end
 
 return M

@@ -23,6 +23,7 @@ import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
 import { disposeAll, findLastEvent, VSCodeContext, wslpath } from "./utils";
 import { ViewportManager } from "./viewport_manager";
+import { DiagnosticsManager } from "./diagnostics_manager";
 
 interface RequestResponse {
     send(resp: unknown, isError?: boolean): void;
@@ -52,6 +53,7 @@ export class MainController implements vscode.Disposable {
     public modeManager!: ModeManager;
     public bufferManager!: BufferManager;
     public changeManager!: DocumentChangeManager;
+    public diagnosticsManager!: DiagnosticsManager;
     public typingManager!: TypingManager;
     public cursorManager!: CursorManager;
     public commandsController!: CommandsController;
@@ -135,6 +137,7 @@ export class MainController implements vscode.Disposable {
             (this.commandLineManager = new CommandLineManager(this)),
             (this.statusLineManager = new StatusLineManager(this)),
             (this.messagesManager = new MessagesManager(outputChannel)),
+            (this.diagnosticsManager = new DiagnosticsManager(this)),
         );
 
         logger.debug(`UIAttach`);
