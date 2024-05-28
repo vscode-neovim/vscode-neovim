@@ -76,11 +76,11 @@ export class MessagesManager implements Disposable {
         }
 
         logger.info(msg);
-        const outputMsg = this.endInNewline(msg);
+        const outputMsg = this.ensureEOL(msg);
         this.channel.replace(outputMsg);
     }
 
-    private endInNewline(msg: string): string {
+    private ensureEOL(msg: string): string {
         if (msg.length === 0 || msg[msg.length - 1] === "\n") {
             return msg;
         }
