@@ -29,7 +29,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
 
     const logOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} (logs)`, { log: true });
     const messageOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} (messages)`);
-    disposables.push(logOutputChannel);
+    disposables.push(logOutputChannel, messageOutputChannel);
 
     config.init();
     rootLogger.init(logOutputChannel.logLevel, config.logPath, config.outputToConsole, logOutputChannel);
