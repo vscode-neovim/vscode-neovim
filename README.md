@@ -599,6 +599,8 @@ Parameters:
 -   `VSCodeNotifyRangePos()`/`VSCodeCallRangePos()`: deprecated, use [Lua](#%EF%B8%8F-api)
     `require('vscode').call(…, {range:…})` instead.
 
+You can also use `v:lua.require("vscode")` to access the API from VimScript.
+
 ## ⌨️ Keybindings (shortcuts)
 
 Default commands and bindings available for file/scroll/window/tab management:
