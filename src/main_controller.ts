@@ -173,7 +173,7 @@ export class MainController implements vscode.Disposable {
         }
 
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
-        const neovimPreScriptPath = path.posix.join(extensionPath, "vim", "vscode-neovim.vim");
+        const neovimPreScriptPath = path.posix.join(extensionPath, "runtime", "vscode-neovim.vim");
 
         const args = [];
 

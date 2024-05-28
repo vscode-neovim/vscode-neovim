@@ -2,12 +2,41 @@
 let g:vscode = 1
 
 let s:currDir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
-" Adjust rtp path
-let &runtimepath = &runtimepath . ',' . s:currDir . '/vim-altercmd'
+let &runtimepath = &runtimepath . ',' . s:currDir
 
-let s:runtimePath = fnamemodify(s:currDir, ':h') . '/runtime'
-let &runtimepath = &runtimepath . ',' . s:runtimePath
+" Load altercmd
+" {{{
+" altercmd - Alter built-in Ex commands by your own ones
+" Version: 0.0.1
+" Copyright (C) 2009-2015 Kana Natsuno <http://whileimautomaton.net/>
+" License: MIT license
+function! s:altercmd_define(...)
+    let [buffer, original_name, alternate_name]
+    \ = (a:000[0] ==? '<buffer>' ? [] : ['']) + a:000
 
+    if original_name =~ '\['
+      let [original_name_head, original_name_tail] = split(original_name, '[')
+      let original_name_tail = substitute(original_name_tail, '\]', '', '')
+    else
+      let original_name_head = original_name
+      let original_name_tail = ''
+    endif
+
+    let original_name_tail = ' ' . original_name_tail
+    for i in range(len(original_name_tail))
+      let lhs = original_name_head . original_name_tail[1:i]
+      execute 'cnoreabbrev <expr>' buffer lhs
+      \ '(getcmdtype() == ":" && getcmdline() ==# "' . lhs  . '")'
+      \ '?' ('"' . alternate_name . '"')
+      \ ':' ('"' . lhs . '"')
+    endfor
+  endfunction
+
+command! -bar -complete=command -nargs=* AlterCommand call s:altercmd_define(<f-args>)
+" }}}
+
+
+" Check version
 lua << EOF
 local MIN_VERSION = vim.g.vscode_nvim_min_version
 
@@ -26,15 +55,12 @@ if outdated then
 end
 EOF
 
-" Used for externsion inter-communications
-let s:vscodePluginEventName = 'vscode-neovim'
-
 " RPC and global functions
 
 " internal
 
 function! VSCodeExtensionNotify(cmd, ...)
-    call rpcnotify(g:vscode_channel, s:vscodePluginEventName, a:cmd, a:000)
+    call rpcnotify(g:vscode_channel, 'vscode-neovim', a:cmd, a:000)
 endfunction
 
 " apis
@@ -88,17 +114,6 @@ function! s:onInsertEnter()
     endif
 endfunction
 
-
-" Load altercmd first
-execute 'source ' . s:currDir . '/vim-altercmd/plugin/altercmd.vim'
-execute 'source ' . s:currDir . '/vscode-scrolling.vim'
-execute 'source ' . s:currDir . '/vscode-jumplist.vim'
-execute 'source ' . s:currDir . '/vscode-code-actions.vim'
-execute 'source ' . s:currDir . '/vscode-file-commands.vim'
-execute 'source ' . s:currDir . '/vscode-tab-commands.vim'
-execute 'source ' . s:currDir . '/vscode-window-commands.vim'
-execute 'source ' . s:currDir . '/vscode-motion.vim'
-
 augroup VscodeGeneral
     autocmd!
     autocmd BufWinEnter * call VSCodeExtensionNotify('external-buffer', getbufinfo(bufnr())[0], &et, &ts)
@@ -108,11 +123,11 @@ augroup VscodeGeneral
     autocmd VimEnter,ModeChanged * call VSCodeExtensionNotify('mode-changed', mode())
     autocmd WinEnter * call VSCodeExtensionNotify('window-changed', win_getid())
     " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.
-    autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:runtimePath
+    autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:currDir
     " Source config "afterInitConfig"
     autocmd VimEnter * call nvim_exec2(join(v:lua.require("vscode").get_config("vscode-neovim.afterInitConfig"), "\n"), {})
 augroup END
 
 
 lua require("vscode")
-runtime! modules/**/*.{vim,lua}
+runtime! vscode/**/*.{vim,lua}
