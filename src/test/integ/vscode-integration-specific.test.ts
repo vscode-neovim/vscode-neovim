@@ -1,6 +1,6 @@
 import path from "path";
 import os from "os";
-import fs from "fs";
+import fs from "fs/promises";
 import { strict as assert } from "assert";
 
 import vscode, { Selection } from "vscode";
@@ -338,7 +338,7 @@ describe("VSCode integration specific stuff", () => {
 
     it("Opens a file through e command", async () => {
         const filePath = path.join(os.tmpdir(), Math.random().toString());
-        fs.writeFileSync(filePath, ["line 1"].join("\n"), {
+        await fs.writeFile(filePath, ["line 1"].join("\n"), {
             encoding: "utf8",
         });
 
@@ -353,7 +353,6 @@ describe("VSCode integration specific stuff", () => {
             client,
         );
     });
-
     it("Spawning command line from visual line mode produces vscode selection", async () => {
         await openTextDocument({ content: ["a1", "b1", "c1"].join("\n") });
         await sendVSCodeKeys("Vj");
@@ -626,5 +625,57 @@ describe("VSCode integration specific stuff", () => {
         // check the results
         const actual_input = await client.getVar("_res");
         assert.strictEqual(actual_input, null);
+    });
+
+    describe("File writing", () => {
+        let autosaveSetting: string | undefined = undefined;
+        before(async () => {
+            const config = vscode.workspace.getConfiguration("files");
+            autosaveSetting = config.get("autoSave");
+            await config.update("autoSave", "off", vscode.ConfigurationTarget.Global);
+        });
+
+        after(async () => {
+            const config = vscode.workspace.getConfiguration("files");
+            await config.update("autoSave", autosaveSetting, vscode.ConfigurationTarget.Global);
+        });
+
+        it("Writes changes to file through w command", async () => {
+            const filePath = path.join(os.tmpdir(), Math.random().toString());
+            await fs.writeFile(filePath, "hello, world!\n", {
+                encoding: "utf8",
+            });
+
+            await vscode.workspace
+                .getConfiguration("files")
+                .update("autoSave", "off", vscode.ConfigurationTarget.Global);
+            await openTextDocument(filePath);
+            await sendVSCodeKeys("ct,heyo");
+            await sendEscapeKey();
+            await sendNeovimKeys(client, ":w<Enter>");
+
+            const contents = await fs.readFile(filePath, { encoding: "utf8" });
+
+            assert.equal(contents, "heyo, world!\n");
+        });
+
+        it("Writing to command with w does not trigger file writing", async () => {
+            const filePath = path.join(os.tmpdir(), Math.random().toString());
+            await fs.writeFile(filePath, "hello, world!\n", {
+                encoding: "utf8",
+            });
+
+            await vscode.workspace
+                .getConfiguration("files")
+                .update("autoSave", "off", vscode.ConfigurationTarget.Global);
+            await openTextDocument(filePath);
+            await sendVSCodeKeys("ct,heyo");
+            await sendEscapeKey();
+            await sendNeovimKeys(client, ":w ! wc -c<Enter>");
+
+            const contents = await fs.readFile(filePath, { encoding: "utf8" });
+
+            assert.equal(contents, "hello, world!\n");
+        });
     });
 });
