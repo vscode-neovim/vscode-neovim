@@ -1,3 +1,12 @@
+function! s:write()
+    if v:cmdbang
+        call VSCodeNotify('workbench.action.files.saveAs')
+    else
+        call VSCodeNotify('workbench.action.files.save')
+    endif
+
+    set nomod
+endfunction
 
 function! s:editOrNew(...)
     let file = a:1
@@ -31,7 +40,6 @@ command! -bang -nargs=? Ex call <SID>editOrNew(<q-args>, <q-bang>)
 command! -bang Enew call <SID>editOrNew('__vscode_new__', <q-bang>)
 command! -bang Find call VSCodeNotify('workbench.action.quickOpen')
 
-command! -complete=file -bang -nargs=? Write if <q-bang> ==# '!' | call VSCodeNotify('workbench.action.files.saveAs') | else | call VSCodeNotify('workbench.action.files.save') | endif
 command! -bang Saveas call VSCodeNotify('workbench.action.files.saveAs')
 
 command! -bang Wall call VSCodeNotify('workbench.action.files.saveAll')
@@ -45,12 +53,14 @@ command! -bang Qall call VSCodeNotify('workbench.action.closeAllEditors')
 command! -bang Wqall call <SID>saveAllAndClose()
 command! -bang Xall call <SID>saveAllAndClose()
 
+augroup vscode.file-commands
+    autocmd BufWriteCmd * call s:write()
+augroup END
+
 AlterCommand e[dit] Edit
 AlterCommand ex Ex
 AlterCommand ene[w] Enew
 AlterCommand fin[d] Find
-AlterCommand w[rite] Write
-AlterCommand sav[eas] Saveas
 AlterCommand wa[ll] Wall
 AlterCommand q[uit] Quit
 AlterCommand wq Wq
