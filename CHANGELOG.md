@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.14.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.14.0...v1.14.1) (2024-05-30)
+
+
+### Bug Fixes
+
+* Correctly set doc version for skipping changes ([#2037](https://github.com/vscode-neovim/vscode-neovim/issues/2037)) ([9e95dbe](https://github.com/vscode-neovim/vscode-neovim/commit/9e95dbe36cb3fac4c172cc35edbf46cc69dd8922))
+
 ## [1.14.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.13.1...v1.14.0) (2024-05-30)
 
 
