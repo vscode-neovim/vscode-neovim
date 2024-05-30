@@ -9,6 +9,7 @@ enum StatusType {
     Mode, // msg_showmode
     Cmd, // msg_showcmd
     Msg, // msg_show, msg_clear
+    StatusLine, // (custom) statusline
 }
 
 export class StatusLineManager implements Disposable {
@@ -19,9 +20,9 @@ export class StatusLineManager implements Disposable {
     private _cmdText = "";
     private _msgText = "";
 
-    private statusBar: StatusBarItem;
+    private _statusline = "";
 
-    private nvimStatusLine = "";
+    private statusBar: StatusBarItem;
 
     private get client() {
         return this.main.client;
@@ -30,20 +31,11 @@ export class StatusLineManager implements Disposable {
     public constructor(private main: MainController) {
         this.statusBar = window.createStatusBarItem("vscode-neovim-status", StatusBarAlignment.Left, -10);
         this.statusBar.show();
-        this.disposables.push(this.statusBar, eventBus.on("redraw", this.handleRedraw, this));
-
-        const refreshNvimStatusLineTimer = setInterval(async () => {
-            let sl = (await this.client.lua(`
-            if vim.o.laststatus == 0 then return "" end
-            return vim.api.nvim_eval_statusline(vim.o.statusline, {}).str
-            `)) as any as string;
-            sl = sl.replace(/\n/g, " ").split(/\s+/g).join(" ");
-            if (this.nvimStatusLine !== sl) {
-                this.nvimStatusLine = sl;
-                this.updateStatus();
-            }
-        }, 120);
-        this.disposables.push(new Disposable(() => clearInterval(refreshNvimStatusLineTimer)));
+        this.disposables.push(
+            this.statusBar,
+            eventBus.on("redraw", this.handleRedraw, this),
+            eventBus.on("statusline", ([status]) => this.setStatus(status, StatusType.StatusLine)),
+        );
     }
 
     private setStatus(status: string, type: StatusType): void {
@@ -57,12 +49,15 @@ export class StatusLineManager implements Disposable {
             case StatusType.Msg:
                 this._msgText = status;
                 break;
+            case StatusType.StatusLine:
+                this._statusline = status;
+                break;
         }
         this.updateStatus();
     }
 
     private updateStatus() {
-        this.statusBar.text = [this.nvimStatusLine, this._modeText, this._cmdText, this._msgText]
+        this.statusBar.text = [this._statusline, this._modeText, this._cmdText, this._msgText]
             .map((i) => i.replace(/\n/g, " ").trim())
             .filter((i) => i.length)
             .join(config.statusLineSeparator);
