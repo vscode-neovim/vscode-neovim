@@ -61,6 +61,7 @@ AlterCommand e[dit] Edit
 AlterCommand ex Ex
 AlterCommand ene[w] Enew
 AlterCommand fin[d] Find
+AlterCommand sav[eas] Saveas
 AlterCommand wa[ll] Wall
 AlterCommand q[uit] Quit
 AlterCommand wq Wq
