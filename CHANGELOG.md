@@ -1,5 +1,31 @@
 # Change Log
 
+## [1.14.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.13.1...v1.14.0) (2024-05-30)
+
+
+### Features
+
+* move output messages to a separate channel ([#2022](https://github.com/vscode-neovim/vscode-neovim/issues/2022)) ([39e1ae2](https://github.com/vscode-neovim/vscode-neovim/commit/39e1ae2c780289e77abd0eb207c80a61f7e5f6c4))
+* revamp messages output channel ([#2024](https://github.com/vscode-neovim/vscode-neovim/issues/2024)) ([0957121](https://github.com/vscode-neovim/vscode-neovim/commit/09571212c176225ea3eca4f351296ed464b804b5))
+* show output when return_prompt is sent ([#2029](https://github.com/vscode-neovim/vscode-neovim/issues/2029)) ([625397e](https://github.com/vscode-neovim/vscode-neovim/commit/625397efef2913321f090c93fb43ecb791182234))
+
+
+### Bug Fixes
+
+* account for level when handling cmdline_hide events ([#2034](https://github.com/vscode-neovim/vscode-neovim/issues/2034)) ([8760f81](https://github.com/vscode-neovim/vscode-neovim/commit/8760f81fd82d5daf3db70712cd379cd1356a0d18))
+* correctly dispose the output channels ([#2033](https://github.com/vscode-neovim/vscode-neovim/issues/2033)) ([dde1b79](https://github.com/vscode-neovim/vscode-neovim/commit/dde1b798db9f9e1639dcc7e316be388949ac7563))
+* pulling status causes a redraw ([#2032](https://github.com/vscode-neovim/vscode-neovim/issues/2032)) ([fbc7c0d](https://github.com/vscode-neovim/vscode-neovim/commit/fbc7c0dc4c3a21ac3c801f800844b3673a32abbd))
+* remove redundant error message on disconnect ([#2026](https://github.com/vscode-neovim/vscode-neovim/issues/2026)) ([95171d2](https://github.com/vscode-neovim/vscode-neovim/commit/95171d2aa7e5427e200f4fe214cd0e510c1a2dbb))
+* update expected cursor when multiple docs change ([#2035](https://github.com/vscode-neovim/vscode-neovim/issues/2035)) ([504da9e](https://github.com/vscode-neovim/vscode-neovim/commit/504da9eb1516c7890cf00d50b6916fd4c6578008))
+
+
+### Refactor
+
+* clean up deprecated content ([#2012](https://github.com/vscode-neovim/vscode-neovim/issues/2012)) ([940cd4a](https://github.com/vscode-neovim/vscode-neovim/commit/940cd4a65cbc10a562aad790c4a4ab204540e914))
+* **lua:** rename the module vscode-neovim to vscode ([#1997](https://github.com/vscode-neovim/vscode-neovim/issues/1997)) ([109e125](https://github.com/vscode-neovim/vscode-neovim/commit/109e125210e4c2936e1775735e887a020fdd336a))
+* move "vim/" and merge it into "runtime/" ([#2017](https://github.com/vscode-neovim/vscode-neovim/issues/2017)) ([3a5ecb2](https://github.com/vscode-neovim/vscode-neovim/commit/3a5ecb26086ca9f4add610e8d6844e1762e9d122))
+* set enforced options in Lua ([#2011](https://github.com/vscode-neovim/vscode-neovim/issues/2011)) ([798792c](https://github.com/vscode-neovim/vscode-neovim/commit/798792c0b2c0c6e5ff1507b73fd5731f6bb6d31d))
+
 ## [1.13.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.13.0...v1.13.1) (2024-05-25)
 
 
