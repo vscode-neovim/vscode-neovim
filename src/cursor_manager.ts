@@ -61,8 +61,17 @@ export class CursorManager implements Disposable {
      * cursor updates while entering insert mode and insert mode commands. Thus, when those events occur,
      * this flag is used to disable ignoring the update. This is set to true when entering insert
      * mode or running insert mode command, and set to false before document updates in insert mode.
+     *
+     * The flag corresponds to each `TextEditor`
      */
-    public wantInsertCursorUpdate = true;
+    private _wantInsertCursorUpdate: WeakMap<TextEditor, boolean> = new WeakMap();
+    public wantInsertCursorUpdate = (editor: TextEditor) => this._wantInsertCursorUpdate.get(editor) ?? false;
+    public setWantInsertCursorUpdate = (editor: TextEditor | undefined, want: boolean) => {
+        if (!editor) return;
+        if (want) this._wantInsertCursorUpdate.set(editor, want);
+        else this._wantInsertCursorUpdate.delete(editor);
+    };
+
     /**
      * Set of grids that needs to undergo cursor update
      */
@@ -138,7 +147,9 @@ export class CursorManager implements Disposable {
                 break;
             }
             case "mode_change": {
-                if (this.main.modeManager.isInsertMode) this.wantInsertCursorUpdate = true;
+                if (this.main.modeManager.isInsertMode) {
+                    this.setWantInsertCursorUpdate(window.activeTextEditor, true);
+                }
                 args.forEach((arg) => this.updateCursorStyle(arg[0]));
                 break;
             }
@@ -222,7 +233,7 @@ export class CursorManager implements Disposable {
 
         if (
             this.main.modeManager.isInsertMode &&
-            !this.wantInsertCursorUpdate &&
+            !this.wantInsertCursorUpdate(editor) &&
             !this.main.modeManager.isRecordingInInsertMode
         ) {
             logger.debug(`Skipping insert cursor update in editor`);

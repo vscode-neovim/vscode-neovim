@@ -336,6 +336,7 @@ export class DocumentChangeManager implements Disposable {
 
     private onChangeTextDocumentLocked = async (e: TextDocumentChangeEvent, origText: string): Promise<void> => {
         const { document: doc, contentChanges } = e;
+        const editor = window.visibleTextEditors.find((e) => e.document === doc);
 
         logger.log(doc.uri, LogLevel.Debug, `Change text document for uri: ${doc.uri.toString()}`);
         logger.log(
@@ -391,7 +392,7 @@ export class DocumentChangeManager implements Disposable {
         this.bufferSkipTicks.set(bufId, bufTick + changeArgs.length);
 
         logger.log(doc.uri, LogLevel.Debug, `Setting wantInsertCursorUpdate to false`);
-        this.main.cursorManager.wantInsertCursorUpdate = false;
+        if (editor) this.main.cursorManager.setWantInsertCursorUpdate(editor, false);
 
         await actions.lua("handle_changes", bufId, changeArgs);
 
@@ -401,7 +402,6 @@ export class DocumentChangeManager implements Disposable {
         // position/visual range of nvim will change. And the changed result is
         // usually incorrect, so synchronization is forced here.
         if (!this.main.modeManager.isInsertMode) {
-            const editor = window.visibleTextEditors.find((e) => e.document === doc);
             if (editor && editor === activeEditor) {
                 // Don't await here, since it will cause a deadlock
                 this.main.cursorManager.applySelectionChanged(editor);

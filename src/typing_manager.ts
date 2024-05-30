@@ -291,7 +291,7 @@ export class TypingManager implements Disposable {
 
     private onSendCommand = async (key: string): Promise<void> => {
         logger.debug(`Send for: ${key}`);
-        this.main.cursorManager.wantInsertCursorUpdate = true;
+        this.main.cursorManager.setWantInsertCursorUpdate(window.activeTextEditor, true);
         if (this.isInsertMode && !(await this.client.mode).blocking) {
             logger.debug(`Syncing buffers with neovim (${key})`);
             await this.main.changeManager.documentChangeLock.waitForUnlock();
