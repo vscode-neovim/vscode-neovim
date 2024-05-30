@@ -257,9 +257,11 @@ export class DocumentChangeManager implements Disposable {
                     }
                     const oldText = doc.getText().replace(/\r\n/g, "\n");
                     const newText = newLines.join("\n");
-                    this.documentSkipVersionOnChange.set(doc, doc.version + 1);
 
                     const cursorBefore = editor.selection.active;
+
+                    // 1. Manually increment document version to avoid unexpected updates
+                    this.documentSkipVersionOnChange.set(doc, doc.version + 1);
                     const success = await editor.edit(
                         (builder) => {
                             const changes = calcDiffWithPosition(oldText, newText);
@@ -269,6 +271,11 @@ export class DocumentChangeManager implements Disposable {
                         },
                         { undoStopAfter: false, undoStopBefore: false },
                     );
+                    // 2. Set the actual version number after applying changes to prevent loss of the next update
+                    // Although successful, the document version may not actually increase.
+                    // Example: Using "S" to delete empty line does not actually change the text.
+                    this.documentSkipVersionOnChange.set(doc, doc.version);
+
                     const docPromises = this.textDocumentChangePromise.get(doc)?.splice(0, lastPromiseIdx) || [];
                     if (success) {
                         if (!editor.selection.anchor.isEqual(editor.selection.active)) {
