@@ -10,6 +10,8 @@ import { VSCodeContext, disposeAll } from "./utils";
 
 const logger = createLogger(EXT_ID);
 
+// Store the disposables that need to be disposed of when the extension
+// deactivates and are not affected by the restart command.
 const disposables: vscode.Disposable[] = [];
 export async function activate(context: vscode.ExtensionContext, isRestart = false): Promise<void> {
     if (!isRestart) {
@@ -29,7 +31,6 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
 
     const logOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} logs`, { log: true });
     const messageOutputChannel = vscode.window.createOutputChannel(`${EXT_NAME} messages`);
-    disposables.push(logOutputChannel, messageOutputChannel);
 
     config.init();
     rootLogger.init(logOutputChannel.logLevel, config.logPath, config.outputToConsole, logOutputChannel);
@@ -40,6 +41,8 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         rootLogger,
         eventBus,
         actions,
+        logOutputChannel,
+        messageOutputChannel,
         new vscode.Disposable(() => VSCodeContext.reset()),
     );
 
