@@ -114,7 +114,6 @@ export class CommandLineManager implements Disposable {
     }
 
     private cmdlineShow = (content: string, firstc: string, prompt: string): void => {
-        this.state.lastTypedText = content;
         this.input.title = prompt || this.getTitle(firstc);
         if (!this.state.isDisplayed) {
             this.input.show();
@@ -127,7 +126,9 @@ export class CommandLineManager implements Disposable {
         }
         this.state.redrawExpected = false;
         if (this.input.value !== content) {
+            logger.debug(`cmdline_show: setting input value: "${content}"`);
             this.state.pendingNvimUpdates++;
+            this.state.lastTypedText = content;
             const activeItems = this.input.activeItems; // backup selections
             this.input.value = content; // update content
             this.input.activeItems = activeItems; // restore selections
@@ -150,9 +151,7 @@ export class CommandLineManager implements Disposable {
     private onChange = async (text: string): Promise<void> => {
         if (this.state.pendingNvimUpdates) {
             this.state.pendingNvimUpdates = Math.max(0, this.state.pendingNvimUpdates - 1);
-            logger.debug(
-                `onChange: skip updating cmdline because change originates from nvim: "${this.state.lastTypedText}"`,
-            );
+            logger.debug(`onChange: skip updating cmdline because change originates from nvim: "${text}"`);
             return;
         }
         const toType = calculateInputAfterTextChange(this.state.lastTypedText, text);
