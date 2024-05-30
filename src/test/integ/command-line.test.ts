@@ -9,6 +9,7 @@ import {
     closeAllActiveEditors,
     closeNvimClient,
     openTextDocument,
+    assertContent,
 } from "./integrationUtils";
 
 describe("Command line", () => {
@@ -133,5 +134,22 @@ describe("Command line", () => {
         // await sendVSCodeCommand("vscode-neovim.test-cmdline", "/abc/g");
         // await sendVSCodeCommand("vscode-neovim.commit-cmdline");
         // assert.equal(await client.commandOutput("echo getreg('/')"), "xyz");
+    });
+
+    it("Supports multiple levels of the command line", async () => {
+        await openTextDocument({ content: "" });
+        await sendVSCodeKeys(":");
+        await sendVSCodeCommand("vscode-neovim.test-cmdline", "normal i");
+        await sendVSCodeCommand("vscode-neovim.send-cmdline", "<C-r>=");
+        await sendVSCodeCommand("vscode-neovim.test-cmdline", "'hello, ' . 'world!'");
+        // Commit both levels of the cmdline
+        await sendVSCodeCommand("vscode-neovim.commit-cmdline");
+        await sendVSCodeCommand("vscode-neovim.commit-cmdline");
+        await assertContent(
+            {
+                content: ["hello, world!"],
+            },
+            client,
+        );
     });
 });
