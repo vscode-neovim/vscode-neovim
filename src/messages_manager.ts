@@ -23,6 +23,7 @@ export class MessagesManager implements Disposable {
                 const lines: string[] = [];
                 for (const [type, content, clear] of args) {
                     if (type === "return_prompt") {
+                        this.channel.show(true);
                         continue;
                     }
 
