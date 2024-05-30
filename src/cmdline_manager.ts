@@ -13,6 +13,15 @@ class CmdlineState {
     // The last text typed in the UI, used to calculate changes
     lastTypedText: string = "";
 
+    // The current "level" of the cmdline we show. :help ui describes this as
+    //  > The Nvim command line can be invoked recursively, for instance by typing <c-r>= at the command line prompt.
+    //  > The level field is used to distinguish different command lines active at the same time. The first invoked
+    //  > command line has level 1, the next recursively-invoked prompt has level 2. A command line invoked from the
+    //  > cmdline-window has a higher level than the edited command line.
+    //
+    // If this value is undefined, the input is not visible
+    level?: number = undefined;
+
     // On cmdline_hide, we close the quickpick. This flag is used to ignore that event so we don't send an <Esc> to nvim.
     ignoreHideEvent = false;
 
@@ -74,10 +83,10 @@ export class CommandLineManager implements Disposable {
     private handleRedraw({ name, args }: EventBusData<"redraw">) {
         switch (name) {
             case "cmdline_show": {
-                const [content, _pos, firstc, prompt, _indent, _level] = args[0];
+                const [content, _pos, firstc, prompt, _indent, level] = args[0];
                 const allContent = content.map(([, str]) => str).join("");
                 logger.debug(`cmdline_show: "${content}"`);
-                this.cmdlineShow(allContent, firstc, prompt);
+                this.cmdlineShow(allContent, firstc, prompt, level);
                 break;
             }
             case "popupmenu_show": {
@@ -100,14 +109,19 @@ export class CommandLineManager implements Disposable {
             }
             case "cmdline_hide": {
                 logger.debug(`cmdline_hide`);
-                this.state.ignoreHideEvent = true;
-                this.input.hide();
+                this.cmdlineHide();
                 break;
             }
         }
     }
 
-    private cmdlineShow = (content: string, firstc: string, prompt: string): void => {
+    private cmdlineShow = (content: string, firstc: string, prompt: string, level: number): void => {
+        if (!this.isVisible()) {
+            // Reset the state if this is a new dialog
+            this.reset();
+        }
+
+        this.state.level = level;
         this.state.lastTypedText = content;
         this.input.title = prompt || this.getTitle(firstc);
         // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
@@ -116,7 +130,7 @@ export class CommandLineManager implements Disposable {
             return;
         }
         this.state.redrawExpected = false;
-        this.input.show();
+        this.showInput();
         if (this.input.value !== content) {
             this.state.pendingNvimUpdates++;
             const activeItems = this.input.activeItems; // backup selections
@@ -124,6 +138,24 @@ export class CommandLineManager implements Disposable {
             this.input.activeItems = activeItems; // restore selections
         }
     };
+
+    private cmdlineHide() {
+        // The hide originated from neovim, so we don't need to listen for the hide event from the quickpick
+        this.state.ignoreHideEvent = true;
+        // We expect that a cmdline_show may come through to draw this editor a second time (e.g. when level changes)
+        this.state.redrawExpected = true;
+
+        // cmdline levels start at one, so only hide this if we're at level 1
+        // (or, defensively, if we already should be hidden)
+        if (this.state.level === 1 || !this.isVisible()) {
+            logger.debug(`visible level is ${this.state.level}, hiding`);
+            this.hideInput();
+        } else {
+            logger.debug(`visible level is ${this.state.level}, not hiding`);
+            // We will eventually be sent a cmdline_show with the new level, so no need to manually
+            // manipulate it
+        }
+    }
 
     private setSelection = (index: number): void => {
         if (index === -1) {
@@ -152,10 +184,10 @@ export class CommandLineManager implements Disposable {
     };
 
     private onHide = async (): Promise<void> => {
-        this.reset();
         if (!this.state.ignoreHideEvent) {
             await this.main.client.input("<Esc>");
         }
+
         this.state.ignoreHideEvent = false;
     };
 
@@ -199,5 +231,18 @@ export class CommandLineManager implements Disposable {
             default:
                 return modeOrPrompt;
         }
+    }
+
+    private showInput() {
+        this.input.show();
+    }
+
+    private hideInput() {
+        this.state.level = undefined;
+        this.input.hide();
+    }
+
+    private isVisible(): boolean {
+        return this.state.level !== undefined;
     }
 }
