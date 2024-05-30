@@ -478,4 +478,28 @@ describe("Insert mode and buffer synchronization", () => {
             client,
         );
     });
+
+    it("Update cursor positions in insert mode when multiple docs change", async function () {
+        this.retries(0);
+
+        const badDoc = await vscode.workspace.openTextDocument({ content: "" });
+        const testDoc = await vscode.workspace.openTextDocument({ content: '"h1"' });
+
+        const badEditor = await vscode.window.showTextDocument(badDoc);
+        await vscode.window.showTextDocument(testDoc, vscode.ViewColumn.Beside);
+
+        await sendEscapeKey();
+        await sendVSCodeKeys("gg0ll");
+
+        const timer = setInterval(() => {
+            badEditor.edit((edit) => edit.insert(new vscode.Position(0, 0), "hello world\n"));
+        }, 50);
+
+        await wait(500);
+        await sendVSCodeKeys('ci"');
+
+        clearInterval(timer);
+
+        await assertContent({ content: ['""'], cursor: [0, 1] }, client);
+    });
 });
