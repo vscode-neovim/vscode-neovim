@@ -162,13 +162,14 @@ export class CommandLineManager implements Disposable {
     };
 
     private onHide = async (): Promise<void> => {
-        logger.debug("onHide, resetting cmdline");
-        if (!this.state.ignoreHideEvent) {
-            logger.debug("onHide, entering <ESC>");
+        if (this.state.ignoreHideEvent) {
+            logger.debug("onHide: skipping event");
+            this.state.ignoreHideEvent = false;
+        } else {
+            logger.debug("onHide: entering <ESC> and resetting cmdline");
             await this.main.client.input("<Esc>");
             this.reset();
         }
-        this.state.ignoreHideEvent = false;
     };
 
     private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
