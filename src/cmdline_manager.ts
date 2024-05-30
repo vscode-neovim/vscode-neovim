@@ -131,6 +131,7 @@ export class CommandLineManager implements Disposable {
         this.state.redrawExpected = false;
         this.showInput();
         if (this.input.value !== content) {
+            logger.debug(`cmdline_show: setting input value: "${content}"`);
             this.state.lastTypedText = content;
             this.state.pendingNvimUpdates++;
             const activeItems = this.input.activeItems; // backup selections
@@ -166,15 +167,14 @@ export class CommandLineManager implements Disposable {
     };
 
     private onAccept = async (): Promise<void> => {
+        logger.debug("onAccept, entering <CR>");
         await this.main.client.input("<CR>");
     };
 
     private onChange = async (text: string): Promise<void> => {
         if (this.state.pendingNvimUpdates) {
             this.state.pendingNvimUpdates = Math.max(0, this.state.pendingNvimUpdates - 1);
-            logger.debug(
-                `onChange: skip updating cmdline because change originates from nvim: "${this.state.lastTypedText}"`,
-            );
+            logger.debug(`onChange: skip updating cmdline because change originates from nvim: "${text}"`);
             return;
         }
         const toType = calculateInputAfterTextChange(this.state.lastTypedText, text);
@@ -184,11 +184,14 @@ export class CommandLineManager implements Disposable {
     };
 
     private onHide = async (): Promise<void> => {
-        if (!this.state.ignoreHideEvent) {
-            await this.main.client.input("<Esc>");
+        if (this.state.ignoreHideEvent) {
+            logger.debug("onHide: skipping event");
+            this.state.ignoreHideEvent = false;
+            return;
         }
 
-        this.state.ignoreHideEvent = false;
+        logger.debug("onHide: entering <ESC>");
+        await this.main.client.input("<Esc>");
     };
 
     private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
