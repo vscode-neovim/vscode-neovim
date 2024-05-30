@@ -462,4 +462,19 @@ describe("Basic editing and navigation", () => {
         );
         assert.ok(editor.document.eol === EndOfLine.CRLF);
     });
+
+    it("Correctly set document version for skipping updates", async () => {
+        await openTextDocument({ content: "" });
+
+        await sendVSCodeKeys("S");
+        await sendVSCodeKeys("test");
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["test"],
+            },
+            client,
+        );
+    });
 });
