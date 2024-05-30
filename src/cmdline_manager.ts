@@ -122,7 +122,6 @@ export class CommandLineManager implements Disposable {
         }
 
         this.state.level = level;
-        this.state.lastTypedText = content;
         this.input.title = prompt || this.getTitle(firstc);
         // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
         if (!this.state.redrawExpected) {
@@ -132,6 +131,7 @@ export class CommandLineManager implements Disposable {
         this.state.redrawExpected = false;
         this.showInput();
         if (this.input.value !== content) {
+            this.state.lastTypedText = content;
             this.state.pendingNvimUpdates++;
             const activeItems = this.input.activeItems; // backup selections
             this.input.value = content; // update content
