@@ -115,15 +115,13 @@ export class CommandLineManager implements Disposable {
 
     private cmdlineShow = (content: string, firstc: string, prompt: string): void => {
         this.input.title = prompt || this.getTitle(firstc);
-        if (!this.state.isDisplayed) {
-            this.input.show();
-        }
-        this.state.isDisplayed = true;
         // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
         if (!this.state.redrawExpected) {
             logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
             return;
         }
+        this.input.show();
+        this.state.isDisplayed = true;
         this.state.redrawExpected = false;
         if (this.input.value !== content) {
             logger.debug(`cmdline_show: setting input value: "${content}"`);
