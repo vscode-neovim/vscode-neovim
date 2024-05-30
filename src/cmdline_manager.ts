@@ -10,6 +10,9 @@ import { GlyphChars } from "./constants";
 const logger = createLogger("CmdLine", false);
 
 class CmdlineState {
+    // whether the cmdline is currently visible
+    isDisplayed = false;
+
     // The last text typed in the UI, used to calculate changes
     lastTypedText: string = "";
 
@@ -100,8 +103,11 @@ export class CommandLineManager implements Disposable {
             }
             case "cmdline_hide": {
                 logger.debug(`cmdline_hide`);
-                this.state.ignoreHideEvent = true;
-                this.input.hide();
+                if (this.state.isDisplayed) {
+                    this.state.ignoreHideEvent = true;
+                    this.input.hide();
+                }
+                this.state.isDisplayed = false;
                 break;
             }
         }
@@ -110,13 +116,16 @@ export class CommandLineManager implements Disposable {
     private cmdlineShow = (content: string, firstc: string, prompt: string): void => {
         this.state.lastTypedText = content;
         this.input.title = prompt || this.getTitle(firstc);
+        if (!this.state.isDisplayed) {
+            this.input.show();
+        }
+        this.state.isDisplayed = true;
         // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
         if (!this.state.redrawExpected) {
             logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
             return;
         }
         this.state.redrawExpected = false;
-        this.input.show();
         if (this.input.value !== content) {
             this.state.pendingNvimUpdates++;
             const activeItems = this.input.activeItems; // backup selections
@@ -134,6 +143,7 @@ export class CommandLineManager implements Disposable {
     };
 
     private onAccept = async (): Promise<void> => {
+        logger.debug("onAccept, entering <CR>");
         await this.main.client.input("<CR>");
     };
 
@@ -152,11 +162,12 @@ export class CommandLineManager implements Disposable {
     };
 
     private onHide = async (): Promise<void> => {
-        this.reset();
+        logger.debug("onHide, resetting cmdline");
         if (!this.state.ignoreHideEvent) {
+            logger.debug("onHide, entering <ESC>");
             await this.main.client.input("<Esc>");
         }
-        this.state.ignoreHideEvent = false;
+        this.reset();
     };
 
     private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
