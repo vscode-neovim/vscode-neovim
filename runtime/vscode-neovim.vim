@@ -1,8 +1,43 @@
 " Set global flag to allow checking in custom user config
 let g:vscode = 1
 
-let s:currDir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
-let &runtimepath = &runtimepath . ',' . s:currDir
+" Setup runtimepath
+let g:vscode_neovim_runtime = fnamemodify(resolve(expand('<sfile>:p')), ':h')
+lua << EOF
+-- Detect potential module conflicts
+local dirs = vim.api.nvim_get_runtime_file("lua/vscode/", true)
+local files = vim.api.nvim_get_runtime_file("lua/vscode.lua", true)
+if #dirs > 0 or #files > 0 then
+  for _, file in ipairs(files) do
+    table.insert(dirs, file)
+  end
+  local msg = "vscode-neovim uses module name `vscode` which conflicts with existing modules. Please rename the module. "
+    .. table.concat(dirs, ", ")
+  local cmd = "await vscode.window.showErrorMessage(args)"
+  vim.rpcnotify(vim.g.vscode_channel, "vscode-action", "eval", { args = { cmd, msg } })
+end
+
+vim.opt.rtp:prepend(vim.g.vscode_neovim_runtime)
+EOF
+
+" Check version
+lua << EOF
+local MIN_VERSION = vim.g.vscode_nvim_min_version
+
+local outdated = not (vim.version and vim.version.parse)
+if not outdated then
+  local cur = vim.version()
+  local min = vim.version.parse(MIN_VERSION)
+  outdated = vim.version.lt(cur, min)
+end
+if outdated then
+  local msg = "vscode-neovim requires nvim version "
+    .. MIN_VERSION
+    .. " or higher. Install the [latest stable version](https://github.com/neovim/neovim/releases/latest)."
+  local cmd = "await vscode.window.showErrorMessage(args)"
+  vim.rpcnotify(vim.g.vscode_channel, "vscode-action", "eval", { args = { cmd, msg } })
+end
+EOF
 
 " Load altercmd
 " {{{
@@ -34,26 +69,6 @@ function! s:altercmd_define(...)
 
 command! -bar -complete=command -nargs=* AlterCommand call s:altercmd_define(<f-args>)
 " }}}
-
-
-" Check version
-lua << EOF
-local MIN_VERSION = vim.g.vscode_nvim_min_version
-
-local outdated = not (vim.version and vim.version.parse)
-if not outdated then
-  local cur = vim.version()
-  local min = vim.version.parse(MIN_VERSION)
-  outdated = vim.version.lt(cur, min)
-end
-if outdated then
-  local msg = "vscode-neovim requires nvim version "
-    .. MIN_VERSION
-    .. " or higher. Install the [latest stable version](https://github.com/neovim/neovim/releases/latest)."
-  local cmd = "await vscode.window.showErrorMessage(args)"
-  vim.rpcnotify(vim.g.vscode_channel, "vscode-action", "eval", { args = { cmd, msg } })
-end
-EOF
 
 " RPC and global functions
 
@@ -123,7 +138,7 @@ augroup VscodeGeneral
     autocmd VimEnter,ModeChanged * call VSCodeExtensionNotify('mode-changed', mode())
     autocmd WinEnter * call VSCodeExtensionNotify('window-changed', win_getid())
     " LazyVim will clear runtimepath by default. To avoid user intervention, we need to set it again.
-    autocmd User LazyDone let &runtimepath = &runtimepath . ',' . s:currDir
+    autocmd User LazyDone let &runtimepath = g:vscode_neovim_runtime . ',' . &runtimepath
     " Source config "afterInitConfig"
     autocmd VimEnter * call nvim_exec2(join(v:lua.require("vscode").get_config("vscode-neovim.afterInitConfig"), "\n"), {})
 augroup END
