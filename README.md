@@ -589,6 +589,11 @@ Parameters:
         -   `ret` is the result
         -   If no callback is provided, error will be shown as a VSCode notification.
 
+### Builtin module overrides
+
+1. [`vim.ui`](/runtime/vscode/ui.lua): use VSCode's UI components.
+2. [`vim.lsp.buf`](/runtime/vscode/lsp/buf.lua): execute corresponding VSCode LSP commands.
+
 ### VimScript
 
 > **Note:** Since 1.0.0, vimscript functions are deprecated. Use the [Lua](#%EF%B8%8F-api) api instead.
