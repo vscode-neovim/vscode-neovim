@@ -614,8 +614,8 @@ export class BufferManager implements Disposable {
             vim.api.nvim_buf_set_var(bufId, "vscode_uri_data", docUriJson)
             vim.api.nvim_buf_set_name(bufId, bufname)
             vim.api.nvim_buf_set_option(bufId, "modifiable", not isExternalDoc)
-            -- force acwrite, which is similar to nofile, but will only be written via the BufWriteCmd autocommand.
-            vim.api.nvim_buf_set_option(bufId, "buftype", "acwrite")
+            -- force nofile, just in case if the buffer was created externally
+            vim.api.nvim_buf_set_option(bufId, "buftype", "nofile")
             vim.api.nvim_buf_set_option(bufId, "buflisted", true)
         `,
             [
