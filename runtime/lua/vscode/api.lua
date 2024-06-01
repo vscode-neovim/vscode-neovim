@@ -418,4 +418,94 @@ do
   end
 end
 
+-----------------------
+------ utilities ------
+-----------------------
+
+---Perform operations in insert mode or switch to insert mode.
+---If in visual mode, this function will preserve the selection after
+---switching to insert mode.
+---
+---Example:
+---Make `editor.action.addSelectionToNextFindMatch` work correctly in any mode.
+---This is the behavior of the default VSCode shortcut Ctrl+d: Add Selection To Next Find Match.
+---
+---```lua
+---vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
+---  vscode.into_insert(function()
+---    vscode.action("editor.action.addSelectionToNextFindMatch")
+---  end)
+---end)
+---````
+---
+---@param callback function|nil Optional callback function to run after switching to insert mode.
+---                             If not provided, it will directly switch to insert mode synchronously.
+function M.into_insert(callback)
+  vim.validate({ callback = { callback, "f", true } })
+
+  local mode = api.nvim_get_mode().mode
+
+  --- Insert ---
+
+  if mode == "i" then
+    if callback then
+      callback()
+    end
+    return
+  end
+
+  --- Normal ---
+
+  if mode == "n" then
+    api.nvim_feedkeys("a", "n", false)
+    if callback then
+      callback()
+    else
+      vim.wait(100, function() end)
+    end
+    return
+  end
+
+  --- Visual ---
+
+  if mode:match("[vV\x16]") then
+    local A = fn.getpos("v")
+    local B = fn.getpos(".")
+    local start_pos = { A[2], A[3] - 1 }
+    local end_pos = { B[2], B[3] - 1 }
+
+    if start_pos[1] > end_pos[1] or (start_pos[1] == end_pos[1] and start_pos[2] > end_pos[2]) then
+      start_pos, end_pos = end_pos, start_pos
+    end
+
+    if mode == "V" then
+      start_pos = { start_pos[1], 0 }
+      end_pos = { end_pos[1], #fn.getline(end_pos[1]) }
+    end
+
+    local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, 0, "utf-16").range
+    local ranges = { range }
+
+    api.nvim_win_set_cursor(0, end_pos)
+    api.nvim_feedkeys(api.nvim_replace_termcodes("<Esc>a", true, true, true), "n", false)
+
+    if callback then
+      M.action("start-multiple-cursors", { args = { ranges }, callback = callback })
+    else
+      M.call("start-multiple-cursors", { args = { ranges } })
+    end
+
+    return
+  end
+
+  --- Other ---
+
+  api.nvim_feedkeys(api.nvim_replace_termcodes("<Esc><Esc>a", true, true, true), "n", false)
+  if callback then
+    callback()
+  else
+    vim.wait(100, function() end)
+  end
+end
+
 return M
