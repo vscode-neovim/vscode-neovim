@@ -30,6 +30,8 @@ export class StatusLineManager implements Disposable {
 
     public constructor(private main: MainController) {
         this.statusBar = window.createStatusBarItem("vscode-neovim-status", StatusBarAlignment.Left, -10);
+        this.statusBar.command = "vscode-neovim.showOutputMessage";
+        this.statusBar.tooltip = "Show Neovim messages";
         this.statusBar.show();
         this.disposables.push(
             this.statusBar,

@@ -5,6 +5,7 @@ import { Disposable, window } from "vscode";
 import * as vscode from "vscode";
 
 import { disposeAll } from "./utils";
+import { EXT_NAME } from "./constants";
 
 export interface ILogger {
     trace(...args: any[]): void;
@@ -31,39 +32,30 @@ function getTimestamp(): string {
 
 export class Logger implements Disposable {
     private disposables: Disposable[] = [];
+    private loggers: Map<string, ILogger> = new Map();
     private fd: number | undefined;
     private filePath: string | undefined;
-    private loggers: Map<string, ILogger> = new Map();
     private level!: vscode.LogLevel;
     private logToConsole!: boolean;
-    private outputChannel?: vscode.LogOutputChannel;
+    private outputChannel!: vscode.LogOutputChannel;
 
     /**
-     * Setup logging for the extension. Logs are dropped unless one or more of
-     * `filePath`, `logToConsole`, or `outputChannel` is given.
+     * Setup logging for the extension.
      *
-     * @param level Only log messages at or above this level, or never if set to `vscode.LogLevel.Off`.
      * @param filePath Write messages to this file.
      * @param logToConsole Write messages to the `console` (Hint: run the "Developer: Toggle Developer Tools" vscode command to see the console).
-     * @param outputChannel Write messages to this vscode output channel.
      */
-    public init(
-        level: vscode.LogLevel,
-        filePath: string,
-        logToConsole = false,
-        outputChannel?: vscode.LogOutputChannel,
-    ) {
-        this.level = level;
-        this.logToConsole = logToConsole;
-        this.outputChannel = outputChannel;
-        this.filePath = filePath;
-
-        this.setupLogFile();
-        this.outputChannel?.onDidChangeLogLevel(
-            (level: vscode.LogLevel) => this.onLogLevelChanged(level),
-            undefined,
-            this.disposables,
+    public init(filePath: string, logToConsole = false) {
+        this.outputChannel = window.createOutputChannel(`${EXT_NAME} logs`, { log: true });
+        this.disposables.push(
+            this.outputChannel,
+            this.outputChannel.onDidChangeLogLevel((level) => this.onLogLevelChanged(level)),
         );
+
+        this.level = this.outputChannel.logLevel;
+        this.logToConsole = logToConsole;
+        this.filePath = filePath;
+        this.setupLogFile();
     }
 
     public dispose(): void {
@@ -77,6 +69,11 @@ export class Logger implements Disposable {
 
     private setupLogFile() {
         if (!this.filePath) {
+            // extension restarted
+            if (this.fd) {
+                fs.closeSync(this.fd);
+                this.fd = undefined;
+            }
             return;
         } else if (this.level !== vscode.LogLevel.Off && this.fd) {
             return;

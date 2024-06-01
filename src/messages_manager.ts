@@ -1,16 +1,23 @@
-import { Disposable, OutputChannel } from "vscode";
+import { Disposable, OutputChannel, commands, window } from "vscode";
 
 import { EventBusData, eventBus } from "./eventBus";
 import { disposeAll } from "./utils";
 import { createLogger } from "./logger";
+import { EXT_NAME } from "./constants";
 
 const logger = createLogger("MessagesManager");
 
 export class MessagesManager implements Disposable {
     private disposables: Disposable[] = [];
+    private channel: OutputChannel;
 
-    public constructor(readonly channel: OutputChannel) {
-        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+    public constructor() {
+        this.channel = window.createOutputChannel(`${EXT_NAME} messages`);
+        this.disposables.push(
+            this.channel,
+            commands.registerCommand("vscode-neovim.showOutputMessage", () => this.channel.show(true)),
+            eventBus.on("redraw", this.handleRedraw, this),
+        );
     }
 
     public dispose(): void {
