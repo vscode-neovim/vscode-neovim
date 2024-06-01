@@ -308,7 +308,6 @@ end
 ---@param opts table|nil Optional parameters. Unused by default.
 ---@diagnostic disable-next-line: unused-local
 function M.notify(msg, level, opts)
-  local level_name
   local levels = vim.log.levels
   level = level or levels.INFO
 
@@ -323,6 +322,7 @@ function M.notify(msg, level, opts)
     end
   end
 
+  local cmd
   if level >= levels.ERROR then
     cmd = "await vscode.window.showErrorMessage(args)"
   elseif level >= levels.WARN then
