@@ -1,16 +1,19 @@
-import { Disposable, OutputChannel } from "vscode";
+import { Disposable, OutputChannel, window } from "vscode";
 
+import { EXT_NAME } from "./constants";
 import { EventBusData, eventBus } from "./eventBus";
-import { disposeAll } from "./utils";
 import { createLogger } from "./logger";
+import { disposeAll } from "./utils";
 
 const logger = createLogger("MessagesManager");
 
 export class MessagesManager implements Disposable {
     private disposables: Disposable[] = [];
+    private channel: OutputChannel;
 
-    public constructor(readonly channel: OutputChannel) {
-        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+    public constructor() {
+        this.channel = window.createOutputChannel(`${EXT_NAME} messages`);
+        this.disposables.push(this.channel, eventBus.on("redraw", this.handleRedraw, this));
     }
 
     public dispose(): void {
