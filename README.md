@@ -331,6 +331,7 @@ local vscode = require('vscode')
    `:h g:clipboard` for more details. Usage: `vim.g.clipboard = vim.g.vscode_clipboard`
 10. `vscode.eval()`: evaluate javascript synchronously in vscode and return the result
 11. `vscode.eval_async()`: evaluate javascript asynchronously in vscode
+12. `vscode.into_insert()`: perform operations in insert mode or switch to insert mode.
 
 ### vscode.action(name, opts)
 
@@ -588,6 +589,29 @@ Parameters:
         -   `err` is the error message, if any
         -   `ret` is the result
         -   If no callback is provided, error will be shown as a VSCode notification.
+
+### vscode.into_insert(callback)
+
+Perform operations in insert mode or switch to insert mode. If in visual mode, this function will **preserve the
+selection** after switching to insert mode.
+
+Parameters:
+
+-   `callback` (function|nil): Optional callback function to run after switching to insert mode. If not provided, it
+    will directly switch to insert mode synchronously.
+
+Examples:
+
+```lua
+-- Make `editor.action.addSelectionToNextFindMatch` work correctly in any mode.
+vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
+  vscode.into_insert(function()
+    vscode.action("editor.action.addSelectionToNextFindMatch")
+  end)
+end)
+```
+
+![select-next](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/5a93c87e-626a-4a70-a9ef-5084f747c7ef)
 
 ### VimScript
 
