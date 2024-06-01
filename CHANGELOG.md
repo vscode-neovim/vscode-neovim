@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.14.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.14.1...v1.14.2) (2024-06-01)
+
+
+### Bug Fixes
+
+* detect potential module conflicts ([#2041](https://github.com/vscode-neovim/vscode-neovim/issues/2041)) ([04c6fc2](https://github.com/vscode-neovim/vscode-neovim/commit/04c6fc29269a636bd752230f8f59b132dc1efd29))
+
 ## [1.14.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.14.0...v1.14.1) (2024-05-30)
 
 
