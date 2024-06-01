@@ -143,7 +143,7 @@ export class Config implements Disposable {
     }
 
     get normalSelectionDebounceTime() {
-        return this.cfg.get("normalSelectionDebounceTime", 50);
+        return this.cfg.get("normalSelectionDebounceTime", 100);
     }
     get mouseSelectionDebounceTime() {
         return this.cfg.get("mouseSelectionDebounceTime", 100);
