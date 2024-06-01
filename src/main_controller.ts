@@ -63,7 +63,7 @@ export class MainController implements vscode.Disposable {
 
     public constructor(private extContext: ExtensionContext) {}
 
-    public async init(messageOutputChannel: vscode.OutputChannel): Promise<void> {
+    public async init(): Promise<void> {
         const [cmd, args] = this.buildSpawnArgs();
         logger.info(`starting nvim: ${cmd} ${args.join(" ")}`);
         this.nvimProc = spawn(cmd, args);
@@ -134,7 +134,7 @@ export class MainController implements vscode.Disposable {
             (this.changeManager = new DocumentChangeManager(this)),
             (this.commandLineManager = new CommandLineManager(this)),
             (this.statusLineManager = new StatusLineManager(this)),
-            (this.messagesManager = new MessagesManager(messageOutputChannel)),
+            (this.messagesManager = new MessagesManager()),
         );
 
         logger.debug(`UIAttach`);
