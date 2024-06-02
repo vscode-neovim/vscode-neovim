@@ -355,6 +355,11 @@ export class BufferManager implements Disposable {
             logger.debug(`target editor not found <check 1>, return to active editor`);
             return returnToActiveEditor();
         }
+        let uri = targetEditor.document?.uri;
+        const workspaceFolder = uri && workspace.getWorkspaceFolder(uri);
+        if(workspaceFolder) {
+            await this.client.request("nvim_set_current_dir", [workspaceFolder.uri.fsPath]);
+        }
         if (window.activeTextEditor === targetEditor) return;
         // since the event could be triggered by vscode side operations
         // we need to wait a bit to let vscode finish its internal operations
@@ -376,7 +381,7 @@ export class BufferManager implements Disposable {
         }
         if (window.activeTextEditor === targetEditor) return;
         await this.main.cursorManager.waitForCursorUpdate(targetEditor);
-        const uri = targetEditor.document.uri;
+        uri = targetEditor.document.uri;
         const { scheme } = uri;
         switch (scheme) {
             case "output": {
