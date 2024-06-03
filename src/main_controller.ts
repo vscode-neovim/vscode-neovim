@@ -206,12 +206,6 @@ export class MainController implements vscode.Disposable {
             `source ${neovimPreScriptPath}`,
         );
 
-        const workspaceFolder = vscode.workspace.workspaceFolders;
-        const cwd = workspaceFolder?.length ? workspaceFolder[0].uri.fsPath : undefined;
-        if (cwd && !vscode.env.remoteName) {
-            args.push("-c", `cd ${config.useWsl ? wslpath(cwd) : cwd}`);
-        }
-
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
                 "-u",
