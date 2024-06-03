@@ -9,6 +9,7 @@ import {
     sendEscapeKey,
     sendNeovimKeys,
     sendVSCodeKeys,
+    wait,
 } from "./integrationUtils";
 
 describe("Lua vscode.with_insert", function () {
@@ -88,5 +89,20 @@ describe("Lua vscode.with_insert", function () {
         await sendNeovimKeys(client, "<C-d>");
         await sendVSCodeKeys("xxx");
         await assertContent({ content: ["axxx", "axxx 123", "12 axxx"] }, client);
+    });
+
+    it("selectHighlights in visual mode", async () => {
+        await openTestDocument();
+        await sendEscapeKey();
+        await sendNeovimKeys(client, "gg0vll");
+        await client.lua(`
+            local vscode = require('vscode')
+            vscode.with_insert(function()
+                vscode.action('editor.action.selectHighlights')
+            end)
+            `);
+        await wait(200);
+        await sendVSCodeKeys("xxx");
+        await assertContent({ content: ["xxx", "xxx 123", "12 xxx"] }, client);
     });
 });
