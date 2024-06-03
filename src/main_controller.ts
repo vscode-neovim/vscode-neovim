@@ -170,8 +170,7 @@ export class MainController implements vscode.Disposable {
     private getcwd(): string {
         let cwd = process.cwd();
 
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        const expectedCwd = workspaceFolders?.length ? workspaceFolders[0].uri.fsPath : undefined;
+        const expectedCwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!expectedCwd) return cwd;
 
         // Remote Development
