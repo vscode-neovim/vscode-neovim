@@ -2,7 +2,7 @@ import { ChildProcess, spawn } from "child_process";
 import path from "path";
 
 import { attach, findNvim, NeovimClient } from "neovim";
-import vscode, { Disposable, Range, window, type ExtensionContext } from "vscode";
+import vscode, { Disposable, ExtensionKind, Range, window, type ExtensionContext } from "vscode";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { transports as loggerTransports, createLogger as winstonCreateLogger } from "winston";
 
@@ -64,9 +64,10 @@ export class MainController implements vscode.Disposable {
     public constructor(private extContext: ExtensionContext) {}
 
     public async init(): Promise<void> {
+        const cwd = this.getcwd();
         const [cmd, args] = this.buildSpawnArgs();
-        logger.info(`starting nvim: ${cmd} ${args.join(" ")}`);
-        this.nvimProc = spawn(cmd, args);
+        logger.info(`Starting nvim in [${cwd}]: ${cmd} ${args.join(" ")}`);
+        this.nvimProc = spawn(cmd, args, { cwd });
         this.disposables.push(
             new Disposable(() => {
                 this.nvimProc.removeAllListeners();
@@ -166,6 +167,26 @@ export class MainController implements vscode.Disposable {
         });
     }
 
+    private getcwd(): string {
+        let cwd = process.cwd();
+
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const expectedCwd = workspaceFolders?.length ? workspaceFolders[0].uri.fsPath : undefined;
+        if (!expectedCwd) return cwd;
+
+        // Remote Development
+        if (vscode.env.remoteName) {
+            // Runs on the Remote Extension Host
+            if (this.extContext.extension.extensionKind === ExtensionKind.Workspace) {
+                cwd = expectedCwd;
+            }
+        } else {
+            cwd = config.useWsl ? wslpath(expectedCwd) : expectedCwd;
+        }
+
+        return cwd;
+    }
+
     private buildSpawnArgs(): [string, string[]] {
         let extensionPath = this.extContext.extensionPath.replace(/\\/g, "\\\\");
         if (config.useWsl) {
@@ -205,12 +226,6 @@ export class MainController implements vscode.Disposable {
             "--cmd",
             `source ${neovimPreScriptPath}`,
         );
-
-        const workspaceFolder = vscode.workspace.workspaceFolders;
-        const cwd = workspaceFolder?.length ? workspaceFolder[0].uri.fsPath : undefined;
-        if (cwd && !vscode.env.remoteName) {
-            args.push("-c", `cd ${config.useWsl ? wslpath(cwd) : cwd}`);
-        }
 
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(
