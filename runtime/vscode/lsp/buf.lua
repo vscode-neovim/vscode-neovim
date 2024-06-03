@@ -1,3 +1,5 @@
+--- Shim vim.lsp.buf calls to vscode equivalent commands.
+
 local vscode = require("vscode")
 
 local M = {}
@@ -45,7 +47,7 @@ for method, cmd in pairs(map) do
 
   if cmd == vim.NIL then
     M[method] = function()
-      print(string.format("vim.lsp.buf.%s is not supported in vscode.", method))
+      vscode.notify(string.format("vim.lsp.buf.%s is not supported in vscode.", method), vim.log.levels.WARN)
     end
   elseif cmd_type == "string" then
     M[method] = function()
@@ -59,12 +61,13 @@ end
 vim.lsp.buf = setmetatable(M, {
   __index = function(t, method)
     t[method] = function()
-      print(
+      vscode.notify(
         string.format(
           "vim.lsp.buf.%s is not handled by vscode-neovim. %s",
           method,
-          "You can start a discussion about this in vscode-neovim"
-        )
+          "Please report this issue at [vscode-neovim](https://github.com/vscode-neovim/vscode-neovim/issues)"
+        ),
+        vim.log.levels.WARN
       )
     end
     return t[method]
