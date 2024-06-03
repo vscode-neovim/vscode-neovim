@@ -26,7 +26,11 @@ export class MessagesManager implements Disposable {
                 const lines: string[] = [];
                 for (const [type, content, clear] of args) {
                     if (type === "return_prompt") {
-                        this.channel.show(true);
+                        // Ignore return_prompt
+                        //
+                        // A note to future readers: return_prompt is sent much more often with ui_messages. It may
+                        // not do what you expect from what :help ui says, so be careful about using these events.
+                        // See: https://github.com/vscode-neovim/vscode-neovim/issues/2046#issuecomment-2144175058
                         continue;
                     }
 
