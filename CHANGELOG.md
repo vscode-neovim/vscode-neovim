@@ -1,5 +1,24 @@
 # Change Log
 
+## [1.15.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.14.2...v1.15.0) (2024-06-03)
+
+
+### Features
+
+* **lua:** Add "vscode.with_insert" ([#2055](https://github.com/vscode-neovim/vscode-neovim/issues/2055)) ([be8812f](https://github.com/vscode-neovim/vscode-neovim/commit/be8812f7fbdc20917e18d844507001f2b347a07e))
+* override vim.lsp.buf methods ([#2045](https://github.com/vscode-neovim/vscode-neovim/issues/2045)) ([f7fbce1](https://github.com/vscode-neovim/vscode-neovim/commit/f7fbce1010090377f6050cc94e4a331a1eaaf9ca))
+
+
+### Bug Fixes
+
+* add the missing "local" in "vscode.notify" ([2d8230c](https://github.com/vscode-neovim/vscode-neovim/commit/2d8230cc41cfe9ce23a1a56105182c4b98629a87))
+* don't show output panel after return_prompt, reverts [#2029](https://github.com/vscode-neovim/vscode-neovim/issues/2029) ([#2061](https://github.com/vscode-neovim/vscode-neovim/issues/2061)) ([6250a1d](https://github.com/vscode-neovim/vscode-neovim/commit/6250a1d00cea0fef7913c00b85176211ba7bc926))
+
+
+### Refactor
+
+* init output channels in the corresponding manager ([#2053](https://github.com/vscode-neovim/vscode-neovim/issues/2053)) ([927ed95](https://github.com/vscode-neovim/vscode-neovim/commit/927ed955d9075f40bb5f2f40d2ad9e057f13906c))
+
 ## [1.14.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.14.1...v1.14.2) (2024-06-01)
 
 
