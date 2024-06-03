@@ -3,10 +3,13 @@ import { Disposable, StatusBarAlignment, StatusBarItem, window } from "vscode";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll, Timer } from "./utils";
+import { disposeAll } from "./utils";
 import { createLogger } from "./logger";
+import { ClearAction, StatusLineMessageTimer } from "./status_line/status_line_message_timer";
 
 const logger = createLogger("StatusLineManager");
+
+const STATUS_MESSAGE_MIN_TIME = 5000;
 
 enum StatusType {
     Mode, // msg_showmode
@@ -14,8 +17,6 @@ enum StatusType {
     Msg, // msg_show, msg_clear
     StatusLine, // (custom) statusline
 }
-
-const STATUS_MESSAGE_MIN_TIME = 5000;
 
 export class StatusLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -28,9 +29,7 @@ export class StatusLineManager implements Disposable {
     private _statusline = "";
 
     private statusBar: StatusBarItem;
-    // Used to ensure messages display for some minimum amount of time so that clears don't hide just-sent messages
-    private messageDisplayTimer: Timer;
-    private clearPending: boolean = false;
+    private messageDisplayTimer: StatusLineMessageTimer;
 
     private get client() {
         return this.main.client;
@@ -39,7 +38,10 @@ export class StatusLineManager implements Disposable {
     public constructor(private main: MainController) {
         this.statusBar = window.createStatusBarItem("vscode-neovim-status", StatusBarAlignment.Left, -10);
         this.statusBar.show();
-        this.messageDisplayTimer = new Timer(() => this.handleMessageTimerExpiry(), STATUS_MESSAGE_MIN_TIME);
+        this.messageDisplayTimer = new StatusLineMessageTimer(() => {
+            logger.debug("Clearing statusline after timer expiry");
+            this.clearMessages();
+        }, STATUS_MESSAGE_MIN_TIME);
 
         this.disposables.push(
             this.statusBar,
@@ -109,7 +111,7 @@ export class StatusLineManager implements Disposable {
         }
 
         this.ensurePressEnterCleared({ name, args });
-        this.startMessageDisplayTimer();
+        this.messageDisplayTimer.onMessageEvent();
 
         const msg = args.reduce((str, [type, content, replace]) => {
             // There's no reason to put "Press ENTER to continue" in the status line
@@ -128,18 +130,15 @@ export class StatusLineManager implements Disposable {
         this.setStatus(msg, StatusType.Msg);
     }
 
-    private startMessageDisplayTimer() {
-        this.messageDisplayTimer.restart();
-        this.clearPending = false;
-    }
-
     private handleMsgClear() {
-        if (this.messageDisplayTimer.isPending()) {
-            logger.debug("Skipping statusline clear as a message is currently pending");
-            this.clearPending = true;
-        } else {
-            logger.debug("Clearing statusline after event");
-            this.clearMessages();
+        const action = this.messageDisplayTimer.onClearEvent();
+        switch (action) {
+            case ClearAction.PerformedClear:
+                logger.debug("Clearing statusline after event");
+                break;
+            case ClearAction.StagedClear:
+                logger.debug("Skipping statusline clear as a message is currently pending");
+                break;
         }
     }
 
@@ -152,14 +151,6 @@ export class StatusLineManager implements Disposable {
         if (returnPrompt) {
             this.client.input("<CR>");
         }
-    }
-
-    private handleMessageTimerExpiry() {
-        if (this.clearPending) {
-            this.clearMessages();
-        }
-
-        this.clearPending = false;
     }
 
     private clearMessages() {
