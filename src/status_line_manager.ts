@@ -3,7 +3,10 @@ import { Disposable, StatusBarAlignment, StatusBarItem, window } from "vscode";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { disposeAll, Timer } from "./utils";
+import { createLogger } from "./logger";
+
+const logger = createLogger("StatusLineManager");
 
 enum StatusType {
     Mode, // msg_showmode
@@ -11,6 +14,8 @@ enum StatusType {
     Msg, // msg_show, msg_clear
     StatusLine, // (custom) statusline
 }
+
+const STATUS_MESSAGE_MIN_TIME = 5000;
 
 export class StatusLineManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -23,6 +28,9 @@ export class StatusLineManager implements Disposable {
     private _statusline = "";
 
     private statusBar: StatusBarItem;
+    // Used to ensure messages display for some minimum amount of time so that clears don't hide just-sent messages
+    private messageDisplayTimer: Timer;
+    private clearPending: boolean = false;
 
     private get client() {
         return this.main.client;
@@ -31,8 +39,11 @@ export class StatusLineManager implements Disposable {
     public constructor(private main: MainController) {
         this.statusBar = window.createStatusBarItem("vscode-neovim-status", StatusBarAlignment.Left, -10);
         this.statusBar.show();
+        this.messageDisplayTimer = new Timer(() => this.handleMessageTimerExpiry(), STATUS_MESSAGE_MIN_TIME);
+
         this.disposables.push(
             this.statusBar,
+            this.messageDisplayTimer,
             eventBus.on("redraw", this.handleRedraw, this),
             eventBus.on("statusline", ([status]) => this.setStatus(status, StatusType.StatusLine)),
         );
@@ -82,7 +93,7 @@ export class StatusLineManager implements Disposable {
                 break;
             }
             case "msg_clear": {
-                this.setStatus("", StatusType.Msg);
+                this.handleMsgClear();
                 break;
             }
         }
@@ -98,8 +109,14 @@ export class StatusLineManager implements Disposable {
         }
 
         this.ensurePressEnterCleared({ name, args });
+        this.startMessageDisplayTimer();
 
-        const msg = args.reduce((str, [_type, content, replace]) => {
+        const msg = args.reduce((str, [type, content, replace]) => {
+            // There's no reason to put "Press ENTER to continue" in the status line
+            if (type === "return_prompt") {
+                return str;
+            }
+
             const flattenedContent = content.map(([_code, msg]) => msg).join("");
             if (replace) {
                 return flattenedContent;
@@ -111,6 +128,21 @@ export class StatusLineManager implements Disposable {
         this.setStatus(msg, StatusType.Msg);
     }
 
+    private startMessageDisplayTimer() {
+        this.messageDisplayTimer.restart();
+        this.clearPending = false;
+    }
+
+    private handleMsgClear() {
+        if (this.messageDisplayTimer.isPending()) {
+            logger.debug("Skipping statusline clear as a message is currently pending");
+            this.clearPending = true;
+        } else {
+            logger.debug("Clearing statusline after event");
+            this.clearMessages();
+        }
+    }
+
     private ensurePressEnterCleared({ name, args }: EventBusData<"redraw">) {
         if (name !== "msg_show") {
             throw new Error("Expected a msg_show event");
@@ -120,6 +152,18 @@ export class StatusLineManager implements Disposable {
         if (returnPrompt) {
             this.client.input("<CR>");
         }
+    }
+
+    private handleMessageTimerExpiry() {
+        if (this.clearPending) {
+            this.clearMessages();
+        }
+
+        this.clearPending = false;
+    }
+
+    private clearMessages() {
+        this.setStatus("", StatusType.Msg);
     }
 
     private flattenMessageContent(content: [number, string][]) {
