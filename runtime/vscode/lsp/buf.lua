@@ -30,7 +30,9 @@ local map = {
     end
     vscode.action(cmd)
   end,
-  list_workspace_folders = vim.NIL,
+  list_workspace_folders = function()
+    return vscode.eval("return (vscode.workspace.workspaceFolders || []).map((folder) => folder.name);")
+  end,
   add_workspace_folder = "workbench.action.addRootFolder",
   remove_workspace_folder = "workbench.action.removeRootFolder",
   workspace_symbol = function(query)
