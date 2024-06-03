@@ -613,9 +613,8 @@ Examples:
 
     ![select-next](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/5a93c87e-626a-4a70-a9ef-5084f747c7ef)
 
--   Make <kbd>Tab</kbd> work correctly in VSCode snippet mode.
-
-    e.g. Wraps `editor.action.refactor`
+-   Make "editor.action.refactor" work correctly on the selection and support snippet manipulation after entering VSCode
+    snippet mode.
 
     ```lua
     vim.keymap.set({ "n", "x" }, "<leader>r", function()
