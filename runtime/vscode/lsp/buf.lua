@@ -41,15 +41,13 @@ local map = {
 }
 
 for method, cmd in pairs(map) do
+  local cmd_type = type(cmd)
+
   if cmd == vim.NIL then
     M[method] = function()
       print(string.format("vim.lsp.buf.%s is not supported in vscode.", method))
     end
-    return
-  end
-
-  local cmd_type = type(cmd)
-  if cmd_type == "string" then
+  elseif cmd_type == "string" then
     M[method] = function()
       vscode.action(cmd)
     end
