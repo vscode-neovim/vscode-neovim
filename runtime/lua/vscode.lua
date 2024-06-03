@@ -30,6 +30,8 @@ local vscode = {
   notify = api.notify,
   -- operatorfunc helper
   to_op = api.to_op,
+  -- utilities
+  with_insert = api.with_insert,
 }
 
 -- Backward compatibility
