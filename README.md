@@ -601,16 +601,31 @@ Parameters:
 
 Examples:
 
-```lua
--- Make `editor.action.addSelectionToNextFindMatch` work correctly in any mode.
-vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
-  vscode.with_insert(function()
-    vscode.action("editor.action.addSelectionToNextFindMatch")
-  end)
-end)
-```
+-   Make `editor.action.addSelectionToNextFindMatch` work correctly in any mode.
 
-![select-next](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/5a93c87e-626a-4a70-a9ef-5084f747c7ef)
+    ```lua
+    vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
+      vscode.with_insert(function()
+        vscode.action("editor.action.addSelectionToNextFindMatch")
+      end)
+    end)
+    ```
+
+    ![select-next](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/5a93c87e-626a-4a70-a9ef-5084f747c7ef)
+
+-   Make <kbd>Tab</kbd> work correctly in VSCode snippet mode.
+
+    e.g. Wraps `editor.action.refactor`
+
+    ```lua
+    vim.keymap.set({ "n", "x" }, "<leader>r", function()
+      vscode.with_insert(function()
+        vscode.action("editor.action.refactor")
+      end)
+    end)
+    ```
+
+    ![refactor](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/1c436b76-5c0b-42a7-8eb4-6f149761dd3c)
 
 ### Builtin module overrides
 
