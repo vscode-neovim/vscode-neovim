@@ -1,18 +1,42 @@
 import { type Disposable } from "vscode";
 
+export interface TimerFunctions<K> {
+    startTimer: (callback: () => void) => K;
+    cancelTimer: (key: K) => void;
+}
+
+// either allow the passing of a timeout *OR* a set of timer functions that can be used for manual timer firing
+export type TimerParam<K> = K extends NodeJS.Timer ? number : TimerFunctions<K>;
+
 /**
  * Timer is an encapsulation around setTimeout, which allows a single action to be re-executed or cancelled
  * after scheduling.
+ *
+ * This function is slightly overly generic to allow for extensibility of this timer in testing (without having to depend on time)
  */
-export class Timer implements Disposable {
-    private timer: NodeJS.Timeout | null;
-    private timeout: number;
+export class Timer<K = NodeJS.Timer> implements Disposable {
+    private timerKey: K | null;
     private action: () => void;
+    private timerFunctions: TimerFunctions<K>;
 
-    constructor(action: () => void, timeout: number) {
+    /**
+     * @param action The action to fire on timer expiry
+     * @param timerParam In most normal use, this will be a timeout, in ms. However, to facilitate testing, this can also be a TimerFunctions<K>.
+     */
+    constructor(action: () => void, timerParam: TimerParam<K>) {
         this.action = action;
-        this.timeout = timeout;
-        this.timer = null;
+        this.timerKey = null;
+
+        if (typeof timerParam === "number") {
+            const timeout = timerParam;
+            // @ts-expect-error We know this will be valid, because if the spread params
+            this.timerFunctions = {
+                startTimer: (callback) => setTimeout(callback, timeout),
+                cancelTimer: clearTimeout,
+            } as TimerFunctions<NodeJS.Timer>;
+        } else {
+            this.timerFunctions = timerParam;
+        }
     }
 
     /**
@@ -21,29 +45,29 @@ export class Timer implements Disposable {
      */
     restart(): void {
         this.cancel();
-        this.timer = setTimeout(() => {
+        this.timerKey = this.timerFunctions.startTimer(() => {
             this.action();
-            this.timer = null;
-        }, this.timeout);
+            this.timerKey = null;
+        });
     }
 
     /**
      * Cancel the given timer. The action function will not be called unless this timer is restarted.
      */
     cancel(): void {
-        if (this.timer === null) {
+        if (this.timerKey === null) {
             return;
         }
 
-        clearTimeout(this.timer);
-        this.timer = null;
+        this.timerFunctions.cancelTimer(this.timerKey);
+        this.timerKey = null;
     }
 
     /**
      * @returns Whether or not the action function is waiting to be called
      */
     isPending(): boolean {
-        return this.timer !== null;
+        return this.timerKey !== null;
     }
 
     dispose(): void {

@@ -1,6 +1,6 @@
 import { type Disposable } from "vscode";
 
-import { Timer } from "../utils/timer";
+import { Timer, TimerParam } from "../utils/timer";
 
 export enum ClearAction {
     StagedClear,
@@ -10,14 +10,19 @@ export enum ClearAction {
 /**
  * A timer that ensures that the status line is shown for a minimum amount of time before it is cleared.
  */
-export class StatusLineMessageTimer implements Disposable {
+export class StatusLineMessageTimer<K = NodeJS.Timer> implements Disposable {
     private doClear: () => void;
-    private timer: Timer;
+    private timer: Timer<K>;
     private clearPending: boolean = false;
 
-    constructor(doClear: () => void, minTime: number) {
+    /**
+     * @param doClear The function to call when it is time to clear the status line
+     * @param timerParam In most normal use, this will be a timeout, in ms. However, to facilitate testing, this can
+     * also be a TimerFunctions<K>.
+     */
+    constructor(doClear: () => void, timerParam: TimerParam<K>) {
         this.doClear = doClear;
-        this.timer = new Timer(() => this.onTimerExpired(), minTime);
+        this.timer = new Timer(() => this.onTimerExpired(), timerParam);
     }
 
     dispose(): void {
