@@ -64,56 +64,21 @@ export class StatusLineManager implements Disposable {
     }
 
     private handleRedraw({ name, args }: EventBusData<"redraw">) {
-        let acceptPrompt = false;
-
         switch (name) {
             case "msg_showcmd": {
                 const [content] = args[0];
-                let str = "";
-                if (content) {
-                    for (const c of content) {
-                        const [, cmdStr] = c;
-                        if (cmdStr) {
-                            str += cmdStr;
-                        }
-                    }
-                }
-                this.setStatus(str, StatusType.Cmd);
+                const cmdMsg = this.flattenMessageContent(content);
+                this.setStatus(cmdMsg, StatusType.Cmd);
                 break;
             }
             case "msg_show": {
-                let str = "";
-                for (const [type, content] of args) {
-                    // if (ui === "confirm" || ui === "confirmsub" || ui === "return_prompt") {
-                    //     this.nextInputBlocking = true;
-                    // }
-                    if (type === "return_prompt") {
-                        acceptPrompt = true;
-                    }
-                    if (content) {
-                        for (const c of content) {
-                            const [, cmdStr] = c;
-                            if (cmdStr) {
-                                str += cmdStr;
-                            }
-                        }
-                    }
-                }
-                this.setStatus(str, StatusType.Msg);
+                this.handleMsgShow({ name, args });
                 break;
             }
             case "msg_showmode": {
                 const [content] = args[args.length - 1];
-                let str = "";
-                if (content) {
-                    for (const c of content) {
-                        const [, modeStr] = c;
-                        if (modeStr) {
-                            str += modeStr;
-                        }
-                    }
-                }
-                this.setStatus(str, StatusType.Mode);
+                const modeMsg = this.flattenMessageContent(content);
+                this.setStatus(modeMsg, StatusType.Mode);
                 break;
             }
             case "msg_clear": {
@@ -121,12 +86,43 @@ export class StatusLineManager implements Disposable {
                 break;
             }
         }
-        if (acceptPrompt) {
-            this.client.input("<CR>");
-        }
     }
 
     dispose() {
         disposeAll(this.disposables);
+    }
+
+    private handleMsgShow({ name, args }: EventBusData<"redraw">) {
+        if (name !== "msg_show") {
+            throw new Error("Expected a msg_show event");
+        }
+
+        this.ensurePressEnterCleared({ name, args });
+
+        const msg = args.reduce((str, [_type, content, replace]) => {
+            const flattenedContent = content.map(([_code, msg]) => msg).join("");
+            if (replace) {
+                return flattenedContent;
+            }
+
+            return str + flattenedContent;
+        }, "");
+
+        this.setStatus(msg, StatusType.Msg);
+    }
+
+    private ensurePressEnterCleared({ name, args }: EventBusData<"redraw">) {
+        if (name !== "msg_show") {
+            throw new Error("Expected a msg_show event");
+        }
+
+        const returnPrompt = args.find(([type, _content]) => type === "return_prompt");
+        if (returnPrompt) {
+            this.client.input("<CR>");
+        }
+    }
+
+    private flattenMessageContent(content: [number, string][]) {
+        return content.map(([_code, msg]) => msg).join("");
     }
 }
