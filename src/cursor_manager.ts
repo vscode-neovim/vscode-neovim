@@ -174,7 +174,7 @@ export class CursorManager implements Disposable {
             return;
         }
         let style: TextEditorCursorStyle;
-        if (modeName == "visual") {
+        if (modeName === "visual") {
             // in visual mode, we try to hide the cursor because we only use it for selections
             style = TextEditorCursorStyle.LineThin;
         } else if (modeConf.cursorShape === "block") {
@@ -363,11 +363,11 @@ export class CursorManager implements Disposable {
 
             if (selection.isEmpty) {
                 // exit visual mode when clicking elsewhere
-                if (this.main.modeManager.isVisualMode && kind == TextEditorSelectionChangeKind.Mouse)
+                if (this.main.modeManager.isVisualMode && kind === TextEditorSelectionChangeKind.Mouse)
                     await this.client.input("<Esc>");
                 await this.updateNeovimCursorPosition(editor, selection.active);
             } else {
-                if (kind != TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
+                if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
                     await this.updateNeovimVisualSelection(editor, selection);
             }
         }

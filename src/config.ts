@@ -13,7 +13,7 @@ import {
 import { CTRL_KEYS, EXT_ID, EXT_NAME } from "./constants";
 import { VSCodeContext, disposeAll } from "./utils";
 
-const isWindows = process.platform == "win32";
+const isWindows = process.platform === "win32";
 
 type SettingPrefix = "neovimExecutablePaths" | "neovimInitVimPaths"; //this needs to be aligned with setting names in package.json
 

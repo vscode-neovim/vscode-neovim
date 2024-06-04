@@ -146,7 +146,7 @@ export class BufferManager implements Disposable {
             ) => {
                 const [doc] = [...this.textDocumentToBufferId.entries()].find(([_, id]) => id === bufId) || [];
                 if (!doc) return;
-                const editor = window.visibleTextEditors.find((e) => e.document == doc);
+                const editor = window.visibleTextEditors.find((e) => e.document === doc);
                 if (!editor) return;
                 const { tabSize, insertSpaces, lineNumbers: numbers } = options;
                 const lineNumbers =

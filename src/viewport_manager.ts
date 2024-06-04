@@ -180,7 +180,7 @@ export class ViewportManager implements Disposable {
             return;
         }
         const ranges = editor.visibleRanges;
-        if (!ranges || ranges.length == 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
+        if (!ranges || ranges.length === 0 || ranges[0].end.line - ranges[0].start.line <= 1) {
             return;
         }
         const startLine = ranges[0].start.line - config.neovimViewportHeightExtend;
@@ -193,7 +193,7 @@ export class ViewportManager implements Disposable {
             return;
         }
         const viewport = this.gridViewport.get(gridId);
-        if (viewport && startLine != viewport?.topline && currentLine == viewport?.line) {
+        if (viewport && startLine !== viewport?.topline && currentLine === viewport?.line) {
             actions.lua("scroll_viewport", Math.max(startLine, 0), endLine);
         }
     }

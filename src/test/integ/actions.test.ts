@@ -28,7 +28,7 @@ function pathsEqual(a: string, b: string) {
     if (process.platform === "win32") {
         return a.toLowerCase() === b.toLowerCase();
     } else {
-        return a == b;
+        return a === b;
     }
 }
 

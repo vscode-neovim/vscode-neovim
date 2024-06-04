@@ -163,7 +163,7 @@ export class MainController implements vscode.Disposable {
     private _stop(msg: string) {
         vscode.commands.executeCommand("vscode-neovim.stop");
         vscode.window.showErrorMessage(msg, "Restart").then((value) => {
-            if (value == "Restart") vscode.commands.executeCommand("vscode-neovim.restart");
+            if (value === "Restart") vscode.commands.executeCommand("vscode-neovim.restart");
         });
     }
 
@@ -264,7 +264,7 @@ export class MainController implements vscode.Disposable {
             const range = options.range;
             let targetRange: Range;
             if (Array.isArray(range)) {
-                if (range.length == 2) {
+                if (range.length === 2) {
                     const startLine = Math.max(0, range[0]);
                     const endLine = Math.min(editor.document.lineCount - 1, range[1]);
                     targetRange = new Range(doc.lineAt(startLine).range.start, doc.lineAt(endLine).range.end);
