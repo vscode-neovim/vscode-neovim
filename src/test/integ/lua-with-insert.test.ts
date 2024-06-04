@@ -1,4 +1,5 @@
 import { NeovimClient } from "neovim";
+import { Selection } from "vscode";
 
 import {
     assertContent,
@@ -8,6 +9,7 @@ import {
     openTextDocument,
     sendEscapeKey,
     sendNeovimKeys,
+    sendVSCodeCommand,
     sendVSCodeKeys,
     wait,
 } from "./integrationUtils";
@@ -45,25 +47,23 @@ describe("Lua vscode.with_insert", function () {
         });
     }
 
+    async function ctrlD(times = 1) {
+        for (let i = 0; i < times; i++) {
+            await sendVSCodeCommand("vscode-neovim.send", "<C-d>", 200);
+        }
+    }
+
     it("addSelectionToNextFindMatch in normal mode", async () => {
         await openTestDocument();
         await sendEscapeKey();
         await sendNeovimKeys(client, "gg0");
-
-        // The cursor changing interrupts the state of VSCode, so repeating the
-        // action is necessary to continue selecting, as expected.
-        // (0, 0) -> (0, 3)
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
+        await ctrlD(3);
         await sendVSCodeKeys("xxx");
         await assertContent({ content: ["xxx", "xxx 123", "12 xxx"] }, client);
 
         await sendEscapeKey();
         await sendNeovimKeys(client, "gg0ll");
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
+        await ctrlD(2);
         await sendVSCodeKeys("yyy");
         await assertContent({ content: ["yyy", "yyy 123", "12 xxx"] }, client);
     });
@@ -72,10 +72,7 @@ describe("Lua vscode.with_insert", function () {
         await openTestDocument();
         await sendEscapeKey();
         await sendNeovimKeys(client, "gg0i");
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
+        await ctrlD(3);
         await sendVSCodeKeys("xxx");
         await assertContent({ content: ["xxx", "xxx 123", "12 xxx"] }, client);
     });
@@ -84,9 +81,7 @@ describe("Lua vscode.with_insert", function () {
         await openTestDocument();
         await sendEscapeKey();
         await sendNeovimKeys(client, "gg0lvl");
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
-        await sendNeovimKeys(client, "<C-d>");
+        await ctrlD(3);
         await sendVSCodeKeys("xxx");
         await assertContent({ content: ["axxx", "axxx 123", "12 axxx"] }, client);
     });
@@ -104,5 +99,17 @@ describe("Lua vscode.with_insert", function () {
         await wait(200);
         await sendVSCodeKeys("xxx");
         await assertContent({ content: ["xxx", "xxx 123", "12 xxx"] }, client);
+    });
+
+    it("addSelectionToNextFindMatch in insert mode. Range selected by the mouse", async function () {
+        const editor = await openTestDocument();
+        await sendEscapeKey();
+        await sendNeovimKeys(client, "gg0jA");
+        await wait(200);
+        editor.selections = [new Selection(0, 1, 0, 3)];
+        await wait(200);
+        await ctrlD(3);
+        await sendVSCodeKeys("xxx");
+        await assertContent({ content: ["axxx", "axxx 123", "12 axxx"] }, client);
     });
 });
