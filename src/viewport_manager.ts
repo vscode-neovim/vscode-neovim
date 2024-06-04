@@ -1,4 +1,4 @@
-import { DebouncedFunc, debounce } from "lodash-es";
+import { DebouncedFunc, debounce } from "lodash";
 import {
     Disposable,
     EventEmitter,
