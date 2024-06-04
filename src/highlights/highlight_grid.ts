@@ -293,7 +293,7 @@ export class HighlightGrid {
 
             const colHighlight = colHighlights[0];
             const existingHighlights = normalHighlights.get(colHighlight.hlId) ?? [];
-            const matchingHighlight = findLast(existingHighlights, (hl) => hl.endCol === col);
+            const matchingHighlight = existingHighlights.findLast((hl) => hl.endCol === col);
 
             if (matchingHighlight) {
                 // Extend our existing highlight if we already have it
@@ -332,14 +332,6 @@ class CellIter {
     setNext(hlId: number, text: string) {
         if (this._index < this._cells.length) {
             this._cells[this._index] = { hlId, text };
-        }
-    }
-}
-
-function findLast<T>(arr: T[], finder: (item: T) => boolean): T | undefined {
-    for (let i = arr.length - 1; i >= 0; i--) {
-        if (finder(arr[i])) {
-            return arr[i];
         }
     }
 }

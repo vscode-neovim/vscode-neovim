@@ -3,7 +3,7 @@
         "module": "commonjs",
         "target": "ES2015",
         "outDir": "out",
-        "lib": ["ES2017", "ES2019.Array"],
+        "lib": ["ES2023"],
         "sourceMap": true,
         "rootDir": "src",
         "types": ["node", "mocha"],
