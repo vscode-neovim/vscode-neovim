@@ -287,9 +287,8 @@ export class CursorManager implements Disposable {
     };
 
     private onSelectionChanged = (e: TextEditorSelectionChangeEvent): void => {
-        if (this.main.modeManager.isInsertMode) return;
-
         const { textEditor, kind } = e;
+
         // ! Note: Unfortunately navigating from outline is Command kind, so we can't skip it :(
         logger.debug(
             `onSelectionChanged, kind: ${kind}, editor: ${textEditor.document.uri.fsPath}, active: [${textEditor.selection.active.line}, ${textEditor.selection.active.character}]`,
@@ -361,14 +360,24 @@ export class CursorManager implements Disposable {
                 }], isMultiSelection: ${editor.selections.length > 1}`,
             );
 
-            if (selection.isEmpty) {
-                // exit visual mode when clicking elsewhere
-                if (this.main.modeManager.isVisualMode && kind === TextEditorSelectionChangeKind.Mouse)
-                    await this.client.input("<Esc>");
+            if (this.main.modeManager.isInsertMode) {
+                // Keep the cursor consistent as much as possible to avoid
+                // changes in editor selections when synchronizing the cursor
+                // position of neovim to vscode in insert mode, thus breaking
+                // the cursor-related functions of vscode, such as placeholder
+                // jumps in snippet mode, multi-cursor selection, etc.
+                this.setWantInsertCursorUpdate(editor, false);
                 await this.updateNeovimCursorPosition(editor, selection.active);
             } else {
-                if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
-                    await this.updateNeovimVisualSelection(editor, selection);
+                if (selection.isEmpty) {
+                    // exit visual mode when clicking elsewhere
+                    if (this.main.modeManager.isVisualMode && kind === TextEditorSelectionChangeKind.Mouse)
+                        await this.client.input("<Esc>");
+                    await this.updateNeovimCursorPosition(editor, selection.active);
+                } else {
+                    if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
+                        await this.updateNeovimVisualSelection(editor, selection);
+                }
             }
         }
 
