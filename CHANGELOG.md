@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.15.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.15.0...v1.15.1) (2024-06-04)
+
+
+### Bug Fixes
+
+* Fix setting the cwd in remote development ([#2062](https://github.com/vscode-neovim/vscode-neovim/issues/2062)) ([62bab05](https://github.com/vscode-neovim/vscode-neovim/commit/62bab0597590ba4445b57b98653b2f0dd60ee002))
+
 ## [1.15.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.14.2...v1.15.0) (2024-06-03)
 
 
