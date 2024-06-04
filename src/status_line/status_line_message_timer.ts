@@ -1,6 +1,5 @@
+import { DebouncedFunc, debounce } from "lodash";
 import { type Disposable } from "vscode";
-
-import { Timer, TimerParam } from "../utils/timer";
 
 export enum ClearAction {
     StagedClear,
@@ -10,30 +9,33 @@ export enum ClearAction {
 /**
  * A timer that ensures that the status line is shown for a minimum amount of time before it is cleared.
  */
-export class StatusLineMessageTimer<K = NodeJS.Timer> implements Disposable {
+export class StatusLineMessageTimer implements Disposable {
     private doClear: () => void;
-    private timer: Timer<K>;
+    private debouncedDoClear: DebouncedFunc<() => void>;
+    // Whether or not the debounced function has been called, but has not yet executed
+    private debouncePending: boolean = false;
+    // Whether or not a clear has been staged for once the debounced function is complete
     private clearPending: boolean = false;
 
     /**
      * @param doClear The function to call when it is time to clear the status line
-     * @param timerParam In most normal use, this will be a timeout, in ms. However, to facilitate testing, this can
-     * also be a TimerFunctions<K>.
+     * @param timeout In most normal use, this will be a timeout
      */
-    constructor(doClear: () => void, timerParam: TimerParam<K>) {
+    constructor(doClear: () => void, timeout: number) {
         this.doClear = doClear;
-        this.timer = new Timer(() => this.onTimerExpired(), timerParam);
+        this.debouncedDoClear = debounce(() => this.onDebounceReady(), timeout);
     }
 
     dispose(): void {
-        this.timer.dispose();
+        this.debouncedDoClear.cancel();
     }
 
     /**
      * A msg_show event has come in from neovim
      */
     onMessageEvent() {
-        this.timer.restart();
+        this.debouncedDoClear();
+        this.debouncePending = true;
         this.clearPending = false;
     }
 
@@ -41,7 +43,7 @@ export class StatusLineMessageTimer<K = NodeJS.Timer> implements Disposable {
      * A msg_clear event has come in from neovim
      */
     onClearEvent(): ClearAction {
-        if (this.timer.isPending()) {
+        if (this.debouncePending) {
             this.clearPending = true;
             return ClearAction.StagedClear;
         }
@@ -50,7 +52,9 @@ export class StatusLineMessageTimer<K = NodeJS.Timer> implements Disposable {
         return ClearAction.PerformedClear;
     }
 
-    private onTimerExpired(): void {
+    private onDebounceReady(): void {
+        this.debouncePending = false;
+
         if (this.clearPending) {
             this.doClear();
         }

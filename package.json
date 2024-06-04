@@ -2138,9 +2138,11 @@
     },
     "devDependencies": {
         "@johnnymorganz/stylua-bin": "^0.20.0",
+        "@sinonjs/fake-timers": "^11.2.2",
         "@types/lodash": "^4.17.4",
         "@types/mocha": "^10.0.6",
         "@types/node": "^20.12.5",
+        "@types/sinonjs__fake-timers": "^8.1.5",
         "@types/vscode": "^1.87.0",
         "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^2.24.0",
