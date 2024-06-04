@@ -116,7 +116,7 @@ export class Logger implements Disposable {
         if (this.fd || this.logToConsole) {
             const logMsg = `${getTimestamp()} ${scope}: ${msg}`;
             this.fd && fs.appendFileSync(this.fd, logMsg + "\n");
-            this.logToConsole && console[level == vscode.LogLevel.Error ? "error" : "log"](logMsg);
+            this.logToConsole && console[level === vscode.LogLevel.Error ? "error" : "log"](logMsg);
         }
 
         // Half-baked attempt to avoid infinite loop.

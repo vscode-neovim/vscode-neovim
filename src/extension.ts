@@ -49,7 +49,7 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         vscode.window
             .showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`, "Restart")
             .then((value) => {
-                if (value == "Restart") {
+                if (value === "Restart") {
                     vscode.commands.executeCommand("vscode-neovim.restart");
                 }
             });
@@ -101,7 +101,7 @@ function verifyExperimentalAffinity(): void {
             "Cancel",
         )
         .then((value) => {
-            if (value == "Yes") {
+            if (value === "Yes") {
                 setAffinity(defaultAffinity);
                 vscode.window
                     .showInformationMessage(
@@ -109,7 +109,7 @@ function verifyExperimentalAffinity(): void {
                         "Restart",
                     )
                     .then((value) => {
-                        if (value == "Restart") {
+                        if (value === "Restart") {
                             vscode.commands.executeCommand("workbench.action.restartExtensionHost");
                         }
                     });
