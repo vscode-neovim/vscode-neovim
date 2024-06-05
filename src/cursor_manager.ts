@@ -339,25 +339,26 @@ export class CursorManager implements Disposable {
         // reset cursor style if needed
         this.updateCursorStyle(this.main.modeManager.currentMode.name);
 
-        // wait for possible layout updates first
         logger.debug(`Waiting for possible layout completion operation`);
         await this.main.bufferManager.waitForLayoutSync();
-        // wait for possible change document events
         logger.debug(`Waiting for possible document change completion operation`);
         await this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
         await this.main.changeManager.documentChangeLock.waitForUnlock();
         logger.debug(`Waiting done`);
 
-        // ignore selection change caused by buffer edit
-        const selection = editor.selection;
-        const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(editor.document);
-        if (documentChange && documentChange.isEqual(selection.active)) {
-            logger.debug(`Skipping onSelectionChanged event since it was selection produced by doc change`);
-        } else {
+        try {
+            const selection = editor.selection;
+            // ignore selection change caused by buffer edit
+            const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(editor.document);
+            if (documentChange && documentChange.isEqual(selection.active)) {
+                logger.debug(`Skipping onSelectionChanged event since it was selection produced by doc change`);
+                return;
+            }
+
             logger.debug(
-                `Applying changed selection, kind: ${kind},  cursor: [${selection.active.line}, ${
-                    selection.active.character
-                }], isMultiSelection: ${editor.selections.length > 1}`,
+                `Applying changed selection, kind: ${kind && TextEditorSelectionChangeKind[kind]},`,
+                `cursor: [${selection.active.line}, ${selection.active.character}],`,
+                `isMultiSelection: ${editor.selections.length > 1}`,
             );
 
             if (this.main.modeManager.isInsertMode) {
@@ -368,22 +369,24 @@ export class CursorManager implements Disposable {
                 // jumps in snippet mode, multi-cursor selection, etc.
                 this.setWantInsertCursorUpdate(editor, false);
                 await this.updateNeovimCursorPosition(editor, selection.active);
-            } else {
-                if (selection.isEmpty) {
-                    // exit visual mode when clicking elsewhere
-                    if (this.main.modeManager.isVisualMode && kind === TextEditorSelectionChangeKind.Mouse)
-                        await this.client.input("<Esc>");
-                    await this.updateNeovimCursorPosition(editor, selection.active);
-                } else {
-                    if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
-                        await this.updateNeovimVisualSelection(editor, selection);
-                }
+                return;
             }
-        }
 
-        this.previousApplyDebounceTime = undefined;
-        this.applySelectionChangedPromise.get(editor)?.resolve();
-        this.applySelectionChangedPromise.delete(editor);
+            if (selection.isEmpty) {
+                // exit visual mode when clicking elsewhere
+                if (this.main.modeManager.isVisualMode && kind === TextEditorSelectionChangeKind.Mouse)
+                    await this.client.input("<Esc>");
+                await this.updateNeovimCursorPosition(editor, selection.active);
+                return;
+            }
+
+            if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
+                await this.updateNeovimVisualSelection(editor, selection);
+        } finally {
+            this.previousApplyDebounceTime = undefined;
+            this.applySelectionChangedPromise.get(editor)?.resolve();
+            this.applySelectionChangedPromise.delete(editor);
+        }
     };
 
     /**
