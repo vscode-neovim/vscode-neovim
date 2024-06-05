@@ -184,7 +184,7 @@ export class TypingManager implements Disposable {
         this.useCompositeKeys = this.compositeFirstKeys.length > 0;
     }
 
-    private onModeChange = (): void => {
+    private onModeChange = async (): Promise<void> => {
         if (this.main.modeManager.isInsertMode && this.takeOverVSCodeInput && !this.isRecordingInInsertMode) {
             const editor = window.activeTextEditor;
             const documentPromise = editor && this.main.changeManager.getDocumentChangeCompletionLock(editor.document);
@@ -192,22 +192,19 @@ export class TypingManager implements Disposable {
                 logger.debug(`Waiting for cursor completion operation before disposing type handler`);
                 this.pendingKeysAfterEnter = "";
                 this.isEnteringInsertMode = true;
-                documentPromise.then(async () => {
-                    await this.main.cursorManager.waitForCursorUpdate(editor);
-                    if (this.isInsertMode) {
-                        this.takeOverVSCodeInput = false;
-                    }
-                    if (this.pendingKeysAfterEnter) {
-                        logger.debug(
-                            `Replaying pending keys after entering insert mode: ${this.pendingKeysAfterEnter}`,
-                        );
-                        await commands.executeCommand(this.isInsertMode ? "default:type" : "type", {
-                            text: this.pendingKeysAfterEnter,
-                        });
-                        this.pendingKeysAfterEnter = "";
-                    }
-                    this.isEnteringInsertMode = false;
-                });
+                await documentPromise;
+                await this.main.cursorManager.waitForCursorUpdate(editor);
+                if (this.isInsertMode) {
+                    this.takeOverVSCodeInput = false;
+                }
+                if (this.pendingKeysAfterEnter) {
+                    logger.debug(`Replaying pending keys after entering insert mode: ${this.pendingKeysAfterEnter}`);
+                    await commands.executeCommand(this.isInsertMode ? "default:type" : "type", {
+                        text: this.pendingKeysAfterEnter,
+                    });
+                    this.pendingKeysAfterEnter = "";
+                }
+                this.isEnteringInsertMode = false;
             } else {
                 this.takeOverVSCodeInput = false;
             }
