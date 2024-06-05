@@ -280,4 +280,10 @@ function M.wslpath(path)
   return vim.trim(ret)
 end
 
+-- Get the current Neovim CWD
+-- @return string
+function M.cwd()
+  return fn.getcwd()
+end
+
 return M

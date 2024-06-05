@@ -158,6 +158,8 @@ export class BufferManager implements Disposable {
                 editor.options = { tabSize, insertSpaces, lineNumbers };
             },
         );
+
+        actions.add("save_buf", (bufID: number, filename: string) => this.handleSaveBuf(bufID, filename));
     }
 
     public dispose(): void {
@@ -410,6 +412,74 @@ export class BufferManager implements Disposable {
 
     private handleWindowChangedDebounced = debounce(this.handleWindowChanged, 100, { leading: false, trailing: true });
 
+    private handleSaveBuf(bufID: number, filename: string) {
+        const document = this.getTextDocumentForBufferId(bufID);
+        if (document == null) {
+            throw new Error("Received an invalid buffer id from Neovim, cannot save");
+        }
+
+        this.saveDocument(bufID, document, filename).catch((err) => {
+            window.showErrorMessage(`Failed to save document to ${filename}: ${err}`);
+        });
+    }
+
+    private async saveDocument(bufID: number, document: TextDocument, filename: string): Promise<void> {
+        const needSaveAs = await this.needSaveAs(document, filename);
+        if (needSaveAs) {
+            const newURI = await workspace.saveAs(document.uri);
+            if (newURI === undefined) {
+                throw new Error("Unknown document save failure");
+            }
+
+            const bufname = await this.bufnameForURI(newURI);
+            await this.client.lua(
+                `
+                local bufId, docUri, docUriJson, bufname = ...
+
+                vim.api.nvim_buf_set_var(bufId, "vscode_uri", docUri)
+                vim.api.nvim_buf_set_var(bufId, "vscode_uri_data", docUriJson)
+                vim.api.nvim_buf_set_name(bufId, bufname)
+                vim.bo[bufId].modified = false
+            `,
+                [bufID, document.uri.toString(), document.uri.toJSON(), bufname],
+            );
+        } else {
+            const success = await document.save();
+            if (!success) {
+                throw new Error("Unknown document save failure");
+            }
+
+            await this.client.lua(
+                `
+                local bufId = ...
+
+                vim.bo[bufId].modified = false
+            `,
+                [bufID],
+            );
+        }
+    }
+
+    private async needSaveAs(document: TextDocument, filename: string): Promise<boolean> {
+        // If we haven't saved this document, we will let VSCode handle it
+        if (document.isUntitled) {
+            return true;
+        }
+
+        // Alternatively, if the file path has changed, we will also let VSCode handle it
+        const filepath = await this.resolveWritePath(filename);
+        return document.uri.path !== filepath;
+    }
+
+    private async resolveWritePath(filename: string): Promise<string> {
+        if (path.isAbsolute(filename)) {
+            return filename;
+        }
+
+        const cwd = await actions.lua("cwd");
+        return path.join(cwd, filename);
+    }
+
     // #region Sync layout
 
     private onEditorLayoutChanged = async () => {
@@ -588,18 +658,11 @@ export class BufferManager implements Disposable {
      */
     private async initBufferForDocument(document: TextDocument, buffer: Buffer, editor?: TextEditor): Promise<void> {
         const bufId = buffer.id;
-        const { uri: docUri } = document;
-        logger.log(docUri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${docUri}`);
+        logger.log(document.uri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${document.uri}`);
 
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
-        // We don't care about the name of the buffer if it's not a file
-        const bufname =
-            docUri.scheme === "file"
-                ? config.useWsl
-                    ? await actions.lua("wslpath", docUri.fsPath)
-                    : docUri.fsPath
-                : docUri.toString();
+        const bufname = await this.bufnameForTextDocument(document);
 
         await this.client.lua(
             `
@@ -612,18 +675,21 @@ export class BufferManager implements Disposable {
             vim.api.nvim_buf_set_var(bufId, "vscode_editor_options", vscode_editor_options)
             vim.api.nvim_buf_set_var(bufId, "vscode_uri", docUri)
             vim.api.nvim_buf_set_var(bufId, "vscode_uri_data", docUriJson)
-            vim.api.nvim_buf_set_name(bufId, bufname)
             vim.api.nvim_buf_set_option(bufId, "modifiable", not isExternalDoc)
-            -- force nofile, just in case if the buffer was created externally
-            vim.api.nvim_buf_set_option(bufId, "buftype", "nofile")
+            -- force acwrite, which is similar to nofile, but will only be written via the BufWriteCmd autocommand.
+            vim.api.nvim_buf_set_option(bufId, "buftype", "acwrite")
             vim.api.nvim_buf_set_option(bufId, "buflisted", true)
+
+            if bufname ~= vim.NIL then
+                vim.api.nvim_buf_set_name(bufId, bufname)
+            end
         `,
             [
                 bufId,
                 lines,
                 makeEditorOptionsVariable(editor?.options),
-                docUri.toString(),
-                docUri.toJSON(),
+                document.uri.toString(),
+                document.uri.toJSON(),
                 bufname,
                 this.isExternalTextDocument(document),
             ],
@@ -638,6 +704,24 @@ export class BufferManager implements Disposable {
         actions.fireNvimEvent("document_buffer_init", bufId);
     }
 
+    private async bufnameForTextDocument(doc: TextDocument): Promise<string | undefined> {
+        if (doc.isUntitled) {
+            return undefined;
+        }
+
+        return this.bufnameForURI(doc.uri);
+    }
+
+    private async bufnameForURI(uri: Uri): Promise<string> {
+        if (uri.scheme === "file" && config.useWsl) {
+            return await actions.lua("wslpath", uri.fsPath);
+        } else if (uri.scheme === "file") {
+            return uri.fsPath;
+        } else {
+            // We don't care about the name of the buffer if it's not a file
+            return uri.toString();
+        }
+    }
     /**
      * Create new neovim window
      */

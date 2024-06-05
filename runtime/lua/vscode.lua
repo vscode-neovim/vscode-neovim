@@ -6,6 +6,7 @@ local sync_options = require("vscode.sync-options")
 local cursor = require("vscode.cursor")
 local highlight = require("vscode.highlight")
 local viewport = require("vscode.viewport")
+local files = require("vscode.files")
 
 default_optons.setup()
 force_options.setup()
@@ -13,6 +14,7 @@ sync_options.setup()
 cursor.setup()
 highlight.setup()
 viewport.setup()
+files.setup()
 
 local vscode = {
   -- actions

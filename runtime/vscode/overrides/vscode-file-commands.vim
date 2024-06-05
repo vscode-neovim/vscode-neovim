@@ -49,10 +49,11 @@ AlterCommand e[dit] Edit
 AlterCommand ex Ex
 AlterCommand ene[w] Enew
 AlterCommand fin[d] Find
-AlterCommand w[rite] Write
 AlterCommand sav[eas] Saveas
 AlterCommand wa[ll] Wall
 AlterCommand q[uit] Quit
+" TODO: Wq/Wqall need to be handled with the autocmd
+" Just putting "write" in saveAndClose doesn't work, because the writecmd is asynchronous
 AlterCommand wq Wq
 AlterCommand x[it] Xit
 AlterCommand qa[ll] Qall
