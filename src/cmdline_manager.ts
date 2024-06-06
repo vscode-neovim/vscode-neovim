@@ -116,11 +116,6 @@ export class CommandLineManager implements Disposable {
     }
 
     private cmdlineShow = (content: string, firstc: string, prompt: string, level: number): void => {
-        if (!this.isVisible()) {
-            // Reset the state if this is a new dialog
-            this.reset();
-        }
-
         this.state.level = level;
         this.input.title = prompt || this.getTitle(firstc);
         // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
@@ -128,16 +123,27 @@ export class CommandLineManager implements Disposable {
             logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
             return;
         }
+
         this.state.redrawExpected = false;
-        this.showInput();
-        if (this.input.value !== content) {
-            logger.debug(`cmdline_show: setting input value: "${content}"`);
-            this.state.lastTypedText = content;
-            this.state.pendingNvimUpdates++;
-            const activeItems = this.input.activeItems; // backup selections
-            this.input.value = content; // update content
-            this.input.activeItems = activeItems; // restore selections
+
+        if (this.input.value === content) {
+            logger.debug("dropping cmdline_show as the content is unchanged");
+            return;
         }
+
+        if (!this.isVisible()) {
+            // Reset the state if this is a new dialog
+            logger.debug("displaying a new dialog, resetting state");
+            this.reset();
+        }
+
+        this.showInput();
+        logger.debug(`cmdline_show: setting input value: "${content}"`);
+        this.state.lastTypedText = content;
+        this.state.pendingNvimUpdates++;
+        const activeItems = this.input.activeItems; // backup selections
+        this.input.value = content; // update content
+        this.input.activeItems = activeItems; // restore selections
     };
 
     private cmdlineHide() {
