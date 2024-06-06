@@ -114,6 +114,7 @@ export class CommandLineManager implements Disposable {
             return;
         }
 
+        this.state.redrawExpected = false;
         const title = prompt || this.getTitle(firstc);
         const visibilityChanged = this.showInput(level, title, content);
 
