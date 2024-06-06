@@ -72,14 +72,6 @@ export class CommandLineManager implements Disposable {
         disposeAll(this.disposables);
     }
 
-    private reset() {
-        this.state = new CmdlineState();
-        this.input.value = "";
-        this.input.title = "";
-        this.input.items = [];
-        this.input.activeItems = [];
-    }
-
     private handleRedraw({ name, args }: EventBusData<"redraw">) {
         switch (name) {
             case "cmdline_show": {
@@ -116,29 +108,25 @@ export class CommandLineManager implements Disposable {
     }
 
     private cmdlineShow = (content: string, firstc: string, prompt: string, level: number): void => {
-        this.state.level = level;
-        this.input.title = prompt || this.getTitle(firstc);
         // only redraw if triggered from a known keybinding. Otherwise, delayed nvim cmdline_show could replace fast typing.
         if (!this.state.redrawExpected) {
             logger.debug(`cmdline_show: ignoring cmdline_show because no redraw expected: "${content}"`);
             return;
         }
 
-        this.state.redrawExpected = false;
+        const title = prompt || this.getTitle(firstc);
+        const visibilityChanged = this.showInput(level, title, content);
 
-        if (this.input.value === content) {
+        // We only need to proceed if text has been entered. In both of these cases, they haven't.
+        //
+        // 1. The dialog box is being shown for the first time, and there is no content. No one has typed anything!
+        // 2. The dialog box was already visible, but the content is identical. No one has typed anything!
+        if ((visibilityChanged && content === "") || (!visibilityChanged && this.input.value === content)) {
             logger.debug("dropping cmdline_show as the content is unchanged");
             return;
         }
 
-        if (!this.isVisible()) {
-            // Reset the state if this is a new dialog
-            logger.debug("displaying a new dialog, resetting state");
-            this.reset();
-        }
-
-        this.showInput();
-        logger.debug(`cmdline_show: setting input value: "${content}"`);
+        logger.debug(`cmdline_show: setting input value: "${content}", with level ${level}`);
         this.state.lastTypedText = content;
         this.state.pendingNvimUpdates++;
         const activeItems = this.input.activeItems; // backup selections
@@ -147,8 +135,6 @@ export class CommandLineManager implements Disposable {
     };
 
     private cmdlineHide() {
-        // The hide originated from neovim, so we don't need to listen for the hide event from the quickpick
-        this.state.ignoreHideEvent = true;
         // We expect that a cmdline_show may come through to draw this editor a second time (e.g. when level changes)
         this.state.redrawExpected = true;
 
@@ -156,6 +142,9 @@ export class CommandLineManager implements Disposable {
         // (or, defensively, if we already should be hidden)
         if (this.state.level === 1 || !this.isVisible()) {
             logger.debug(`visible level is ${this.state.level}, hiding`);
+            // The hide originated from neovim, so we don't need to listen for the hide event from the quickpick
+            this.state.ignoreHideEvent = true;
+
             this.hideInput();
         } else {
             logger.debug(`visible level is ${this.state.level}, not hiding`);
@@ -242,8 +231,32 @@ export class CommandLineManager implements Disposable {
         }
     }
 
-    private showInput() {
+    /**
+     * Ensure the input box is showing.
+     *
+     * @param level The level of this input
+     * @param title  The title to use for this input
+     * @param initialValue The value that the input should have when it is opened. If the input is already opened, this has noe ffect
+     * @returns Whether or not the visibility of the input changed
+     */
+    private showInput(level: number, title: string, initialValue: string): boolean {
+        let visibilityChanged = false;
+        // For first appearances, reset all state
+        // NOTE: we do not set the value to an empty string here as we do not want to trigger an onChange by
+        // setting it to an empty string, and then some other value.
+        if (!this.isVisible()) {
+            this.state = new CmdlineState();
+            this.input.items = [];
+            this.input.activeItems = [];
+            this.input.value = initialValue;
+            visibilityChanged = true;
+        }
+
+        this.state.level = level;
+        this.input.title = title;
         this.input.show();
+
+        return visibilityChanged;
     }
 
     private hideInput() {
