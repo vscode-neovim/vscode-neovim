@@ -64,10 +64,9 @@ export class MainController implements vscode.Disposable {
     public constructor(private extContext: ExtensionContext) {}
 
     public async init(): Promise<void> {
-        const cwd = this.getcwd();
         const [cmd, args] = this.buildSpawnArgs();
-        logger.info(`Starting nvim in [${cwd}]: ${cmd} ${args.join(" ")}`);
-        this.nvimProc = spawn(cmd, args, { cwd });
+        logger.info(`Starting nvim: ${cmd} ${args.join(" ")}`);
+        this.nvimProc = spawn(cmd, args);
         this.disposables.push(
             new Disposable(() => {
                 this.nvimProc.removeAllListeners();
@@ -105,6 +104,7 @@ export class MainController implements vscode.Disposable {
         this.client.on("notification", this.onNeovimNotification);
         this.client.on("request", this.onNeovimRequest);
         this.setClientInfo();
+        await this.setCurrentDir();
         await this.client.setVar("vscode_channel", await this.client.channelId);
         await this.client.setVar("vscode_nvim_min_version", NVIM_MIN_VERSION);
 
@@ -165,25 +165,6 @@ export class MainController implements vscode.Disposable {
         vscode.window.showErrorMessage(msg, "Restart").then((value) => {
             if (value === "Restart") vscode.commands.executeCommand("vscode-neovim.restart");
         });
-    }
-
-    private getcwd(): string {
-        let cwd = process.cwd();
-
-        const expectedCwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        if (!expectedCwd) return cwd;
-
-        // Remote Development
-        if (vscode.env.remoteName) {
-            // Runs on the Remote Extension Host
-            if (this.extContext.extension.extensionKind === ExtensionKind.Workspace) {
-                cwd = expectedCwd;
-            }
-        } else {
-            cwd = config.useWsl ? wslpath(expectedCwd) : expectedCwd;
-        }
-
-        return cwd;
     }
 
     private buildSpawnArgs(): [string, string[]] {
@@ -381,7 +362,34 @@ export class MainController implements vscode.Disposable {
     private setClientInfo() {
         const versionString = this.extContext.extension.packageJSON.version as string;
         const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
+        logger.debug(`Setting client info: vscode-neovim ${major}.${minor}.${patch}`);
         this.client.setClientInfo("vscode-neovim", { major, minor, patch }, "embedder", {}, {});
+    }
+
+    private async setCurrentDir() {
+        let cwd: string | undefined;
+
+        const expectedCwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        if (!expectedCwd) return cwd;
+
+        // Remote Development
+        if (vscode.env.remoteName) {
+            // Runs on the Remote Extension Host
+            if (this.extContext.extension.extensionKind === ExtensionKind.Workspace) {
+                cwd = expectedCwd;
+            }
+        } else {
+            cwd = config.useWsl ? wslpath(expectedCwd) : expectedCwd;
+        }
+
+        if (cwd) {
+            logger.debug(`Setting current dir to: ${cwd}`);
+            try {
+                await this.client.request("nvim_set_current_dir", [cwd]);
+            } catch (e) {
+                logger.error(`Failed to set current dir: ${e}`);
+            }
+        }
     }
 
     /** Logs diagnostic info for troubleshooting. */
