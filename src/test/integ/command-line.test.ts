@@ -10,6 +10,7 @@ import {
     closeNvimClient,
     openTextDocument,
     assertContent,
+    sendNeovimKeys,
 } from "./integrationUtils";
 
 describe("Command line", () => {
@@ -148,6 +149,22 @@ describe("Command line", () => {
         await assertContent(
             {
                 content: ["hello, world!"],
+            },
+            client,
+        );
+    });
+
+    // #2079 - plugins can send cmdline inputs very quickly
+    it("Should not insert text into the buffer if nvim sends two :s very quickly", async () => {
+        await openTextDocument({ content: "some text" });
+        // Once the feedkeys is executed, we will immediately hit :
+        //
+        // the 'ch' in "echo" will put us into insert mode. Broken code would insert " 'hello, world'"
+        // NOTE: the string concat of "<" . "CR>" is deliberate, to prevent nvim from sending a <CR> too early.
+        await sendNeovimKeys(client, String.raw`:call feedkeys(":echo 'hello, world'<" . "CR>")<CR>`);
+        await assertContent(
+            {
+                content: ["some text"],
             },
             client,
         );
