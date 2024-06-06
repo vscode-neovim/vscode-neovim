@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.15.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.15.1...v1.15.2) (2024-06-06)
+
+
+### Bug Fixes
+
+* set current dir in nvim ([#2078](https://github.com/vscode-neovim/vscode-neovim/issues/2078)) ([01aadaa](https://github.com/vscode-neovim/vscode-neovim/commit/01aadaa9f3074b0622d20daefc694b4933f3a8d7))
+
 ## [1.15.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.15.0...v1.15.1) (2024-06-04)
 
 
