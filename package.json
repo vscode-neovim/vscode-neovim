@@ -320,7 +320,7 @@
                 "vscode-neovim.normalSelectionDebounceTime": {
                     "type": "integer",
                     "minimum": 20,
-                    "maximum": 100,
+                    "maximum": 200,
                     "default": 50,
                     "description": "Debounce time used to synchronize selection from VSCode to Nvim, typically referring to cursor movement"
                 },
