@@ -116,13 +116,18 @@ export class CommandLineManager implements Disposable {
 
         this.state.redrawExpected = false;
         const title = prompt || this.getTitle(firstc);
+        const initialInputValue = this.input.value;
         const visibilityChanged = this.showInput(level, title, content);
 
         // We only need to proceed if text has been entered. In both of these cases, they haven't.
         //
-        // 1. The dialog box is being shown for the first time, and there is no content. No one has typed anything!
+        // 1. The dialog box is being shown for the first time, and the content is the same as it was before we set
+        //    the initial value. This is basically trying to get ahead of an onChange event.
         // 2. The dialog box was already visible, but the content is identical. No one has typed anything!
-        if ((visibilityChanged && content === "") || (!visibilityChanged && this.input.value === content)) {
+        if (
+            (visibilityChanged && initialInputValue === content) ||
+            (!visibilityChanged && this.input.value === content)
+        ) {
             logger.debug("dropping cmdline_show as the content is unchanged");
             return;
         }
