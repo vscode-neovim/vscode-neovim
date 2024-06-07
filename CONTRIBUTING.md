@@ -193,7 +193,7 @@ To avoid RPC round trips, the logic using the lua or vim APIs should be moved to
 
 ### Set up VSCode for lua development
 
--   Install [sumneko.lua](marketplace.visualstudio.com/items?itemName=sumneko.lua).
+-   Install [sumneko.lua](https://marketplace.visualstudio.com/items?itemName=sumneko.lua).
 
 -   In nvim, run `lua=vim.api.nvim_get_runtime_file("", true)`
 -   Add runtime path to `settings.json`, like:
