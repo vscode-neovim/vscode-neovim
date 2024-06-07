@@ -1,6 +1,6 @@
 import path from "path";
 
-import { debounce } from "lodash-es";
+import { debounce } from "lodash";
 import { Buffer, NeovimClient } from "neovim";
 import { ATTACH } from "neovim/lib/api/Buffer";
 import {

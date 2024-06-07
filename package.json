@@ -2124,7 +2124,7 @@
         "stylua:check": "stylua --check .",
         "keybind": "node ./scripts/keybindings/index.cjs",
         "test": "npm run test:unit && npm run test:integration",
-        "test:unit": "mocha ./out/test/unit/*.js ./out/test/unit/**/*.js",
+        "test:unit": "mocha --exit ./out/test/unit/*.js ./out/test/unit/**/*.js",
         "test:integration": "node ./out/test/runIntegrationTest.js",
         "pretest:unit": "npm run test-compile",
         "pretest:integration": "npm run test-compile",
@@ -2138,9 +2138,11 @@
     },
     "devDependencies": {
         "@johnnymorganz/stylua-bin": "^0.20.0",
-        "@types/lodash-es": "^4.17.12",
+        "@sinonjs/fake-timers": "^11.2.2",
+        "@types/lodash": "^4.17.4",
         "@types/mocha": "^10.0.6",
         "@types/node": "^20.12.5",
+        "@types/sinonjs__fake-timers": "^8.1.5",
         "@types/vscode": "^1.87.0",
         "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^2.24.0",
@@ -2164,7 +2166,7 @@
         "async-mutex": "^0.5.0",
         "fast-myers-diff": "^3.2.0",
         "grapheme-splitter": "^1.0.4",
-        "lodash-es": "^4.17.21",
+        "lodash": "^4.17.21",
         "neovim": "^5.1.0",
         "ts-wcwidth": "^2.0.3"
     }

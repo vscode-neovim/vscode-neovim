@@ -1,4 +1,4 @@
-import { debounce, DebouncedFunc } from "lodash-es";
+import { debounce, DebouncedFunc } from "lodash";
 import {
     commands,
     Disposable,
