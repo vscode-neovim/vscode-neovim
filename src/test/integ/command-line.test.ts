@@ -170,8 +170,23 @@ describe("Command line", () => {
         );
     });
 
+    it("Showing the command line again very quickly should not auto-hide it", async () => {
+        await openTextDocument({ content: "some text" });
+
+        // We do this with sendNeovimKeys so everything is done quickly
+        // A bad implementation will close the command line too early before the commit-cmdline takes effect
+        await sendNeovimKeys(client, String.raw`:call feedkeys(":call setline(1, 'hello, world')")<CR>`);
+        await sendVSCodeCommand("vscode-neovim.commit-cmdline");
+        await assertContent(
+            {
+                content: ["hello, world"],
+            },
+            client,
+        );
+    });
+
     it("Should allow finishing a command that was set up via neovim inputs", async () => {
-        await openTextDocument({ content: "a" });
+        await openTextDocument({ content: "some text" });
 
         // Set up the command. This could be done by something like a plugin or a mapped key
         await sendNeovimKeys(client, String.raw`:call setline(1, 'hello, world'`);
@@ -187,7 +202,7 @@ describe("Command line", () => {
     });
 
     it("Should allow finishing a command that was set up via neovim inputs, even if it was aborted", async () => {
-        await openTextDocument({ content: "a" });
+        await openTextDocument({ content: "some text" });
         // Set up the command. This could be done by something like a plugin or a mapped key
         // Put in the command and press esc, so that it's the "last" command, even though we abort
         await sendNeovimKeys(client, String.raw`:call setline(1, 'hello, world'`);

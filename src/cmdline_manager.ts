@@ -22,9 +22,6 @@ class CmdlineState {
     // If this value is undefined, the input is not visible
     level?: number = undefined;
 
-    // On cmdline_hide, we close the quickpick. This flag is used to ignore that event so we don't send an <Esc> to nvim.
-    ignoreHideEvent = false;
-
     // When we type, we send updates to nvim. We want to ignore updates coming from nvim, because it may interfere with typing.
     // However, bindings are expected to cause the cmdline content to change, so we use this flag to listen to those updates.
     redrawExpected = true;
@@ -39,6 +36,9 @@ export class CommandLineManager implements Disposable {
 
     private input: QuickPick<QuickPickItem>;
     private state = new CmdlineState();
+    // On cmdline_hide, we close the quickpick. This flag is used to ignore that event so we don't send an <Esc> to nvim.
+    // This is deliberately separate from state, as it should be persisted from input-to-input (It is possible that onHide has not fired by the time we are showing the next dialog)
+    private ignoreHideEvent: boolean = false;
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -149,7 +149,7 @@ export class CommandLineManager implements Disposable {
         if (this.state.level === 1 || !this.isVisible()) {
             logger.debug(`visible level is ${this.state.level}, hiding`);
             // The hide originated from neovim, so we don't need to listen for the hide event from the quickpick
-            this.state.ignoreHideEvent = true;
+            this.ignoreHideEvent = true;
 
             this.hideInput();
         } else {
@@ -185,9 +185,9 @@ export class CommandLineManager implements Disposable {
     };
 
     private onHide = async (): Promise<void> => {
-        if (this.state.ignoreHideEvent) {
+        if (this.ignoreHideEvent) {
             logger.debug("onHide: skipping event");
-            this.state.ignoreHideEvent = false;
+            this.ignoreHideEvent = false;
             return;
         }
 
