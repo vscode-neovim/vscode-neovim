@@ -170,7 +170,7 @@ describe("Command line", () => {
         );
     });
 
-    it("Showing the command line again very quickly should not auto-hide it", async () => {
+    it("Should not hide the input for an incomplete command if nvim sends two :s very quickly", async () => {
         await openTextDocument({ content: "some text" });
 
         // We do this with sendNeovimKeys so everything is done quickly
