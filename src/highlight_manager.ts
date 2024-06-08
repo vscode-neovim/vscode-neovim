@@ -1,33 +1,43 @@
-import { Disposable, TextEditor } from "vscode";
 import { WaitGroup } from "@jpwilliams/waitgroup";
+import { DebouncedFunc, debounce } from "lodash";
+import { Disposable, TextEditor, window } from "vscode";
 
-import { EventBusData, eventBus } from "./eventBus";
-import { HighlightProvider } from "./highlights/highlight_provider";
+import { EventBusData, VimHighlightUIAttributes, eventBus } from "./eventBus";
+import { HighlightGroupStore } from "./highlights";
+import { HighlightGrid, VimCell } from "./highlights/highlight_grid";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
-import { PendingUpdates } from "./pending_updates";
-import { HighlightGroupManager } from "./highlights/group_manager";
 
-type GridCell = [string, number, number];
+const VisibleRangesChangeDebounce = 200;
 
 export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
+    private redrawWaitGroup = new WaitGroup();
 
-    private groupManager: HighlightGroupManager;
-    private highlightProvider: HighlightProvider;
-    private pendingGridUpdates: PendingUpdates<number>;
-    private redrawWaitGroup: WaitGroup;
+    // Manages the highlight groups
+    private groupStore: HighlightGroupStore;
+    // Map of gridId -> HighlightGrid
+    private highlightGrids: Map<number, HighlightGrid> = new Map();
+    // Set of gridIds that need to be refreshed
+    private staleGrids: Set<number> = new Set();
+    // Debounce refresh decorations on visibleRanges change events.
+    private debouncedRefreshOptions: Map<number, DebouncedFunc<(editor: TextEditor) => void>> = new Map();
 
     public constructor(private main: MainController) {
-        this.groupManager = new HighlightGroupManager();
-        this.highlightProvider = new HighlightProvider(this.groupManager);
-        this.pendingGridUpdates = new PendingUpdates();
-        this.redrawWaitGroup = new WaitGroup();
+        this.groupStore = new HighlightGroupStore();
+        this.disposables.push(
+            this.groupStore,
+            eventBus.on("redraw", this.handleRedraw, this),
+            eventBus.on("flush-redraw", this.handleRedrawFlush, this),
+            window.onDidChangeTextEditorVisibleRanges((e) => this.handleChangeVisibleRanges(e.textEditor)),
+        );
+    }
 
-        this.disposables.push(this.groupManager);
-        this.disposables.push(this.highlightProvider);
-        this.disposables.push(eventBus.on("redraw", this.handleRedraw, this));
-        this.disposables.push(eventBus.on("flush-redraw", this.handleRedrawFlush, this));
+    private getGrid(gridId: number): HighlightGrid {
+        if (!this.highlightGrids.has(gridId)) {
+            this.highlightGrids.set(gridId, new HighlightGrid(this.groupStore));
+        }
+        return this.highlightGrids.get(gridId)!;
     }
 
     private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
@@ -44,7 +54,7 @@ export class HighlightManager implements Disposable {
             switch (name) {
                 case "hl_attr_define": {
                     for (const [id, uiAttrs, , info] of args) {
-                        this.groupManager.addHighlightGroup(
+                        this.handleAttrDefine(
                             id,
                             uiAttrs,
                             info.map((i) => i.hi_name),
@@ -52,20 +62,26 @@ export class HighlightManager implements Disposable {
                     }
                     break;
                 }
-                // nvim may not send grid_cursor_goto and instead uses grid_scroll along with grid_line
                 case "grid_scroll": {
-                    for (const [grid, top, , , , by] of args) {
+                    for (const [grid, , , , , by] of args) {
                         if (grid !== 1) {
-                            this.scrollHighlights(grid, top, by);
+                            this.handleGridScroll(grid, by);
+                            this.staleGrids.add(grid);
                         }
                     }
                     break;
                 }
                 case "grid_line": {
                     for (const [grid, row, col, cells] of args) {
-                        this.stageGridLineUpdates(grid, row, col, cells);
+                        if (grid !== 1) {
+                            this.handleGridLine(grid, row, col, cells);
+                            this.staleGrids.add(grid);
+                        }
                     }
                     break;
+                }
+                case "grid_destroy": {
+                    args.forEach(([grid]) => this.handleGridDestroy(grid));
                 }
             }
         } finally {
@@ -80,113 +96,57 @@ export class HighlightManager implements Disposable {
         // their work, so that we can flush them only after their changes are staged.
         await this.redrawWaitGroup.wait();
 
-        if (this.pendingGridUpdates.empty()) {
-            return;
-        }
-
-        this.applyHLGridUpdates();
-        this.pendingGridUpdates.clear();
-    }
-
-    private scrollHighlights(grid: number, top: number, by: number) {
-        // by > 0 - scroll down, must remove existing elements from first and shift row hl left
-        // by < 0 - scroll up, must remove existing elements from right shift row hl right
-        this.highlightProvider.shiftGridHighlights(grid, by, top);
-        this.pendingGridUpdates.addForceUpdate(grid);
-    }
-
-    private stageGridLineUpdates(grid: number, row: number, col: number, cells: GridCell[]): void {
-        const gridOffset = this.main.viewportManager.getGridOffset(grid);
-        if (!gridOffset) {
-            return;
-        }
-
-        const editor = this.main.bufferManager.getEditorFromGridId(grid);
-        if (!editor) {
-            return;
-        }
-
-        const topScreenLine = gridOffset.line;
-        const highlightLine = topScreenLine + row;
-        if (this.highlightLineOutOfBounds(editor, highlightLine)) {
-            // Clear any highlights that we already know are out of bounds
-            this.cleanHighlightLine(grid, row, highlightLine);
-            this.pendingGridUpdates.addForceUpdate(grid);
-            return;
-        }
-
-        if (cells.length === 0) {
-            // Nothing to highlight
-            return;
-        }
-
-        const { vimCol, cells: statusLineCells } = this.offsetForStatusLine(col + gridOffset.character);
-        cells.splice(0, statusLineCells);
-
-        const tabSize = editor.options.tabSize as number;
-        this.pendingGridUpdates.addConditionalUpdate(
-            grid,
-            // Defer the update so that it can be done with the document lock
-            () => {
-                // Ideally we wouldn't have to check this again, but it's possible we've become desynced
-                // since we checked this before, and lineAt will throw if highlightLine is out of bounds.
-                // If we end up in this state, we should clear the line again and move on
-                if (this.highlightLineOutOfBounds(editor, highlightLine)) {
-                    return this.cleanHighlightLine(grid, row, highlightLine);
-                }
-
-                const lineText = editor.document.lineAt(highlightLine).text;
-                return this.highlightProvider.processHLCellsEvent(grid, row, vimCol, cells, lineText, tabSize);
-            },
-        );
-    }
-
-    private cleanHighlightLine(grid: number, vimRow: number, editorHighlightLine: number): boolean {
-        if (editorHighlightLine < 0) {
-            return false;
-        }
-
-        this.highlightProvider.cleanRow(grid, vimRow);
-        return true;
-    }
-
-    private offsetForStatusLine(vimCol: number): { vimCol: number; cells: number } {
-        if (vimCol < 20) {
-            vimCol = 0;
-            return { vimCol: 0, cells: 1 };
-        } else {
-            return { vimCol: vimCol - 20, cells: 0 };
-        }
-    }
-
-    private applyHLGridUpdates(): void {
-        for (const [grid, update] of this.pendingGridUpdates.entries()) {
-            const gridOffset = this.main.viewportManager.getGridOffset(grid);
+        for (const grid of this.staleGrids) {
             const editor = this.main.bufferManager.getEditorFromGridId(grid);
-            if (!editor || !gridOffset) {
-                continue;
-            }
-            // !For text changes neovim sends first buf_lines_event followed by redraw event
-            // !But since changes are asynchronous and will happen after redraw event we need to wait for them first
-            this.main.changeManager.getDocumentChangeCompletionLock(editor.document).then(() => {
-                const changed = update();
-                if (!changed) {
-                    return;
-                }
-
-                const hls = this.highlightProvider.getGridHighlights(editor, grid, gridOffset.line);
-                for (const [decorator, ranges] of hls) {
-                    editor.setDecorations(decorator, ranges);
-                }
-            });
+            if (editor) this.getGrid(grid).refreshDecorations(editor);
         }
+        this.staleGrids.clear();
     }
 
-    private highlightLineOutOfBounds(editor: TextEditor, editorHighlightLine: number): boolean {
-        return editorHighlightLine >= editor.document.lineCount || editorHighlightLine < 0;
+    private handleAttrDefine(id: number, attrs: VimHighlightUIAttributes, groups: string[]) {
+        this.groupStore.addHighlightGroup(id, attrs, groups);
     }
 
-    public dispose(): void {
+    private handleGridLine(gridId: number, row: number, col: number, cells: VimCell[]): void {
+        const gridOffset = this.main.viewportManager.getGridOffset(gridId);
+        const drawLine = gridOffset.line + row;
+        // offset for the gutter
+        const startCol = col + gridOffset.character;
+        const [vimCol, gutterWidth] = startCol < 20 ? [0, 1] : [startCol - 20, 0];
+        cells.splice(0, gutterWidth);
+
+        this.getGrid(gridId).handleGridLine(drawLine, vimCol, cells);
+    }
+
+    private handleGridScroll(grid: number, by: number): void {
+        this.getGrid(grid).scroll(by);
+    }
+
+    private handleChangeVisibleRanges(editor: TextEditor): void {
+        const gridId = this.main.bufferManager.getGridIdFromEditor(editor);
+        if (!gridId) return;
+
+        if (!this.debouncedRefreshOptions.has(gridId)) {
+            const debounced = debounce(
+                (editor: TextEditor) => {
+                    const gridId = this.main.bufferManager.getGridIdFromEditor(editor);
+                    if (gridId) this.getGrid(gridId).refreshDecorations(editor);
+                },
+                VisibleRangesChangeDebounce,
+                { leading: false, trailing: true },
+            );
+            this.debouncedRefreshOptions.set(gridId, debounced);
+        }
+
+        this.debouncedRefreshOptions.get(gridId)!(editor);
+    }
+
+    private handleGridDestroy(gridId: number): void {
+        this.debouncedRefreshOptions.delete(gridId);
+        this.highlightGrids.delete(gridId);
+    }
+
+    dispose(): void {
         disposeAll(this.disposables);
     }
 }

@@ -9,22 +9,7 @@ import {
 
 import { disposeAll } from "../utils";
 import { config } from "../config";
-
-interface VimHighlightUIAttributes {
-    foreground?: number;
-    background?: number;
-    special?: number;
-    reverse?: boolean;
-    italic?: boolean;
-    bold?: boolean;
-    strikethrough?: boolean;
-    // has special color
-    underline?: boolean;
-    // has special color
-    undercurl?: boolean;
-    blend?: number;
-    altfont?: boolean;
-}
+import { VimHighlightUIAttributes } from "../eventBus";
 
 interface HighlightConfiguration {
     /**
@@ -91,7 +76,7 @@ function normalizeDecorationConfig(config: ThemableDecorationRenderOptions): The
     return newConfig;
 }
 
-export class HighlightGroupManager implements Disposable {
+export class HighlightGroupStore implements Disposable {
     private disposables: Disposable[] = [];
 
     /**
