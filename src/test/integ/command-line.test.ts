@@ -169,4 +169,41 @@ describe("Command line", () => {
             client,
         );
     });
+
+    it("Should allow finishing a command that was set up via neovim inputs", async () => {
+        await openTextDocument({ content: "a" });
+
+        // Set up the command. This could be done by something like a plugin or a mapped key
+        await sendNeovimKeys(client, String.raw`:call setline(1, 'hello, world'`);
+        await sendVSCodeCommand("vscode-neovim.test-cmdline", ")");
+        await sendVSCodeCommand("vscode-neovim.commit-cmdline");
+
+        await assertContent(
+            {
+                content: ["hello, world"],
+            },
+            client,
+        );
+    });
+
+    it("Should allow finishing a command that was set up via neovim inputs, even if it was aborted", async () => {
+        await openTextDocument({ content: "a" });
+        // Set up the command. This could be done by something like a plugin or a mapped key
+        // Put in the command and press esc, so that it's the "last" command, even though we abort
+        await sendNeovimKeys(client, String.raw`:call setline(1, 'hello, world'`);
+        await sendNeovimKeys(client, String.raw`<ESC>`);
+
+        // Set up the command again
+        await sendNeovimKeys(client, String.raw`:call setline(1, 'hello, world'`);
+        // A user presses )
+        await sendVSCodeCommand("vscode-neovim.test-cmdline", ")");
+        await sendVSCodeCommand("vscode-neovim.commit-cmdline");
+
+        await assertContent(
+            {
+                content: ["hello, world"],
+            },
+            client,
+        );
+    });
 });
