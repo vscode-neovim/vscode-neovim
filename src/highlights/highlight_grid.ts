@@ -57,6 +57,10 @@ export class HighlightGrid implements Disposable {
     private readonly _bufferManager?: BufferManager; // get the editor from gridId
     private readonly _viewportManager?: ViewportManager; // get the viewport from gridId
 
+    // line number -> (hlId -> decoration options)
+    // Cache the decorations for each line to avoid recalculating them
+    private lineDecorationsCache: Map<number, Map<number, DecorationOptions[]>> = new Map();
+
     private get viewport(): Viewport | undefined {
         return this._viewportManager?.getViewport(this.gridId);
     }
@@ -103,7 +107,7 @@ export class HighlightGrid implements Disposable {
         const rightCells = prevCells.slice(vimCol + redrawCells.length);
 
         this.lineCells[line] = [...leftCells, ...redrawCells, ...rightCells];
-
+        this.lineDecorationsCache.delete(line);
         this.isDirty = true;
     }
 
@@ -152,7 +156,7 @@ export class HighlightGrid implements Disposable {
 
     // #endregion
 
-    // #region Calculate Decorations
+    // #region Compute Decorations
 
     // decoration type -> decoration options
     private getDecorations(
@@ -163,7 +167,11 @@ export class HighlightGrid implements Disposable {
         const results = new Map<TextEditorDecorationType, DecorationOptions[]>();
 
         for (let line = startLine; line <= endLine; line++) {
-            const lineDecorations = this.getDecorationsForLine(editor, line);
+            // Use the cached decorations if available
+            const lineDecorations = this.lineDecorationsCache.has(line)
+                ? this.lineDecorationsCache.get(line)!
+                : this.getDecorationsForLine(editor, line);
+            this.lineDecorationsCache.set(line, lineDecorations);
             lineDecorations.forEach((options, hlId) => {
                 const { decorator } = this.groupStore.getDecorator(hlId);
                 if (!decorator) return;
