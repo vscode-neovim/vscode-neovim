@@ -277,6 +277,18 @@ const keybinds = [
         when: "editorHoverFocused",
     },
     // #endregion
+    // #region Rename Input
+    {
+        command: "focusNextRenameSuggestion",
+        key: "ctrl+n",
+        when: "renameInputVisible",
+    },
+    {
+        command: "focusPreviousRenameSuggestion",
+        key: "ctrl+p",
+        when: "renameInputVisible",
+    },
+    // #endregion
 ];
 
 module.exports = keybinds;
