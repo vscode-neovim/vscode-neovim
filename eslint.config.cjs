@@ -80,7 +80,6 @@ module.exports = tseslint.config(
             // This codebase interacts with `any` a lot, so for now, all no-unsafe-* we violate are currently disabled
             "@typescript-eslint/no-unsafe-argument": "off",
             "@typescript-eslint/no-unsafe-member-access": "off",
-            "@typescript-eslint/no-unsafe-return": "off",
         },
     },
     {
@@ -88,6 +87,7 @@ module.exports = tseslint.config(
         rules: {
             // Good for production code to avoid unsafe type leaks, potentially very frustrating and of little value for tests
             "@typescript-eslint/no-unsafe-assignment": "off",
+            "@typescript-eslint/no-unsafe-return": "off",
         },
     },
     {

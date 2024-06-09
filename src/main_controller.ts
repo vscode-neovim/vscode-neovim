@@ -263,6 +263,9 @@ export class MainController implements vscode.Disposable {
             if (options.restore_selection !== false) {
                 editor.selections = prevSelections;
             }
+
+            // This is an arbitrary action from VSCode, we can't know the return type
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
             return res;
         }
         return actions.run(action, ...(options.args || []));
