@@ -57,9 +57,20 @@ export class HighlightGrid implements Disposable {
     }
 
     handleRedrawFlush() {
-        if (this.isDirty && this.editor && this.viewport) {
-            this.refreshDecorations();
+        if (this.isDirty) {
             this.isDirty = false;
+            // Note: If the editor is null, why reset isDirty?
+            // When initializing the grid, the editor may be null. At this
+            // time, the grid_line events received are mainly used to fill
+            // in the buffer text. There will be many events at this stage,
+            // especially during the first startup, because syntax
+            // highlighting has not been completely cleared yet. Refreshing
+            // immediately will cause syntax highlighting from nvim to
+            // display, resulting in screen flickering. Therefore, we choose
+            // not to refresh at this point but to wait for subsequent
+            // grid_line events to refresh. Since the grid_line data will be
+            // fully retained, handling it this way is OK.
+            this.editor && this.refreshDecorations();
         }
     }
 
