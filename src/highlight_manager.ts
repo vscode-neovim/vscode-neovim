@@ -2,15 +2,15 @@ import { WaitGroup } from "@jpwilliams/waitgroup";
 import { Disposable } from "vscode";
 
 import { EventBusData, VimHighlightUIAttributes, eventBus } from "./eventBus";
-import { HighlightGroupStore } from "./highlights";
-import { HighlightGrid, VimCell } from "./highlights/highlight_grid";
+import { HighlightGrid } from "./highlights/highlight_grid";
+import { HighlightGroupStore } from "./highlights/highlight_group_store";
+import { VimCell } from "./highlights/types";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
 
 export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
     private redrawWaitGroup = new WaitGroup();
-
     // Manages the highlight groups
     private groupStore: HighlightGroupStore;
     // Map of gridId -> HighlightGrid

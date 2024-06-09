@@ -1,7 +1,7 @@
 import GraphemeSplitter from "grapheme-splitter";
 import wcswidth from "ts-wcwidth";
 
-import { type LineCell } from "./highlight_grid";
+import { type LineCell } from "./types";
 
 const splitter = new GraphemeSplitter();
 

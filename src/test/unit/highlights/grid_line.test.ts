@@ -1,22 +1,7 @@
 import { strict as assert } from "assert";
 
-void assert;
-
-import {
-    HighlightGrid,
-    HighlightRange,
-    type Highlight,
-    type HighlightGroupStore,
-    type VimCell,
-} from "../../highlights";
-
-import { closeAllActiveEditors } from "./integrationUtils";
-
-interface THighlightGrid {
-    handleGridLine(line: number, vimCol: number, cells: VimCell[]): void;
-    lineHighlightsToRanges(line: number, highlights: Map<number, Highlight[]>): HighlightRange[];
-    computeLineHighlights(line: number, lineText: string, tabSize: number): Map<number, Highlight[]>;
-}
+import { GridLine } from "../../../highlights/grid_line";
+import { HighlightRange, VimCell } from "../../../highlights/types";
 
 function sortRanges(ranges: HighlightRange[]) {
     ranges.sort((a, b) => {
@@ -26,11 +11,8 @@ function sortRanges(ranges: HighlightRange[]) {
     });
 }
 
-describe("HighlightGrid.computeLineHighlights", function () {
+describe("GridLine: compute highlight ranges", function () {
     this.retries(0);
-    this.afterEach(async () => {
-        await closeAllActiveEditors();
-    });
 
     const testCases = [
         {
@@ -443,19 +425,14 @@ describe("HighlightGrid.computeLineHighlights", function () {
     }[];
 
     testCases.forEach(({ testName, events, expectedRanges }) => {
-        if (testName !== "allows overlaying virtual text on an existing line") return;
         it(testName, () => {
-            const grid = new HighlightGrid(
-                1, // arbitrary
-                // fake the group store, only for testing
-                { normalizeHighlightId: (hlId) => hlId } as HighlightGroupStore,
-            ) as any as THighlightGrid;
+            const gridLine = new GridLine();
 
             const lineRanges = new Map<number, HighlightRange[]>();
             events.forEach(({ line, vimCol, vimCells, lineText, tabSize }) => {
-                grid.handleGridLine(line, vimCol, vimCells);
-                const highlights = grid.computeLineHighlights(line, lineText, tabSize);
-                const ranges = grid.lineHighlightsToRanges(line, highlights).filter((range) => {
+                gridLine.handleGridLine(line, vimCol, vimCells);
+                const highlights = gridLine.computeLineHighlights(line, lineText, tabSize);
+                const ranges = gridLine.lineHighlightsToRanges(line, highlights).filter((range) => {
                     if (range.textType === "normal") return range.hlId !== 0;
                     return range.highlights.some((highlight) => highlight.hlId !== 0);
                 });
