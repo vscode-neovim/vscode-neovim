@@ -77,7 +77,8 @@ module.exports = tseslint.config(
             "@typescript-eslint/no-floating-promises": "off", // jumpy; would be nice to turn on, but we have a lot of these
             "@typescript-eslint/unbound-method": "off", // jumpy, given how vscode's API binds this. Would be good to remove.
 
-            // This codebase interacts with `any` a lot, so for now, all no-unsafe-* we violate are currently disabled
+            // I would love to disable this rule, but unfortunately it forbids spreading any[] types, which is
+            // quite useful for forwarding. I think it's a bit overzealous
             "@typescript-eslint/no-unsafe-argument": "off",
         },
     },
