@@ -4,13 +4,13 @@ import { Range, ThemeColor, type DecorationOptions, type Disposable, type TextEd
 import { BufferManager } from "../buffer_manager";
 import { ViewportManager } from "../viewport_manager";
 
-import { GridLine } from "./grid_line";
+import { GridLineHandler } from "./grid_line_handler";
 import { HighlightGroupStore } from "./highlight_group_store";
 import { Highlight, HighlightRange, VimCell } from "./types";
 
 export class HighlightGrid implements Disposable {
     // Manages grid lines and is responsible for computing highlight ranges
-    private gridLine = new GridLine();
+    private gridLineHandler = new GridLineHandler();
     // The way to clear decorations is to set them to an empty array, so it is
     // necessary to record the decorators used in the last refresh.
     // In the next refresh, if a decorator is no longer used, it should be cleared.
@@ -51,7 +51,7 @@ export class HighlightGrid implements Disposable {
             }
             return cell;
         });
-        this.gridLine.handleGridLine(line, vimCol, vimCells);
+        this.gridLineHandler.handleGridLine(line, vimCol, vimCells);
         this.lineDecorationsCache.delete(line);
         this.isDirty = true;
     }
@@ -125,8 +125,8 @@ export class HighlightGrid implements Disposable {
         const editor = this.editor;
         const lineText = editor.document.lineAt(line).text;
         const tabSize = editor.options.tabSize as number;
-        const highlights = this.gridLine.computeLineHighlights(line, lineText, tabSize);
-        const highlightRanges = this.gridLine.lineHighlightsToRanges(line, highlights);
+        const highlights = this.gridLineHandler.computeLineHighlights(line, lineText, tabSize);
+        const highlightRanges = this.gridLineHandler.lineHighlightsToRanges(line, highlights);
         return this.highlightRangesToOptions(highlightRanges);
     }
 

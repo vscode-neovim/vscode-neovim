@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 
-import { GridLine } from "../../../highlights/grid_line";
+import { GridLineHandler } from "../../../highlights/grid_line_handler";
 import { HighlightRange, VimCell } from "../../../highlights/types";
 
 function sortRanges(ranges: HighlightRange[]) {
@@ -426,13 +426,13 @@ describe("GridLine: compute highlight ranges", function () {
 
     testCases.forEach(({ testName, events, expectedRanges }) => {
         it(testName, () => {
-            const gridLine = new GridLine();
+            const gridLineHandler = new GridLineHandler();
 
             const lineRanges = new Map<number, HighlightRange[]>();
             events.forEach(({ line, vimCol, vimCells, lineText, tabSize }) => {
-                gridLine.handleGridLine(line, vimCol, vimCells);
-                const highlights = gridLine.computeLineHighlights(line, lineText, tabSize);
-                const ranges = gridLine.lineHighlightsToRanges(line, highlights).filter((range) => {
+                gridLineHandler.handleGridLine(line, vimCol, vimCells);
+                const highlights = gridLineHandler.computeLineHighlights(line, lineText, tabSize);
+                const ranges = gridLineHandler.lineHighlightsToRanges(line, highlights).filter((range) => {
                     if (range.textType === "normal") return range.hlId !== 0;
                     return range.highlights.some((highlight) => highlight.hlId !== 0);
                 });

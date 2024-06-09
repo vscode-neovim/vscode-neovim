@@ -4,10 +4,9 @@ import { Highlight, HighlightRange, LineCell, NormalHighlightRange, VimCell, Vir
 import { CellIter, getWidth, isDouble, splitGraphemes } from "./util";
 
 /**
- * A class to manage the grid lines of a grid.
  * Handle the grid_line event and be responsible for computing the highlight ranges.
  */
-export class GridLine {
+export class GridLineHandler {
     // line number -> line cells
     private lineCells: LineCell[][] = [];
 
