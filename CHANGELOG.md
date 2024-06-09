@@ -1,5 +1,26 @@
 # Change Log
 
+## [1.16.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.15.2...v1.16.0) (2024-06-09)
+
+
+### Features
+
+* ctrl+n/ctrl+p for selecting rename suggestions ([#2093](https://github.com/vscode-neovim/vscode-neovim/issues/2093)) ([bbf5df3](https://github.com/vscode-neovim/vscode-neovim/commit/bbf5df3436db1cf47337933410c0b7d20aa22b0c))
+
+
+### Bug Fixes
+
+* ensure statusline messages are shown for a minimum amount of time before clears are effective ([#2068](https://github.com/vscode-neovim/vscode-neovim/issues/2068)) ([a8064e3](https://github.com/vscode-neovim/vscode-neovim/commit/a8064e3a6c1b3e4fd5c97fae7f0061c26bde6fe0))
+* remove maximum debounce time for normal selection ([#2082](https://github.com/vscode-neovim/vscode-neovim/issues/2082)) ([2bd5166](https://github.com/vscode-neovim/vscode-neovim/commit/2bd5166970421795b8ca5af2f55813167c6862e7))
+
+
+### Documentation
+
+* add configuration compatibility section to README ([65366d3](https://github.com/vscode-neovim/vscode-neovim/commit/65366d3b17fc7210ec8ff4ee841348d303fa8936))
+* add configuration compatibility section to README  ([#2092](https://github.com/vscode-neovim/vscode-neovim/issues/2092)) ([65366d3](https://github.com/vscode-neovim/vscode-neovim/commit/65366d3b17fc7210ec8ff4ee841348d303fa8936))
+* **contributing:** fix sunmeko.lua link ([#2088](https://github.com/vscode-neovim/vscode-neovim/issues/2088)) ([fd9d34a](https://github.com/vscode-neovim/vscode-neovim/commit/fd9d34a96cf1c614edd02093f4b08b8ff1116748))
+* fix broken link for 0.10 compat ([#2094](https://github.com/vscode-neovim/vscode-neovim/issues/2094)) ([8f95e4f](https://github.com/vscode-neovim/vscode-neovim/commit/8f95e4f0f6d20dfd3b6b7c5ee6c44c4d66a1b1cd))
+
 ## [1.15.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.15.1...v1.15.2) (2024-06-06)
 
 
