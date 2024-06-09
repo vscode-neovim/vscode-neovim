@@ -1,14 +1,11 @@
 import { WaitGroup } from "@jpwilliams/waitgroup";
-import { DebouncedFunc, debounce } from "lodash";
-import { Disposable, TextEditor, window } from "vscode";
+import { Disposable } from "vscode";
 
 import { EventBusData, VimHighlightUIAttributes, eventBus } from "./eventBus";
 import { HighlightGroupStore } from "./highlights";
 import { HighlightGrid, VimCell } from "./highlights/highlight_grid";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
-
-const VisibleRangesChangeDebounce = 200;
 
 export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
@@ -18,10 +15,6 @@ export class HighlightManager implements Disposable {
     private groupStore: HighlightGroupStore;
     // Map of gridId -> HighlightGrid
     private highlightGrids: Map<number, HighlightGrid> = new Map();
-    // Set of gridIds that need to be refreshed
-    private staleGrids: Set<number> = new Set();
-    // Debounce refresh decorations on visibleRanges change events.
-    private debouncedRefreshOptions: Map<number, DebouncedFunc<(editor: TextEditor) => void>> = new Map();
 
     public constructor(private main: MainController) {
         this.groupStore = new HighlightGroupStore();
@@ -29,13 +22,16 @@ export class HighlightManager implements Disposable {
             this.groupStore,
             eventBus.on("redraw", this.handleRedraw, this),
             eventBus.on("flush-redraw", this.handleRedrawFlush, this),
-            window.onDidChangeTextEditorVisibleRanges((e) => this.handleChangeVisibleRanges(e.textEditor)),
         );
     }
 
+    // Get or create a HighlightGrid for the given gridId
     private getGrid(gridId: number): HighlightGrid {
         if (!this.highlightGrids.has(gridId)) {
-            this.highlightGrids.set(gridId, new HighlightGrid(this.groupStore));
+            this.highlightGrids.set(
+                gridId,
+                new HighlightGrid(gridId, this.groupStore, this.main.bufferManager, this.main.viewportManager),
+            );
         }
         return this.highlightGrids.get(gridId)!;
     }
@@ -62,20 +58,14 @@ export class HighlightManager implements Disposable {
                     }
                     break;
                 }
-                case "grid_scroll": {
-                    for (const [grid, , , , , by] of args) {
-                        if (grid !== 1) {
-                            this.handleGridScroll(grid, by);
-                            this.staleGrids.add(grid);
-                        }
-                    }
-                    break;
-                }
+                // NOTES: We don't handle "grid_scroll" because:
+                // 1. We only need the cells data of the grid and do not need to consider scrolling.
+                // 2. The scrolled-in area will be filled using `grid_line` directly after the scroll event.
+                // Thus we doesn't need to clear this area as part of handling the scroll event. (From the neovim-ui doc)
                 case "grid_line": {
                     for (const [grid, row, col, cells] of args) {
                         if (grid !== 1) {
                             this.handleGridLine(grid, row, col, cells);
-                            this.staleGrids.add(grid);
                         }
                     }
                     break;
@@ -95,12 +85,7 @@ export class HighlightManager implements Disposable {
         // Wait for any redraw events that have been received to finish
         // their work, so that we can flush them only after their changes are staged.
         await this.redrawWaitGroup.wait();
-
-        for (const grid of this.staleGrids) {
-            const editor = this.main.bufferManager.getEditorFromGridId(grid);
-            if (editor) this.getGrid(grid).refreshDecorations(editor);
-        }
-        this.staleGrids.clear();
+        this.highlightGrids.forEach((grid) => grid.handleRedrawFlush());
     }
 
     private handleAttrDefine(id: number, attrs: VimHighlightUIAttributes, groups: string[]) {
@@ -110,7 +95,8 @@ export class HighlightManager implements Disposable {
     private handleGridLine(gridId: number, row: number, col: number, cells: VimCell[]): void {
         const gridOffset = this.main.viewportManager.getGridOffset(gridId);
         const drawLine = gridOffset.line + row;
-        // offset for the gutter
+        // Offset for the statuscolumn
+        // We have fixed the width of the statuscolumn to 20.
         const startCol = col + gridOffset.character;
         const [vimCol, gutterWidth] = startCol < 20 ? [0, 1] : [startCol - 20, 0];
         cells.splice(0, gutterWidth);
@@ -118,31 +104,8 @@ export class HighlightManager implements Disposable {
         this.getGrid(gridId).handleGridLine(drawLine, vimCol, cells);
     }
 
-    private handleGridScroll(grid: number, by: number): void {
-        this.getGrid(grid).scroll(by);
-    }
-
-    private handleChangeVisibleRanges(editor: TextEditor): void {
-        const gridId = this.main.bufferManager.getGridIdFromEditor(editor);
-        if (!gridId) return;
-
-        if (!this.debouncedRefreshOptions.has(gridId)) {
-            const debounced = debounce(
-                (editor: TextEditor) => {
-                    const gridId = this.main.bufferManager.getGridIdFromEditor(editor);
-                    if (gridId) this.getGrid(gridId).refreshDecorations(editor);
-                },
-                VisibleRangesChangeDebounce,
-                { leading: false, trailing: true },
-            );
-            this.debouncedRefreshOptions.set(gridId, debounced);
-        }
-
-        this.debouncedRefreshOptions.get(gridId)!(editor);
-    }
-
     private handleGridDestroy(gridId: number): void {
-        this.debouncedRefreshOptions.delete(gridId);
+        this.highlightGrids.get(gridId)?.dispose();
         this.highlightGrids.delete(gridId);
     }
 

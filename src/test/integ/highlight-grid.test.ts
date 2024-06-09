@@ -15,7 +15,7 @@ import { closeAllActiveEditors } from "./integrationUtils";
 interface THighlightGrid {
     handleGridLine(line: number, vimCol: number, cells: VimCell[]): void;
     lineHighlightsToRanges(line: number, highlights: Map<number, Highlight[]>): HighlightRange[];
-    getLineHighlights(line: number, lineText: string, tabSize: number): Map<number, Highlight[]>;
+    computeLineHighlights(line: number, lineText: string, tabSize: number): Map<number, Highlight[]>;
 }
 
 function sortRanges(ranges: HighlightRange[]) {
@@ -26,7 +26,7 @@ function sortRanges(ranges: HighlightRange[]) {
     });
 }
 
-describe("HighlightGrid.getLineHighlights", function () {
+describe("HighlightGrid.computeLineHighlights", function () {
     this.retries(0);
     this.afterEach(async () => {
         await closeAllActiveEditors();
@@ -446,6 +446,7 @@ describe("HighlightGrid.getLineHighlights", function () {
         if (testName !== "allows overlaying virtual text on an existing line") return;
         it(testName, () => {
             const grid = new HighlightGrid(
+                1, // arbitrary
                 // fake the group store, only for testing
                 { normalizeHighlightId: (hlId) => hlId } as HighlightGroupStore,
             ) as any as THighlightGrid;
@@ -453,7 +454,7 @@ describe("HighlightGrid.getLineHighlights", function () {
             const lineRanges = new Map<number, HighlightRange[]>();
             events.forEach(({ line, vimCol, vimCells, lineText, tabSize }) => {
                 grid.handleGridLine(line, vimCol, vimCells);
-                const highlights = grid.getLineHighlights(line, lineText, tabSize);
+                const highlights = grid.computeLineHighlights(line, lineText, tabSize);
                 const ranges = grid.lineHighlightsToRanges(line, highlights).filter((range) => {
                     if (range.textType === "normal") return range.hlId !== 0;
                     return range.highlights.some((highlight) => highlight.hlId !== 0);

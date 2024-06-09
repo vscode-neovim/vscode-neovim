@@ -1,5 +1,15 @@
 import { cloneDeep } from "lodash";
-import { DecorationOptions, Range, TextEditor, TextEditorDecorationType, ThemeColor } from "vscode";
+import {
+    Range,
+    ThemeColor,
+    type DecorationOptions,
+    type Disposable,
+    type TextEditor,
+    type TextEditorDecorationType,
+} from "vscode";
+
+import { BufferManager } from "../buffer_manager";
+import { ViewportManager, type Viewport } from "../viewport_manager";
 
 import { HighlightGroupStore } from "./highlight_group_store";
 import { CellIter, getWidth, isDouble, splitGraphemes } from "./util";
@@ -29,15 +39,43 @@ export interface VirtualHighlightRange {
 }
 export type HighlightRange = NormalHighlightRange | VirtualHighlightRange;
 
-export class HighlightGrid {
+export class HighlightGrid implements Disposable {
     // line number -> line cells
     private lineCells: LineCell[][] = [];
     // The way to clear decorations is to set them to an empty array, so it is
     // necessary to record the decorators used in the last refresh.
     // In the next refresh, if a decorator is no longer used, it should be cleared.
     private prevDecorators: Set<TextEditorDecorationType> = new Set();
+    // Flag to indicate if the grid needs to be redrawn
+    private isDirty = false;
 
-    constructor(private readonly groupStore: HighlightGroupStore) {}
+    // Used to get the editor and viewport
+    private readonly gridId: number;
+    // Normalizes highlight IDs and provides decorators
+    private readonly groupStore: HighlightGroupStore;
+    // Not available when testing, so optional
+    private readonly _bufferManager?: BufferManager; // get the editor from gridId
+    private readonly _viewportManager?: ViewportManager; // get the viewport from gridId
+
+    private get viewport(): Viewport | undefined {
+        return this._viewportManager?.getViewport(this.gridId);
+    }
+
+    private get editor(): TextEditor | undefined {
+        return this._bufferManager?.getEditorFromGridId(this.gridId);
+    }
+
+    constructor(
+        gridId: number,
+        groupStore: HighlightGroupStore,
+        bufferManger?: BufferManager,
+        viewportManager?: ViewportManager,
+    ) {
+        this.gridId = gridId;
+        this.groupStore = groupStore;
+        this._bufferManager = bufferManger;
+        this._viewportManager = viewportManager;
+    }
 
     // #region Handle Redraw Events
 
@@ -65,21 +103,14 @@ export class HighlightGrid {
         const rightCells = prevCells.slice(vimCol + redrawCells.length);
 
         this.lineCells[line] = [...leftCells, ...redrawCells, ...rightCells];
+
+        this.isDirty = true;
     }
 
-    scroll(by: number) {
-        const lines: number[] = [];
-        this.lineCells.forEach((_, i) => lines.push(i));
-
-        if (by > 0) {
-            for (const line of lines) {
-                this.lineCells[line - by] = this.lineCells[line];
-            }
-        } else if (by < 0) {
-            const scrollBy = Math.abs(by);
-            for (const line of lines.reverse()) {
-                this.lineCells[line + scrollBy] = this.lineCells[line];
-            }
+    handleRedrawFlush() {
+        if (this.isDirty) {
+            this.refreshDecorations();
+            this.isDirty = false;
         }
     }
 
@@ -87,16 +118,33 @@ export class HighlightGrid {
 
     // #region Render Decorations
 
-    refreshDecorations(editor: TextEditor): void {
-        const { visibleRanges } = editor;
-        if (!visibleRanges.length) return;
-        let startLine = visibleRanges[0].start.line;
-        let endLine = visibleRanges[visibleRanges.length - 1].end.line;
-        // There may be one line of padding above and below the visible range
-        startLine = Math.max(0, startLine - 1);
-        endLine = Math.min(editor.document.lineCount - 1, endLine + 1);
+    private refreshDecorations(): void {
+        const editor = this.editor;
+        if (!editor) return;
 
-        const decorations = this.getDecorations(editor, startLine, endLine);
+        const viewport = this.viewport;
+        if (!viewport) return;
+
+        const decorations = new Map<TextEditorDecorationType, DecorationOptions[]>();
+
+        // Get decorations for the viewport
+        const startLine = Math.max(0, viewport.topline);
+        const endLine = Math.min(editor.document.lineCount - 1, viewport.botline);
+        this.getDecorations(editor, startLine, endLine).forEach((opts, decorator) => {
+            if (!decorations.has(decorator)) decorations.set(decorator, []);
+            decorations.get(decorator)!.push(...opts);
+        });
+
+        // Decorators that are no longer used should be cleared
+        const currDecorators = new Set(decorations.keys());
+        this.prevDecorators.forEach((decorator) => {
+            if (!currDecorators.has(decorator)) {
+                decorations.set(decorator, []);
+            }
+        });
+        this.prevDecorators = currDecorators;
+
+        // Apply the decorations
         for (const [decorator, ranges] of decorations) {
             editor.setDecorations(decorator, ranges);
         }
@@ -114,24 +162,15 @@ export class HighlightGrid {
     ): Map<TextEditorDecorationType, DecorationOptions[]> {
         const results = new Map<TextEditorDecorationType, DecorationOptions[]>();
 
-        const currDecorators = new Set<TextEditorDecorationType>();
         for (let line = startLine; line <= endLine; line++) {
             const lineDecorations = this.getDecorationsForLine(editor, line);
             lineDecorations.forEach((options, hlId) => {
                 const { decorator } = this.groupStore.getDecorator(hlId);
                 if (!decorator) return;
                 if (!results.has(decorator)) results.set(decorator, []);
-                currDecorators.add(decorator);
                 results.get(decorator)!.push(...options);
             });
         }
-
-        this.prevDecorators.forEach((decorator) => {
-            if (!currDecorators.has(decorator)) {
-                results.set(decorator, []);
-            }
-        });
-        this.prevDecorators = currDecorators;
 
         return results;
     }
@@ -140,13 +179,13 @@ export class HighlightGrid {
     private getDecorationsForLine(editor: TextEditor, line: number): Map<number, DecorationOptions[]> {
         const lineText = editor.document.lineAt(line).text;
         const tabSize = editor.options.tabSize as number;
-        const highlights = this.getLineHighlights(line, lineText, tabSize);
+        const highlights = this.computeLineHighlights(line, lineText, tabSize);
         const ranges = this.lineHighlightsToRanges(line, highlights);
-        return this.rangesToOptions(editor, ranges);
+        return this.highlightRangesToOptions(editor, ranges);
     }
 
     // hlId -> decoration options
-    private rangesToOptions(editor: TextEditor, ranges: HighlightRange[]): Map<number, DecorationOptions[]> {
+    private highlightRangesToOptions(editor: TextEditor, ranges: HighlightRange[]): Map<number, DecorationOptions[]> {
         const hlId_options = new Map<number, DecorationOptions[]>();
         const pushOptions = (hlId: number, ...options: DecorationOptions[]) => {
             if (!hlId_options.has(hlId)) {
@@ -158,7 +197,7 @@ export class HighlightGrid {
         ranges.forEach((range) => {
             if (
                 (range.textType === "normal" && range.hlId === 0) ||
-                (range.textType === "virtual" && !range.highlights.some((hl) => hl.hlId !== 0))
+                (range.textType === "virtual" && range.highlights.every((hl) => hl.hlId === 0))
             )
                 return;
 
@@ -166,7 +205,7 @@ export class HighlightGrid {
                 const lineText = editor.document.lineAt(range.line).text;
                 const virtOptions = this.createColVirtTextOptions(range.line, lineText, range.col, range.highlights);
                 virtOptions.forEach((options, hlId) => pushOptions(hlId, ...options));
-            } else if (range.hlId !== 0) {
+            } else {
                 pushOptions(range.hlId, {
                     range: new Range(range.line, range.startCol, range.line, range.endCol),
                 });
@@ -210,7 +249,6 @@ export class HighlightGrid {
                     startCol: col,
                     endCol: col + 1,
                 };
-
                 existingHighlights.push(highlight);
             }
 
@@ -227,7 +265,7 @@ export class HighlightGrid {
     // But it's not easy to test
 
     // char col -> highlights
-    private getLineHighlights(line: number, lineText: string, tabSize: number): Map<number, Highlight[]> {
+    private computeLineHighlights(line: number, lineText: string, tabSize: number): Map<number, Highlight[]> {
         const lineCells = cloneDeep(this.lineCells[line] ?? []);
         if (!lineCells.length) return new Map();
 
@@ -386,6 +424,13 @@ export class HighlightGrid {
     }
 
     // #endregion
+
+    dispose(): void {
+        const editor = this.editor;
+        if (!editor) return;
+        this.prevDecorators.forEach((decorator) => editor.setDecorations(decorator, []));
+        this.prevDecorators.clear();
+    }
 }
 
 function findLast<T>(arr: T[], finder: (item: T) => boolean): T | undefined {
