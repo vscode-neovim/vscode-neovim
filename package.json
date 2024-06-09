@@ -1728,6 +1728,16 @@
                 "when": "editorHoverFocused"
             },
             {
+                "command": "focusNextRenameSuggestion",
+                "key": "ctrl+n",
+                "when": "renameInputVisible"
+            },
+            {
+                "command": "focusPreviousRenameSuggestion",
+                "key": "ctrl+p",
+                "when": "renameInputVisible"
+            },
+            {
                 "command": "-workbench.action.switchWindow",
                 "key": "ctrl+w"
             },
