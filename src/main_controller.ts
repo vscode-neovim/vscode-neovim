@@ -14,7 +14,7 @@ import { config } from "./config";
 import { NVIM_MIN_VERSION } from "./constants";
 import { CursorManager } from "./cursor_manager";
 import { DocumentChangeManager } from "./document_change_manager";
-import { eventBus } from "./eventBus";
+import { eventBus, RedrawEventArgs } from "./eventBus";
 import { HighlightManager } from "./highlight_manager";
 import { createLogger } from "./logger";
 import { MessagesManager } from "./messages_manager";
@@ -257,6 +257,8 @@ export class MainController implements vscode.Disposable {
             }
             targetRange = doc.validateRange(targetRange);
             editor.selections = [new vscode.Selection(targetRange.start, targetRange.end)];
+            // This is an arbitrary action from VSCode, we can't know the return type
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const res = await actions.run(action, ...(options.args || []));
             if (options.restore_selection !== false) {
                 editor.selections = prevSelections;
@@ -295,6 +297,7 @@ export class MainController implements vscode.Disposable {
                 break;
             }
             case "vscode-neovim": {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 const [command, args] = events;
                 eventBus.fire(command as any, args);
                 break;
@@ -320,7 +323,7 @@ export class MainController implements vscode.Disposable {
                         const eventData = {
                             name: batchItem[0],
                             args: batchItem.slice(1),
-                        } as any;
+                        } as RedrawEventArgs;
 
                         eventBus.fire("redraw", eventData);
                     });
@@ -347,6 +350,8 @@ export class MainController implements vscode.Disposable {
                 if (Array.isArray(options)) options = {}; // empty lua table
 
                 try {
+                    // This is an arbitrary action from neovim, we can't know the return type
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     const res = await this.runAction(action, options);
                     response.send(res);
                 } catch (err) {

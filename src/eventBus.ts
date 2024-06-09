@@ -2,12 +2,7 @@ import neovim from "neovim";
 import { Disposable, EventEmitter } from "vscode";
 
 // #region RedrawEventArgs
-interface IRedrawEventArg<N, A extends unknown[] = []> {
-    name: N;
-    args: A["length"] extends 0 ? undefined : A[];
-}
-
-type RedrawEventArgs =
+export type RedrawEventArgs =
     | IRedrawEventArg<"win_close", [number]> // ["win_close", grid]
     // ["win_external_pos", grid, win]
     | IRedrawEventArg<"win_external_pos", [number, neovim.Window]>
@@ -98,6 +93,11 @@ type RedrawEventArgs =
     | IRedrawEventArg<"popupmenu_select", [number]>
     | IRedrawEventArg<"popupmenu_hide">;
 // #endregion
+//
+interface IRedrawEventArg<N, A extends unknown[] = []> {
+    name: N;
+    args: A["length"] extends 0 ? undefined : A[];
+}
 
 interface BufferInfo {
     bufnr: number;

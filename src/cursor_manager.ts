@@ -12,6 +12,7 @@ import {
     window,
     workspace,
 } from "vscode";
+import type * as lsp from "vscode-languageserver-types";
 
 import actions from "./actions";
 import { config } from "./config";
@@ -255,7 +256,7 @@ export class CursorManager implements Disposable {
                 return;
             }
             try {
-                const ranges = await actions.lua("get_selections", win);
+                const ranges = await actions.lua<lsp.Range[]>("get_selections", win);
                 selections = rangesToSelections(ranges, editor.document);
             } catch (e) {
                 logger.error(e);

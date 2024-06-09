@@ -12,6 +12,7 @@ import {
     TextEditor,
     commands,
 } from "vscode";
+import type * as lsp from "vscode-languageserver-types";
 
 import { config } from "../config";
 
@@ -207,13 +208,7 @@ export function isChangeSubsequentToChange(
  * @param document The document used to validate the range.
  * @returns The converted selections.
  */
-export function rangesToSelections(
-    ranges: {
-        start: { line: number; character: number };
-        end: { line: number; character: number };
-    }[],
-    document?: TextDocument,
-): Selection[] {
+export function rangesToSelections(ranges: lsp.Range[], document?: TextDocument): Selection[] {
     return ranges.map((r) => {
         const start = new Position(r.start.line, r.start.character);
         const end = new Position(r.end.line, r.end.character);

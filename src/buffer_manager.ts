@@ -594,12 +594,7 @@ export class BufferManager implements Disposable {
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
         // We don't care about the name of the buffer if it's not a file
-        const bufname =
-            docUri.scheme === "file"
-                ? config.useWsl
-                    ? await actions.lua("wslpath", docUri.fsPath)
-                    : docUri.fsPath
-                : docUri.toString();
+        const bufname = await this.bufName(docUri);
 
         await this.client.lua(
             `
@@ -636,6 +631,17 @@ export class BufferManager implements Disposable {
         this.onBufferInit?.(bufId, document);
         buffer.listen("lines", this.receivedBufferEvent);
         actions.fireNvimEvent("document_buffer_init", bufId);
+    }
+
+    private async bufName(docUri: Uri): Promise<string> {
+        if (docUri.scheme !== "file") {
+            return docUri.toString();
+        } else if (config.useWsl) {
+            const wslpath = await actions.lua<string>("wslpath", docUri.fsPath);
+            return wslpath;
+        } else {
+            return docUri.fsPath;
+        }
     }
 
     /**
@@ -722,24 +728,27 @@ export class BufferManager implements Disposable {
             // !Another hack is to retrieve cursor with delay - when we receive an external buffer the cursor pos is not immediately available
             // [1, 0]
             setTimeout(async () => {
-                const neovimCursor: [number, number] = await this.client.request("nvim_win_get_cursor", [closeWinId]);
-                if (neovimCursor) {
-                    logger.debug(
-                        `Adjusting cursor pos for external buffer: ${id}, originalPos: [${neovimCursor[0]}, ${neovimCursor[1]}]`,
-                    );
-                    const finalLine = neovimCursor[0] - 1;
-                    let finalCol = neovimCursor[1];
-                    try {
-                        finalCol = convertByteNumToCharNum(doc.lineAt(finalLine).text, neovimCursor[1]);
-                        logger.debug(`Adjusted cursor: [${finalLine}, ${finalCol}]`);
-                    } catch (e) {
-                        logger.warn(`Unable to get cursor pos for external buffer: ${id}`);
-                    }
+                // Return type is known from vimdoc
+                // https://neovim.io/doc/user/api.html#nvim_win_get_cursor()
+                const neovimCursor: [number, number] = await (this.client.request("nvim_win_get_cursor", [
+                    closeWinId,
+                ]) as Promise<[number, number]>);
 
-                    const selection = new Selection(finalLine, finalCol, finalLine, finalCol);
-                    editor.selections = [selection];
-                    editor.revealRange(selection, TextEditorRevealType.AtTop);
+                logger.debug(
+                    `Adjusting cursor pos for external buffer: ${id}, originalPos: [${neovimCursor[0]}, ${neovimCursor[1]}]`,
+                );
+                const finalLine = neovimCursor[0] - 1;
+                let finalCol = neovimCursor[1];
+                try {
+                    finalCol = convertByteNumToCharNum(doc.lineAt(finalLine).text, neovimCursor[1]);
+                    logger.debug(`Adjusted cursor: [${finalLine}, ${finalCol}]`);
+                } catch (e) {
+                    logger.warn(`Unable to get cursor pos for external buffer: ${id}`);
                 }
+
+                const selection = new Selection(finalLine, finalCol, finalLine, finalCol);
+                editor.selections = [selection];
+                editor.revealRange(selection, TextEditorRevealType.AtTop);
             }, 1000);
 
             // ! must delay to get a time to switch buffer to other window, otherwise it will be closed

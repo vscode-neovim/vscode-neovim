@@ -2167,6 +2167,7 @@
         "ts-loader": "^9.5.1",
         "typescript": "^5.4.4",
         "typescript-eslint": "^7.8.0",
+        "vscode-languageserver-types": "^3.17.5",
         "webpack": "^5.91.0",
         "webpack-cli": "^5.1.4"
     },

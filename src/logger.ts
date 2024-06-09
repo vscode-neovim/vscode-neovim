@@ -102,7 +102,7 @@ export class Logger implements Disposable {
     }
 
     private log(level: vscode.LogLevel, scope: string, logToOutputChannel: boolean, args: any[]): void {
-        const msg = args.reduce((p, c, i) => {
+        const msg = args.reduce((p: string, c: any, i: number) => {
             if (typeof c === "object") {
                 try {
                     c = inspect(c, false, 2, false);

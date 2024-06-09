@@ -390,12 +390,7 @@ export class DocumentChangeManager implements Disposable {
             changeArgs.push([start.line, startBytes, end.line, endBytes, text.split(eol)]);
         }
 
-        const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
-        if (!bufTick) {
-            logger.log(doc.uri, LogLevel.Warning, `Can't get changed tick for bufId: ${bufId}, deleted?`);
-            return;
-        }
-
+        const bufTick = (await this.client.request("nvim_buf_get_changedtick", [bufId])) as number;
         this.bufferSkipTicks.set(bufId, bufTick + changeArgs.length);
 
         logger.log(doc.uri, LogLevel.Debug, `Setting wantInsertCursorUpdate to false`);

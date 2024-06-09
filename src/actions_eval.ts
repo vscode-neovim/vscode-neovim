@@ -24,6 +24,9 @@ void logger;
 export async function eval_for_client(code: string, args: any): Promise<any> {
     void args;
 
+    // We can tell statically this will return a Promise<any>, and this is user provided code,
+    // so, we can't know its type.
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     const func: () => Promise<any> = eval("async () => {" + code + "}");
     const result = await func();
 
@@ -35,4 +38,5 @@ export async function eval_for_client(code: string, args: any): Promise<any> {
     }
 
     return data ? JSON.parse(data) : data;
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 }
