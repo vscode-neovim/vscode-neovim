@@ -117,7 +117,9 @@ export class CursorManager implements Disposable {
                         .split("-")
                         .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
                         .join("");
-                    const style = TextEditorCursorStyle[styleName as any] as any as TextEditorCursorStyle;
+                    const style = TextEditorCursorStyle[
+                        styleName as keyof typeof TextEditorCursorStyle
+                    ] as any as TextEditorCursorStyle;
                     window.visibleTextEditors.forEach((e) => (e.options.cursorStyle = style));
                 },
             },

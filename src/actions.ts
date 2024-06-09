@@ -101,12 +101,11 @@ class ActionManager implements Disposable {
             if (target) {
                 targetConfig = target === "global" ? ConfigurationTarget.Global : ConfigurationTarget.Workspace;
             }
-            if (!Array.isArray(names)) {
-                names = [names];
-                values = [values];
-            }
-            for (const [idx, name] of names.entries()) {
-                await config.update(name, values[idx], targetConfig);
+
+            const namesArr = ensureArray(names);
+            const valuesArr = ensureArray(values);
+            for (const [idx, name] of namesArr.entries()) {
+                await config.update(name, valuesArr[idx], targetConfig);
             }
         });
         this.add("start-multiple-cursors", (ranges: Range[]) => {
@@ -124,6 +123,14 @@ class ActionManager implements Disposable {
                 this.client.command(`doautocmd ${e.focused ? "FocusGained" : "FocusLost"}`),
             ),
         );
+    }
+}
+
+function ensureArray<T>(x: T | T[]): T[] {
+    if (Array.isArray(x)) {
+        return x;
+    } else {
+        return [x];
     }
 }
 

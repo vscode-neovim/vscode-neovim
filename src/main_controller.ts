@@ -368,6 +368,8 @@ export class MainController implements vscode.Disposable {
     };
 
     private setClientInfo() {
+        // We know version will be present in package.json...
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const versionString = this.extContext.extension.packageJSON.version as string;
         const [major, minor, patch] = [...versionString.split(".").map((n) => +n), 0, 0, 0];
         logger.debug(`Setting client info: vscode-neovim ${major}.${minor}.${patch}`);

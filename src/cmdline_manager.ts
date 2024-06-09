@@ -43,6 +43,8 @@ export class CommandLineManager implements Disposable {
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
         this.input = window.createQuickPick();
+        // https://github.com/microsoft/vscode/issues/73904
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         (this.input as any).sortByLabel = false;
         this.input.ignoreFocusOut = true;
         this.input.buttons = [
