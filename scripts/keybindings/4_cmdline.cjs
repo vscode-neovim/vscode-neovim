@@ -3,7 +3,7 @@ const { key2arg, addKeybinds } = require("./util.cjs");
 const [_add, keybinds] = addKeybinds();
 
 const add = (key, args, cmd = "vscode-neovim.send-cmdline") =>
-    _add(key, "neovim.init && neovim.mode == cmdline", args, cmd);
+    _add(key, "neovim.init && neovim.mode == cmdline && neovim.useQuickPickForCmdline", args, cmd);
 
 // special keys
 ["tab", "shift+tab", "down", "up", "shift+down", "shift+up"].forEach((key) => add(key, key2arg(key)));

@@ -1,5 +1,6 @@
 import { Disposable, QuickInputButton, QuickPick, QuickPickItem, ThemeIcon, commands, window } from "vscode";
 
+import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
@@ -41,7 +42,9 @@ export class CommandLineManager implements Disposable {
     private state = new CmdlineState();
 
     public constructor(private main: MainController) {
-        eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+        if (config.useQuickPickForCmdline) {
+            eventBus.on("redraw", this.handleRedraw, this, this.disposables);
+        }
         this.input = window.createQuickPick();
         (this.input as any).sortByLabel = false;
         this.input.ignoreFocusOut = true;

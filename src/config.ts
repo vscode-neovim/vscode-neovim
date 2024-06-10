@@ -38,6 +38,7 @@ export class Config implements Disposable {
         "neovimExecutablePaths.linux",
         "neovimExecutablePaths.win32",
         "afterInitConfig",
+        "useQuickPickForCmdline",
     ].map((c) => `${this.root}.${c}`);
 
     dispose() {
@@ -58,6 +59,7 @@ export class Config implements Disposable {
             VSCodeContext.set(`neovim.ctrlKeysNormal.${k}`, ctrlKeysNormalMode.includes(k));
             VSCodeContext.set(`neovim.ctrlKeysInsert.${k}`, ctrlKeysInsertMode.includes(k));
         });
+        VSCodeContext.set(`neovim.useQuickPickForCmdline`, this.useQuickPickForCmdline);
 
         if (!e) return;
         const requireRestart = this.requireRestartConfigs.find((c) => e.affectsConfiguration(c));
@@ -157,6 +159,10 @@ export class Config implements Disposable {
     }
     get compositeKeys(): CompositeKeys {
         return this.cfg.get("compositeKeys", {});
+    }
+
+    get useQuickPickForCmdline(): boolean {
+        return this.cfg.get("useQuickPickForCmdline", true);
     }
 }
 

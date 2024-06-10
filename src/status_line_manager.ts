@@ -79,9 +79,22 @@ export class StatusLineManager implements Disposable {
     private handleRedraw({ name, args }: EventBusData<"redraw">) {
         switch (name) {
             case "msg_showcmd": {
+                if (!config.useQuickPickForCmdline) return;
                 const [content] = args[0];
                 const cmdMsg = this.flattenMessageContent(content);
                 this.setStatus(cmdMsg, StatusType.Cmd);
+                break;
+            }
+            case "cmdline_show": {
+                if (config.useQuickPickForCmdline) return;
+                const [content, _pos, firstc, prompt] = args[0];
+                const allContent = content.map(([, str]) => str).join("");
+                this.setStatus(`${firstc}${prompt}${allContent}`, StatusType.Cmd);
+                break;
+            }
+            case "cmdline_hide": {
+                if (config.useQuickPickForCmdline) return;
+                this.setStatus("", StatusType.Cmd);
                 break;
             }
             case "msg_show": {
