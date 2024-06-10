@@ -4,7 +4,7 @@ import { Highlight, HighlightRange, LineCell, NormalHighlightRange, VimCell, Vir
 import { CellIter, getWidth, isDouble, splitGraphemes } from "./util";
 
 /**
- * Handle the grid_line event and be responsible for computing the highlight ranges.
+ * Handles grid_line event and computes related highlight ranges.
  */
 export class GridLineHandler {
     // line number -> line cells

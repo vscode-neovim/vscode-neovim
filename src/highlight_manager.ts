@@ -89,7 +89,7 @@ export class HighlightManager implements Disposable {
     }
 
     private handleAttrDefine(id: number, attrs: VimHighlightUIAttributes, groups: string[]) {
-        this.groupStore.addHighlightGroup(id, attrs, groups);
+        this.groupStore.add(id, attrs, groups);
     }
 
     private handleGridLine(gridId: number, row: number, col: number, cells: VimCell[]): void {

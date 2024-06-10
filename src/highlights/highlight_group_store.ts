@@ -115,7 +115,7 @@ export class HighlightGroupStore implements Disposable {
         this.disposables.push(decorator);
     }
 
-    public addHighlightGroup(id: number, attrs: VimHighlightUIAttributes, groups: string[]): void {
+    public add(id: number, attrs: VimHighlightUIAttributes, groups: string[]): void {
         delete attrs.altfont;
         if (groups.includes("Visual")) {
             if (groups.length === 1) this.visualHighlightId = id;
