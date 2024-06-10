@@ -128,6 +128,12 @@ export class CommandLineManager implements Disposable {
             (visibilityChanged && initialInputValue === content) ||
             (!visibilityChanged && this.input.value === content)
         ) {
+            // A change event will be fired for the new content in this box, given we have to show the box
+            // before we set the value
+            if (visibilityChanged && content.length > 0) {
+                this.state.pendingNvimUpdates++;
+            }
+
             logger.debug("dropping cmdline_show as the content is unchanged");
             return;
         }
@@ -254,13 +260,16 @@ export class CommandLineManager implements Disposable {
             this.state = new CmdlineState();
             this.input.items = [];
             this.input.activeItems = [];
+            // Show MUST be called before we set the value, hence this branching
+            this.input.show();
             this.input.value = initialValue;
             visibilityChanged = true;
+        } else {
+            this.input.show();
         }
 
         this.state.level = level;
         this.input.title = title;
-        this.input.show();
 
         return visibilityChanged;
     }
