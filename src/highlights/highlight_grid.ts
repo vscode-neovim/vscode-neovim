@@ -7,7 +7,6 @@ import { ViewportManager } from "../viewport_manager";
 import { GridLineHandler } from "./grid_line_handler";
 import { HighlightGroupStore } from "./highlight_group_store";
 import { Highlight, HighlightRange, VimCell } from "./types";
-import { getWidth } from "./util";
 
 export class HighlightGrid implements Disposable {
     // Manages grid lines and is responsible for computing highlight ranges
@@ -178,7 +177,6 @@ export class HighlightGrid implements Disposable {
         colHighlights: Highlight[],
     ): Map<number, DecorationOptions[]> {
         const lineText = this.editor.document.lineAt(line).text;
-        const tabSize = this.editor.options.tabSize as number;
         const hlId_options = new Map<number, DecorationOptions[]>();
 
         colHighlights = cloneDeep(colHighlights);
@@ -210,7 +208,6 @@ export class HighlightGrid implements Disposable {
             const { decorator, options } = this.groupStore.getDecorator(hlId);
             if (!decorator) return;
             if (!hlId_options.has(hlId)) hlId_options.set(hlId, []);
-            const width = getWidth(virtText, tabSize);
             if (col > lineText.length) {
                 offset += col - lineText.length; // for 'eol' virtual text
             }
@@ -222,7 +219,7 @@ export class HighlightGrid implements Disposable {
                         ...options,
                         contentText: virtText,
                         margin: `0 0 0 ${offset}ch`,
-                        width: `${width}ch; position:absolute; z-index:${99 - offset}; white-space: pre; --hlId: ${hlId};`,
+                        width: `fit-content; position:absolute; z-index:${99 - offset}; white-space: pre; --hlId: ${hlId};`,
                     },
                 },
             });
