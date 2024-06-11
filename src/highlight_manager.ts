@@ -61,7 +61,7 @@ export class HighlightManager implements Disposable {
                 // NOTES: We don't handle "grid_scroll" because:
                 // 1. We only need the cells data of the grid and do not need to consider scrolling.
                 // 2. The scrolled-in area will be filled using `grid_line` directly after the scroll event.
-                // Thus we doesn't need to clear this area as part of handling the scroll event. (From the neovim-ui doc)
+                // Thus, we don't need to clear this area as part of handling the scroll event. (From the neovim-ui doc)
                 case "grid_line": {
                     for (const [grid, row, col, cells] of args) {
                         if (grid !== 1) {
