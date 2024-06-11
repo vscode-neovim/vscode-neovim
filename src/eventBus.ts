@@ -2,6 +2,23 @@ import neovim from "neovim";
 import { Disposable, EventEmitter } from "vscode";
 
 // #region RedrawEventArgs
+
+export interface VimHighlightUIAttributes {
+    foreground?: number;
+    background?: number;
+    special?: number;
+    reverse?: boolean;
+    italic?: boolean;
+    bold?: boolean;
+    strikethrough?: boolean;
+    // has special color
+    underline?: boolean;
+    // has special color
+    undercurl?: boolean;
+    blend?: number;
+    altfont?: boolean;
+}
+
 interface IRedrawEventArg<N, A extends unknown[] = []> {
     name: N;
     args: A["length"] extends 0 ? undefined : A[];
@@ -30,21 +47,7 @@ type RedrawEventArgs =
           "hl_attr_define",
           [
               number,
-              {
-                  foreground?: number;
-                  background?: number;
-                  special?: number;
-                  reverse?: boolean;
-                  italic?: boolean;
-                  bold?: boolean;
-                  strikethrough?: boolean;
-                  underline?: boolean;
-                  underdouble?: boolean;
-                  underdotted?: boolean;
-                  underdashed?: boolean;
-                  undercurl?: boolean;
-                  blend?: number;
-              },
+              VimHighlightUIAttributes,
               never,
               [{ kind: "ui" | "syntax" | "terminal"; ui_name: string; hi_name: string }],
           ]

@@ -1,345 +1,238 @@
-import wcswidth from "ts-wcwidth";
-import GraphemeSplitter from "grapheme-splitter";
+import { cloneDeep } from "lodash";
+import { Range, ThemeColor, type DecorationOptions, type Disposable, type TextEditorDecorationType } from "vscode";
 
-import { calculateEditorColFromVimScreenCol, expandTabs } from "../utils/text";
+import { BufferManager } from "../buffer_manager";
+import { ViewportManager } from "../viewport_manager";
 
-export interface ValidCell {
-    text: string;
-    hlId: number;
-}
+import { GridLineHandler } from "./grid_line_handler";
+import { HighlightGroupStore } from "./highlight_group_store";
+import { Highlight, HighlightRange, VimCell } from "./types";
 
-export interface Highlight extends ValidCell {
-    virtText?: string;
-}
+export class HighlightGrid implements Disposable {
+    // Manages grid lines and is responsible for computing highlight ranges
+    private gridLineHandler = new GridLineHandler();
+    // The way to clear decorations is to set them to an empty array, so it is
+    // necessary to record the decorators used in the last refresh.
+    // In the next refresh, if a decorator is no longer used, it should be cleared.
+    private prevDecorators: Set<TextEditorDecorationType> = new Set();
+    // Flag to indicate if the grid needs to be redrawn
+    private isDirty = false;
+    // line number -> (hlId -> decoration options)
+    // Cache the decorations for each line to avoid recalculating them
+    private lineDecorationsCache: Map<number, Map<number, DecorationOptions[]>> = new Map();
 
-export type HighlightRange = NormalTextHighlightRange | VirtualTextHighlightRange;
+    constructor(
+        // Used to get the editor and viewport
+        private readonly gridId: number,
+        // Normalizes highlight IDs and provides decorators
+        private readonly groupStore: HighlightGroupStore,
+        // Used to get the editor from the grid ID
+        private readonly bufferManager: BufferManager,
+        // Used to get the viewport from the grid ID
+        private readonly viewportManager: ViewportManager,
+    ) {}
 
-export interface NormalTextHighlightRange {
-    textType: "normal";
-    hlId: number;
-    line: number;
-    startCol: number;
-    endCol: number;
-}
-
-export interface VirtualTextHighlightRange {
-    textType: "virtual";
-    highlights: Highlight[];
-    line: number;
-    col: number;
-}
-
-export interface HighlightCellsEvent {
-    row: number;
-    vimCol: number;
-    validCells: ValidCell[];
-    lineText: string;
-    tabSize: number;
-}
-
-export class HighlightGrid {
-    /**
-     * a three-dimensional array representing rows and columns.
-     * Each column can contain multiple highlights. e.g. double-width character, tab
-     */
-    private grid: Highlight[][][];
-
-    private static splitter = new GraphemeSplitter();
-
-    constructor() {
-        this.grid = [];
+    private get editor() {
+        return this.bufferManager.getEditorFromGridId(this.gridId)!;
     }
 
-    /**
-     * Checks whether or not the contents of a text cell should actually span two cells. For instance:
-     * a  length:1 width:1
-     * 你 length:1 width:2
-     * 🚀 length:2 width:2
-     * 🕵️ length:3 width:2
-     * ❤️ length:2 width:2
-     *
-     * @param cellText The cell text to check
-     * @returns Whether or not this cell is a double-width cell
-     */
-    static isDouble(cellText: string): boolean {
-        return wcswidth(cellText) === 2 || cellText.length > 1;
+    private get viewport() {
+        return this.viewportManager.getViewport(this.gridId);
     }
 
-    /**
-     * Get the width of a piece of text, in cells. Note that the use of tabs is
-     * position dependent, and this function must assume a line with tabs starts
-     * at position 0in the editor.
-     *
-     * @param text The text to get the width of
-     * @param tabSize The size of tab-widths
-     * @returns The width of the text, in cells
-     */
-    static getWidth(text: string, tabSize: number): number {
-        const t = expandTabs(text, tabSize);
-        return HighlightGrid.splitGraphemes(t).reduce((p, c) => p + (HighlightGrid.isDouble(c) ? 2 : 1), 0);
+    // #region Handle Redraw Events
+
+    handleGridLine(line: number, vimCol: number, cells: VimCell[]) {
+        // normalizes the highlight IDs
+        const vimCells = cells.map((cell) => {
+            const hlId = cell[1];
+            if (hlId) {
+                cell[1] = this.groupStore.normalizeHighlightId(hlId);
+            }
+            return cell;
+        });
+        this.gridLineHandler.handleGridLine(line, vimCol, vimCells);
+        this.lineDecorationsCache.delete(line);
+        this.isDirty = true;
     }
 
-    static splitGraphemes(str: string): string[] {
-        return HighlightGrid.splitter.splitGraphemes(str);
+    handleRedrawFlush() {
+        if (this.isDirty) {
+            this.isDirty = false;
+            // Note: If the editor is null, why reset isDirty?
+            // When initializing the grid, the editor may be null. At this
+            // time, the grid_line events received are mainly used to fill
+            // in the buffer text. There will be many events at this stage,
+            // especially during the first startup, because syntax
+            // highlighting has not been completely cleared yet. Refreshing
+            // immediately will cause syntax highlighting from nvim to
+            // display, resulting in screen flickering. Therefore, we choose
+            // not to refresh at this point but to wait for subsequent
+            // grid_line events to refresh. Since the grid_line data will be
+            // fully retained, handling it this way is OK.
+            this.editor && this.refreshDecorations();
+        }
     }
 
-    cleanRow(row: number) {
-        delete this.grid[row];
+    // #endregion
+
+    // #region Render Decorations
+
+    private refreshDecorations(): void {
+        const { editor, viewport } = this;
+
+        const decorations = new Map<TextEditorDecorationType, DecorationOptions[]>();
+
+        // Get decorations for the viewport
+        const startLine = Math.max(0, viewport.topline);
+        const endLine = Math.min(editor.document.lineCount - 1, viewport.botline);
+        this.getDecorations(startLine, endLine).forEach((opts, decorator) => {
+            if (!decorations.has(decorator)) decorations.set(decorator, []);
+            decorations.get(decorator)!.push(...opts);
+        });
+
+        // Decorators that are no longer used should be cleared
+        const currDecorators = new Set(decorations.keys());
+        this.prevDecorators.forEach((decorator) => {
+            if (!currDecorators.has(decorator)) {
+                decorations.set(decorator, []);
+            }
+        });
+        this.prevDecorators = currDecorators;
+
+        // Apply the decorations
+        for (const [decorator, ranges] of decorations) {
+            editor.setDecorations(decorator, ranges);
+        }
     }
 
-    processHighlightCellsEvent({ row, vimCol, validCells, lineText, tabSize }: HighlightCellsEvent): boolean {
-        let hasUpdates = false;
+    // #endregion
 
-        if (!this.grid[row]) {
-            this.grid[row] = [];
+    // #region Compute Decorations
+
+    // decoration type -> decoration options
+    private getDecorations(startLine: number, endLine: number): Map<TextEditorDecorationType, DecorationOptions[]> {
+        const results = new Map<TextEditorDecorationType, DecorationOptions[]>();
+
+        for (let line = startLine; line <= endLine; line++) {
+            // Use the cached decorations if available
+            const lineDecorations = this.lineDecorationsCache.has(line)
+                ? this.lineDecorationsCache.get(line)!
+                : this.getDecorationsForLine(line);
+            this.lineDecorationsCache.set(line, lineDecorations);
+            lineDecorations.forEach((options, hlId) => {
+                const { decorator } = this.groupStore.getDecorator(hlId);
+                if (!decorator) return;
+                if (!results.has(decorator)) results.set(decorator, []);
+                results.get(decorator)!.push(...options);
+            });
         }
 
-        const gridRow = this.grid[row];
-        const lineChars = HighlightGrid.splitGraphemes(lineText);
+        return results;
+    }
 
-        // Calculates the number of spaces occupied by the tab
-        const calcTabCells = (tabCol: number) => {
-            let nearestTabIdx = lineChars.slice(0, tabCol).lastIndexOf("\t");
-            nearestTabIdx = nearestTabIdx === -1 ? 0 : nearestTabIdx + 1;
-            const center = lineChars.slice(nearestTabIdx, tabCol).join("");
-            return tabSize - (HighlightGrid.getWidth(center, tabSize) % tabSize);
+    // hlId -> decoration options
+    private getDecorationsForLine(line: number): Map<number, DecorationOptions[]> {
+        const editor = this.editor;
+        const lineText = editor.document.lineAt(line).text;
+        const tabSize = editor.options.tabSize as number;
+        const highlights = this.gridLineHandler.computeLineHighlights(line, lineText, tabSize);
+        const highlightRanges = this.gridLineHandler.lineHighlightsToRanges(line, highlights);
+        return this.highlightRangesToOptions(highlightRanges);
+    }
+
+    // hlId -> decoration options
+    private highlightRangesToOptions(ranges: HighlightRange[]): Map<number, DecorationOptions[]> {
+        const hlId_options = new Map<number, DecorationOptions[]>();
+        const pushOptions = (hlId: number, ...options: DecorationOptions[]) => {
+            if (!hlId_options.has(hlId)) {
+                hlId_options.set(hlId, []);
+            }
+            hlId_options.get(hlId)!.push(...options);
         };
 
-        const editorCol = calculateEditorColFromVimScreenCol(lineText, vimCol, tabSize);
-        const cellIter = new CellIter(validCells);
+        ranges.forEach((range) => {
+            if (
+                (range.textType === "normal" && range.hlId === 0) ||
+                (range.textType === "virtual" && range.highlights.every((hl) => hl.hlId === 0))
+            )
+                return;
+
+            if (range.textType === "virtual") {
+                const virtOptions = this.createColVirtTextOptions(range.line, range.col, range.highlights);
+                virtOptions.forEach((options, hlId) => pushOptions(hlId, ...options));
+            } else {
+                pushOptions(range.hlId, {
+                    range: new Range(range.line, range.startCol, range.line, range.endCol),
+                });
+            }
+        });
+
+        return hlId_options;
+    }
+
+    private createColVirtTextOptions(
+        line: number,
+        col: number,
+        colHighlights: Highlight[],
+    ): Map<number, DecorationOptions[]> {
+        const lineText = this.editor.document.lineAt(line).text;
+        const hlId_options = new Map<number, DecorationOptions[]>();
+
+        colHighlights = cloneDeep(colHighlights);
 
         // #region
-        // If the previous column can contain multiple cells,
-        // then the redraw cells may contain cells from the previous column.
-        if (editorCol > 0) {
-            const prevCol = editorCol - 1;
-            const prevChar: string | undefined = lineChars[prevCol];
-            const expectedCells =
-                prevChar === "\t" ? calcTabCells(prevCol) : HighlightGrid.getWidth(prevChar ?? "", tabSize);
-            if (expectedCells > 1) {
-                const expectedVimCol = HighlightGrid.getWidth(lineChars.slice(0, editorCol).join(""), tabSize);
-                if (expectedVimCol > vimCol) {
-                    const rightHls: Highlight[] = [];
-                    for (let i = 0; i < expectedVimCol - vimCol; i++) {
-                        const cell = cellIter.next();
-                        cell && rightHls.push({ ...cell, virtText: cell.text });
-                    }
-                    const leftHls: Highlight[] = [];
-                    if (expectedCells - rightHls.length) {
-                        leftHls.push(...(gridRow[prevCol] ?? []).slice(0, expectedCells - rightHls.length));
-                    }
-                    gridRow[prevCol] = [...leftHls, ...rightHls];
-                    hasUpdates = true;
-                }
+        // When on a multi-width character,
+        // there may be a cell with a highlight ID of 0 and its content is a space used to hide the cell.
+        // However, in vscode, we will ignore the highlighting ID of 0.
+        // So, we add the character to the preceding virtual text.
+        const processedColHighlights: { hlId: number; virtText: string }[] = [];
+        colHighlights.forEach(({ virtText, hlId, text }) => {
+            // In certain edge cases, the right-side highlight may be appended later,
+            // resulting in the column being converted to virt text type.
+            // So, the left-side highlight may not include virtText.
+            virtText ??= text;
+            if (hlId === 0 && processedColHighlights.length > 0) {
+                processedColHighlights[processedColHighlights.length - 1].virtText += virtText;
+            } else {
+                processedColHighlights.push({ hlId, virtText });
             }
-        }
+        });
         // #endregion
 
-        // Insert additional columns for characters with length greater than 1.
-        const filledLineText = HighlightGrid.splitGraphemes(lineText).reduce(
-            (p, c) => p + c + " ".repeat(c.length - 1),
-            "",
-        );
+        const virtTextCol = Math.min(lineText.length, col);
+        const range = new Range(line, virtTextCol, line, virtTextCol);
+        const backgroundColor = new ThemeColor("editor.background");
 
-        const filledLineChars = HighlightGrid.splitGraphemes(filledLineText);
-        let currCharCol = editorCol;
-        let cell = cellIter.next();
-        while (cell) {
-            const hls: Highlight[] = [];
-            const add = (cell: ValidCell, virtText?: string) => hls.push({ ...cell, virtText });
-            const currChar = filledLineChars[currCharCol];
-            const extraCols = currChar ? currChar.length - 1 : 0;
-            currCharCol += extraCols;
-            // ... some emojis have text versions e.g. [..."❤️"] == ['❤', '️']
-            const hlCol = currCharCol - (currChar ? [...currChar].length - 1 : 0);
-
-            do {
-                if (currChar === "\t") {
-                    add(cell, cell.text);
-                    for (let i = 0; i < calcTabCells(currCharCol) - 1; i++) {
-                        cell = cellIter.next();
-                        cell && add(cell, cell.text);
-                    }
-
-                    break;
-                }
-
-                if (currChar && HighlightGrid.isDouble(currChar)) {
-                    if (currChar === cell.text) {
-                        add(cell);
-                        break;
-                    }
-
-                    add(cell, cell.text);
-                    if (!HighlightGrid.isDouble(cell.text)) {
-                        const nextCell = cellIter.next();
-                        nextCell && add(nextCell, nextCell.text);
-                        extraCols && add(nextCell ?? cell, " ".repeat(extraCols));
-                    }
-
-                    break;
-                }
-
-                if (currChar === cell.text) {
-                    add(cell);
-                } else {
-                    add(cell, cell.text);
-                    if (HighlightGrid.isDouble(cell.text)) {
-                        currCharCol++;
-                    }
-                }
-
-                // eslint-disable-next-line no-constant-condition
-            } while (false);
-
-            if (!hls.length || !hls.some((d) => d.hlId !== 0)) {
-                if (gridRow[hlCol]) {
-                    hasUpdates = true;
-                    delete gridRow[hlCol];
-                }
-            } else {
-                hasUpdates = true;
-                gridRow[hlCol] = hls;
+        processedColHighlights.forEach(({ virtText, hlId }, offset) => {
+            const { decorator, options } = this.groupStore.getDecorator(hlId);
+            if (!decorator) return;
+            if (!hlId_options.has(hlId)) hlId_options.set(hlId, []);
+            if (col > lineText.length) {
+                offset += col - lineText.length; // for 'eol' virtual text
             }
-            /////////////////////////////////////////////
-            currCharCol++;
-            cell = cellIter.next();
-        }
-
-        return hasUpdates;
-    }
-
-    buildHighlightRanges(topLine: number): HighlightRange[] {
-        return this.grid.reduce((ranges: HighlightRange[], rowHighlights: Highlight[][], row: number) => {
-            const rowRanges = this.rangesForRow(rowHighlights, row, topLine);
-            ranges.push(...rowRanges);
-
-            return ranges;
-        }, []);
-    }
-
-    shiftHighlights(by: number, from: number): void {
-        if (by > 0) {
-            // remove clipped out rows
-            for (let i = 0; i < by; i++) {
-                delete this.grid[from + i];
-            }
-            // first get non empty indexes, then process, seems faster than iterating whole array
-            const idxs: number[] = [];
-            this.grid.forEach((_row, idx) => {
-                idxs.push(idx);
+            hlId_options.get(hlId)!.push({
+                range,
+                renderOptions: {
+                    before: {
+                        backgroundColor,
+                        ...options,
+                        contentText: virtText,
+                        margin: `0 0 0 ${offset}ch`,
+                        width: `fit-content; position:absolute; z-index:${99 - offset}; white-space: pre; --hlId: ${hlId};`,
+                    },
+                },
             });
-            // shift
-            for (const idx of idxs) {
-                if (idx <= from) {
-                    continue;
-                }
-                this.grid[idx - by] = this.grid[idx];
-                delete this.grid[idx];
-            }
-        } else if (by < 0) {
-            // remove clipped out rows
-            for (let i = 0; i < Math.abs(by); i++) {
-                delete this.grid[from !== 0 ? from + i : this.grid.length - 1 - i];
-            }
-            const idxs: number[] = [];
-            this.grid.forEach((_row, idx) => {
-                idxs.push(idx);
-            });
-            for (const idx of idxs.reverse()) {
-                if (idx <= from) {
-                    continue;
-                }
-                this.grid[idx + Math.abs(by)] = this.grid[idx];
-                delete this.grid[idx];
-            }
-        }
-    }
-
-    maxColInRow(row: number) {
-        const gridRow = this.grid[row];
-        if (!gridRow) {
-            return 0;
-        }
-
-        let currMaxCol = 0;
-        gridRow.forEach((_, col) => {
-            if (col > currMaxCol) currMaxCol = col;
         });
-
-        return currMaxCol;
+        return hlId_options;
     }
 
-    private rangesForRow(rowHighlights: Highlight[][], row: number, topLine: number): HighlightRange[] {
-        const line = row + topLine;
+    // #endregion
 
-        const normalHighlights: Map<number, NormalTextHighlightRange[]> = new Map();
-        const virtualHighlights: VirtualTextHighlightRange[] = [];
-        rowHighlights.forEach((colHighlights, col) => {
-            if (colHighlights.length === 0) {
-                // Should never happen, but defensive
-                return;
-            }
-
-            if (colHighlights.length > 1 || colHighlights[0].virtText) {
-                virtualHighlights.push({
-                    textType: "virtual",
-                    highlights: colHighlights,
-                    line,
-                    col,
-                });
-                return;
-            }
-
-            const colHighlight = colHighlights[0];
-            const existingHighlights = normalHighlights.get(colHighlight.hlId) ?? [];
-            const matchingHighlight = findLast(existingHighlights, (hl) => hl.endCol === col);
-
-            if (matchingHighlight) {
-                // Extend our existing highlight if we already have it
-                matchingHighlight.endCol = col + 1;
-            } else {
-                const highlight = {
-                    textType: "normal" as const,
-                    hlId: colHighlight.hlId,
-                    line,
-                    startCol: col,
-                    endCol: col + 1,
-                };
-
-                existingHighlights.push(highlight);
-            }
-
-            normalHighlights.set(colHighlight.hlId, existingHighlights);
-        });
-
-        const ranges: HighlightRange[] = Array.from(normalHighlights.values()).flat();
-        ranges.push(...virtualHighlights);
-
-        return ranges;
-    }
-}
-
-class CellIter {
-    private _index = 0;
-    constructor(private _cells: ValidCell[]) {}
-    next(): { text: string; hlId: number } | undefined {
-        return this._cells[this._index++];
-    }
-    getNext(): { text: string; hlId: number } | undefined {
-        return this._cells[this._index];
-    }
-    setNext(hlId: number, text: string) {
-        if (this._index < this._cells.length) {
-            this._cells[this._index] = { hlId, text };
-        }
-    }
-}
-
-function findLast<T>(arr: T[], finder: (item: T) => boolean): T | undefined {
-    for (let i = arr.length - 1; i >= 0; i--) {
-        if (finder(arr[i])) {
-            return arr[i];
-        }
+    dispose(): void {
+        const editor = this.editor;
+        if (!editor) return;
+        this.prevDecorators.forEach((decorator) => editor.setDecorations(decorator, []));
+        this.prevDecorators.clear();
     }
 }
