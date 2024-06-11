@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.17.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.16.0...v1.17.0) (2024-06-11)
+
+
+### Features
+
+* **highlight:** draw grid lines accurately ([#2090](https://github.com/vscode-neovim/vscode-neovim/issues/2090)) ([50a7d5c](https://github.com/vscode-neovim/vscode-neovim/commit/50a7d5cc50b085beaffa156ccc4873c00d764569))
+
 ## [1.16.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.15.2...v1.16.0) (2024-06-09)
 
 
