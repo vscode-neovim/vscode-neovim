@@ -70,11 +70,26 @@ function makeEditorOptionsVariable(options?: TextEditorOptions) {
  */
 export class BufferManager implements Disposable {
     private disposables: Disposable[] = [];
+
     /**
-     * Internal sync promise
+     * Promise for other modules to wait for layout synchronization.
+     * Set this before running the debounced function, since layout is outdated.
      */
-    private syncEditorLayoutPromise?: ManualPromise;
-    private syncEditorLayoutSource?: CancellationTokenSource;
+    private syncLayoutPromise?: ManualPromise;
+    /**
+     * Cancels sync operations to avoid using outdated data
+     */
+    private syncLayoutSource?: CancellationTokenSource;
+    /**
+     * Indicates if synchronization is in progress.
+     * Make sure there is only one sync operation at a time.
+     */
+    private isSyncingLayout = false;
+    /**
+     * Indicates if the layout is outdated
+     */
+    private isLayoutOutdated = false;
+
     /**
      * Text documents originated externally, as consequence of neovim command, like :help or :PlugStatus
      */
@@ -170,7 +185,7 @@ export class BufferManager implements Disposable {
     }
 
     public async waitForLayoutSync(): Promise<void> {
-        return this.syncEditorLayoutPromise?.promise;
+        return this.syncLayoutPromise?.promise;
     }
 
     public getTextDocumentForBufferId(id: number): TextDocument | undefined {
@@ -413,40 +428,46 @@ export class BufferManager implements Disposable {
     // #region Sync layout
 
     private onEditorLayoutChanged = async () => {
-        if (!this.syncEditorLayoutPromise) {
-            this.syncEditorLayoutPromise = new ManualPromise();
+        this.syncLayoutPromise = this.syncLayoutPromise ?? new ManualPromise();
+        this.isLayoutOutdated = true;
+        this.syncLayoutSource?.cancel();
+        this.syncLayoutSource = new CancellationTokenSource();
+        if (!this.isSyncingLayout) {
+            await this.syncEditorLayoutDebounced();
         }
-        this.syncEditorLayoutSource?.cancel();
-        this.syncEditorLayoutSource = new CancellationTokenSource();
-        await this.syncEditorLayoutDebounced(this.syncEditorLayoutSource.token);
     };
 
-    private syncEditorLayout = async (cancelToken: CancellationToken): Promise<void> => {
-        await this.cleanupWindowsAndBuffers();
-        if (cancelToken.isCancellationRequested) {
-            logger.debug(`Sync layout cancelled - syncVisibleEditors`);
-            return;
+    private syncEditorLayout = async (): Promise<void> => {
+        this.isSyncingLayout = true;
+        try {
+            while (this.isLayoutOutdated) {
+                this.isLayoutOutdated = false;
+                const token = this.syncLayoutSource?.token;
+
+                const visibleEditors = [...window.visibleTextEditors];
+                const activeEditor = window.activeTextEditor;
+
+                if (token?.isCancellationRequested) continue;
+                await this.cleanupWindowsAndBuffers(visibleEditors);
+
+                if (token?.isCancellationRequested) continue;
+                await this.syncVisibleEditors(visibleEditors);
+
+                if (token?.isCancellationRequested) continue;
+                await this.syncActiveEditor(activeEditor);
+            }
+        } catch (e) {
+            logger.error(`Error syncing layout: ${e}`);
+        } finally {
+            this.isSyncingLayout = false;
+            this.syncLayoutPromise?.resolve();
+            this.syncLayoutPromise = undefined;
         }
-        await this.syncVisibleEditors();
-        if (cancelToken.isCancellationRequested) {
-            logger.debug(`Sync layout cancelled - syncActiveEditor`);
-            return;
-        }
-        await this.syncActiveEditor();
-        if (cancelToken.isCancellationRequested) {
-            logger.debug(`Sync layout cancelled - resolve`);
-            return;
-        }
-        this.syncEditorLayoutPromise?.resolve();
-        this.syncEditorLayoutPromise = undefined;
     };
 
     private syncEditorLayoutDebounced = debounce(this.syncEditorLayout, 100, { leading: false, trailing: true });
 
-    private async cleanupWindowsAndBuffers(): Promise<void> {
-        // store in copy, just in case
-        const visibleEditors = [...window.visibleTextEditors];
-
+    private async cleanupWindowsAndBuffers(visibleEditors: TextEditor[]): Promise<void> {
         const unusedWindows: number[] = [];
         const unusedBuffers: number[] = [];
         // close windows
@@ -469,8 +490,7 @@ export class BufferManager implements Disposable {
         unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
     }
 
-    private async syncVisibleEditors(): Promise<void> {
-        const visibleEditors = [...window.visibleTextEditors];
+    private async syncVisibleEditors(visibleEditors: TextEditor[]): Promise<void> {
         // Open/change neovim windows
         for (const editor of visibleEditors) {
             const { document: doc } = editor;
@@ -509,8 +529,7 @@ export class BufferManager implements Disposable {
         }
     }
 
-    private async syncActiveEditor(): Promise<void> {
-        const activeEditor = window.activeTextEditor;
+    private async syncActiveEditor(activeEditor?: TextEditor): Promise<void> {
         if (!activeEditor) return;
         const winId = this.textEditorToWinId.get(activeEditor);
         const uri = activeEditor.document.uri;
