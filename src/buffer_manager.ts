@@ -457,7 +457,7 @@ export class BufferManager implements Disposable {
                 await this.syncActiveEditor(activeEditor);
             }
         } catch (e) {
-            logger.error(`Error syncing layout: ${e}`);
+            logger.error("Error syncing layout:", e);
         } finally {
             this.isSyncingLayout = false;
             this.syncLayoutPromise?.resolve();
