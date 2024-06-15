@@ -143,6 +143,8 @@ augroup VscodeGeneral
     autocmd VimEnter * call nvim_exec2(join(v:lua.require("vscode").get_config("vscode-neovim.afterInitConfig"), "\n"), {})
 augroup END
 
+" TODO: Remove when dropping support for nvim 0.9
+lua vim.islist = vim.islist or vim.tbl_islist
 
 lua require("vscode")
 runtime! vscode/**/*.{vim,lua}
