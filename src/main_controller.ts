@@ -135,7 +135,7 @@ export class MainController implements vscode.Disposable {
             (this.changeManager = new DocumentChangeManager(this)),
             (this.commandLineManager = new CommandLineManager(this)),
             (this.statusLineManager = new StatusLineManager(this)),
-            (this.messagesManager = new MessagesManager()),
+            (this.messagesManager = new MessagesManager(this)),
         );
 
         logger.debug(`UIAttach`);
