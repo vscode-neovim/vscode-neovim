@@ -1,12 +1,13 @@
 import { cloneDeep } from "lodash";
 import { Range, ThemeColor, type DecorationOptions, type Disposable, type TextEditorDecorationType } from "vscode";
 
-import { BufferManager } from "../buffer_manager";
-import { ViewportManager } from "../viewport_manager";
+import { type BufferManager } from "../buffer_manager";
+import { type DocumentChangeManager } from "../document_change_manager";
+import { type ViewportManager } from "../viewport_manager";
 
 import { GridLineHandler } from "./grid_line_handler";
-import { HighlightGroupStore } from "./highlight_group_store";
-import { Highlight, HighlightRange, VimCell } from "./types";
+import { type HighlightGroupStore } from "./highlight_group_store";
+import type { Highlight, HighlightRange, VimCell } from "./types";
 
 export class HighlightGrid implements Disposable {
     // Manages grid lines and is responsible for computing highlight ranges
@@ -30,6 +31,8 @@ export class HighlightGrid implements Disposable {
         private readonly bufferManager: BufferManager,
         // Used to get the viewport from the grid ID
         private readonly viewportManager: ViewportManager,
+        // Used to wait for document changes to complete
+        private readonly changeManager: DocumentChangeManager,
     ) {}
 
     private get editor() {
@@ -70,7 +73,11 @@ export class HighlightGrid implements Disposable {
             // not to refresh at this point but to wait for subsequent
             // grid_line events to refresh. Since the grid_line data will be
             // fully retained, handling it this way is OK.
-            this.editor && this.refreshDecorations();
+            if (!this.editor) return;
+            // Ensure consistent content to avoid incorrect highlighting calculations
+            this.changeManager
+                .getDocumentChangeCompletionLock(this.editor.document)
+                .then(() => this.refreshDecorations());
         }
     }
 
