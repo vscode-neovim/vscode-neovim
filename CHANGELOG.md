@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.17.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.0...v1.17.1) (2024-06-15)
+
+
+### Bug Fixes
+
+* adapt to Nvim deprecations in 0.10 ([#2108](https://github.com/vscode-neovim/vscode-neovim/issues/2108)) ([4c04ebc](https://github.com/vscode-neovim/vscode-neovim/commit/4c04ebc399e7cdf44476247da0b58430ed025c70))
+* Align output with nvim messages and auto show based on cmdheight ([#2105](https://github.com/vscode-neovim/vscode-neovim/issues/2105)) ([4ca8fbf](https://github.com/vscode-neovim/vscode-neovim/commit/4ca8fbf70edfaaf080823d583e8d2105ace0c06e))
+* **buffer:** avoid concurrent syncs and stale data ([#2103](https://github.com/vscode-neovim/vscode-neovim/issues/2103)) ([59246d6](https://github.com/vscode-neovim/vscode-neovim/commit/59246d624f9cdc4ed141006de621f486b5f5586c))
+
 ## [1.17.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.16.0...v1.17.0) (2024-06-11)
 
 
