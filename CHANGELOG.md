@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.17.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.1...v1.17.2) (2024-06-15)
+
+
+### Bug Fixes
+
+* **highlights:** wait for doc changes before updating highlights ([#2112](https://github.com/vscode-neovim/vscode-neovim/issues/2112)) ([0835225](https://github.com/vscode-neovim/vscode-neovim/commit/083522555ad3d269b83da3885cb18f0982a396be))
+* **messages:** Limit the minimum value of `cmdheight` to 1 ([#2110](https://github.com/vscode-neovim/vscode-neovim/issues/2110)) ([1e29f60](https://github.com/vscode-neovim/vscode-neovim/commit/1e29f604487b66f2cb682c1f24e65ac1e97def20))
+
 ## [1.17.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.0...v1.17.1) (2024-06-15)
 
 
