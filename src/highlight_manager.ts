@@ -30,7 +30,13 @@ export class HighlightManager implements Disposable {
         if (!this.highlightGrids.has(gridId)) {
             this.highlightGrids.set(
                 gridId,
-                new HighlightGrid(gridId, this.groupStore, this.main.bufferManager, this.main.viewportManager),
+                new HighlightGrid(
+                    gridId,
+                    this.groupStore,
+                    this.main.bufferManager,
+                    this.main.viewportManager,
+                    this.main.changeManager,
+                ),
             );
         }
         return this.highlightGrids.get(gridId)!;
