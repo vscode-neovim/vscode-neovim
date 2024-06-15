@@ -41,7 +41,8 @@ export class MessagesManager implements Disposable {
 
                 const lineCount = outputMsg.split("\n").length;
                 const cmdheight = (await this.main.client.getOption("cmdheight")) as number;
-                if (lineCount > cmdheight) {
+                // Before Nvim 0.10, cmdheight is unchangeable, and it's always 0.
+                if (lineCount > Math.max(1, cmdheight)) {
                     this.channel.show(true);
                 }
 
