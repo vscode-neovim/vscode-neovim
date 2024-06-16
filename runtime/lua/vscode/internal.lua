@@ -308,7 +308,8 @@ end
 ---@field uri string
 ---@field uri_data table
 ---@field modifiable boolean
----@field bufname string|nil
+---@field bufname string
+---@field modified boolean
 
 ---@param data InitDocumentBufferData
 function M.init_document_buffer(data)
@@ -324,17 +325,26 @@ function M.init_document_buffer(data)
   api.nvim_buf_set_var(buf, "vscode_editor_options", data.editor_options)
   api.nvim_buf_set_var(buf, "vscode_uri", data.uri)
   api.nvim_buf_set_var(buf, "vscode_uri_data", data.uri_data)
-  api.nvim_buf_set_option(buf, "modifiable", data.modifiable)
   -- force acwrite, which is similar to nofile, but will only be written via the
   -- BufWriteCmd autocommand.
   api.nvim_buf_set_option(buf, "buftype", "acwrite")
   api.nvim_buf_set_option(buf, "buflisted", true)
-
-  if data.bufname and data.bufname ~= vim.NIL then
-    api.nvim_buf_set_name(buf, data.bufname)
-  end
+  api.nvim_buf_set_option(buf, "modifiable", data.modifiable)
+  api.nvim_buf_set_option(buf, "modified", false)
+  api.nvim_buf_set_name(buf, data.bufname)
 
   set_buffer_autocmd(buf)
+end
+
+---Reset undo tree for a buffer
+-- Called from extension when opening/creating new file in vscode to reset undo tree
+function M.clear_undo(buf)
+  local mod = vim.bo[buf].modified
+  local ul = vim.bo[buf].undolevels
+  api.nvim_buf_set_option(buf, "undolevels", -1)
+  api.nvim_buf_set_lines(buf, 0, 0, false, {})
+  api.nvim_buf_set_option(buf, "undolevels", ul)
+  api.nvim_buf_set_option(buf, "modified", mod)
 end
 
 --#endregion

@@ -463,7 +463,13 @@ export class BufferManager implements Disposable {
         if (document == null) {
             throw new Error("Received an invalid buffer id from Neovim, cannot save");
         }
+
         const docUri = document.uri;
+
+        if (document.isUntitled) {
+            await workspace.save(docUri);
+            return;
+        }
 
         // If using Windows locally and developing on a Unix remote environment,
         // the saved path can contain backslashes, causing folders to be treated as filenames.
@@ -716,21 +722,19 @@ export class BufferManager implements Disposable {
             uri_data: document.uri.toJSON(),
             editor_options: makeEditorOptionsVariable(editor?.options),
             modifiable: !this.isExternalTextDocument(document),
+            modified: document.isDirty,
         });
 
         // Looks like need to be in separate request
         if (!this.isExternalTextDocument(document)) {
-            await this.client.callFunction("VSCodeClearUndo", bufId);
+            await actions.lua("clear_undo", bufId);
         }
         this.onBufferInit?.(bufId, document);
         buffer.listen("lines", this.receivedBufferEvent);
         actions.fireNvimEvent("document_buffer_init", bufId);
     }
 
-    private async bufnameForTextDocument(doc: TextDocument): Promise<string | undefined> {
-        if (doc.isUntitled) {
-            return undefined;
-        }
+    private async bufnameForTextDocument(doc: TextDocument): Promise<string> {
         const uri = doc.uri;
         if (uri.scheme === "file") {
             return config.useWsl ? actions.lua<string>("wslpath", uri.fsPath) : uri.fsPath;
