@@ -142,6 +142,7 @@ export class BufferManager implements Disposable {
             window.onDidChangeActiveTextEditor(this.onEditorLayoutChanged),
             workspace.onDidCloseTextDocument(this.onEditorLayoutChanged),
             workspace.onDidCloseNotebookDocument(this.onEditorLayoutChanged),
+            workspace.onDidSaveTextDocument(() => this.syncDocumentDirtyState()),
             window.onDidChangeTextEditorOptions((e) => this.onDidChangeEditorOptions(e.textEditor)),
             workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider),
             eventBus.on("redraw", this.handleRedraw, this),
@@ -173,6 +174,8 @@ export class BufferManager implements Disposable {
                 editor.options = { tabSize, insertSpaces, lineNumbers };
             },
         );
+
+        actions.add("save_buffer", (data) => this.handleSaveBuf(data));
     }
 
     public dispose(): void {
@@ -425,6 +428,98 @@ export class BufferManager implements Disposable {
 
     private handleWindowChangedDebounced = debounce(this.handleWindowChanged, 100, { leading: false, trailing: true });
 
+    private async syncDocumentDirtyState(): Promise<void> {
+        const states = Array.from(this.textDocumentToBufferId.entries()).map(([doc, bufId]) => ({
+            buf: bufId,
+            modified: doc.isDirty,
+        }));
+        await this.client.lua(
+            `
+            local states = ...
+            for _, state in ipairs(states) do
+                vim.bo[state.buf].modified = state.modified
+            end
+            `,
+            [states],
+        );
+    }
+
+    private async handleSaveBuf({
+        buf,
+        bang,
+        current_name,
+        target_name,
+    }: {
+        buf: number;
+        bang: boolean;
+        current_name: string;
+        target_name: string;
+    }) {
+        // Note: workspace.save and workspace.saveAs are smart enough to handle
+        // the documents that are not a real file (e.g. untitled, output, etc.)
+        // so we can just call them directly
+
+        const document = this.getTextDocumentForBufferId(buf);
+        if (document == null) {
+            throw new Error("Received an invalid buffer id from Neovim, cannot save");
+        }
+        const docUri = document.uri;
+
+        // If using Windows locally and developing on a Unix remote environment,
+        // the saved path can contain backslashes, causing folders to be treated as filenames.
+        const normalize = (p: string) => path.normalize(p).split(path.sep).join(path.posix.sep);
+
+        const currentPath = normalize(current_name);
+        const targetPath = normalize(target_name);
+
+        if (currentPath === targetPath) {
+            await workspace.save(docUri);
+            return;
+        }
+
+        const vimCwd = normalize(await this.main.client.call("getcwd"));
+        const vimRelativePath = normalize(path.relative(vimCwd, targetPath));
+
+        const workspaceFolder = workspace.getWorkspaceFolder(docUri);
+        if (!workspaceFolder) {
+            // Let the user choose the save location
+            // Otherwise, we would have to do too much guessing
+            await workspace.saveAs(docUri);
+            return;
+        }
+        const saveUri = Uri.joinPath(workspaceFolder.uri, vimRelativePath);
+        let fileExists = true;
+        try {
+            await workspace.fs.stat(saveUri);
+            await workspace.fs.readFile(saveUri);
+        } catch {
+            fileExists = false;
+        }
+
+        if (fileExists) {
+            if (!bang) {
+                // When will this be reached?
+                // In remote development with Nvim running locally
+                // Nvim can't detect if the file exists, so the user might not be able to use "!"
+                const ret = await window.showErrorMessage(
+                    `File exists (add ! to override): ${saveUri.fsPath}`,
+                    "Override",
+                );
+                if (ret !== "Override") {
+                    return;
+                }
+            }
+        }
+
+        logger.debug(`Saving ${docUri} to ${saveUri}`);
+
+        const text = document.getText();
+        const bytes = new TextEncoder().encode(text);
+        await workspace.fs.writeFile(saveUri, bytes);
+        const doc = await workspace.openTextDocument(saveUri);
+        await window.showTextDocument(doc);
+    }
+
     // #region Sync layout
 
     private onEditorLayoutChanged = async () => {
@@ -607,46 +702,21 @@ export class BufferManager implements Disposable {
      */
     private async initBufferForDocument(document: TextDocument, buffer: Buffer, editor?: TextEditor): Promise<void> {
         const bufId = buffer.id;
-        const { uri: docUri } = document;
-        logger.log(docUri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${docUri}`);
+        logger.log(document.uri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${document.uri}`);
 
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
-        // We don't care about the name of the buffer if it's not a file
-        const bufname =
-            docUri.scheme === "file"
-                ? config.useWsl
-                    ? await actions.lua("wslpath", docUri.fsPath)
-                    : docUri.fsPath
-                : docUri.toString();
+        const bufname = await this.bufnameForTextDocument(document);
 
-        await this.client.lua(
-            `
-            local bufId, lines, vscode_editor_options, docUri, docUriJson, bufname, isExternalDoc = ...
-            vim.api.nvim_buf_set_lines(bufId, 0, -1, false, lines)
-            -- set vscode controlled flag so we can check it neovim
-            vim.api.nvim_buf_set_var(bufId, "vscode_controlled", true)
-            -- In vscode same document can have different insertSpaces/tabSize settings per editor
-            -- however in neovim it's per buffer. We make assumption here that these settings are same for all editors
-            vim.api.nvim_buf_set_var(bufId, "vscode_editor_options", vscode_editor_options)
-            vim.api.nvim_buf_set_var(bufId, "vscode_uri", docUri)
-            vim.api.nvim_buf_set_var(bufId, "vscode_uri_data", docUriJson)
-            vim.api.nvim_buf_set_name(bufId, bufname)
-            vim.api.nvim_buf_set_option(bufId, "modifiable", not isExternalDoc)
-            -- force nofile, just in case if the buffer was created externally
-            vim.api.nvim_buf_set_option(bufId, "buftype", "nofile")
-            vim.api.nvim_buf_set_option(bufId, "buflisted", true)
-        `,
-            [
-                bufId,
-                lines,
-                makeEditorOptionsVariable(editor?.options),
-                docUri.toString(),
-                docUri.toJSON(),
-                bufname,
-                this.isExternalTextDocument(document),
-            ],
-        );
+        await actions.lua("init_document_buffer", {
+            buf: bufId,
+            bufname: bufname,
+            lines: lines,
+            uri: document.uri.toString(),
+            uri_data: document.uri.toJSON(),
+            editor_options: makeEditorOptionsVariable(editor?.options),
+            modifiable: !this.isExternalTextDocument(document),
+        });
 
         // Looks like need to be in separate request
         if (!this.isExternalTextDocument(document)) {
@@ -655,6 +725,18 @@ export class BufferManager implements Disposable {
         this.onBufferInit?.(bufId, document);
         buffer.listen("lines", this.receivedBufferEvent);
         actions.fireNvimEvent("document_buffer_init", bufId);
+    }
+
+    private async bufnameForTextDocument(doc: TextDocument): Promise<string | undefined> {
+        if (doc.isUntitled) {
+            return undefined;
+        }
+        const uri = doc.uri;
+        if (uri.scheme === "file") {
+            return config.useWsl ? actions.lua<string>("wslpath", uri.fsPath) : uri.fsPath;
+        }
+        // We don't care about the name of the buffer if it's not a file
+        return uri.toString();
     }
 
     /**

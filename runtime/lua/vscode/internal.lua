@@ -1,5 +1,7 @@
+---@diagnostic disable: deprecated
 local api, fn = vim.api, vim.fn
 
+local vscode = require("vscode.api")
 local util = require("vscode.util")
 
 local M = {}
@@ -279,5 +281,62 @@ function M.wslpath(path)
   end
   return vim.trim(ret)
 end
+
+--#region Buffer management
+
+local function set_buffer_autocmd(buf)
+  api.nvim_create_autocmd({ "BufWriteCmd" }, {
+    buffer = buf,
+    callback = function(ev)
+      local current_name = vim.api.nvim_buf_get_name(ev.buf)
+      local target_name = ev.match
+      local data = {
+        buf = ev.buf,
+        bang = vim.v.cmdbang == 1,
+        current_name = current_name,
+        target_name = target_name,
+      }
+      vscode.action("save_buffer", { args = { data } })
+    end,
+  })
+end
+
+---@class InitDocumentBufferData
+---@field buf number
+---@field lines string[]
+---@field editor_options EditorOptions
+---@field uri string
+---@field uri_data table
+---@field modifiable boolean
+---@field bufname string|nil
+
+---@param data InitDocumentBufferData
+function M.init_document_buffer(data)
+  local buf = data.buf
+
+  api.nvim_buf_set_lines(buf, 0, -1, false, data.lines)
+  -- set vscode controlled flag so we can check it neovim
+  api.nvim_buf_set_var(buf, "vscode_controlled", true)
+  -- In vscode same document can have different insertSpaces/tabSize settings
+  -- per editor
+  -- however in neovim it's per buffer. We make assumption here that these
+  -- settings are same for all editors
+  api.nvim_buf_set_var(buf, "vscode_editor_options", data.editor_options)
+  api.nvim_buf_set_var(buf, "vscode_uri", data.uri)
+  api.nvim_buf_set_var(buf, "vscode_uri_data", data.uri_data)
+  api.nvim_buf_set_option(buf, "modifiable", data.modifiable)
+  -- force acwrite, which is similar to nofile, but will only be written via the
+  -- BufWriteCmd autocommand.
+  api.nvim_buf_set_option(buf, "buftype", "acwrite")
+  api.nvim_buf_set_option(buf, "buflisted", true)
+
+  if data.bufname and data.bufname ~= vim.NIL then
+    api.nvim_buf_set_name(buf, data.bufname)
+  end
+
+  set_buffer_autocmd(buf)
+end
+
+--#endregion
 
 return M
