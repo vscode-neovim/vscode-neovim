@@ -315,6 +315,8 @@ end
 function M.init_document_buffer(data)
   local buf = data.buf
 
+  -- Set bufname first so that the filetype detection can work ???
+  api.nvim_buf_set_name(buf, data.bufname)
   api.nvim_buf_set_lines(buf, 0, -1, false, data.lines)
   -- set vscode controlled flag so we can check it neovim
   api.nvim_buf_set_var(buf, "vscode_controlled", true)
@@ -331,7 +333,6 @@ function M.init_document_buffer(data)
   api.nvim_buf_set_option(buf, "buflisted", true)
   api.nvim_buf_set_option(buf, "modifiable", data.modifiable)
   api.nvim_buf_set_option(buf, "modified", false)
-  api.nvim_buf_set_name(buf, data.bufname)
 
   set_buffer_autocmd(buf)
 end
