@@ -490,7 +490,14 @@ export class BufferManager implements Disposable {
         }
 
         const vimCwd = normalize(await this.main.client.call("getcwd"));
-        const vimRelativePath = normalize(path.relative(vimCwd, targetPath));
+        const relativePath = normalize(path.relative(vimCwd, targetPath));
+
+        if (relativePath === targetPath) {
+            // Who wanna do this rare thing?
+            // e.g. cwd: c:/a/b.txt, target: d:/b.txt
+            await workspace.saveAs(docUri);
+            return;
+        }
 
         const workspaceFolder = workspace.getWorkspaceFolder(docUri);
         if (!workspaceFolder) {
@@ -499,7 +506,7 @@ export class BufferManager implements Disposable {
             await workspace.saveAs(docUri);
             return;
         }
-        const saveUri = Uri.joinPath(workspaceFolder.uri, vimRelativePath);
+        const saveUri = Uri.joinPath(workspaceFolder.uri, relativePath);
         let fileExists = true;
         try {
             await workspace.fs.stat(saveUri);
