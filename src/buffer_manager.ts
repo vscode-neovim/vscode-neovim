@@ -492,7 +492,7 @@ export class BufferManager implements Disposable {
 
         if (relativePath === targetPath) {
             // Who wanna do this rare thing?
-            // e.g. cwd: c:/a/b.txt, target: d:/b.txt
+            // e.g. cwd: c:/a, target: d:/b.txt
             await workspace.saveAs(docUri);
             return;
         }
