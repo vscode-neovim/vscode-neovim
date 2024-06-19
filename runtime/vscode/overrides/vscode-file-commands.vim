@@ -31,8 +31,6 @@ command! -bang -nargs=? Ex call <SID>editOrNew(<q-args>, <q-bang>)
 command! -bang Enew call <SID>editOrNew('__vscode_new__', <q-bang>)
 command! -bang Find call VSCodeNotify('workbench.action.quickOpen')
 
-command! -bang Saveas call VSCodeNotify('workbench.action.files.saveAs')
-
 command! -bang Quit if <q-bang> ==# '!' | call VSCodeNotify('workbench.action.revertAndCloseActiveEditor') | else | call VSCodeNotify('workbench.action.closeActiveEditor') | endif
 
 command! -bang Wq call <SID>saveAndClose()
@@ -47,7 +45,6 @@ AlterCommand e[dit] Edit
 AlterCommand ex Ex
 AlterCommand ene[w] Enew
 AlterCommand fin[d] Find
-AlterCommand sav[eas] Saveas
 AlterCommand q[uit] Quit
 AlterCommand wq Wq
 AlterCommand x[it] Xit
