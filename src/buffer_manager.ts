@@ -30,7 +30,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, convertByteNumToCharNum, disposeAll, wait } from "./utils";
+import { ManualPromise, convertByteNumToCharNum, disposeAll, fileExists, wait } from "./utils";
 
 // NOTE: document and editors in vscode events and namespace are reference stable
 // Integration notes:
@@ -269,9 +269,7 @@ export class BufferManager implements Disposable {
             } else {
                 const normalizedName = fileName.trim();
                 let uri = Uri.from({ scheme: "file", path: this.findPathFromFileName(normalizedName) });
-                try {
-                    await workspace.fs.stat(uri);
-                } catch {
+                if (!(await fileExists(uri))) {
                     uri = Uri.from({ scheme: "untitled", path: normalizedName });
                     // Why notebook?
                     // Limitations with TextDocument, specifically when there is no active
@@ -507,15 +505,7 @@ export class BufferManager implements Disposable {
             return;
         }
         const saveUri = Uri.joinPath(workspaceFolder.uri, relativePath);
-        let fileExists = true;
-        try {
-            await workspace.fs.stat(saveUri);
-            await workspace.fs.readFile(saveUri);
-        } catch {
-            fileExists = false;
-        }
-
-        if (fileExists && !bang) {
+        if ((await fileExists(saveUri)) && !bang) {
             // When will this be reached?
             // In remote development with Nvim running locally
             // Nvim can't detect if the file exists, so the user might not be able to use "!"
