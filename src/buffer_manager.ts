@@ -455,13 +455,19 @@ export class BufferManager implements Disposable {
         current_name: string;
         target_name: string;
     }) {
-        // Note: workspace.save and workspace.saveAs are smart enough to handle
-        // the documents that are not a real file (e.g. untitled, output, etc.)
-        // so we can just call them directly
+        // Note:
+        // 1. The approach here is to compute a generic relative file path using
+        //    Vim's data first, then integrate it with VSCode's working directory.
+        //    - Compute the relative-path using vim-target-filepath and vim-cwd.
+        //    - Compute the vscode-target-filepath using this relative-path and vscode-cwd.
+        //
+        // 2. workspace.save and workspace.saveAs are smart enough to handle the
+        //    documents that are not a real file (e.g. untitled, output, etc.)
+        //    so we can just call them directly
 
         const document = this.getTextDocumentForBufferId(buf);
         if (document == null) {
-            throw new Error("Received an invalid buffer id from Neovim, cannot save");
+            throw new Error(`Cannot save buffer ${buf} - ${target_name}`);
         }
 
         const docUri = document.uri;
@@ -502,18 +508,13 @@ export class BufferManager implements Disposable {
             fileExists = false;
         }
 
-        if (fileExists) {
-            if (!bang) {
-                // When will this be reached?
-                // In remote development with Nvim running locally
-                // Nvim can't detect if the file exists, so the user might not be able to use "!"
-                const ret = await window.showErrorMessage(
-                    `File exists (add ! to override): ${saveUri.fsPath}`,
-                    "Override",
-                );
-                if (ret !== "Override") {
-                    return;
-                }
+        if (fileExists && !bang) {
+            // When will this be reached?
+            // In remote development with Nvim running locally
+            // Nvim can't detect if the file exists, so the user might not be able to use "!"
+            const ret = await window.showErrorMessage(`File exists (add ! to override): ${saveUri.fsPath}`, "Override");
+            if (ret !== "Override") {
+                return;
             }
         }
 

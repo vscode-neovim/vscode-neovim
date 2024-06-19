@@ -321,14 +321,13 @@ function M.init_document_buffer(data)
   -- set vscode controlled flag so we can check it neovim
   api.nvim_buf_set_var(buf, "vscode_controlled", true)
   -- In vscode same document can have different insertSpaces/tabSize settings
-  -- per editor
-  -- however in neovim it's per buffer. We make assumption here that these
-  -- settings are same for all editors
+  -- per editor; in Nvim it's per buffer. We assume here that these settings are
+  -- same for all editors.
   api.nvim_buf_set_var(buf, "vscode_editor_options", data.editor_options)
   api.nvim_buf_set_var(buf, "vscode_uri", data.uri)
   api.nvim_buf_set_var(buf, "vscode_uri_data", data.uri_data)
   -- force acwrite, which is similar to nofile, but will only be written via the
-  -- BufWriteCmd autocommand.
+  -- BufWriteCmd autocommand. #521 #1260
   api.nvim_buf_set_option(buf, "buftype", "acwrite")
   api.nvim_buf_set_option(buf, "buflisted", true)
   api.nvim_buf_set_option(buf, "modifiable", data.modifiable)
