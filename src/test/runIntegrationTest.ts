@@ -13,7 +13,7 @@ async function main(): Promise<void> {
 
         // Download VS Code, unzip it and run the integration test
         await runTests({
-            launchArgs: ["--disable-extensions"],
+            launchArgs: [".", "--disable-extensions"],
             extensionDevelopmentPath,
             extensionTestsPath,
             // Tell vscode-neovim to create a debug connection
