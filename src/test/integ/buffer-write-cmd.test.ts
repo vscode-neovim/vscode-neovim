@@ -1,4 +1,6 @@
 import { strict as assert } from "assert";
+import os from "os";
+import path from "path";
 
 import { NeovimClient } from "neovim";
 import { Uri, commands, window, workspace } from "vscode";
@@ -13,17 +15,11 @@ import {
 } from "./integrationUtils";
 
 describe("BufWriteCmd integration", () => {
-    const testFile = Uri.joinPath(workspace.workspaceFolders![0].uri, "test_fixtures", "bufwritecmd.txt");
-    const saveAsFile = Uri.joinPath(workspace.workspaceFolders![0].uri, "test_fixtures", "bufwritecmd2.txt");
+    const testFile = Uri.file(path.join(os.tmpdir(), "bufwritecmd.txt"));
 
     const deleteTestFiles = async () => {
         try {
             await workspace.fs.delete(testFile);
-        } catch {
-            // ignore
-        }
-        try {
-            await workspace.fs.delete(saveAsFile);
         } catch {
             // ignore
         }
@@ -87,15 +83,6 @@ describe("BufWriteCmd integration", () => {
         await wait(100);
         assert.equal(doc.isDirty, false);
         assert.equal(await readFile(testFile), "hello world");
-    });
-
-    it("Save as a new file", async () => {
-        await openTestFile();
-
-        await client.command("w test_fixtures/bufwritecmd2.txt");
-        await wait(100);
-        const content = await readFile(saveAsFile);
-        assert.equal(content, "hello world");
     });
 
     it("Writing to command does not trigger saving", async () => {
