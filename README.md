@@ -119,12 +119,16 @@ versions for the best experience. These can be found
 
 ### VSCode specific differences
 
--   File and editor management commands such as `:e`/`:w`/`:q`/`:vsplit`/`:tabnext`/etc are mapped to corresponding
-    VSCode commands and behavior may be different ([see below](#%EF%B8%8F--keybindings-shortcuts)).
-    -   **Do not** use vim commands like `:w` in scripts/keybindings, they won't work. If you're using them in some
+-   File and editor management commands such as `:e`/`:q`/`:vsplit`/`:tabnext`/etc are mapped to corresponding VSCode
+    commands and behavior may be different ([see below](#%EF%B8%8F--keybindings-shortcuts)).
+    -   **Do not** use vim commands like `:e` in scripts/keybindings, they won't work. If you're using them in some
         custom commands/mappings, you might need to rebind them to call VSCode commands from Neovim with
         `require('vscode').call()` (see [API](#%EF%B8%8F-api)).
--   When you type some commands they may be substituted for another, like `:write` will be replaced by `:Write`.
+    -   Since version 1.18.0, `:w`, `:wa` and `:sav` commands are supported and no longer alias to VSCode commands. You
+        can use them as you would in Neovim.
+-   When you type some commands they may be substituted for another, check
+    [AlterCommand](https://github.com/search?q=repo%3Avscode-neovim%2Fvscode-neovim%20AlterCommand&type=code) for the
+    list of substitutions.
 -   Scrolling is done by VSCode. <kbd>C-d</kbd>/<kbd>C-u</kbd>/etc are slightly different.
 -   Editor customization (relative line number, scrolloff, etc) is handled by VSCode.
 -   Dot-repeat (<kbd>.</kbd>) is slightly different - moving the cursor within a change range won't break the repeat.
@@ -793,8 +797,8 @@ visible, press K again to focus the hover widget.
 
 ### File management
 
-The extension aliases various Nvim commands (`:edit`, `:enew`, `:find`, `:write`, `:saveas`, `:wall`, `:quit`, etc.) to
-equivalent vscode commands. Also their normal-mode equivalents (where applicable) such as <kbd>C-w q</kbd>, etc.
+The extension aliases various Nvim commands (`:edit`, `:enew`, `:find`, `:quit`, etc.) to equivalent vscode commands.
+Also their normal-mode equivalents (where applicable) such as <kbd>C-w q</kbd>, etc.
 
 > 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
 
