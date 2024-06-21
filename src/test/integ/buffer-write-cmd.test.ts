@@ -1,5 +1,4 @@
 import { strict as assert } from "assert";
-import os from "os";
 import path from "path";
 
 import { NeovimClient } from "neovim";
@@ -26,7 +25,7 @@ describe("BufWriteCmd integration", () => {
     };
 
     const openTestFile = async () => {
-        const uri = Uri.file(path.join(os.tmpdir(), Math.random().toString(36).substring(7)));
+        const uri = Uri.file(path.join(process.cwd(), Math.random().toString(36).substring(7)));
         testFiles.push(uri);
         await workspace.fs.writeFile(uri, new TextEncoder().encode("hello world"));
         const doc = await workspace.openTextDocument(uri);
@@ -64,7 +63,7 @@ describe("BufWriteCmd integration", () => {
         assert.equal(doc.getText(), "hello earth");
 
         await client.command("w");
-        await wait(100);
+        await wait(200);
         assert.equal(doc.isDirty, false);
         assert.equal(await readFile(doc.uri), "hello earth");
     });
@@ -79,7 +78,7 @@ describe("BufWriteCmd integration", () => {
 
         await client.command("w !cat");
         // ↑May open the output panel
-        await wait(100);
+        await wait(200);
         await commands.executeCommand("workbench.action.closePanel");
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
