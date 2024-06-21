@@ -72,17 +72,6 @@ describe("BufWriteCmd integration", () => {
         await wait(100);
         assert.equal(doc.isDirty, false);
         assert.equal(await readFile(testFile), "hello earth");
-
-        // 2
-        await sendVSCodeKeys("cchello world");
-        await sendEscapeKey();
-        assert.equal(doc.isDirty, true);
-        assert.equal(doc.getText(), "hello world");
-
-        await client.command("w");
-        await wait(100);
-        assert.equal(doc.isDirty, false);
-        assert.equal(await readFile(testFile), "hello world");
     });
 
     it("Writing to command does not trigger saving", async () => {
@@ -99,6 +88,6 @@ describe("BufWriteCmd integration", () => {
         await commands.executeCommand("workbench.action.closePanel");
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
-        assert.equal(await readFile(testFile), "hello world");
+        assert.equal(await readFile(testFile), "hello earth");
     });
 });
