@@ -284,13 +284,13 @@ end
 
 --#region Buffer management
 
---- Implements :write and related commands, via buftype=acwrite. #521 #1260
----
+--- 1. Implements :write and related commands, via buftype=acwrite. #521 #1260
+--- 2. Syncs buffer modified status with vscode. #247
 local function set_buffer_autocmd(buf)
   api.nvim_create_autocmd({ "BufWriteCmd" }, {
     buffer = buf,
     callback = function(ev)
-      local current_name = vim.api.nvim_buf_get_name(ev.buf)
+      local current_name = api.nvim_buf_get_name(ev.buf)
       local target_name = ev.match
       local data = {
         buf = ev.buf,
@@ -299,6 +299,15 @@ local function set_buffer_autocmd(buf)
         target_name = target_name,
       }
       vscode.action("save_buffer", { args = { data } })
+    end,
+  })
+  api.nvim_create_autocmd({ "BufModifiedSet" }, {
+    buffer = buf,
+    callback = function(ev)
+      fn.VSCodeExtensionNotify("BufModifiedSet", {
+        buf = ev.buf,
+        modified = vim.bo[ev.buf].mod,
+      })
     end,
   })
 end

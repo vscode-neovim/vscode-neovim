@@ -149,6 +149,7 @@ export class BufferManager implements Disposable {
             eventBus.on("open-file", this.handleOpenFile, this),
             eventBus.on("external-buffer", this.handleExternalBuffer, this),
             eventBus.on("window-changed", ([winId]) => this.handleWindowChangedDebounced(winId)),
+            eventBus.on("BufModifiedSet", ([data]) => this.handleBufferModifiedSet(data)),
         );
         actions.add(
             "set_editor_options",
@@ -440,6 +441,15 @@ export class BufferManager implements Disposable {
             `,
             [states],
         );
+    }
+
+    // #247
+    private handleBufferModifiedSet({ buf, modified }: EventBusData<"BufModifiedSet">[0]) {
+        if (modified) return; // expected and we can't do anything about it
+        const doc = this.getTextDocumentForBufferId(buf);
+        if (doc && doc.isDirty && !doc.isUntitled && !doc.isClosed) {
+            doc.save();
+        }
     }
 
     private async handleSaveBuf({

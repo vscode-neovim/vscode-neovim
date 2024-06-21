@@ -343,9 +343,17 @@ export class DocumentChangeManager implements Disposable {
 
     private onChangeTextDocumentLocked = async (e: TextDocumentChangeEvent, origText: string): Promise<void> => {
         const { document: doc, contentChanges } = e;
-        const editor = window.visibleTextEditors.find((e) => e.document === doc);
-
         logger.log(doc.uri, LogLevel.Debug, `Change text document for uri: ${doc.uri.toString()}`);
+        const editor = window.visibleTextEditors.find((e) => e.document === doc);
+        const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
+        if (!bufId) {
+            logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri.toString()}`);
+            return;
+        }
+        // onDidChangeTextDocument is also triggered when dirty-state changes
+        // We should always sync dirty state with neovim
+        await this.client.request("nvim_buf_set_option", [bufId, "modified", doc.isDirty]);
+
         logger.log(
             doc.uri,
             LogLevel.Debug,
@@ -353,12 +361,6 @@ export class DocumentChangeManager implements Disposable {
         );
         if ((this.documentSkipVersionOnChange.get(doc) ?? 0) >= doc.version) {
             logger.log(doc.uri, LogLevel.Debug, `Skipping a change since versions equals`);
-            return;
-        }
-
-        const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
-        if (!bufId) {
-            logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri.toString()}`);
             return;
         }
 
@@ -402,6 +404,7 @@ export class DocumentChangeManager implements Disposable {
         if (editor) this.main.cursorManager.setWantInsertCursorUpdate(editor, false);
 
         await actions.lua("handle_changes", bufId, changeArgs);
+        await this.client.request("nvim_buf_set_option", [bufId, "modified", doc.isDirty]);
 
         // Mainly for the changes caused by some vscode commands in visual mode.
         // e.g. move line up/down

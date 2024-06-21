@@ -1,4 +1,8 @@
-import vscode from "vscode";
+import os from "os";
+import path from "path";
+import { strict as assert } from "assert";
+
+import vscode, { commands, window } from "vscode";
 import { NeovimClient } from "neovim";
 
 import {
@@ -190,5 +194,44 @@ describe("Undo", () => {
         await wait(500);
         await sendVSCodeKeys("u");
         await assertContent({ content: ["2"] }, client);
+    });
+
+    const checkDirtyStatus = async (expected: boolean) => {
+        await wait(100);
+        const modified = await client.lua("return vim.bo.mod");
+        const isDirty = window.activeTextEditor!.document.isDirty;
+        assert.deepEqual({ modified, isDirty }, { modified: expected, isDirty: expected });
+        await wait(100);
+    };
+
+    it("Should clear isDirty flag after undo all changes (Nvim)", async () => {
+        const uri = vscode.Uri.file(path.join(os.tmpdir(), Math.random().toString(36).substring(7)));
+        await vscode.workspace.fs.writeFile(uri, new Uint8Array(Buffer.from("aaa\nbbb\nccc")));
+        const doc = await vscode.workspace.openTextDocument(uri);
+        await vscode.window.showTextDocument(doc);
+        await checkDirtyStatus(false);
+        await sendVSCodeKeys("diw");
+        await checkDirtyStatus(true);
+        await sendVSCodeKeys("0jlx");
+        await checkDirtyStatus(true);
+        await sendVSCodeKeys("u");
+        await checkDirtyStatus(true);
+        await sendVSCodeKeys("u");
+        await checkDirtyStatus(false);
+        await assertContent({ content: ["aaa", "bbb", "ccc"] }, client);
+    });
+
+    it("Should reset modified flag after undo all changes (VSCode)", async () => {
+        const uri = vscode.Uri.file(path.join(os.tmpdir(), Math.random().toString(36).substring(7)));
+        await vscode.workspace.fs.writeFile(uri, new Uint8Array(Buffer.from("aaa")));
+        const doc = await vscode.workspace.openTextDocument(uri);
+        await vscode.window.showTextDocument(doc);
+        await checkDirtyStatus(false);
+        await sendVSCodeKeys("i test");
+        await sendEscapeKey();
+        await checkDirtyStatus(true);
+        await commands.executeCommand("undo");
+        await checkDirtyStatus(false);
+        await assertContent({ content: ["aaa"] }, client);
     });
 });
