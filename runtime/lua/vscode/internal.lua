@@ -284,6 +284,8 @@ end
 
 --#region Buffer management
 
+--- Implements :write and related commands, via buftype=acwrite. #521 #1260
+---
 local function set_buffer_autocmd(buf)
   api.nvim_create_autocmd({ "BufWriteCmd" }, {
     buffer = buf,
