@@ -15,15 +15,7 @@ import {
 } from "./integrationUtils";
 
 describe("BufWriteCmd integration", () => {
-    const testFile = Uri.file(path.join(os.tmpdir(), "bufwritecmd.txt"));
-
-    const deleteTestFiles = async () => {
-        try {
-            await workspace.fs.delete(testFile);
-        } catch {
-            // ignore
-        }
-    };
+    const testFiles: Uri[] = [];
 
     const readFile = async (uri: Uri): Promise<string | undefined> => {
         try {
@@ -34,8 +26,10 @@ describe("BufWriteCmd integration", () => {
     };
 
     const openTestFile = async () => {
-        await workspace.fs.writeFile(testFile, new TextEncoder().encode("hello world"));
-        const doc = await workspace.openTextDocument(testFile);
+        const uri = Uri.file(path.join(os.tmpdir(), Math.random().toString(36).substring(7)));
+        testFiles.push(uri);
+        await workspace.fs.writeFile(uri, new TextEncoder().encode("hello world"));
+        const doc = await workspace.openTextDocument(uri);
         assert.equal(doc.getText(), "hello world");
         await window.showTextDocument(doc);
         await sendEscapeKey();
@@ -47,22 +41,23 @@ describe("BufWriteCmd integration", () => {
         client = await attachTestNvimClient();
     });
     after(async () => {
+        for (const uri of testFiles) {
+            try {
+                await workspace.fs.delete(uri);
+            } catch {
+                // ignore
+            }
+        }
         await closeNvimClient(client);
         await closeAllActiveEditors();
     });
-    beforeEach(async () => {
-        await deleteTestFiles();
-        await closeAllActiveEditors();
-    });
     afterEach(async () => {
-        await deleteTestFiles();
         await closeAllActiveEditors();
     });
 
     it("Save", async () => {
         const doc = await openTestFile();
 
-        // 1
         await sendVSCodeKeys("cchello earth");
         await sendEscapeKey();
         assert.equal(doc.isDirty, true);
@@ -71,10 +66,10 @@ describe("BufWriteCmd integration", () => {
         await client.command("w");
         await wait(100);
         assert.equal(doc.isDirty, false);
-        assert.equal(await readFile(testFile), "hello earth");
+        assert.equal(await readFile(doc.uri), "hello earth");
     });
 
-    it("Writing to command does not trigger saving", async () => {
+    it("Writing to command should not trigger saving", async () => {
         const doc = await openTestFile();
 
         await sendVSCodeKeys("ccaaa");
@@ -88,6 +83,6 @@ describe("BufWriteCmd integration", () => {
         await commands.executeCommand("workbench.action.closePanel");
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
-        assert.equal(await readFile(testFile), "hello earth");
+        assert.equal(await readFile(doc.uri), "hello world");
     });
 });
