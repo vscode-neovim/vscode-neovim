@@ -30,7 +30,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, convertByteNumToCharNum, disposeAll, wait } from "./utils";
+import { ManualPromise, convertByteNumToCharNum, disposeAll, fileExists, wait } from "./utils";
 
 // NOTE: document and editors in vscode events and namespace are reference stable
 // Integration notes:
@@ -142,6 +142,7 @@ export class BufferManager implements Disposable {
             window.onDidChangeActiveTextEditor(this.onEditorLayoutChanged),
             workspace.onDidCloseTextDocument(this.onEditorLayoutChanged),
             workspace.onDidCloseNotebookDocument(this.onEditorLayoutChanged),
+            workspace.onDidSaveTextDocument(() => this.syncDocumentDirtyState()),
             window.onDidChangeTextEditorOptions((e) => this.onDidChangeEditorOptions(e.textEditor)),
             workspace.registerTextDocumentContentProvider(BUFFER_SCHEME, this.bufferProvider),
             eventBus.on("redraw", this.handleRedraw, this),
@@ -173,6 +174,8 @@ export class BufferManager implements Disposable {
                 editor.options = { tabSize, insertSpaces, lineNumbers };
             },
         );
+
+        actions.add("save_buffer", (data) => this.handleSaveBuf(data));
     }
 
     public dispose(): void {
@@ -266,9 +269,7 @@ export class BufferManager implements Disposable {
             } else {
                 const normalizedName = fileName.trim();
                 let uri = Uri.from({ scheme: "file", path: this.findPathFromFileName(normalizedName) });
-                try {
-                    await workspace.fs.stat(uri);
-                } catch {
+                if (!(await fileExists(uri))) {
                     uri = Uri.from({ scheme: "untitled", path: normalizedName });
                     // Why notebook?
                     // Limitations with TextDocument, specifically when there is no active
@@ -424,6 +425,104 @@ export class BufferManager implements Disposable {
     };
 
     private handleWindowChangedDebounced = debounce(this.handleWindowChanged, 100, { leading: false, trailing: true });
+
+    private async syncDocumentDirtyState(): Promise<void> {
+        const states = Array.from(this.textDocumentToBufferId.entries()).map(([doc, bufId]) => ({
+            buf: bufId,
+            modified: doc.isDirty,
+        }));
+        await this.client.lua(
+            `
+            local states = ...
+            for _, state in ipairs(states) do
+                vim.bo[state.buf].modified = state.modified
+            end
+            `,
+            [states],
+        );
+    }
+
+    private async handleSaveBuf({
+        buf,
+        bang,
+        current_name,
+        target_name,
+    }: {
+        buf: number;
+        bang: boolean;
+        current_name: string;
+        target_name: string;
+    }) {
+        // Note:
+        // 1. The approach here is to compute a generic relative file path using
+        //    Vim's data first, then integrate it with VSCode's working directory.
+        //    - Compute the relative-path using vim-target-filepath and vim-cwd.
+        //    - Compute the vscode-target-filepath using this relative-path and vscode-cwd.
+        //
+        // 2. workspace.save and workspace.saveAs are smart enough to handle the
+        //    documents that are not a real file (e.g. untitled, output, etc.)
+        //    so we can just call them directly
+
+        const document = this.getTextDocumentForBufferId(buf);
+        if (document == null) {
+            throw new Error(`Cannot save buffer ${buf} - ${target_name}`);
+        }
+
+        const docUri = document.uri;
+
+        if (document.isUntitled) {
+            await workspace.save(docUri);
+            return;
+        }
+
+        // If using Windows locally and developing on a Unix remote environment,
+        // the saved path can contain backslashes, causing folders to be treated as filenames.
+        const normalize = (p: string) => path.normalize(p).split(path.sep).join(path.posix.sep);
+
+        const currentPath = normalize(current_name);
+        const targetPath = normalize(target_name);
+
+        if (currentPath === targetPath) {
+            await workspace.save(docUri);
+            return;
+        }
+
+        const vimCwd = normalize(await this.main.client.call("getcwd"));
+        const relativePath = normalize(path.relative(vimCwd, targetPath));
+
+        if (relativePath === targetPath) {
+            // Who wanna do this rare thing?
+            // e.g. cwd: c:/a, target: d:/b.txt
+            await workspace.saveAs(docUri);
+            return;
+        }
+
+        const workspaceFolder = workspace.getWorkspaceFolder(docUri);
+        if (!workspaceFolder) {
+            // Let the user choose the save location
+            // Otherwise, we would have to do too much guessing
+            await workspace.saveAs(docUri);
+            return;
+        }
+        const saveUri = Uri.joinPath(workspaceFolder.uri, relativePath);
+        if ((await fileExists(saveUri)) && !bang) {
+            // When will this be reached?
+            // In remote development with Nvim running locally
+            // Nvim can't detect if the file exists, so the user might not be able to use "!"
+            const ret = await window.showErrorMessage(`File exists (add ! to override): ${saveUri.fsPath}`, "Override");
+            if (ret !== "Override") {
+                return;
+            }
+        }
+
+        logger.debug(`Saving ${docUri} to ${saveUri}`);
+
+        const text = document.getText();
+        const bytes = new TextEncoder().encode(text);
+        await workspace.fs.writeFile(saveUri, bytes);
+        const doc = await workspace.openTextDocument(saveUri);
+        await window.showTextDocument(doc);
+    }
 
     // #region Sync layout
 
@@ -607,54 +706,39 @@ export class BufferManager implements Disposable {
      */
     private async initBufferForDocument(document: TextDocument, buffer: Buffer, editor?: TextEditor): Promise<void> {
         const bufId = buffer.id;
-        const { uri: docUri } = document;
-        logger.log(docUri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${docUri}`);
+        logger.log(document.uri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${document.uri}`);
 
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const lines = document.getText().split(eol);
-        // We don't care about the name of the buffer if it's not a file
-        const bufname =
-            docUri.scheme === "file"
-                ? config.useWsl
-                    ? await actions.lua("wslpath", docUri.fsPath)
-                    : docUri.fsPath
-                : docUri.toString();
+        const bufname = await this.bufnameForTextDocument(document);
 
-        await this.client.lua(
-            `
-            local bufId, lines, vscode_editor_options, docUri, docUriJson, bufname, isExternalDoc = ...
-            vim.api.nvim_buf_set_lines(bufId, 0, -1, false, lines)
-            -- set vscode controlled flag so we can check it neovim
-            vim.api.nvim_buf_set_var(bufId, "vscode_controlled", true)
-            -- In vscode same document can have different insertSpaces/tabSize settings per editor
-            -- however in neovim it's per buffer. We make assumption here that these settings are same for all editors
-            vim.api.nvim_buf_set_var(bufId, "vscode_editor_options", vscode_editor_options)
-            vim.api.nvim_buf_set_var(bufId, "vscode_uri", docUri)
-            vim.api.nvim_buf_set_var(bufId, "vscode_uri_data", docUriJson)
-            vim.api.nvim_buf_set_name(bufId, bufname)
-            vim.api.nvim_buf_set_option(bufId, "modifiable", not isExternalDoc)
-            -- force nofile, just in case if the buffer was created externally
-            vim.api.nvim_buf_set_option(bufId, "buftype", "nofile")
-            vim.api.nvim_buf_set_option(bufId, "buflisted", true)
-        `,
-            [
-                bufId,
-                lines,
-                makeEditorOptionsVariable(editor?.options),
-                docUri.toString(),
-                docUri.toJSON(),
-                bufname,
-                this.isExternalTextDocument(document),
-            ],
-        );
+        await actions.lua("init_document_buffer", {
+            buf: bufId,
+            bufname: bufname,
+            lines: lines,
+            uri: document.uri.toString(),
+            uri_data: document.uri.toJSON(),
+            editor_options: makeEditorOptionsVariable(editor?.options),
+            modifiable: !this.isExternalTextDocument(document),
+            modified: document.isDirty,
+        });
 
         // Looks like need to be in separate request
         if (!this.isExternalTextDocument(document)) {
-            await this.client.callFunction("VSCodeClearUndo", bufId);
+            await actions.lua("clear_undo", bufId);
         }
         this.onBufferInit?.(bufId, document);
         buffer.listen("lines", this.receivedBufferEvent);
         actions.fireNvimEvent("document_buffer_init", bufId);
+    }
+
+    private async bufnameForTextDocument(doc: TextDocument): Promise<string> {
+        const uri = doc.uri;
+        if (uri.scheme === "file") {
+            return config.useWsl ? actions.lua<string>("wslpath", uri.fsPath) : uri.fsPath;
+        }
+        // We don't care about the name of the buffer if it's not a file
+        return uri.toString();
     }
 
     /**
