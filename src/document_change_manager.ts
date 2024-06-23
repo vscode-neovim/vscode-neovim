@@ -343,24 +343,22 @@ export class DocumentChangeManager implements Disposable {
 
     private onChangeTextDocumentLocked = async (e: TextDocumentChangeEvent, origText: string): Promise<void> => {
         const { document: doc, contentChanges } = e;
-        logger.log(doc.uri, LogLevel.Debug, `Change text document for uri: ${doc.uri.toString()}`);
+        logger.log(doc.uri, LogLevel.Debug, `Change text document for: ${doc.uri}`);
         const editor = window.visibleTextEditors.find((e) => e.document === doc);
         const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
         if (!bufId) {
-            logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri.toString()}`);
+            logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri}`);
             return;
         }
         // onDidChangeTextDocument is also triggered when dirty-state changes
         // We should always sync dirty state with neovim
-        await this.client.request("nvim_buf_set_option", [bufId, "modified", doc.isDirty]);
+        const setModified = () => this.client.request("nvim_buf_set_option", [bufId, "modified", doc.isDirty]);
 
-        logger.log(
-            doc.uri,
-            LogLevel.Debug,
-            `Version: ${doc.version}, skipVersion: ${this.documentSkipVersionOnChange.get(doc)}`,
-        );
-        if ((this.documentSkipVersionOnChange.get(doc) ?? 0) >= doc.version) {
+        const skipVersion = this.documentSkipVersionOnChange.get(doc) ?? 0;
+        logger.log(doc.uri, LogLevel.Debug, `Version: ${doc.version}, skipVersion: ${skipVersion}`);
+        if (skipVersion >= doc.version) {
             logger.log(doc.uri, LogLevel.Debug, `Skipping a change since versions equals`);
+            await setModified();
             return;
         }
 
@@ -404,7 +402,7 @@ export class DocumentChangeManager implements Disposable {
         if (editor) this.main.cursorManager.setWantInsertCursorUpdate(editor, false);
 
         await actions.lua("handle_changes", bufId, changeArgs);
-        await this.client.request("nvim_buf_set_option", [bufId, "modified", doc.isDirty]);
+        !doc.isDirty && (await setModified());
 
         // Mainly for the changes caused by some vscode commands in visual mode.
         // e.g. move line up/down
