@@ -25,38 +25,55 @@ interface IRedrawEventArg<N, A extends unknown[] = []> {
 }
 
 type RedrawEventArgs =
-    | IRedrawEventArg<"win_close", [number]> // ["win_close", grid]
-    // ["win_external_pos", grid, win]
-    | IRedrawEventArg<"win_external_pos", [number, neovim.Window]>
-    // ["win_pos", grid, win, start_row, start_col, width, height]
-    | IRedrawEventArg<"win_pos", [number, neovim.Window, number, number, number, number]>
-    // ["win_viewport", grid, win, topline, botline, curline, curcol, line_count, scroll_delta]
-    | IRedrawEventArg<"win_viewport", [number, neovim.Window, number, number, number, number, number, number]>
-    // ["grid_resize", grid, width, height]
-    | IRedrawEventArg<"grid_resize", [number, number, number]>
-    // ["grid_line", grid, row, col_start, cells, wrap]
-    | IRedrawEventArg<"grid_line", [number, number, number, [string, number, number][], boolean]>
-    //   ["grid_scroll", grid, top, bot, left, right, rows, cols]
-    | IRedrawEventArg<"grid_scroll", [number, number, number, number, number, number, number]>
-    // ["grid_cursor_goto", grid, row, column]
-    | IRedrawEventArg<"grid_cursor_goto", [number, number, number]>
-    // ["grid_destroy", grid]
-    | IRedrawEventArg<"grid_destroy", [number]>
-    // ["hl_attr_define", id, rgb_attr, cterm_attr, info]
+    | IRedrawEventArg<"win_close", [grid: number]>
+    | IRedrawEventArg<"win_external_pos", [grid: number, win: neovim.Window]>
+    | IRedrawEventArg<
+          "win_pos",
+          [grid: number, win: neovim.Window, start_row: number, start_col: number, width: number, height: number]
+      >
+    | IRedrawEventArg<
+          "win_viewport",
+          [
+              grid: number,
+              win: neovim.Window,
+              topline: number,
+              botline: number,
+              curline: number,
+              curcol: number,
+              line_count: number,
+              scroll_delta: number,
+          ]
+      >
+    | IRedrawEventArg<"grid_resize", [grid: number, width: number, height: number]>
+    | IRedrawEventArg<
+          "grid_line",
+          [
+              grid: number,
+              row: number,
+              colr_start: number,
+              cells: [text: string, hl_id?: number, repeat?: number][],
+              wrap: boolean,
+          ]
+      >
+    | IRedrawEventArg<
+          "grid_scroll",
+          [grid: number, top: number, bot: number, left: number, right: number, rows: number, cols: number]
+      >
+    | IRedrawEventArg<"grid_cursor_goto", [grid: number, row: number, column: number]>
+    | IRedrawEventArg<"grid_destroy", [grid: number]>
     | IRedrawEventArg<
           "hl_attr_define",
           [
-              number,
-              VimHighlightUIAttributes,
-              never,
-              [{ kind: "ui" | "syntax" | "terminal"; ui_name: string; hi_name: string }],
+              hl_id: number,
+              rgb_attr: VimHighlightUIAttributes,
+              cterm_attr: never,
+              info: [{ kind: "ui" | "syntax" | "terminal"; ui_name: string; hi_name: string }],
           ]
       >
-    // ["msg_show", kind, content, replace_last]
     | IRedrawEventArg<
           "msg_show",
           [
-              (
+              kind:
                   | ""
                   | "confirm"
                   | "confirm_sub"
@@ -69,36 +86,37 @@ type RedrawEventArgs =
                   | "return_prompt"
                   | "quickfix"
                   | "search_count"
-                  | "wmsg"
-              ),
-              [number, string][],
-              boolean,
+                  | "wmsg",
+              content: [number, string][],
+              replace_last: boolean,
           ]
       >
-    // ["msg_showcmd", content]
-    | IRedrawEventArg<"msg_showcmd", [[number, string][]]>
-    // ["msg_showmode", content]
-    | IRedrawEventArg<"msg_showmode", [[number, string][]]>
-    // ["msg_ruler", content]
-    | IRedrawEventArg<"msg_ruler", [[number, string][]]>
-    // ["mode_info_set", cursor_style_enabled, mode_info]
-    | IRedrawEventArg<"mode_info_set", [boolean, { name: string; cursor_shape: "block" | "horizontal" | "vertical" }[]]>
+    | IRedrawEventArg<"msg_showcmd", [content: [number, string][]]>
+    | IRedrawEventArg<"msg_showmode", [content: [number, string][]]>
+    | IRedrawEventArg<"msg_ruler", [content: [number, string][]]>
+    | IRedrawEventArg<
+          "mode_info_set",
+          [
+              cursor_style_enabled: boolean,
+              mode_info: { name: string; cursor_shape: "block" | "horizontal" | "vertical" }[],
+          ]
+      >
     // ["msg_history_show", entries]
     | IRedrawEventArg<"msg_history_show", [string, [number, string][]][][]>
-    // ["msg_clear"]
     | IRedrawEventArg<"msg_clear">
-    // ["mode_change", mode, mode_idx]
-    | IRedrawEventArg<"mode_change", [string, number]>
-    // ["cmdline_show", content, pos, firstc, prompt, indent, level]
-    | IRedrawEventArg<"cmdline_show", [[object, string][], number, string, string, number, number]>
-    // ["cmdline_hide"]
+    | IRedrawEventArg<"mode_change", [mode: string, mode_idx: number]>
+    | IRedrawEventArg<
+          "cmdline_show",
+          [content: [object, string][], pos: number, firstc: string, prompt: string, indent: number, level: number]
+      >
     | IRedrawEventArg<"cmdline_hide">
-    // ["mouse_on"]
     | IRedrawEventArg<"mouse_on">
-    // ["mouse_off"]
     | IRedrawEventArg<"mouse_off">
-    | IRedrawEventArg<"popupmenu_show", [[string, string, string, string][], number, number, number, number]>
-    | IRedrawEventArg<"popupmenu_select", [number]>
+    | IRedrawEventArg<
+          "popupmenu_show",
+          [items: [string, string, string, string][], selected: number, row: number, col: number, grid: number]
+      >
+    | IRedrawEventArg<"popupmenu_select", [selected: number]>
     | IRedrawEventArg<"popupmenu_hide">;
 // #endregion
 
@@ -113,17 +131,17 @@ type EventsMapping = {
     redraw: RedrawEventArgs;
     // custom
     ["flush-redraw"]: [];
-    ["open-file"]: [string, 1 | 0 | "all"];
-    ["external-buffer"]: [BufferInfo, 1 | 0, number];
-    ["window-changed"]: [number];
-    ["mode-changed"]: [string];
+    ["open-file"]: [fileName: string, close: 1 | 0 | "all"];
+    ["external-buffer"]: [info: BufferInfo, expandtab: 1 | 0, tabstop: number];
+    ["window-changed"]: [winId: number];
+    ["mode-changed"]: [mode: string];
     ["notify-recording"]: undefined;
     reveal: ["center" | "top" | "bottom", boolean];
     ["move-cursor"]: ["top" | "middle" | "bottom"];
     scroll: ["page" | "halfPage", "up" | "down"];
     ["scroll-line"]: ["up" | "down"];
     ["viewport-changed"]: [
-        {
+        viewport: {
             // All positions are 0-based
             winid: number;
             bufnr: number;
@@ -138,8 +156,8 @@ type EventsMapping = {
             skipcol: number;
         },
     ];
-    ["visual-changed"]: [number];
-    ["statusline"]: [string];
+    ["visual-changed"]: [winId: number];
+    ["statusline"]: [statusline: string];
 };
 
 export interface Event<T extends keyof EventsMapping = keyof EventsMapping> {
