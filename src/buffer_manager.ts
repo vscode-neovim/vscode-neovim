@@ -445,7 +445,7 @@ export class BufferManager implements Disposable {
 
     // #247
     private handleBufferModifiedSet({ buf, modified }: EventBusData<"BufModifiedSet">[0]) {
-        if (modified) return; // expected and we can't do anything about it
+        if (modified) return; // This was received because we modified the buffer; this is expected.
         const doc = this.getTextDocumentForBufferId(buf);
         if (doc && doc.isDirty && !doc.isUntitled && !doc.isClosed) {
             doc.save();
