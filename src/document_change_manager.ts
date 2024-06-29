@@ -350,15 +350,20 @@ export class DocumentChangeManager implements Disposable {
             logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri}`);
             return;
         }
-        // onDidChangeTextDocument is also triggered when dirty-state changes
-        // We should always sync dirty state with neovim
-        const setModified = () => this.client.request("nvim_buf_set_option", [bufId, "modified", doc.isDirty]);
+
+        // Avoid manually setting modified to prevent issues with Neovim's modified management
+        // 1. VSCode may trigger a dirty change before a content change
+        // 2. If content changes and dirty is true, it will be automatically set
+        //    when syncing the content change to Neovim
+        const isDirtyStateChange = contentChanges.length === 0;
+        if (isDirtyStateChange && !doc.isDirty) {
+            await this.client.request("nvim_buf_set_option", [bufId, "modified", false]);
+        }
 
         const skipVersion = this.documentSkipVersionOnChange.get(doc) ?? 0;
         logger.log(doc.uri, LogLevel.Debug, `Version: ${doc.version}, skipVersion: ${skipVersion}`);
         if (skipVersion >= doc.version) {
             logger.log(doc.uri, LogLevel.Debug, `Skipping a change since versions equals`);
-            await setModified();
             return;
         }
 
@@ -402,7 +407,6 @@ export class DocumentChangeManager implements Disposable {
         if (editor) this.main.cursorManager.setWantInsertCursorUpdate(editor, false);
 
         await actions.lua("handle_changes", bufId, changeArgs);
-        !doc.isDirty && (await setModified());
 
         // Mainly for the changes caused by some vscode commands in visual mode.
         // e.g. move line up/down
