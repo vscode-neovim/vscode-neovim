@@ -342,7 +342,7 @@ function M.init_document_buffer(data)
   api.nvim_buf_set_option(buf, "buftype", "acwrite")
   api.nvim_buf_set_option(buf, "buflisted", true)
   api.nvim_buf_set_option(buf, "modifiable", data.modifiable)
-  api.nvim_buf_set_option(buf, "modified", false)
+  api.nvim_buf_set_option(buf, "modified", data.modified)
 
   set_buffer_autocmd(buf)
 end
