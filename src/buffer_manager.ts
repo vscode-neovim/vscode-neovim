@@ -11,6 +11,7 @@ import {
     EventEmitter,
     LogLevel,
     NotebookDocument,
+    ProgressLocation,
     Selection,
     TextDocument,
     TextDocumentContentProvider,
@@ -30,7 +31,7 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, convertByteNumToCharNum, disposeAll, fileExists, wait } from "./utils";
+import { ManualPromise, Progress, convertByteNumToCharNum, disposeAll, fileExists, wait } from "./utils";
 
 // NOTE: document and editors in vscode events and namespace are reference stable
 // Integration notes:
@@ -89,6 +90,10 @@ export class BufferManager implements Disposable {
      * Indicates if the layout is outdated
      */
     private isLayoutOutdated = false;
+    /**
+     * Progress for layout synchronization
+     */
+    private syncLayoutProgress = new Progress();
 
     /**
      * Text documents originated externally, as consequence of neovim command, like :help or :PlugStatus
@@ -548,6 +553,13 @@ export class BufferManager implements Disposable {
 
     private syncEditorLayout = async (): Promise<void> => {
         this.isSyncingLayout = true;
+        this.syncLayoutProgress.start(
+            {
+                title: "Syncing layout",
+                location: ProgressLocation.Notification,
+            },
+            3000,
+        );
         try {
             while (this.isLayoutOutdated) {
                 this.isLayoutOutdated = false;
@@ -557,17 +569,21 @@ export class BufferManager implements Disposable {
                 const activeEditor = window.activeTextEditor;
 
                 if (token?.isCancellationRequested) continue;
+                this.syncLayoutProgress.report("Cleaning up windows and buffers");
                 await this.cleanupWindowsAndBuffers(visibleEditors);
 
                 if (token?.isCancellationRequested) continue;
+                this.syncLayoutProgress.report("Syncing visible editors");
                 await this.syncVisibleEditors(visibleEditors);
 
                 if (token?.isCancellationRequested) continue;
+                this.syncLayoutProgress.report("Syncing active editor");
                 await this.syncActiveEditor(activeEditor);
             }
         } catch (e) {
             logger.error("Error syncing layout:", e);
         } finally {
+            this.syncLayoutProgress.done();
             this.isSyncingLayout = false;
             this.syncLayoutPromise?.resolve();
             this.syncLayoutPromise = undefined;
