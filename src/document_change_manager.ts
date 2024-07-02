@@ -343,22 +343,27 @@ export class DocumentChangeManager implements Disposable {
 
     private onChangeTextDocumentLocked = async (e: TextDocumentChangeEvent, origText: string): Promise<void> => {
         const { document: doc, contentChanges } = e;
+        logger.log(doc.uri, LogLevel.Debug, `Change text document for: ${doc.uri}`);
         const editor = window.visibleTextEditors.find((e) => e.document === doc);
-
-        logger.log(doc.uri, LogLevel.Debug, `Change text document for uri: ${doc.uri.toString()}`);
-        logger.log(
-            doc.uri,
-            LogLevel.Debug,
-            `Version: ${doc.version}, skipVersion: ${this.documentSkipVersionOnChange.get(doc)}`,
-        );
-        if ((this.documentSkipVersionOnChange.get(doc) ?? 0) >= doc.version) {
-            logger.log(doc.uri, LogLevel.Debug, `Skipping a change since versions equals`);
+        const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
+        if (!bufId) {
+            logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri}`);
             return;
         }
 
-        const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
-        if (!bufId) {
-            logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri.toString()}`);
+        // Avoid manually setting modified to prevent issues with Neovim's modified management
+        // 1. VSCode may trigger a dirty change before a content change
+        // 2. If content changes and dirty is true, it will be automatically set
+        //    when syncing the content change to Neovim
+        const isDirtyStateChange = contentChanges.length === 0;
+        if (isDirtyStateChange && !doc.isDirty) {
+            await this.client.request("nvim_buf_set_option", [bufId, "modified", false]);
+        }
+
+        const skipVersion = this.documentSkipVersionOnChange.get(doc) ?? 0;
+        logger.log(doc.uri, LogLevel.Debug, `Version: ${doc.version}, skipVersion: ${skipVersion}`);
+        if (skipVersion >= doc.version) {
+            logger.log(doc.uri, LogLevel.Debug, `Skipping a change since versions equals`);
             return;
         }
 

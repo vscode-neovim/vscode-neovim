@@ -158,6 +158,7 @@ type EventsMapping = {
     ];
     ["visual-changed"]: [winId: number];
     ["statusline"]: [statusline: string];
+    ["BufModifiedSet"]: [{ buf: number; modified: boolean }];
 };
 
 export interface Event<T extends keyof EventsMapping = keyof EventsMapping> {
