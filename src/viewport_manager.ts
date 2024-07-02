@@ -12,12 +12,8 @@ import {
 import actions from "./actions";
 import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
-import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { ManualPromise, disposeAll } from "./utils";
-
-const logger = createLogger("ViewportManager");
-
 // all 0-indexed
 export class Viewport {
     line = 0; // current line
@@ -68,10 +64,7 @@ export class ViewportManager implements Disposable {
         this.viewportChangedPromise = undefined;
 
         const gridId = this.main.bufferManager.getGridIdForWinId(winid);
-        if (!gridId) {
-            logger.warn(`Unable to update scrolled view. No grid for winId: ${winid}`);
-            return;
-        }
+        if (!gridId) return;
 
         this.viewportChangedPromise = new ManualPromise();
 
