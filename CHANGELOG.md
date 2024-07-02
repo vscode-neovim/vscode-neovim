@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.18.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.2...v1.18.0) (2024-07-02)
+
+
+### Features
+
+* **buffer:** sync dirty buffer state ([#2127](https://github.com/vscode-neovim/vscode-neovim/issues/2127)) ([61f4e4f](https://github.com/vscode-neovim/vscode-neovim/commit/61f4e4f842d7a7a559b60e7e82f3acb26c908abb))
+* Integrate BufWriteCmd for "write" command ([#2116](https://github.com/vscode-neovim/vscode-neovim/issues/2116)) ([8606eb1](https://github.com/vscode-neovim/vscode-neovim/commit/8606eb183a420223c0fc102639b8b3ad753cfecb))
+
+
+### Refactor
+
+* Use labeled tuple elements for event data types ([#2129](https://github.com/vscode-neovim/vscode-neovim/issues/2129)) ([08e973d](https://github.com/vscode-neovim/vscode-neovim/commit/08e973d20e93835416c3c5a7bd3a81239c02d213))
+
 ## [1.17.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.1...v1.17.2) (2024-06-15)
 
 
