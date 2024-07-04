@@ -278,7 +278,7 @@ export abstract class VSCodeContext {
 /**
  * Represents a progress indicator in VSCode.
  */
-export class Progress {
+export class Progress implements Disposable {
     private startTimer?: NodeJS.Timeout;
     private promise?: ManualPromise;
     private progress?: VSCodeProgress<{ message?: string }>;
@@ -333,5 +333,9 @@ export class Progress {
         clearTimeout(this.startTimer);
         this.startTimer = undefined;
         this.message = undefined;
+    }
+
+    public dispose() {
+        this.done();
     }
 }

@@ -93,7 +93,7 @@ export class BufferManager implements Disposable {
     /**
      * Progress for layout synchronization
      */
-    private syncLayoutProgress = new Progress();
+    private syncLayoutProgress!: Progress;
 
     /**
      * Text documents originated externally, as consequence of neovim command, like :help or :PlugStatus
@@ -142,7 +142,9 @@ export class BufferManager implements Disposable {
 
     public constructor(private main: MainController) {
         this.bufferProvider = new BufferProvider(this.client, this.receivedBufferEvent);
+        this.syncLayoutProgress = new Progress();
         this.disposables.push(
+            this.syncLayoutProgress,
             window.onDidChangeVisibleTextEditors(this.onEditorLayoutChanged),
             window.onDidChangeActiveTextEditor(this.onEditorLayoutChanged),
             workspace.onDidCloseTextDocument(this.onEditorLayoutChanged),

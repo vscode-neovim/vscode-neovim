@@ -79,7 +79,7 @@ export class DocumentChangeManager implements Disposable {
     /**
      * Represents the progress of applying edits.
      */
-    private applyingEditsProgress = new Progress();
+    private applyingEditsProgress!: Progress;
     /**
      * Lock edits being sent to neovim
      */
@@ -92,7 +92,8 @@ export class DocumentChangeManager implements Disposable {
     public constructor(private main: MainController) {
         this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
         this.main.bufferManager.onBufferInit = this.onBufferInit;
-        this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));
+        this.applyingEditsProgress = new Progress();
+        this.disposables.push(this.applyingEditsProgress, workspace.onDidChangeTextDocument(this.onChangeTextDocument));
     }
 
     public dispose(): void {
