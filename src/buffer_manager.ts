@@ -187,6 +187,7 @@ export class BufferManager implements Disposable {
     }
 
     public dispose(): void {
+        this.syncLayoutSource?.dispose();
         disposeAll(this.disposables);
     }
 
