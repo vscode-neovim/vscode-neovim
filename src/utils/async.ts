@@ -1,10 +1,5 @@
 export function findLastEvent(name: string, batch: [string, ...unknown[]][]): [string, ...unknown[]] | undefined {
-    for (let i = batch.length - 1; i >= 0; i--) {
-        const [event] = batch[i];
-        if (event === name) {
-            return batch[i];
-        }
-    }
+    return batch.findLast(([event]) => event === name);
 }
 
 /**
