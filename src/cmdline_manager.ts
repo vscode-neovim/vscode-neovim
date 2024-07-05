@@ -214,7 +214,7 @@ export class CommandLineManager implements Disposable {
         if (batch !== null) {
             logger.debug("onHide: flushing events");
             batch.forEach((event) => {
-                // Process the events we were waiting for
+                // Process the events we we're waiting for
                 this.handleRedrawEvent(event);
             });
         }

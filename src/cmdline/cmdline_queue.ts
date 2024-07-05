@@ -3,25 +3,23 @@ import { type EventBusData } from "../eventBus";
 /**
  * A queue for "batching" cmdline events.
  *
- * In the most simple cases, events will simply be passed through and not queued. However, there is a more complicated=
- * case we must deal with. There is an inherent "race condition" (NB: it's not really a race condition, rather a result
- * of how the JS event loop works, but it's easiest to think of it as a race) between quickpick hide events and cmdline_* events from nvim. If there is a
- * cmdline_hide, followed immediately by a cmdline_show, we may call hide() on the quickpick, but onHide will not
- * be fired until our event handlers have completed execution, leading to bizarre and confusing states. As such,
- * we "queue" events until we know for sure that the quickpick has bene hidden, and then allow them to be flushed back
- * to the cmdline_manager.
+ * In most cases (simple command-line usage like :w<CR>), events will be passed through and not queued. However, in more
+ * complicated cases, we need to take "batch" different cmdline events. Due to how the JS event loop works, VSCode's
+ * QuickPick onHide event will not execute until after we have processed all of our events, even if they belong to
+ * different instances of the cmdline. Worse, an onHide may even precede our cmdline_hide. As such, we queue up
+ * batches of events to retransmit back to the CmdlineManager.
  */
 export class CmdlineQueue {
     private pendingBatches: EventBusData<"redraw">[][] = [];
     private needFlush: boolean = false;
-    private level: number | null = null;
+    private lastSeenLevel: number | null = null;
 
     /**
-     * Given a newovim event, checks whether or not the caller should handle
-     * this event. If this returns false, the event is enqueued for later re-emission.
+     * Given an nvim redraw event, checks whether or not the caller should handle this event. If this returns false, the
+     * event is enqueued for a future call to `flushBatch`
      *
-     * @param event
-     * @returns
+     * @param event The redraw event received from nvim
+     * @returns Whether or not this event should be processed immediately
      */
     handleNvimRedrawEvent(event: EventBusData<"redraw">): boolean {
         const shouldProcess = !this.needFlush;
@@ -31,8 +29,9 @@ export class CmdlineQueue {
 
         if (event.name === "cmdline_show") {
             const [_content, _pos, _firstc, _prompt, _indent, level] = event.args[0];
-            this.level = level;
-        } else if (event.name === "cmdline_hide" && this.level === 1) {
+            this.lastSeenLevel = level;
+        } else if (event.name === "cmdline_hide" && this.lastSeenLevel === 1) {
+            // Only make a new batch when we're preforming a hide for a known level 1 cmdline
             this.prepareBatch();
         }
 
@@ -47,7 +46,7 @@ export class CmdlineQueue {
     flushBatch(): EventBusData<"redraw">[] | null {
         const result = this.pendingBatches.shift() ?? null;
         this.needFlush = false;
-        this.level = null;
+        this.lastSeenLevel = null;
 
         return result;
     }
@@ -55,13 +54,12 @@ export class CmdlineQueue {
     private prepareBatch() {
         this.pendingBatches.push([]);
         this.needFlush = true;
-        this.level = null;
+        this.lastSeenLevel = null;
     }
 
     private addToBatch(event: EventBusData<"redraw">) {
         if (this.pendingBatches.length === 0) {
-            // No batch to add this to. We can't safely assume we should make a new batch (but this should
-            // never happen)
+            // No batch to add this to. We can't safely assume we should make a new batch (but this should never happen)
             throw new Error("Invalid cmdline state");
         }
 
