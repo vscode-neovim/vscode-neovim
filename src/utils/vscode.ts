@@ -5,17 +5,21 @@ import {
     Disposable,
     EndOfLine,
     Position,
+    Progress as VSCodeProgress,
     Range,
     Selection,
     TextDocument,
     TextDocumentContentChangeEvent,
     TextEditor,
     commands,
+    ProgressOptions as VSCodeProgressOptions,
+    window,
 } from "vscode";
 
 import { config } from "../config";
 
 import { convertByteNumToCharNum, convertCharNumToByteNum } from "./text";
+import { ManualPromise } from "./async";
 
 /**
  * Stores last changes information for dot repeat
@@ -268,5 +272,70 @@ export abstract class VSCodeContext {
             commands.executeCommand("setContext", key, undefined);
         }
         this.cache.clear();
+    }
+}
+
+/**
+ * Represents a progress indicator in VSCode.
+ */
+export class Progress implements Disposable {
+    private startTimer?: NodeJS.Timeout;
+    private promise?: ManualPromise;
+    private progress?: VSCodeProgress<{ message?: string }>;
+    private message?: string;
+
+    /**
+     * Checks if the progress indicator is currently active.
+     */
+    public get isProgressing(): boolean {
+        return !!this.progress;
+    }
+
+    /**
+     * Reports a progress message to the indicator.
+     * @param message The message to report.
+     */
+    public report(message: string) {
+        this.message = message;
+        try {
+            this.progress?.report({ message });
+        } catch {
+            // ignore
+        }
+    }
+
+    /**
+     * Starts the progress indicator.
+     * @param options The options for the progress indicator.
+     * @param timeout The timeout in milliseconds before starting the indicator.
+     */
+    public start(options: VSCodeProgressOptions, timeout: number = 0) {
+        this.done();
+        this.startTimer = setTimeout(() => {
+            this.promise = new ManualPromise();
+            window.withProgress(options, async (progress) => {
+                this.progress = progress;
+                if (this.message) {
+                    progress.report({ message: this.message });
+                }
+                await this.promise?.promise;
+            });
+        }, timeout);
+    }
+
+    /**
+     * Completes the progress indicator.
+     */
+    public done() {
+        this.progress = undefined;
+        this.promise?.resolve();
+        this.promise = undefined;
+        clearTimeout(this.startTimer);
+        this.startTimer = undefined;
+        this.message = undefined;
+    }
+
+    public dispose() {
+        this.done();
     }
 }

@@ -19,6 +19,7 @@ import { MainController } from "./main_controller";
 import {
     DotRepeatChange,
     ManualPromise,
+    Progress,
     accumulateDotRepeatChange,
     calcDiffWithPosition,
     convertCharNumToByteNum,
@@ -76,6 +77,10 @@ export class DocumentChangeManager implements Disposable {
      */
     private applyingEdits = false;
     /**
+     * Represents the progress of applying edits.
+     */
+    private applyingEditsProgress: Progress;
+    /**
      * Lock edits being sent to neovim
      */
     public documentChangeLock = new Mutex();
@@ -87,7 +92,8 @@ export class DocumentChangeManager implements Disposable {
     public constructor(private main: MainController) {
         this.main.bufferManager.onBufferEvent = this.onNeovimChangeEvent;
         this.main.bufferManager.onBufferInit = this.onBufferInit;
-        this.disposables.push(workspace.onDidChangeTextDocument(this.onChangeTextDocument));
+        this.applyingEditsProgress = new Progress();
+        this.disposables.push(this.applyingEditsProgress, workspace.onDidChangeTextDocument(this.onChangeTextDocument));
     }
 
     public dispose(): void {
@@ -172,14 +178,10 @@ export class DocumentChangeManager implements Disposable {
         this.applyingEdits = true;
         logger.log(undefined, LogLevel.Debug, `Applying neovim edits`);
         // const edits = this.pendingEvents.splice(0);
-        let resolveProgress: undefined | (() => void);
-        const progressTimer = setTimeout(() => {
-            window.withProgress<void>(
-                { location: ProgressLocation.Notification, title: "Applying neovim edits" },
-                () => new Promise((res) => (resolveProgress = res)),
-            );
-        }, 1000);
-
+        this.applyingEditsProgress.start(
+            { location: ProgressLocation.Notification, title: "Applying neovim edits" },
+            1000,
+        );
         while (this.pendingEvents.length) {
             const newTextByDoc: Map<TextDocument, string[]> = new Map();
             let edit = this.pendingEvents.shift();
@@ -313,12 +315,7 @@ export class DocumentChangeManager implements Disposable {
         this.textDocumentChangePromise.clear();
         promises.forEach((p) => p.resolve && p.resolve());
         // better to be safe - if event was inserted after exit the while() block but before exit the function
-        if (progressTimer) {
-            clearTimeout(progressTimer);
-        }
-        if (resolveProgress) {
-            resolveProgress();
-        }
+        this.applyingEditsProgress.done();
         if (this.pendingEvents.length) {
             this.applyEdits();
         } else {
