@@ -24,9 +24,9 @@ export class CmdlineQueue {
      * @returns
      */
     handleNvimRedrawEvent(event: EventBusData<"redraw">): boolean {
+        const shouldProcess = !this.needFlush;
         if (this.needFlush) {
             this.addToBatch(event);
-            return false;
         }
 
         if (event.name === "cmdline_show") {
@@ -36,7 +36,7 @@ export class CmdlineQueue {
             this.prepareBatch();
         }
 
-        return true;
+        return shouldProcess;
     }
 
     /**

@@ -148,4 +148,28 @@ describe("flushBatch", () => {
             assert.equal(queue.handleNvimRedrawEvent(event), true, `Event ${i} did not return true`);
         });
     });
+
+    it("should flush more than one batch", () => {
+        const queue = new CmdlineQueue();
+        const events: EventBusData<"redraw">[] = [
+            { name: "cmdline_show" as const, args: [[[[{}, ""]], 0, ":", "", 0, 1]] },
+            { name: "cmdline_show" as const, args: [[[[{}, "w"]], 0, ":", "", 0, 1]] },
+            { name: "cmdline_hide" as const, args: undefined },
+            { name: "cmdline_show" as const, args: [[[[{}, ""]], 0, ":", "", 0, 1]] },
+            { name: "cmdline_show" as const, args: [[[[{}, "w"]], 0, ":", "", 0, 1]] },
+            { name: "cmdline_hide" as const, args: undefined },
+            { name: "cmdline_show" as const, args: [[[[{}, ""]], 0, ":", "", 0, 1]] },
+            { name: "cmdline_show" as const, args: [[[[{}, "w"]], 0, ":", "", 0, 1]] },
+            { name: "cmdline_hide" as const, args: undefined },
+        ];
+
+        events.forEach((event) => {
+            queue.handleNvimRedrawEvent(event);
+        });
+
+        assert.notEqual(queue.flushBatch(), null, "Batch 0 did not flush");
+        assert.notEqual(queue.flushBatch(), null, "Batch 1 did not flush");
+        assert.notEqual(queue.flushBatch(), null, "Batch 2 did not flush");
+        assert.equal(queue.flushBatch(), null, "More than 3 batches");
+    });
 });
