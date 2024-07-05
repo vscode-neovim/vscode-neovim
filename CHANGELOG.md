@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.18.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.0...v1.18.1) (2024-07-05)
+
+
+### chore
+
+* release 1.18.1 ([8500b65](https://github.com/vscode-neovim/vscode-neovim/commit/8500b65636c7e916d07301de90fa4131bfadfe46))
+
+
+### Features
+
+* Add progress indicator for layout sync ([#2137](https://github.com/vscode-neovim/vscode-neovim/issues/2137)) ([81bcdab](https://github.com/vscode-neovim/vscode-neovim/commit/81bcdabff59784fc5fb8de0ddbea648fbb305139))
+
 ## [1.18.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.2...v1.18.0) (2024-07-02)
 
 
