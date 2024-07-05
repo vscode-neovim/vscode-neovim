@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.87.0"
+        "vscode": "^1.90.0"
     },
     "keywords": [
         "keybindings",
