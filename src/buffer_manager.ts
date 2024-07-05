@@ -93,7 +93,7 @@ export class BufferManager implements Disposable {
     /**
      * Progress for layout synchronization
      */
-    private syncLayoutProgress!: Progress;
+    private syncLayoutProgress: Progress;
 
     /**
      * Text documents originated externally, as consequence of neovim command, like :help or :PlugStatus

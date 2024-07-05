@@ -79,7 +79,7 @@ export class DocumentChangeManager implements Disposable {
     /**
      * Represents the progress of applying edits.
      */
-    private applyingEditsProgress!: Progress;
+    private applyingEditsProgress: Progress;
     /**
      * Lock edits being sent to neovim
      */
