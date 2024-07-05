@@ -6,6 +6,7 @@ import { disposeAll } from "./utils";
 import { createLogger } from "./logger";
 import { calculateInputAfterTextChange } from "./utils/cmdline_text";
 import { GlyphChars } from "./constants";
+import { CmdlineQueue } from "./cmdline/cmdline_queue";
 
 const logger = createLogger("CmdLine", false);
 
@@ -39,6 +40,9 @@ export class CommandLineManager implements Disposable {
 
     private input: QuickPick<QuickPickItem>;
     private state = new CmdlineState();
+    // A queue of incoming events. See docblock for more details, but this is used to resolve an inherent
+    // race condition in the way we handle events.
+    private queue = new CmdlineQueue();
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -80,7 +84,21 @@ export class CommandLineManager implements Disposable {
         this.input.activeItems = [];
     }
 
-    private handleRedraw({ name, args }: EventBusData<"redraw">) {
+    private handleRedraw(event: EventBusData<"redraw">) {
+        const allowedEvents = ["cmdline_show", "cmdline_hide", "popupmenu_show", "popupmenu_select", "popupmenu_hide"];
+        if (allowedEvents.indexOf(event.name) === -1) {
+            // Drop any events not relevant to the cmdline; there is no sense in wasting memory queuing them up
+            // if they'll just be dropped anyway.
+            return;
+        }
+
+        const handle = this.queue.handleNvimRedrawEvent(event);
+        if (handle) {
+            this.handleRedrawEvent(event);
+        }
+    }
+
+    private handleRedrawEvent({ name, args }: EventBusData<"redraw">) {
         switch (name) {
             case "cmdline_show": {
                 const [content, _pos, firstc, prompt, _indent, level] = args[0];
@@ -187,11 +205,19 @@ export class CommandLineManager implements Disposable {
         if (this.state.ignoreHideEvent) {
             logger.debug("onHide: skipping event");
             this.state.ignoreHideEvent = false;
-            return;
+        } else {
+            logger.debug("onHide: entering <ESC>");
+            await this.main.client.input("<Esc>");
         }
 
-        logger.debug("onHide: entering <ESC>");
-        await this.main.client.input("<Esc>");
+        const batch = this.queue.flushBatch();
+        if (batch !== null) {
+            logger.debug("onHide: flushing events");
+            batch.forEach((event) => {
+                // Process the events we were waiting for
+                this.handleRedrawEvent(event);
+            });
+        }
     };
 
     private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
