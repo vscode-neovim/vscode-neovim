@@ -108,15 +108,6 @@ function! VSCodeNotifyRangePos(cmd, line1, line2, pos1, pos2, leaveSelection, ..
           \ [a:cmd, [a:line1 - 1, a:pos1 - 1, a:line2 - 1, a:pos2 - 1], a:leaveSelection ? v:false : v:true, a:000])
 endfunction
 
-" Called from extension when opening/creating new file in vscode to reset undo tree
-function! VSCodeClearUndo(bufId)
-    let oldlevels = &undolevels
-    call nvim_buf_set_option(a:bufId, 'undolevels', -1)
-    call nvim_buf_set_lines(a:bufId, 0, 0, 0, [])
-    call nvim_buf_set_option(a:bufId, 'undolevels', oldlevels)
-    unlet oldlevels
-endfunction
-
 function! s:onInsertEnter()
     let reg = reg_recording()
     if !empty(reg)
@@ -143,6 +134,8 @@ augroup VscodeGeneral
     autocmd VimEnter * call nvim_exec2(join(v:lua.require("vscode").get_config("vscode-neovim.afterInitConfig"), "\n"), {})
 augroup END
 
+" TODO: Remove when dropping support for nvim 0.9
+lua vim.islist = vim.islist or vim.tbl_islist
 
 lua require("vscode")
 runtime! vscode/**/*.{vim,lua}

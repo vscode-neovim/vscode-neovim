@@ -8,7 +8,7 @@
         "ui",
         "workspace"
     ],
-    "version": "1.15.2",
+    "version": "1.18.1",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.87.0"
+        "vscode": "^1.90.0"
     },
     "keywords": [
         "keybindings",
@@ -96,7 +96,7 @@
                 },
                 "vscode-neovim.neovimWidth": {
                     "type": "number",
-                    "default": 1000,
+                    "default": 300,
                     "title": "Neovim width",
                     "description": "Neovim viewport width. Increase if you're working with long lines and have horizontal scroll problems. Larger values will affect neovim performance"
                 },
@@ -320,7 +320,6 @@
                 "vscode-neovim.normalSelectionDebounceTime": {
                     "type": "integer",
                     "minimum": 20,
-                    "maximum": 100,
                     "default": 50,
                     "description": "Debounce time used to synchronize selection from VSCode to Nvim, typically referring to cursor movement"
                 },
@@ -1729,6 +1728,16 @@
                 "when": "editorHoverFocused"
             },
             {
+                "command": "focusNextRenameSuggestion",
+                "key": "ctrl+n",
+                "when": "renameInputVisible"
+            },
+            {
+                "command": "focusPreviousRenameSuggestion",
+                "key": "ctrl+p",
+                "when": "renameInputVisible"
+            },
+            {
                 "command": "-workbench.action.switchWindow",
                 "key": "ctrl+w"
             },
@@ -2139,26 +2148,26 @@
     "devDependencies": {
         "@johnnymorganz/stylua-bin": "^0.20.0",
         "@sinonjs/fake-timers": "^11.2.2",
-        "@types/lodash": "^4.17.4",
-        "@types/mocha": "^10.0.6",
-        "@types/node": "^20.12.5",
+        "@types/lodash": "^4.17.6",
+        "@types/mocha": "^10.0.7",
+        "@types/node": "^20.14.9",
         "@types/sinonjs__fake-timers": "^8.1.5",
-        "@types/vscode": "^1.87.0",
-        "@vscode/test-electron": "^2.3.9",
-        "@vscode/vsce": "^2.24.0",
+        "@types/vscode": "^1.90.0",
+        "@vscode/test-electron": "^2.4.0",
+        "@vscode/vsce": "^2.29.0",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-import": "^2.29.1",
         "eslint-plugin-prettier": "^5.1.3",
-        "globals": "^15.2.0",
+        "globals": "^15.7.0",
         "husky": "^9.0.11",
-        "mocha": "^10.4.0",
-        "prettier": "^3.2.5",
+        "mocha": "^10.5.2",
+        "prettier": "^3.3.2",
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.4.4",
-        "typescript-eslint": "^7.8.0",
-        "webpack": "^5.91.0",
+        "typescript": "^5.5.2",
+        "typescript-eslint": "^7.14.1",
+        "webpack": "^5.92.1",
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {

@@ -1,5 +1,75 @@
 # Change Log
 
+## [1.18.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.0...v1.18.1) (2024-07-05)
+
+
+### chore
+
+* release 1.18.1 ([8500b65](https://github.com/vscode-neovim/vscode-neovim/commit/8500b65636c7e916d07301de90fa4131bfadfe46))
+
+
+### Features
+
+* Add progress indicator for layout sync ([#2137](https://github.com/vscode-neovim/vscode-neovim/issues/2137)) ([81bcdab](https://github.com/vscode-neovim/vscode-neovim/commit/81bcdabff59784fc5fb8de0ddbea648fbb305139))
+
+## [1.18.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.2...v1.18.0) (2024-07-02)
+
+
+### Features
+
+* **buffer:** sync dirty buffer state ([#2127](https://github.com/vscode-neovim/vscode-neovim/issues/2127)) ([61f4e4f](https://github.com/vscode-neovim/vscode-neovim/commit/61f4e4f842d7a7a559b60e7e82f3acb26c908abb))
+* Integrate BufWriteCmd for "write" command ([#2116](https://github.com/vscode-neovim/vscode-neovim/issues/2116)) ([8606eb1](https://github.com/vscode-neovim/vscode-neovim/commit/8606eb183a420223c0fc102639b8b3ad753cfecb))
+
+
+### Refactor
+
+* Use labeled tuple elements for event data types ([#2129](https://github.com/vscode-neovim/vscode-neovim/issues/2129)) ([08e973d](https://github.com/vscode-neovim/vscode-neovim/commit/08e973d20e93835416c3c5a7bd3a81239c02d213))
+
+## [1.17.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.1...v1.17.2) (2024-06-15)
+
+
+### Bug Fixes
+
+* **highlights:** wait for doc changes before updating highlights ([#2112](https://github.com/vscode-neovim/vscode-neovim/issues/2112)) ([0835225](https://github.com/vscode-neovim/vscode-neovim/commit/083522555ad3d269b83da3885cb18f0982a396be))
+* **messages:** Limit the minimum value of `cmdheight` to 1 ([#2110](https://github.com/vscode-neovim/vscode-neovim/issues/2110)) ([1e29f60](https://github.com/vscode-neovim/vscode-neovim/commit/1e29f604487b66f2cb682c1f24e65ac1e97def20))
+
+## [1.17.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.17.0...v1.17.1) (2024-06-15)
+
+
+### Bug Fixes
+
+* adapt to Nvim deprecations in 0.10 ([#2108](https://github.com/vscode-neovim/vscode-neovim/issues/2108)) ([4c04ebc](https://github.com/vscode-neovim/vscode-neovim/commit/4c04ebc399e7cdf44476247da0b58430ed025c70))
+* Align output with nvim messages and auto show based on cmdheight ([#2105](https://github.com/vscode-neovim/vscode-neovim/issues/2105)) ([4ca8fbf](https://github.com/vscode-neovim/vscode-neovim/commit/4ca8fbf70edfaaf080823d583e8d2105ace0c06e))
+* **buffer:** avoid concurrent syncs and stale data ([#2103](https://github.com/vscode-neovim/vscode-neovim/issues/2103)) ([59246d6](https://github.com/vscode-neovim/vscode-neovim/commit/59246d624f9cdc4ed141006de621f486b5f5586c))
+
+## [1.17.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.16.0...v1.17.0) (2024-06-11)
+
+
+### Features
+
+* **highlight:** draw grid lines accurately ([#2090](https://github.com/vscode-neovim/vscode-neovim/issues/2090)) ([50a7d5c](https://github.com/vscode-neovim/vscode-neovim/commit/50a7d5cc50b085beaffa156ccc4873c00d764569))
+
+## [1.16.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.15.2...v1.16.0) (2024-06-09)
+
+
+### Features
+
+* ctrl+n/ctrl+p for selecting rename suggestions ([#2093](https://github.com/vscode-neovim/vscode-neovim/issues/2093)) ([bbf5df3](https://github.com/vscode-neovim/vscode-neovim/commit/bbf5df3436db1cf47337933410c0b7d20aa22b0c))
+
+
+### Bug Fixes
+
+* ensure statusline messages are shown for a minimum amount of time before clears are effective ([#2068](https://github.com/vscode-neovim/vscode-neovim/issues/2068)) ([a8064e3](https://github.com/vscode-neovim/vscode-neovim/commit/a8064e3a6c1b3e4fd5c97fae7f0061c26bde6fe0))
+* remove maximum debounce time for normal selection ([#2082](https://github.com/vscode-neovim/vscode-neovim/issues/2082)) ([2bd5166](https://github.com/vscode-neovim/vscode-neovim/commit/2bd5166970421795b8ca5af2f55813167c6862e7))
+
+
+### Documentation
+
+* add configuration compatibility section to README ([65366d3](https://github.com/vscode-neovim/vscode-neovim/commit/65366d3b17fc7210ec8ff4ee841348d303fa8936))
+* add configuration compatibility section to README  ([#2092](https://github.com/vscode-neovim/vscode-neovim/issues/2092)) ([65366d3](https://github.com/vscode-neovim/vscode-neovim/commit/65366d3b17fc7210ec8ff4ee841348d303fa8936))
+* **contributing:** fix sunmeko.lua link ([#2088](https://github.com/vscode-neovim/vscode-neovim/issues/2088)) ([fd9d34a](https://github.com/vscode-neovim/vscode-neovim/commit/fd9d34a96cf1c614edd02093f4b08b8ff1116748))
+* fix broken link for 0.10 compat ([#2094](https://github.com/vscode-neovim/vscode-neovim/issues/2094)) ([8f95e4f](https://github.com/vscode-neovim/vscode-neovim/commit/8f95e4f0f6d20dfd3b6b7c5ee6c44c4d66a1b1cd))
+
 ## [1.15.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.15.1...v1.15.2) (2024-06-06)
 
 

@@ -23,7 +23,6 @@ local function forceoptions(opt)
 end
 
 local function force_global_options()
-  vim.opt.cmdheight = 1
   vim.opt.wildmode = "longest:full,full"
   vim.cmd([[set wildchar=<Tab>]])
   vim.opt.mouse = "a"

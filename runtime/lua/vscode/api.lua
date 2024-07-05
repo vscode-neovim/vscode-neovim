@@ -69,7 +69,7 @@ function M.action(name, opts)
         if type(range) ~= "table" then
           return false
         end
-        if vim.tbl_islist(opts.range) then
+        if vim.islist(opts.range) then
           return #opts.range == 2 or #opts.range == 4
         end
         return range.start
@@ -82,7 +82,7 @@ function M.action(name, opts)
     },
     ["opts.restore_selection"] = { opts.restore_selection, "b", true },
   })
-  if opts.args and not vim.tbl_islist(opts.args) then
+  if opts.args and not vim.islist(opts.args) then
     opts.args = { opts.args }
   end
   if opts.callback then
@@ -127,7 +127,7 @@ function M.call(name, opts, timeout)
         if type(range) ~= "table" then
           return false
         end
-        if vim.tbl_islist(opts.range) then
+        if vim.islist(opts.range) then
           return #opts.range == 2 or #opts.range == 4
         end
         return range.start
@@ -141,7 +141,7 @@ function M.call(name, opts, timeout)
     ["opts.restore_selection"] = { opts.restore_selection, "b", true },
   })
 
-  if opts.args and not vim.tbl_islist(opts.args) then
+  if opts.args and not vim.islist(opts.args) then
     opts.args = { opts.args }
   end
 
