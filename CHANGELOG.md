@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.1...v1.18.2) (2024-07-07)
+
+
+### Bug Fixes
+
+* rapid cmdline_show/cmdline_hides would not be handled logically ([#2140](https://github.com/vscode-neovim/vscode-neovim/issues/2140)) ([7d65a19](https://github.com/vscode-neovim/vscode-neovim/commit/7d65a19d63cf3ff8453d7ab20e2299037a320b4b))
+
 ## [1.18.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.0...v1.18.1) (2024-07-05)
 
 
