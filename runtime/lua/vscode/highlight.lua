@@ -113,7 +113,7 @@ local function setup_syntax_groups()
   local output = api.nvim_exec2("syntax", { output = true })
   local items = vim.split(output.output, "\n")
   for _, item in ipairs(items) do
-    local group = item:match([[([%w@%.]+)%s+xxx]])
+    local group = item:match([[([%w@_%.]+)%s+xxx]])
     if group and not cleared_syntax_groups[group] then
       cleared_syntax_groups[group] = true
       set_hl(NS, group, {})
