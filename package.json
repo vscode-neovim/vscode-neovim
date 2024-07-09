@@ -321,25 +321,13 @@
                     "type": "integer",
                     "minimum": 20,
                     "default": 50,
-                    "description": "Debounce time used to synchronize selection from VSCode to Nvim, typically referring to cursor movement"
+                    "description": "Debounce time in milliseconds used to synchronize selection from VSCode to Nvim, typically referring to cursor movement"
                 },
                 "vscode-neovim.mouseSelectionDebounceTime": {
+                    "type": "integer",
+                    "minimum": 0,
                     "default": 100,
-                    "enum": [
-                        0,
-                        50,
-                        100,
-                        150,
-                        200
-                    ],
-                    "enumDescriptions": [
-                        "Disable mouse selection sync",
-                        "50ms",
-                        "100ms",
-                        "150ms",
-                        "200ms"
-                    ],
-                    "description": "Debounce time for synchronizing mouse selection. Set to 0 to disable synchronization"
+                    "description": "Debounce time in milliseconds for synchronizing mouse selection. Set to 0 to disable synchronization"
                 },
                 "vscode-neovim.statusLineSeparator": {
                     "type": "string",
