@@ -22,6 +22,7 @@ mode and editor commands, making the best use of both editors.
     -   [Installation](#installation)
     -   [Neovim configuration](#neovim-configuration)
     -   [VSCode configuration](#vscode-configuration)
+    -   [Settings \& Commands](#settings--commands)
 -   [💡 Tips and Features](#-tips-and-features)
     -   [VSCode specific differences](#vscode-specific-differences)
     -   [Troubleshooting](#troubleshooting)
@@ -114,6 +115,11 @@ versions for the best experience. These can be found
     fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
 -   To fix the remapped escape key not working in Linux, set `"keyboard.dispatch": "keyCode"`
+
+### Settings & Commands
+
+Open the [vscode-neovim](vscode:extension/asvetliakov.vscode-neovim) extension details in VSCode, and check all
+available [settings](https://code.visualstudio.com/docs/getstarted/settings) and commands in the Features tab.
 
 ## 💡 Tips and Features
 
