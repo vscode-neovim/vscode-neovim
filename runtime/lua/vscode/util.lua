@@ -62,4 +62,21 @@ function M.compare_position(a, b)
   return -1
 end
 
+---Debounce a function.
+---@param func function function to debounce
+---@param time number trialing time in ms
+---@return function
+function M.debounce(func, time)
+  local timer
+  return function(...)
+    local args = { ... }
+    if timer and timer:is_active() then
+      timer:close()
+    end
+    timer = vim.defer_fn(function()
+      func(unpack(args))
+    end, time)
+  end
+end
+
 return M

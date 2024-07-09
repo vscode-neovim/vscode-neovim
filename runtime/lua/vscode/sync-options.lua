@@ -11,6 +11,7 @@
 
 local api = vim.api
 local vscode = require("vscode.api")
+local util = require("vscode.util")
 
 local M = {}
 
@@ -106,15 +107,7 @@ local function _check_options()
   end
 end
 
-local check_options = (function()
-  local check_timer
-  return function()
-    if check_timer and check_timer:is_active() then
-      check_timer:close()
-    end
-    check_timer = vim.defer_fn(_check_options, 20)
-  end
-end)()
+local check_options = util.debounce(_check_options, 20)
 
 local function process_modeline()
   if vim.b.vscode_editor_options_first_checked then
