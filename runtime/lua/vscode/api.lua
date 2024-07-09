@@ -466,7 +466,7 @@ function M.with_insert(callback)
 
   --- Normal ---
   if mode == "n" then
-    startinsert("a")
+    startinsert("i")
     run_callback()
     return
   end
@@ -498,7 +498,7 @@ function M.with_insert(callback)
   end
 
   --- Other ---
-  startinsert("<Esc><Esc>a")
+  startinsert("<Esc><Esc>i")
   run_callback()
 end
 
