@@ -21,53 +21,67 @@ mode and editor commands, making the best use of both editors.
 -   [🧰 Getting Started](#-getting-started)
     -   [Installation](#installation)
     -   [Neovim configuration](#neovim-configuration)
-    -   [VSCode configuration](#vscode-configuration)
-    -   [Settings \& Commands](#settings--commands)
+    -   [VSCode Settings \& Commands](#vscode-settings--commands)
 -   [💡 Tips and Features](#-tips-and-features)
     -   [VSCode specific differences](#vscode-specific-differences)
     -   [Troubleshooting](#troubleshooting)
+    -   [Performance](#performance)
     -   [Composite escape keys](#composite-escape-keys)
     -   [Jumplist](#jumplist)
     -   [Multiple cursors](#multiple-cursors)
     -   [Remote development](#remote-development)
--   [⚡️ API](#%EF%B8%8F-api)
--   [⌨️ Keybindings (shortcuts)](#%EF%B8%8F-keybindings-shortcuts)
-    -   [Add keybindings](#add-keybindings)
-    -   [Disable keybindings](#disable-keybindings)
-    -   [Remove keybindings](#remove-keybindings)
+-   [⚡️ API](#️-api)
+    -   [vscode.action(name, opts)](#vscodeactionname-opts)
+    -   [vscode.call(name, opts, timeout)](#vscodecallname-opts-timeout)
+    -   [vscode.on(event, callback)](#vscodeonevent-callback)
+    -   [vscode.has_config(name)](#vscodehas_configname)
+    -   [vscode.get_config(name)](#vscodeget_configname)
+    -   [vscode.update_config(name, value, target)](#vscodeupdate_configname-value-target)
+    -   [vscode.notify(msg)](#vscodenotifymsg)
+    -   [vscode.eval(code\[, opts, timeout\])](#vscodeevalcode-opts-timeout)
+    -   [vscode.eval_async(code\[, opts\])](#vscodeeval_asynccode-opts)
+    -   [vscode.with_insert(callback)](#vscodewith_insertcallback)
+    -   [Builtin module overrides](#builtin-module-overrides)
+    -   [VimScript](#vimscript)
+-   [⌨️ Keybindings (shortcuts)](#️-keybindings-shortcuts)
+    -   [Keybinding Passthroughs](#keybinding-passthroughs)
+        -   [Insert mode control keys passthrough](#insert-mode-control-keys-passthrough)
+        -   [Normal mode control keys passthrough](#normal-mode-control-keys-passthrough)
+        -   [Cmdline mode special keys passthrough](#cmdline-mode-special-keys-passthrough)
+        -   [Disable passthrough for certain filetypes](#disable-passthrough-for-certain-filetypes)
+        -   [Remove other vscode or passthrough keybindings](#remove-other-vscode-or-passthrough-keybindings)
+    -   [Code navigation bindings](#code-navigation-bindings)
+    -   [Explorer/list navigation bindings](#explorerlist-navigation-bindings)
+    -   [Explorer file manipulation bindings](#explorer-file-manipulation-bindings)
+    -   [Hover widget manipulation bindings](#hover-widget-manipulation-bindings)
+-   [📟 Neovim Commands](#-neovim-commands)
+    -   [File management](#file-management)
+    -   [Tab management](#tab-management)
+    -   [Buffer/window management](#bufferwindow-management)
+-   [🎨 Highlights](#-highlights)
 -   [🧰 Developing](#-developing)
 -   [❤️ Credits \& External Resources](#️-credits--external-resources)
-
-</details>
 
 ## 🧰 Getting Started
 
 ### Installation
 
--   Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim)
-    extension.
--   Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.9.0** or greater (0.10 recommended,
-    [see below](#neovim-configuration-for-best-compatibility)).
-    -   Set the Neovim path in the extension settings. You must specify the full path to Neovim, like
-        "`C:\Neovim\bin\nvim.exe`" or "`/usr/local/bin/nvim`".
-    -   The setting id is "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system.
--   If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to the nvim
-    binary. `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available
-    through `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
--   Assign [affinity](#affinity) value for performance improvement.
+Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension.
 
-    -   Go to Settings > Features > Extensions > Experimental Affinity.
+Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.9.0** or greater (0.10 recommended).
 
-        Add an entry with item name `asvetliakov.vscode-neovim` and value 1.
+> **Note:** Though the extension strives to be as compatible as possible with older versions of Neovim, some older
+> versions may have quirks that are not present anymore. In light of this, certain configuration settings are
+> recommended in some older versions for the best experience. These can be found
+> [on the wiki](https://github.com/vscode-neovim/vscode-neovim/wiki/Version-Compatibility-Notes).
 
-        OR
+\[Optional\] Set the Neovim path in the extension settings under
+"`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system. For example,
+"`C:\Neovim\bin\nvim.exe`" or "`/usr/local/bin/nvim`".
 
-    -   Add to your `settings.json`:
-        ```json
-        "extensions.experimental.affinity": {
-            "asvetliakov.vscode-neovim": 1
-        },
-        ```
+> **Note:** If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to the
+> nvim binary. `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available
+> through `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
 
 ### Neovim configuration
 
@@ -97,29 +111,17 @@ else
 end
 ```
 
-To conditionally activate plugins, `vim-plug` has a
-[few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation). `packer.nvim` and `lazy.nvim`
-have built-in support for `cond = vim.g.vscode`. See
+To conditionally activate plugins, the best solution is to use the
+[LazyVim VSCode extra](https://www.lazyvim.org/extras/vscode). However, `packer.nvim` and `lazy.nvim` have built-in
+support for `cond = vim.g.vscode` and `vim-plug` has a
+[few solutions](https://github.com/junegunn/vim-plug/wiki/tips#conditional-activation). See
 [plugins](https://github.com/vscode-neovim/vscode-neovim/wiki/Plugins) in the wiki for tips on configuring Vim plugins.
 
-#### Neovim configuration for best compatibility
+### VSCode Settings & Commands
 
-Though the extension strives to be as compatible as possible with older versions of Neovim, some older versions may have
-quirks that are not present anymore. In light of this, certain configuration settings are recommended in some older
-versions for the best experience. These can be found
-[on the wiki](https://github.com/vscode-neovim/vscode-neovim/wiki/Version-Compatibility-Notes).
-
-### VSCode configuration
-
--   On a Mac, the <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd> and <kbd>l</kbd> movement keys may not repeat when held, to
-    fix this open Terminal and execute the following command:
-    `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
--   To fix the remapped escape key not working in Linux, set `"keyboard.dispatch": "keyCode"`
-
-### Settings & Commands
-
-Open the [vscode-neovim](vscode:extension/asvetliakov.vscode-neovim) extension details in VSCode, and check all
-available [settings](https://code.visualstudio.com/docs/getstarted/settings) and commands in the Features tab.
+You can view all available [settings](https://code.visualstudio.com/docs/getstarted/settings) and commands by opening
+the [vscode-neovim](vscode:extension/asvetliakov.vscode-neovim) extension details pane, and navigating to the features
+tab.
 
 ## 💡 Tips and Features
 
@@ -155,49 +157,36 @@ available [settings](https://code.visualstudio.com/docs/getstarted/settings) and
     extensions that use `registerTextEditorCommand("type", …)` (like
     [VSCodeVim](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) or
     [Overtype](https://marketplace.visualstudio.com/items?itemName=adammaras.overtype)).
+-   On a Mac, the <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd> and <kbd>l</kbd> movement keys may not repeat when held, to
+    fix this open Terminal and execute the following command:
+    `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
+-   To fix the remapped escape key not working in Linux, set `"keyboard.dispatch": "keyCode"`.
 
 ### Performance
 
-#### Affinity
+If you have any performance problems (cursor jitter usually) make sure you're not using vim plugins that increase
+latency and cause performance problems.
 
-Make sure you have the extension running in its own thread using affinity (see [installation](#installation)).
+Make sure to disable unneeded plugins, as many of them don't make sense with VSCode. Specifically, you don't need any
+code highlighting, completion, LSP plugins, or plugins that spawn windows/buffers (nerdtree , fuzzy-finders, etc). Most
+navigation/textobject/editing plugins should be fine.
 
-Extensions that share the same affinity value are associated with a shared extension host (extension manager from
-VSCode). Performance issues arise when a number of extensions have the same host. On-going operations of one extension
-may slow down the operations of another. However, if an extension is assigned an affinity, its extension host runs in a
-separate worker thread. The operations of an extension with the host in one thread don't directly affect the operations
-of the extension with its host running in another.
+For example, make sure you're not using anything that renders decorators very often:
 
-#### Other Extensions
+-   Line number extensions (VSCode has built-in support for normal/relative line numbers)
+-   Indent guide extensions (VSCode has built-in indent guides)
+-   Brackets highlighter extensions (VSCode has built-in feature)
 
-If you have any performance problems (cursor jitter usually) make sure you're not using these kinds of extensions:
-
--   Anything that renders decorators very often:
-    -   Line number extensions (VSCode has built-in support for normal/relative line numbers)
-    -   Indent guide extensions (VSCode has built-in indent guides)
-    -   Brackets highlighter extensions (VSCode has built-in feature)
--   VSCode extensions that delay the extension host like "Bracket Pair Colorizer"
--   Vim plugins that increase latency and cause performance problems.
-    -   Make sure to disable unneeded plugins, as many of them don't make sense with VSCode and may cause problems.
-    -   You don't need any code, highlighting, completion, LSP plugins as well any plugins that spawn windows/buffers
-        (nerdtree and similar), fuzzy-finders, etc.
-    -   Many navigation/textobject/editing plugins should be fine.
-
-If you're not sure, disable all other extensions, **reload VSCode window**, and see if the problem persists before
-reporting it.
+> If you're not sure, disable all other extensions, **reload VSCode window**, and see if the problem persists before
+> reporting it.
 
 ### Composite escape keys
 
-#### Configurations
+Set with `compositeKeys` and tweak with `compositeTimeout`.
 
--   `compositeTimeout`
--   `compositeKeys`
+Examples: add to your `settings.json`:
 
-#### Examples
-
-Add to your `settings.json`:
-
--   <kbd>jj</kbd> to escape
+<kbd>jj</kbd> to escape
 
 ```jsonc
 {
@@ -209,7 +198,7 @@ Add to your `settings.json`:
 }
 ```
 
--   <kbd>jk</kbd> to escape and save
+<kbd>jk</kbd> to escape and save
 
 ```jsonc
 {
@@ -228,42 +217,6 @@ Add to your `settings.json`:
     },
 }
 ```
-
-#### Migrate from the compositeEscape command
-
-"vscode-neovim.compositeEscape1" and "vscode-neovim.compositeEscape2" commands are deprecated. To migrate:
-
-1. Remove keybindings using `vscode-neovim.compositeEscape` in `keybindings.json`.
-2. Configure `compositeKeys` in `settings.json` to replace the removed keybindings.
-
-<details>
-
-<summary>Example</summary>
-
-If you have the following keybinding in `keybindings.json`:
-
-```json
-{
-    "key": "j",
-    "command": "vscode-neovim.compositeEscape",
-    "when": "neovim.mode == insert && editorTextFocus",
-    "args": "j"
-}
-```
-
-Then you should remove it and add the following configuration to `settings.json`:
-
-```json
-{
-    "vscode-neovim.compositeKeys": {
-        "jj": {
-            "command": "vscode-neovim.escape"
-        }
-    }
-}
-```
-
-</details>
 
 ### Jumplist
 
@@ -295,8 +248,8 @@ See gif in action:
 
 ![multicursor](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/72b3f2b3-6d80-4ace-b6f4-b211baad74d1)
 
-The built-in multi-cursor support may not meet your needs. Please refer to the plugin
-[vscode-multi-cursor.nvim](https://github.com/vscode-neovim/vscode-multi-cursor.nvim) for more multi-cursor features
+> **Note**: The built-in multi-cursor support may not meet your needs. Please refer to the plugin
+> [vscode-multi-cursor.nvim](https://github.com/vscode-neovim/vscode-multi-cursor.nvim) for more multi-cursor features
 
 ### Remote development
 
@@ -314,7 +267,7 @@ should be installed in the Remote Extension Host. You can set the following in y
 }
 ```
 
-Note: You will need to install neovim in the remote environment.
+> **Note**: You will need to install neovim in the remote environment.
 
 For more information:
 
@@ -332,8 +285,7 @@ local vscode = require('vscode')
 
 <!-- prettier-ignore-start -->
 > [!TIP]
-> The previously used module named "vscode-neovim" is now deprecated.
-> So don't be confused if "vscode-neovim" is used in old discussions or other resources.
+> The previously used module named "vscode-neovim" is now deprecated, so don't be confused if "vscode-neovim" is used in old discussions or other resources.
 <!-- prettier-ignore-end -->
 
 1. `vscode.action()`: asynchronously executes a vscode command.
@@ -353,7 +305,7 @@ local vscode = require('vscode')
 
 ### vscode.action(name, opts)
 
-Asynchronously executes a vscode command. See [Examples](#examples).
+Asynchronously executes a vscode command.
 
 Parameters:
 
@@ -372,60 +324,28 @@ Parameters:
     -   `restore_selection` (boolean): Whether to preserve the current selection. Only valid when `range` is specified.
         Defaults to `true`.
     -   `callback`: Function to handle the action result. Must have this signature:
-        ```lua
-        function(err: string|nil, ret: any)
-        ```
+        `function(err: string|nil, ret: any)`:
         -   `err` is the error message, if any
         -   `ret` is the result
         -   If no callback is provided, error will be shown as a VSCode notification.
 
-### vscode.call(name, opts, timeout)
+Example: open definition aside (default binding):
 
-Synchronously executes a vscode command. See [Examples](#examples).
+```vim
+nnoremap <C-w>gd <Cmd>lua require('vscode').action('editor.action.revealDefinitionAside')<CR>
+```
 
-Parameters:
+Example: find in files for word under cursor (see the
+[vscode command definition](https://github.com/microsoft/vscode/blob/43b0558cc1eec2528a9a1b9ee1c7a559823bda31/src/vs/workbench/contrib/search/browser/searchActionsFind.ts#L177-L197)
+for the expected parameter format):
 
--   `name` (string): The name of the action, generally a vscode command.
--   `opts` (table): Same as [vscode.action()](#vscodeactionname-opts).
--   `timeout` (number): Timeout in milliseconds. The default value is -1, which means there is no timeout.
+```vim
+nnoremap ? <Cmd>lua require('vscode').action('workbench.action.findInFiles', { args = { query = vim.fn.expand('<cword>') } })<CR>
+```
 
-Returns: the result of the action
-
-### Examples
-
--   Format selection (default binding):
-    ```vim
-    xnoremap = <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR>
-    nnoremap = <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR><Esc>
-    nnoremap == <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR>
-    ```
--   Open definition aside (default binding):
-    ```vim
-    nnoremap <C-w>gd <Cmd>lua require('vscode').action('editor.action.revealDefinitionAside')<CR>
-    ```
--   Find in files for word under cursor (see the
-    [vscode command definition](https://github.com/microsoft/vscode/blob/43b0558cc1eec2528a9a1b9ee1c7a559823bda31/src/vs/workbench/contrib/search/browser/searchActionsFind.ts#L177-L197)
-    for the expected parameter format):
-    ```vim
-    nnoremap ? <Cmd>lua require('vscode').action('workbench.action.findInFiles', { args = { query = vim.fn.expand('<cword>') } })<CR>
-    ```
-
-Currently, two built-in actions are provided for testing purposes:
-
-1. `_ping` returns `"pong"`
-2. `_wait` waits for the specified milliseconds and then returns `"ok"`
+Example: use in lua script:
 
 ```lua
-do -- Execute _ping asynchronously and print the result
-  vscode.action("_ping", {
-    callback = function(err, res)
-      if err == nil then
-        print(res) -- outputs: pong
-      end
-    end,
-  })
-end
-
 -- Format current document
 vscode.action("editor.action.formatDocument")
 
@@ -451,7 +371,48 @@ do -- Find in files for word under cursor
     args = { query = vim.fn.expand('<cword>') }
   })
 end
+```
 
+Currently, two built-in actions are provided for testing purposes:
+
+1. `_ping` returns `"pong"`
+2. `_wait` waits for the specified milliseconds and then returns `"ok"`
+
+```lua
+do -- Execute _ping asynchronously and print the result
+  vscode.action("_ping", {
+    callback = function(err, res)
+      if err == nil then
+        print(res) -- outputs: pong
+      end
+    end,
+  })
+end
+```
+
+### vscode.call(name, opts, timeout)
+
+Synchronously executes a vscode command.
+
+Parameters:
+
+-   `name` (string): The name of the action, generally a vscode command.
+-   `opts` (table): Same as [vscode.action()](#vscodeactionname-opts).
+-   `timeout` (number): Timeout in milliseconds. The default value is -1, which means there is no timeout.
+
+Returns: the result of the action
+
+Example: format selection (default binding):
+
+```vim
+xnoremap = <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR>
+nnoremap = <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR><Esc>
+nnoremap == <Cmd>lua require('vscode').call('editor.action.formatSelection')<CR>
+```
+
+Example: use in lua script:
+
+```lua
 -- Execute _ping synchronously and print the result
 print(vscode.call("_ping")) -- outputs: pong
 
@@ -467,9 +428,7 @@ print(vscode.call("_wait", { args = { 2000 } }), 1000)
 
 Currently no available events for user use.
 
-### VSCode settings
-
-#### vscode.has_config(name)
+### vscode.has_config(name)
 
 Check if configuration has a certain value.
 
@@ -482,7 +441,19 @@ Returns:
 -   `boolean|boolean[]`: Returns `true` if the configuration has a certain value, `false` otherwise. If `name` is an
     array, returns an array of booleans indicating whether each configuration has a certain value or not.
 
-#### vscode.get_config(name)
+Examples:
+
+```lua
+-- Check if the configuration "not.exist" exists
+print(vscode.has_config("not.exist"))
+-- Should return: false
+
+-- Check multiple configurations
+vim.print(vscode.has_config({ "not.exist", "existing.config" }))
+-- Should return: { false, true }
+```
+
+### vscode.get_config(name)
 
 Get configuration value.
 
@@ -495,7 +466,18 @@ Returns:
 -   `unknown|unknown[]`: The value of the configuration. If `name` is an array, returns an array of values corresponding
     to each configuration.
 
-#### vscode.update_config(name, value, target)
+Examples:
+
+```lua
+-- Get the value of "editor.tabSize"
+print(vscode.get_config("editor.tabSize")) -- a number
+
+-- Get multiple configurations
+vim.print(vscode.get_config({ "editor.fontFamily", "editor.tabSize" }))
+-- Should return: { "the font family", "the editor tabSizse" }
+```
+
+### vscode.update_config(name, value, target)
 
 Update configuration value.
 
@@ -508,33 +490,6 @@ Parameters:
 Examples:
 
 ```lua
-------------------
---- has_config ---
-------------------
-
--- Check if the configuration "not.exist" exists
-print(vscode.has_config("not.exist"))
--- Should return: false
-
--- Check multiple configurations
-vim.print(vscode.has_config({ "not.exist", "existing.config" }))
--- Should return: { false, true }
-
-------------------
---- get_config ---
-------------------
-
--- Get the value of "editor.tabSize"
-print(vscode.get_config("editor.tabSize")) -- a number
-
--- Get multiple configurations
-vim.print(vscode.get_config({ "editor.fontFamily", "editor.tabSize" }))
--- Should return: { "the font family", "the editor tabSizse" }
-
----------------------
---- update_config ---
----------------------
-
 -- Update the value of "editor.tabSize"
 vscode.update_config("editor.tabSize", 16, "global")
 
@@ -542,9 +497,7 @@ vscode.update_config("editor.tabSize", 16, "global")
 vscode.update_config({ "editor.fontFamily", "editor.tabSize" }, { "Fira Code", 14 })
 ```
 
-### Messages
-
-#### vscode.notify(msg)
+### vscode.notify(msg)
 
 Show a vscode notification
 
@@ -600,10 +553,7 @@ Parameters:
 -   `opts` (table): Map of optional parameters:
     -   `args` (any): a value to make available as the `args` variable in javascript. Can be a single value such as a
         string or a table of multiple values.
-    -   `callback`: Function to handle the eval result. Must have this signature:
-        ```lua
-        function(err: string|nil, ret: any)
-        ```
+    -   `callback`: Function to handle the eval result. Must have this signature: `function(err: string|nil, ret: any)`:
         -   `err` is the error message, if any
         -   `ret` is the result
         -   If no callback is provided, error will be shown as a VSCode notification.
@@ -617,32 +567,30 @@ Parameters:
 
 -   `callback` (function): Callback function to run after switching to insert mode
 
-Examples:
+Example: make `editor.action.addSelectionToNextFindMatch` work correctly in any mode.
 
--   Make `editor.action.addSelectionToNextFindMatch` work correctly in any mode.
+```lua
+vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
+  vscode.with_insert(function()
+    vscode.action("editor.action.addSelectionToNextFindMatch")
+  end)
+end)
+```
 
-    ```lua
-    vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
-      vscode.with_insert(function()
-        vscode.action("editor.action.addSelectionToNextFindMatch")
-      end)
-    end)
-    ```
+![select-next](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/5a93c87e-626a-4a70-a9ef-5084f747c7ef)
 
-    ![select-next](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/5a93c87e-626a-4a70-a9ef-5084f747c7ef)
+Example: make "editor.action.refactor" work correctly on the selection and support snippet manipulation after entering
+VSCode snippet mode.
 
--   Make "editor.action.refactor" work correctly on the selection and support snippet manipulation after entering VSCode
-    snippet mode.
+```lua
+vim.keymap.set({ "n", "x" }, "<leader>r", function()
+  vscode.with_insert(function()
+    vscode.action("editor.action.refactor")
+  end)
+end)
+```
 
-    ```lua
-    vim.keymap.set({ "n", "x" }, "<leader>r", function()
-      vscode.with_insert(function()
-        vscode.action("editor.action.refactor")
-      end)
-    end)
-    ```
-
-    ![refactor](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/1c436b76-5c0b-42a7-8eb4-6f149761dd3c)
+![refactor](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/1c436b76-5c0b-42a7-8eb4-6f149761dd3c)
 
 ### Builtin module overrides
 
@@ -663,65 +611,85 @@ You can also use `v:lua.require("vscode")` to access the API from VimScript.
 
 ## ⌨️ Keybindings (shortcuts)
 
-Default commands and bindings available for file/scroll/window/tab management:
+There are three types of default/user keybindings in vscode-neovim:
 
--   See [vscode-scrolling.vim](/runtime/vscode/overrides/vscode-scrolling.vim) for scrolling commands reference
--   See [vscode-file-commands.vim](/runtime/vscode/overrides/vscode-file-commands.vim) for file commands reference
--   See [vscode-tab-commands.vim](/runtime/vscode/overrides/vscode-tab-commands.vim) for tab commands reference
--   See [vscode-window-commands.vim](/runtime/vscode/overrides/vscode-window-commands.vim) for window commands reference
-
-> 💡 "With bang" refers to adding a "!" to the end of a command.
-
-### Keybindings help
+-   **Neovim keybindings**: These are the keybindings that are defined in the extension's vimscript files or the user's
+    `init.vim` file. These provide code navigation, buffer management, and other neovim-specific overrides.
+-   **VSCode keybindings**: These are the keybindings that are defined in the extension's `package.json` or the user's
+    `keybindings.json` file. These provide the ability to interact with VSCode's built-in features, and are used to make
+    VSCode more Vim-like.
+-   **VSCode passthrough keybindings**: These are the keybindings that are defined in the extension's `package.json` or
+    the user's `keybindings.json` file, but simply pass the keypress through to Neovim. These are used to allow Neovim
+    to handle certain keypresses that would otherwise be handled by VSCode.
 
 This document only mentions some special cases, it is not an exhaustive list of keybindings and commands. Use VSCode and
 Nvim features to see documentation and all defined shortcuts:
 
--   Run the `Preferences: Open Keyboard Shortcuts` vscode command and search for "neovim" to see all keybindings.
--   Use the Nvim `:help` command to see the documentation for a given command or keybinding. For example try
+-   Run the `Preferences: Open Keyboard Shortcuts` vscode command and search for "neovim" to see all vscode and
+    passthrough keybindings.
+-   Use the Nvim `:help` command to see the documentation for a given neovim command or keybinding. For example try
     `:help :split` or `:help zo`.
     -   Note that `:help` for `<C-…>` bindings is spelled `CTRL-…`. For example to see the help for `<c-w>`, run
         `:help CTRL-W`.
--   Search the online Nvim documentation: https://neovim.io/doc/user/
+-   Search the online Nvim documentation: <https://neovim.io/doc/user/>
 
-### Add keybindings
+### Keybinding Passthroughs
 
-Every special (control/alt) keyboard shortcut must be explicitly defined in VSCode to send to neovim. By default, only
-bindings that are included by Neovim by default are sent.
+Every special (control/alt/non-alphanumerical) keyboard shortcut must be explicitly defined in VSCode to send to neovim.
+By default, only bindings that are used by Neovim by default are sent.
 
-To pass custom bindings to Neovim, for example <kbd>C-h</kbd> in normal mode, add to your keybindings.json:
+> **Note:** if you want to pass additional control keys without adding a custom passthrough, see below.
+
+To add a custom passthrough, for example <kbd>A-h</kbd> in normal mode, add to your `keybindings.json`:
 
 ```jsonc
 {
     "command": "vscode-neovim.send",
     // the key sequence to activate the binding
-    "key": "ctrl+h",
+    "key": "alt+h",
     // don't activate during insert mode
     "when": "editorTextFocus && neovim.mode != insert",
     // the input to send to Neovim
-    "args": "<C-h>",
+    "args": "<A-h>",
 }
 ```
 
-### Disable keybindings
+#### Insert mode control keys passthrough
 
-There are three configurations for toggling keybindings:
+Set by `vscode-neovim.ctrlKeysForInsertMode`.
 
-1.  `ctrlKeysForInsertMode`: toggle ctrl keys for insert mode.
-2.  `ctrlKeysForNormalMode`: toggle ctrl keys for normal mode.
-3.  `editorLangIdExclusions`: disable keybindings defined by this extension in certain filetypes. Please note that this
-    will not affect all keybindings.
+Default: `["a", "d", "h", "j", "m", "o", "r", "t", "u", "w"]`
 
-If you find that these options are not working, you can manually modify the keybindings in VSCode (see below).
+#### Normal mode control keys passthrough
 
-### Remove keybindings
+Set by `ctrlKeysForNormalMode`.
 
--   To delete a vscode keybinding edit your `settings.json`, or use the VSCode keybindings editor:
-    -   ![](https://user-images.githubusercontent.com/47070852/283446919-39805628-45b4-4cb3-9d0b-9bcf975b277e.gif)
+Default:
+`["a", "b", "d", "e", "f", "h", "i", "j", "k", "l", "m", "o", "r", "t", "u", "v", "w", "x", "y", "z", "/", "]"]`
 
-### Code navigation
+#### Cmdline mode special keys passthrough
 
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
+Always enabled.
+
+-   Tab, Up, Down
+-   Ctrl keys: `<C-h>` `<C-w>` `<C-u>` `<C-n>` `<C-p>` `<C-l>` `<C-g>` `<C-t>`
+-   All `<C-r>` prefixed keys
+
+#### Disable passthrough for certain filetypes
+
+Set by `editorLangIdExclusions`.
+
+Disable keybindings defined by this extension in certain filetypes. Please note that this will not affect all
+keybindings.
+
+#### Remove other vscode or passthrough keybindings
+
+If the above configuration flags do not provide enough control, you can remove the keybindings by editing your
+`keybindings.json` or using the VSCode keybindings editor:
+
+![remove keybindings](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/816e9734-bac3-4bbb-ab7f-13bf2e364794)
+
+### Code navigation bindings
 
 | Key                                                         | VSCode Command                                                                                 |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -739,9 +707,7 @@ If you find that these options are not working, you can manually modify the keyb
 
 > 💡 To specify the default peek mode, modify `editor.peekWidgetDefaultFocus` in your settings.
 
-### Explorer/list navigation
-
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
+### Explorer/list navigation bindings
 
 | Key                                 | VSCode Command                  |
 | ----------------------------------- | ------------------------------- |
@@ -759,9 +725,7 @@ If you find that these options are not working, you can manually modify the keyb
 | <kbd>zm</kbd> or <kbd>zM</kbd>      | `list.collapseAll`              |
 | <kbd> / </kbd> or <kbd>Escape</kbd> | `list.toggleKeyboardNavigation` |
 
-### Explorer file manipulation
-
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
+### Explorer file manipulation bindings
 
 | Key          | VSCode Command                                |
 | ------------ | --------------------------------------------- |
@@ -775,23 +739,11 @@ If you find that these options are not working, you can manually modify the keyb
 | <kbd>A</kbd> | `explorer.newFolder`                          |
 | <kbd>R</kbd> | `workbench.files.action.refreshFilesExplorer` |
 
-### Hover widget manipulation
-
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
-
-The following keybinding is set by default: When hover is invisible, K is sent to nvim(show hover); when hover is
-visible, press K again to focus the hover widget.
-
-```json
-{
-    "command": "editor.action.showHover",
-    "key": "shift+k",
-    "when": "neovim.init && neovim.mode == normal && editorTextFocus && editorHoverVisible"
-}
-```
+### Hover widget manipulation bindings
 
 | Key            | VSCode Command                   |
 | -------------- | -------------------------------- |
+| <kbd>K</kbd>   | `editor.action.showHover`        |
 | <kbd>h</kbd>   | `editor.action.scrollLeftHover`  |
 | <kbd>j</kbd>   | `editor.action.scrollDownHover`  |
 | <kbd>k</kbd>   | `editor.action.scrollUpHover`    |
@@ -801,27 +753,31 @@ visible, press K again to focus the hover widget.
 | <kbd>C-f</kbd> | `editor.action.pageDownHover`    |
 | <kbd>C-b</kbd> | `editor.action.pageUpHover`      |
 
-### File management
+## 📟 Neovim Commands
+
+Default commands and bindings are available for file/scroll/window/tab management.
+
+#### File management
+
+See [vscode-file-commands.vim](/runtime/vscode/overrides/vscode-file-commands.vim) for file commands reference.
 
 The extension aliases various Nvim commands (`:edit`, `:enew`, `:find`, `:quit`, etc.) to equivalent vscode commands.
 Also their normal-mode equivalents (where applicable) such as <kbd>C-w q</kbd>, etc.
 
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
+#### Tab management
 
-### Tab management
+See [vscode-tab-commands.vim](/runtime/vscode/overrides/vscode-tab-commands.vim) for tab commands reference.
 
 The extension aliases various Nvim tab commands (`:tabedit`, `:tabnew`, `:tabfind`, `:tabclose`, `:tabnext`,
 `:tabprevious`, `:tabfirst`, `:tablast`) to equivalent vscode commands. Also their normal-mode equivalents (where
 applicable) such as <kbd>gt</kbd>, etc.
 
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
+#### Buffer/window management
 
-### Buffer/window management
+See [vscode-window-commands.vim](/runtime/vscode/overrides/vscode-window-commands.vim) for file commands reference.
 
 The extension aliases various Nvim buffer/window commands (`:split`, `:vsplit`, `:new`, `:vnew`, `:only`) to equivalent
 vscode commands. Also their normal-mode equivalents (where applicable) such as <kbd>C-w s</kbd>, etc.
-
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
 
 > 💡 Split size distribution is controlled by `workbench.editor.splitSizing` setting. By default, it's `distribute`,
 > which is equal to vim's `equalalways` and `eadirection = 'both'` (default).
@@ -834,65 +790,39 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 <details>
 <summary>Copy this into init.vim</summary>
 
-    function! s:manageEditorSize(...)
-        let count = a:1
-        let to = a:2
-        for i in range(1, count ? count : 1)
-            call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
-        endfor
-    endfunction
+```vim
+function! s:manageEditorSize(...)
+    let count = a:1
+    let to = a:2
+    for i in range(1, count ? count : 1)
+        call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+    endfor
+endfunction
 
-    " Sample keybindings. Note these override default keybindings mentioned above.
-    nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+" Sample keybindings. Note these override default keybindings mentioned above.
+nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+```
 
 </details>
 
-### Insert mode special keys
-
-Enabled by `ctrlKeysForInsertMode`
-
-Default: `["a", "d", "h", "j", "m", "o", "r", "t", "u", "w"]`
-
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
-
-### Normal mode control keys
-
-Enabled by `ctrlKeysForNormalMode`
-
-Default:
-`["a", "b", "d", "e", "f", "h", "i", "j", "k", "l", "m", "o", "r", "t", "u", "v", "w", "x", "y", "z", "/", "]"]`
-
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
-
-### Cmdline special keys
-
-Always enabled.
-
--   Tab
--   Ctrl keys: `<C-h>` `<C-w>` `<C-u>` `<C-n>` `<C-p>` `<C-l>` `<C-g>` `<C-t>`
--   All `<C-r>` prefixed keys
-
-> 💡 See [Keybindings help](#keybindings-help) to see all defined shortcuts and their documentation.
-
 ## 🎨 Highlights
 
-There are two ways to customize colors:
+There are two ways to customize highlight colors:
 
 1. Set colors in nvim
 
-Note: Due to the support for the `syntax` option requiring processing of syntax highlights, all built-in highlight
-groups may be overridden or cleared. Therefore, please do not link any highlights to the built-in highlight groups.
+    **Note**: Due to the support for the `syntax` option requiring processing of syntax highlights, all built-in
+    highlight groups may be overridden or cleared. Therefore, please do not link any highlights to the built-in
+    highlight groups.
 
 2. Set colors in vscode
-
-    References:
 
     - [vscode-neovim.highlightGroups.highlights](https://github.com/vscode-neovim/vscode-neovim/blob/2657c4506b3dffe0d069db2891e30cebd963c2be/package.json#L160C1-L202C19)
     - [ThemeColor](https://code.visualstudio.com/api/references/theme-color)
