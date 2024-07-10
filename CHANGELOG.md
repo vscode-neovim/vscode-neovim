@@ -1,5 +1,25 @@
 # Change Log
 
+## [1.18.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.2...v1.18.3) (2024-07-10)
+
+
+### Bug Fixes
+
+* **highlight:** Fix pattern matching of syntax groups ([#2150](https://github.com/vscode-neovim/vscode-neovim/issues/2150)) ([78dc156](https://github.com/vscode-neovim/vscode-neovim/commit/78dc156c453c9e6457c81092c24be7d14b54e0be))
+* **with_insert:** Correct "a" or "i" to enter insert mode ([#2152](https://github.com/vscode-neovim/vscode-neovim/issues/2152)) ([dfa195b](https://github.com/vscode-neovim/vscode-neovim/commit/dfa195bfb1b1d2129294738bf3479efe6a6db5b9))
+
+
+### Documentation
+
+* Add settings and commands section ([#2148](https://github.com/vscode-neovim/vscode-neovim/issues/2148)) ([40d6016](https://github.com/vscode-neovim/vscode-neovim/commit/40d6016b767de976fbda074cd76b8dc9b8f3cb5d))
+* simplify readme ([#2155](https://github.com/vscode-neovim/vscode-neovim/issues/2155)) ([fb33462](https://github.com/vscode-neovim/vscode-neovim/commit/fb33462a40dce6f44f31c0079b3063303887f59e))
+
+
+### Refactor
+
+* Remove debounce time limit for sync mouse selection ([#2153](https://github.com/vscode-neovim/vscode-neovim/issues/2153)) ([af78dc9](https://github.com/vscode-neovim/vscode-neovim/commit/af78dc9cbebd0177b2178f93cfbf6dbc0e3adf6e))
+* Simplify invoking Treesitter parsing and ensure more timely parsing ([#2154](https://github.com/vscode-neovim/vscode-neovim/issues/2154)) ([be2ae6b](https://github.com/vscode-neovim/vscode-neovim/commit/be2ae6b2e68382c7823abb777e7bbb13049d6fb8))
+
 ## [1.18.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.1...v1.18.2) (2024-07-07)
 
 
