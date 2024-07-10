@@ -466,7 +466,7 @@ function M.with_insert(callback)
 
   --- Normal ---
   if mode == "n" then
-    startinsert("a")
+    startinsert("i")
     run_callback()
     return
   end
@@ -491,14 +491,14 @@ function M.with_insert(callback)
     local ranges = { range }
 
     api.nvim_win_set_cursor(0, end_pos)
-    startinsert("<Esc>a")
+    startinsert("<Esc>" .. (vim.o.selection ~= "exclusive" and "a" or "i"))
 
     run_callback(ranges)
     return
   end
 
   --- Other ---
-  startinsert("<Esc><Esc>a")
+  startinsert("<Esc><Esc>i")
   run_callback()
 end
 
