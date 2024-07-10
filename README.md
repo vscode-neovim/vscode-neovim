@@ -570,9 +570,9 @@ Example: make `editor.action.addSelectionToNextFindMatch` work correctly in any 
 
 ```lua
 vim.keymap.set({ "n", "x", "i" }, "<C-d>", function()
-    vscode.with_insert(function()
+  vscode.with_insert(function()
     vscode.action("editor.action.addSelectionToNextFindMatch")
-    end)
+  end)
 end)
 ```
 
@@ -583,9 +583,9 @@ VSCode snippet mode.
 
 ```lua
 vim.keymap.set({ "n", "x" }, "<leader>r", function()
-    vscode.with_insert(function()
+  vscode.with_insert(function()
     vscode.action("editor.action.refactor")
-    end)
+  end)
 end)
 ```
 
@@ -686,7 +686,7 @@ keybindings.
 If the above configuration flags do not provide enough control, you can remove the keybindings by editing your
 `keybindings.json` or using the VSCode keybindings editor:
 
-![](https://user-images.githubusercontent.com/47070852/283446919-39805628-45b4-4cb3-9d0b-9bcf975b277e.gif)
+![remove keybindings](https://github.com/vscode-neovim/vscode-neovim/assets/47070852/816e9734-bac3-4bbb-ab7f-13bf2e364794)
 
 ### Code navigation bindings
 
@@ -789,23 +789,25 @@ To use VSCode command 'Increase/decrease current view size' instead of separate 
 <details>
 <summary>Copy this into init.vim</summary>
 
-    function! s:manageEditorSize(...)
-        let count = a:1
-        let to = a:2
-        for i in range(1, count ? count : 1)
-            call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
-        endfor
-    endfunction
+```vim
+function! s:manageEditorSize(...)
+    let count = a:1
+    let to = a:2
+    for i in range(1, count ? count : 1)
+        call VSCodeNotify(to ==# 'increase' ? 'workbench.action.increaseViewSize' : 'workbench.action.decreaseViewSize')
+    endfor
+endfunction
 
-    " Sample keybindings. Note these override default keybindings mentioned above.
-    nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
-    nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
-    xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+" Sample keybindings. Note these override default keybindings mentioned above.
+nnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+xnoremap <C-w>> <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+nnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+xnoremap <C-w>+ <Cmd>call <SID>manageEditorSize(v:count, 'increase')<CR>
+nnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+xnoremap <C-w>< <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+nnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+xnoremap <C-w>- <Cmd>call <SID>manageEditorSize(v:count, 'decrease')<CR>
+```
 
 </details>
 
@@ -815,13 +817,14 @@ There are two ways to customize highlight colors:
 
 1. Set colors in nvim
 
-Note: Due to the support for the `syntax` option requiring processing of syntax highlights, all built-in highlight
-groups may be overridden or cleared. Therefore, please do not link any highlights to the built-in highlight groups.
+    **Note**: Due to the support for the `syntax` option requiring processing of syntax highlights, all built-in
+    highlight groups may be overridden or cleared. Therefore, please do not link any highlights to the built-in
+    highlight groups.
 
 2. Set colors in vscode
 
--   [vscode-neovim.highlightGroups.highlights](https://github.com/vscode-neovim/vscode-neovim/blob/2657c4506b3dffe0d069db2891e30cebd963c2be/package.json#L160C1-L202C19)
--   [ThemeColor](https://code.visualstudio.com/api/references/theme-color)
+    - [vscode-neovim.highlightGroups.highlights](https://github.com/vscode-neovim/vscode-neovim/blob/2657c4506b3dffe0d069db2891e30cebd963c2be/package.json#L160C1-L202C19)
+    - [ThemeColor](https://code.visualstudio.com/api/references/theme-color)
 
 ## 🧰 Developing
 
