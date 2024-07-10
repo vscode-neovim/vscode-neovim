@@ -119,8 +119,9 @@ support for `cond = vim.g.vscode` and `vim-plug` has a
 
 ### VSCode Settings & Commands
 
-Open the [vscode-neovim](vscode:extension/asvetliakov.vscode-neovim) extension details in VSCode, and check all
-available [settings](https://code.visualstudio.com/docs/getstarted/settings) and commands in the Features tab.
+You can view all available [settings](https://code.visualstudio.com/docs/getstarted/settings) and commands by opening
+the [vscode-neovim](vscode:extension/asvetliakov.vscode-neovim) extension details pane, and navigating to the features
+tab.
 
 ## 💡 Tips and Features
 
