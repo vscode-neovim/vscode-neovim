@@ -279,6 +279,7 @@ export abstract class VSCodeContext {
  * Represents a progress indicator in VSCode.
  */
 export class Progress implements Disposable {
+    private disposed = false;
     private startTimer?: NodeJS.Timeout;
     private promise?: ManualPromise;
     private progress?: VSCodeProgress<{ message?: string }>;
@@ -310,6 +311,8 @@ export class Progress implements Disposable {
      * @param timeout The timeout in milliseconds before starting the indicator.
      */
     public start(options: VSCodeProgressOptions, timeout: number = 0) {
+        if (this.disposed) return; // Keep silent
+
         this.done();
         this.startTimer = setTimeout(() => {
             this.promise = new ManualPromise();
@@ -337,5 +340,6 @@ export class Progress implements Disposable {
 
     public dispose() {
         this.done();
+        this.disposed = true;
     }
 }
