@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.18.4](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.3...v1.18.4) (2024-07-14)
+
+
+### Bug Fixes
+
+* Cancel UI-affecting tasks upon disposal ([#2161](https://github.com/vscode-neovim/vscode-neovim/issues/2161)) ([508d6b3](https://github.com/vscode-neovim/vscode-neovim/commit/508d6b3094f06b25ec72a9e39953bf697b88c342))
+
+
+### Refactor
+
+* `pending_updates` -&gt; `/utils` `cmdline_text` -> `/cmdline` ([#2159](https://github.com/vscode-neovim/vscode-neovim/issues/2159)) ([cf62ea4](https://github.com/vscode-neovim/vscode-neovim/commit/cf62ea42c12cecae31c1be931f46312d4734219f))
+
 ## [1.18.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.2...v1.18.3) (2024-07-10)
 
 
