@@ -25,7 +25,7 @@ import {
     ManualPromise,
     rangesToSelections,
 } from "./utils";
-import { PendingUpdates } from "./pending_updates";
+import { PendingUpdates } from "./utils/pending_updates";
 
 const logger = createLogger("CursorManager", false);
 

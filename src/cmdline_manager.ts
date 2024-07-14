@@ -4,7 +4,7 @@ import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
 import { createLogger } from "./logger";
-import { calculateInputAfterTextChange } from "./utils/cmdline_text";
+import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
 import { GlyphChars } from "./constants";
 import { CmdlineQueue } from "./cmdline/cmdline_queue";
 
