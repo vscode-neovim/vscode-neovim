@@ -90,12 +90,19 @@ export class CursorManager implements Disposable {
         return this.main.client;
     }
 
+    // To avoid executing after being disposed, save the timeouts and clear them upon disposal
+    private updateCursorStyleTimeouts = new Set<NodeJS.Timeout>();
+
     public constructor(private main: MainController) {
         const updateCursorStyle = () => {
             this.updateCursorStyle();
             // Sometimes the cursor is reset to the default style.
             // Currently, can reproduce this issue when jumping between cells in Notebook.
-            setTimeout(() => this.updateCursorStyle(), 100);
+            const timeout = setTimeout(() => {
+                this.updateCursorStyle();
+                this.updateCursorStyleTimeouts.delete(timeout);
+            }, 100);
+            this.updateCursorStyleTimeouts.add(timeout);
         };
         this.disposables.push(
             window.onDidChangeTextEditorSelection(this.onSelectionChanged),
@@ -107,20 +114,19 @@ export class CursorManager implements Disposable {
                 const gridId = this.main.bufferManager.getGridIdForWinId(winId);
                 if (gridId) this.gridCursorUpdates.addForceUpdate(gridId);
             }),
-            {
-                dispose() {
-                    // reset cursor style
-                    const styleName = workspace
-                        .getConfiguration("editor")
-                        .get("cursorStyle", "line")
-                        .split("-")
-                        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-                        .join("");
-                    const style = TextEditorCursorStyle[styleName as any] as any as TextEditorCursorStyle;
-                    window.visibleTextEditors.forEach((e) => (e.options.cursorStyle = style));
-                },
-            },
             main.viewportManager.onCursorChanged((grid) => this.gridCursorUpdates.addForceUpdate(grid)),
+            // Reset the cursor style
+            new Disposable(() => {
+                this.updateCursorStyleTimeouts.forEach((t) => clearTimeout(t));
+                const styleName = workspace
+                    .getConfiguration("editor")
+                    .get("cursorStyle", "line")
+                    .split("-")
+                    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+                    .join("");
+                const style = TextEditorCursorStyle[styleName as any];
+                window.visibleTextEditors.forEach((e) => (e.options.cursorStyle = style as any));
+            }),
         );
     }
 

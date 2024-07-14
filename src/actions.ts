@@ -3,7 +3,7 @@ import { VimValue } from "neovim/lib/types/VimValue";
 import { ConfigurationTarget, Disposable, Range, commands, window, workspace } from "vscode";
 
 import { eval_for_client } from "./actions_eval";
-import { VSCodeContext, disposeAll, rangesToSelections } from "./utils";
+import { VSCodeContext, disposeAll, rangesToSelections, wait } from "./utils";
 
 function getActionName(action: string) {
     return `neovim:${action}`;
@@ -72,10 +72,7 @@ class ActionManager implements Disposable {
     private initActions() {
         // testing actions
         this.add("_ping", () => "pong");
-        this.add("_wait", async (ms = 1000) => {
-            await new Promise((resolve) => setTimeout(resolve, ms));
-            return "ok";
-        });
+        this.add("_wait", (ms = 1000) => wait(ms).then(() => "ok"));
         this.add("eval", (code: string, args: any) => eval_for_client(code, args));
         this.add("has_config", (names: string | string[]): boolean | boolean[] => {
             const config = workspace.getConfiguration();
