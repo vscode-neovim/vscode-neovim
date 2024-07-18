@@ -82,7 +82,7 @@
                         "type": "string"
                     },
                     "title": "After init config",
-                    "markdownDescription": "Config to be sourced after init config. e.g. : `[\"echo 'hello'\", \"lua << EOF\", \"require'vscode'.notify('world')\", \"EOF\"]`"
+                    "markdownDescription": "Config to be sourced after init config. Each item is a different line of the config. For example:\n\n`set ignorecase`\n\n`echo 'hello'`\n\n`lua << EOF`\n\n`require'vscode'.notify('world')`\n\n`EOF`"
                 },
                 "vscode-neovim.neovimClean": {
                     "type": "boolean",
