@@ -13,3 +13,5 @@ test_fixtures/
 .prettierignore
 .github/
 scripts/
+.husky
+eslint*
