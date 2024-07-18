@@ -109,6 +109,7 @@
                 "vscode-neovim.ctrlKeysForNormalMode": {
                     "type": "array",
                     "uniqueItems": true,
+                    "markdownDescription": "Enabled Ctrl+key combinations for all modes except insert mode.\n\nIf a key is in the below list, then `Ctrl+key` will be handled by Neovim. Otherwise it will be handled by VS Code.",
                     "items": {
                         "type": "string",
                         "enum": [
@@ -178,12 +179,12 @@
                         "down",
                         "backspace",
                         "delete"
-                    ],
-                    "description": "Enabled Ctrl keys in normal/visual/etc...(except insert) modes"
+                    ]
                 },
                 "vscode-neovim.ctrlKeysForInsertMode": {
                     "type": "array",
                     "uniqueItems": true,
+                    "markdownDescription": "Enabled Ctrl+key combinations for insert mode.\n\nIf a key is in the below list, then `Ctrl+key` will be handled by Neovim while in insert mode. Otherwise it will be handled by VS Code.",
                     "items": {
                         "type": "string",
                         "enum": [
@@ -235,8 +236,7 @@
                         "t",
                         "u",
                         "w"
-                    ],
-                    "description": "Enabled Ctrl keys in insert mode"
+                    ]
                 },
                 "vscode-neovim.editorLangIdExclusions": {
                     "type": "array",
