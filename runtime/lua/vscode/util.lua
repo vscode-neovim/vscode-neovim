@@ -1,21 +1,21 @@
 local M = {}
 
-local api = vim.api
+local fn, api = vim.fn, vim.api
 
 function M.is_visual_mode()
-  local mode = vim.api.nvim_get_mode().mode
+  local mode = api.nvim_get_mode().mode
   return mode == "v" or mode == "V" or mode == "\x16"
 end
 
 function M.get_char_at(line, byte_col, buf)
   if not buf or buf == 0 then
-    buf = vim.api.nvim_get_current_buf()
+    buf = api.nvim_get_current_buf()
   end
-  local line_str = vim.fn.getbufoneline(buf, line)
-  local char_idx = vim.fn.charidx(line_str, (byte_col - 1))
-  local char_nr = vim.fn.strgetchar(line_str, char_idx)
+  local line_str = fn.getbufoneline(buf, line)
+  local char_idx = fn.charidx(line_str, (byte_col - 1))
+  local char_nr = fn.strgetchar(line_str, char_idx)
   if char_nr ~= -1 then
-    return vim.fn.nr2char(char_nr)
+    return fn.nr2char(char_nr)
   else
     return nil
   end
@@ -76,6 +76,24 @@ function M.debounce(func, time)
     timer = vim.defer_fn(function()
       func(unpack(args))
     end, time)
+  end
+end
+
+-- Since Nvim 0.10.0, `virtcol2col` changed from returning the last byte of a
+-- multi-byte character to returning the first byte. However, we need the column
+-- of the last byte, which is consistent with the selected region in Nvim.
+-- See https://github.com/neovim/neovim/issues/29786
+if fn.has("nvim-0.10.0") == 0 then
+  M.virtcol2col = fn.virtcol2col
+else
+  ---@diagnostic disable-next-line: duplicate-set-field
+  M.virtcol2col = function(winid, lnum, virtcol)
+    local byte_idx = fn.virtcol2col(winid, lnum, virtcol) - 1
+    local buf = api.nvim_win_get_buf(winid)
+    local line = M.get_line(buf, lnum - 1)
+    local char_idx = fn.charidx(line, byte_idx)
+    local prefix = fn.strcharpart(line, 0, char_idx + 1)
+    return #prefix
   end
 end
 

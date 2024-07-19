@@ -209,8 +209,8 @@ function M.get_selections(win)
         -- ignore
       end
     else
-      local start_col = fn.virtcol2col(win, line_1, start_vcol)
-      local end_col = fn.virtcol2col(win, line_1, end_vcol)
+      local start_col = util.virtcol2col(win, line_1, start_vcol)
+      local end_col = util.virtcol2col(win, line_1, end_vcol)
       local start_col_offset = fn.strlen(util.get_char_at(line_1, start_col, buf) or "")
       local end_col_offset = fn.strlen(util.get_char_at(line_1, end_col, buf) or "")
       local range = vim.lsp.util.make_given_range_params(
