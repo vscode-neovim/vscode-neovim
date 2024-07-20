@@ -4,9 +4,9 @@ vim.filetype.add({
     [".*.*.*"] = {
       priority = -math.huge,
       function(_, bufnr)
-        local name = vim.api.nvim_buf_get_name(bufnr)
-        if name:match("vscode%-notebook%-cell") then
-          return "python"
+        local ok, filetype = pcall(vim.api.nvim_buf_get_var, bufnr, "vscode_filetype")
+        if ok and filetype then
+          return filetype
         end
       end,
     },
