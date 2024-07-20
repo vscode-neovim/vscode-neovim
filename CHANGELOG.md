@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.18.5](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.4...v1.18.5) (2024-07-20)
+
+
+### Bug Fixes
+
+* Fix multi-byte character selection in Nvim 0.10 blockwise visual ([#2169](https://github.com/vscode-neovim/vscode-neovim/issues/2169)) ([2f68d87](https://github.com/vscode-neovim/vscode-neovim/commit/2f68d87e44f65e114e4061917ff2abbaac0e99de))
+* manually set languageId to buffer filetype for special documents ([#2174](https://github.com/vscode-neovim/vscode-neovim/issues/2174)) ([fad8034](https://github.com/vscode-neovim/vscode-neovim/commit/fad803423adb2ea174cd4a60a100d475c7a260ed))
+
+
+### Refactor
+
+* Improve explanation of Ctrl+key in settings menu ([#2168](https://github.com/vscode-neovim/vscode-neovim/issues/2168)) ([f305226](https://github.com/vscode-neovim/vscode-neovim/commit/f305226eb33dcdb8de5ac7eba6376ff7d72c138e))
+* Improve usability of afterInitConfig option in the settings ([#2167](https://github.com/vscode-neovim/vscode-neovim/issues/2167)) ([fe586e1](https://github.com/vscode-neovim/vscode-neovim/commit/fe586e1a62f618be3ae434dd9076e8ef1acca5c5))
+
 ## [1.18.4](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.3...v1.18.4) (2024-07-14)
 
 
