@@ -66,6 +66,14 @@ function makeEditorOptionsVariable(options?: TextEditorOptions) {
     };
 }
 
+function resolveDocumentFiletype(document: TextDocument): string | undefined {
+    const { scheme } = document.uri;
+
+    if (!["vscode-remote", "file"].includes(scheme)) {
+        return document.languageId.toLowerCase();
+    }
+}
+
 /**
  * Manages neovim windows & buffers and maps them to vscode editors & documents
  */
@@ -750,6 +758,7 @@ export class BufferManager implements Disposable {
             editor_options: makeEditorOptionsVariable(editor?.options),
             modifiable: !this.isExternalTextDocument(document),
             modified: document.isDirty,
+            filetype: resolveDocumentFiletype(document),
         });
 
         // Looks like need to be in separate request

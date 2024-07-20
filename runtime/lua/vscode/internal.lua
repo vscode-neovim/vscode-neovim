@@ -321,12 +321,23 @@ end
 ---@field modifiable boolean
 ---@field bufname string
 ---@field modified boolean
+---@field filetype string|vim.NIL
 
 ---@param data InitDocumentBufferData
 function M.init_document_buffer(data)
   local buf = data.buf
 
-  -- Set bufname first so that the filetype detection can work ???
+  -- 1. Force filetype before setting buffer name and lines, vim.filetype will handle the b:vscode_filetype
+  -- 2. Finally, set the filetype again just in case
+  local force_filetype = function()
+    if data.filetype and data.filetype ~= vim.NIL then
+      api.nvim_buf_set_var(buf, "vscode_filetype", data.filetype)
+      api.nvim_buf_set_option(buf, "filetype", data.filetype)
+    end
+  end
+
+  force_filetype()
+  -- Set bufname before setting lines so that filetype detection can work ???
   api.nvim_buf_set_name(buf, data.bufname)
   api.nvim_buf_set_lines(buf, 0, -1, false, data.lines)
   -- set vscode controlled flag so we can check it neovim
@@ -343,6 +354,7 @@ function M.init_document_buffer(data)
   api.nvim_buf_set_option(buf, "buflisted", true)
   api.nvim_buf_set_option(buf, "modifiable", data.modifiable)
   api.nvim_buf_set_option(buf, "modified", data.modified)
+  force_filetype()
 
   set_buffer_autocmd(buf)
 end
