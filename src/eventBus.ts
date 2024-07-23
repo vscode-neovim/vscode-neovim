@@ -24,6 +24,8 @@ interface IRedrawEventArg<N, A extends unknown[] = []> {
     args: A["length"] extends 0 ? undefined : A[];
 }
 
+type MsgShowContent = [attr_id: number, text_chunk: string][];
+
 type RedrawEventArgs =
     | IRedrawEventArg<"win_close", [grid: number]>
     | IRedrawEventArg<"win_external_pos", [grid: number, win: neovim.Window]>
@@ -87,13 +89,13 @@ type RedrawEventArgs =
                   | "quickfix"
                   | "search_count"
                   | "wmsg",
-              content: [number, string][],
+              content: MsgShowContent,
               replace_last: boolean,
           ]
       >
-    | IRedrawEventArg<"msg_showcmd", [content: [number, string][]]>
-    | IRedrawEventArg<"msg_showmode", [content: [number, string][]]>
-    | IRedrawEventArg<"msg_ruler", [content: [number, string][]]>
+    | IRedrawEventArg<"msg_showcmd", [content: MsgShowContent]>
+    | IRedrawEventArg<"msg_showmode", [content: MsgShowContent]>
+    | IRedrawEventArg<"msg_ruler", [content: MsgShowContent]>
     | IRedrawEventArg<
           "mode_info_set",
           [
@@ -101,8 +103,7 @@ type RedrawEventArgs =
               mode_info: { name: string; cursor_shape: "block" | "horizontal" | "vertical" }[],
           ]
       >
-    // ["msg_history_show", entries]
-    | IRedrawEventArg<"msg_history_show", [string, [number, string][]][][]>
+    | IRedrawEventArg<"msg_history_show", [entries: [kind: string, MsgShowContent][]]>
     | IRedrawEventArg<"msg_history_clear">
     | IRedrawEventArg<"msg_clear">
     | IRedrawEventArg<"mode_change", [mode: string, mode_idx: number]>
