@@ -103,6 +103,7 @@ type RedrawEventArgs =
       >
     // ["msg_history_show", entries]
     | IRedrawEventArg<"msg_history_show", [string, [number, string][]][][]>
+    | IRedrawEventArg<"msg_history_clear">
     | IRedrawEventArg<"msg_clear">
     | IRedrawEventArg<"mode_change", [mode: string, mode_idx: number]>
     | IRedrawEventArg<
