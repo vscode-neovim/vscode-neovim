@@ -46,7 +46,6 @@ export class MessagesManager implements Disposable {
         switch (name) {
             case "msg_show": {
                 let lineCount = 0;
-
                 for (const [type, content, replaceLast] of args) {
                     // Ignore return_prompt
                     //
@@ -82,16 +81,14 @@ export class MessagesManager implements Disposable {
             }
 
             case "msg_history_show": {
-                for (const arg of args) {
-                    for (const list of arg) {
-                        for (const [commandName, content] of list) {
-                            const cmdContent = content.map(([_attrId, chunk]) => chunk).join("");
+                for (const [entries] of args) {
+                    for (const [commandName, content] of entries) {
+                        const cmdContent = content.map(([_attrId, chunk]) => chunk).join("");
 
-                            if (commandName.length === 0) {
-                                this.historyBuffer.push(cmdContent);
-                            } else {
-                                this.historyBuffer.push(`${commandName}: ${cmdContent}`);
-                            }
+                        if (commandName.length === 0) {
+                            this.historyBuffer.push(cmdContent);
+                        } else {
+                            this.historyBuffer.push(`${commandName}: ${cmdContent}`);
                         }
                     }
                 }
