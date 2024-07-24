@@ -87,6 +87,24 @@ function M.handle_changes(bufnr, changes)
   return api.nvim_buf_get_changedtick(bufnr)
 end
 
+---Handle generated document changes, directly replace the buffer content
+---@param bufnr number
+---@param lines string[]
+---@return number: changed tick of the buffer
+function M.handle_generated_document_changes(bufnr, lines)
+  local ro = vim.bo[bufnr].ro
+  local ma = vim.bo[bufnr].ma
+  vim.bo[bufnr].ro = false
+  vim.bo[bufnr].ma = true
+
+  api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+
+  vim.bo[bufnr].ro = ro
+  vim.bo[bufnr].ma = ma
+
+  return api.nvim_buf_get_changedtick(bufnr)
+end
+
 do
   --- Replay changes for dotrepeat ---
 
