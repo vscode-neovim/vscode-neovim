@@ -41,6 +41,20 @@ local function setup_viewport_changed()
         return
       end
       view_cache[view.winid] = view
+
+      --#region XXX: Temporary fix for #2165
+      -- Avoid unnecessary notifications
+      -- For highlighting #1976
+      local leftcol_changed = cache and cache.leftcol ~= view.leftcol
+      -- For cursor position #1971
+      local cursor_changed = cache
+        and (cache.lnum ~= view.lnum or cache.col ~= cache.col)
+        and api.nvim_get_mode().mode == "c"
+      if not leftcol_changed and not cursor_changed then
+        return
+      end
+      --#endregion
+
       fn.VSCodeExtensionNotify("viewport-changed", view)
     end,
   })
