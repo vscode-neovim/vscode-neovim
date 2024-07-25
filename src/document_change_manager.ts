@@ -32,16 +32,23 @@ import {
 
 const logger = createLogger("DocumentChangeManager");
 
+/**
+ * The document content in neovim.
+ */
 interface IDocumentContent {
     text: string;
     version: number;
 }
 
+/**
+ * Encapsulates the document information when a document change event is received,
+ * so it can be processed sequentially in a queue.
+ */
 class DocumentChange {
-    public text: string;
-    public version: number;
-    public isDirty: boolean;
-    public contentChanges: TextDocumentChangeEvent["contentChanges"];
+    public readonly text: string;
+    public readonly version: number;
+    public readonly isDirty: boolean;
+    public readonly contentChanges: TextDocumentChangeEvent["contentChanges"];
     public get isDirtyStateChange() {
         return this.contentChanges.length === 0;
     }
@@ -90,6 +97,14 @@ export class DocumentChangeManager implements Disposable {
      * ! It's possible to just fetch content from neovim and check instead of tracking here, but this will add unnecessary lag
      */
     private documentContentInNeovim: WeakMap<TextDocument, IDocumentContent> = new WeakMap();
+    /**
+     * Queue of document changes to apply
+     *
+     * Typically, documents are initialized before user edits, so changes are timely and valid
+     * In cases like output or chat code blocks, the document and editor are created simultaneously with rapid changes
+     * Initialization might not be complete, causing content to become outdated
+     * Thus, retain all changes and filter out outdated ones during processing
+     */
     private documentChangeQueue: WeakMap<TextDocument, DocumentChange[]> = new WeakMap();
     /**
      * Dot repeat workaround
@@ -362,18 +377,20 @@ export class DocumentChangeManager implements Disposable {
         if (!this.documentContentInNeovim.has(doc)) return;
 
         await this.documentChangeLock.runExclusive(async () => {
-            const content = this.documentContentInNeovim.get(doc);
+            const lastKnownContent = this.documentContentInNeovim.get(doc);
             const queuedChanges = this.documentChangeQueue.get(doc);
-            if (!content || !queuedChanges) return; // Defensive
+            if (!lastKnownContent || !queuedChanges) return; // Defensive
 
             this.documentChangeQueue.set(doc, []);
             const validChanges = queuedChanges.filter(
-                (change) => !change.isDirtyStateChange && change.version > content.version,
+                (change) =>
+                    // Always handle dirty-state changes
+                    !change.isDirtyStateChange && change.version > lastKnownContent.version,
             );
 
             for (const change of validChanges) {
-                const content = this.documentContentInNeovim.get(doc)!;
-                await this.processTextDocumentChange(doc, change, content);
+                const lastKnownContent = this.documentContentInNeovim.get(doc)!;
+                await this.processTextDocumentChange(doc, change, lastKnownContent);
                 this.documentContentInNeovim.set(doc, { text: change.text, version: change.version });
             }
         });
