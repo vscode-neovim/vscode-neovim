@@ -37,10 +37,21 @@ interface IDocumentContent {
     version: number;
 }
 
-interface IDocumentChange {
-    docText: string;
-    docVersion: number;
-    contentChanges: TextDocumentChangeEvent["contentChanges"];
+class DocumentChange {
+    public text: string;
+    public version: number;
+    public isDirty: boolean;
+    public contentChanges: TextDocumentChangeEvent["contentChanges"];
+    public get isDirtyStateChange() {
+        return this.contentChanges.length === 0;
+    }
+
+    constructor(changeEvent: TextDocumentChangeEvent) {
+        this.text = changeEvent.document.getText();
+        this.version = changeEvent.document.version;
+        this.isDirty = changeEvent.document.isDirty;
+        this.contentChanges = changeEvent.contentChanges;
+    }
 }
 
 export class DocumentChangeManager implements Disposable {
@@ -79,7 +90,7 @@ export class DocumentChangeManager implements Disposable {
      * ! It's possible to just fetch content from neovim and check instead of tracking here, but this will add unnecessary lag
      */
     private documentContentInNeovim: WeakMap<TextDocument, IDocumentContent> = new WeakMap();
-    private documentChangeQueue: WeakMap<TextDocument, IDocumentChange[]> = new WeakMap();
+    private documentChangeQueue: WeakMap<TextDocument, DocumentChange[]> = new WeakMap();
     /**
      * Dot repeat workaround
      */
@@ -342,38 +353,39 @@ export class DocumentChangeManager implements Disposable {
     private onChangeTextDocument = async (e: TextDocumentChangeEvent): Promise<void> => {
         const { document: doc } = e;
 
-        if (!this.documentChangeQueue.has(doc)) this.documentChangeQueue.set(doc, []);
-        this.documentChangeQueue.get(doc)!.push({
-            docText: doc.getText(),
-            docVersion: doc.version,
-            contentChanges: e.contentChanges,
-        });
-        console.log("Push queue count: ", this.documentChangeQueue.get(doc)!.length);
+        if (!this.documentChangeQueue.has(doc)) {
+            this.documentChangeQueue.set(doc, []);
+        }
+        const documentChange = new DocumentChange(e);
+        this.documentChangeQueue.get(doc)!.push(documentChange);
 
         if (!this.documentContentInNeovim.has(doc)) return;
 
         await this.documentChangeLock.runExclusive(async () => {
             const content = this.documentContentInNeovim.get(doc);
             const queuedChanges = this.documentChangeQueue.get(doc);
-            if (!content || !queuedChanges) return;
+            if (!content || !queuedChanges) return; // Defensive
 
             this.documentChangeQueue.set(doc, []);
-            const validChanges = queuedChanges.filter((change) => change.docVersion > content.version);
-            console.log("🚀 ~ DocumentChangeManager ~ validChanges:", validChanges.length);
+            const validChanges = queuedChanges.filter(
+                (change) => !change.isDirtyStateChange && change.version > content.version,
+            );
 
             for (const change of validChanges) {
                 const content = this.documentContentInNeovim.get(doc)!;
                 await this.processTextDocumentChange(doc, change, content);
-                this.documentContentInNeovim.set(doc, { text: change.docText, version: change.docVersion });
+                this.documentContentInNeovim.set(doc, { text: change.text, version: change.version });
             }
         });
     };
 
     private processTextDocumentChange = async (
         doc: TextDocument,
-        { contentChanges }: IDocumentChange,
+        documentChange: DocumentChange,
         originContent: IDocumentContent,
     ): Promise<void> => {
+        const { contentChanges, isDirty, version } = documentChange;
+
         logger.log(doc.uri, LogLevel.Debug, `Change text document for: ${doc.uri}`);
         const editor = window.visibleTextEditors.find((e) => e.document === doc);
         const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
@@ -387,13 +399,13 @@ export class DocumentChangeManager implements Disposable {
         // 2. If content changes and dirty is true, it will be automatically set
         //    when syncing the content change to Neovim
         const isDirtyStateChange = contentChanges.length === 0;
-        if (isDirtyStateChange && !doc.isDirty) {
+        if (isDirtyStateChange && !isDirty) {
             await this.client.request("nvim_buf_set_option", [bufId, "modified", false]);
         }
 
         const skipVersion = this.documentSkipVersionOnChange.get(doc) ?? 0;
-        logger.log(doc.uri, LogLevel.Debug, `Version: ${doc.version}, skipVersion: ${skipVersion}`);
-        if (skipVersion >= doc.version) {
+        logger.log(doc.uri, LogLevel.Debug, `Version: ${version}, skipVersion: ${skipVersion}`);
+        if (skipVersion >= version) {
             logger.log(doc.uri, LogLevel.Debug, `Skipping a change since versions equals`);
             return;
         }
