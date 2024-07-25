@@ -142,7 +142,7 @@ export class BufferManager implements Disposable {
         more: boolean,
     ) => void;
 
-    public onBufferInit?: (bufferId: number, textDocument: TextDocument) => void;
+    public onBufferInit?: (bufId: number, doc: TextDocument, initDocText: string, initDocVersion: number) => void;
 
     private get client() {
         return this.main.client;
@@ -746,7 +746,9 @@ export class BufferManager implements Disposable {
         logger.log(document.uri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${document.uri}`);
 
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
-        const lines = document.getText().split(eol);
+        const text = document.getText();
+        const lines = text.split(eol);
+        const { version } = document;
         const bufname = await this.bufnameForTextDocument(document);
 
         await actions.lua("init_document_buffer", {
@@ -765,7 +767,7 @@ export class BufferManager implements Disposable {
         if (!this.isExternalTextDocument(document)) {
             await actions.lua("clear_undo", bufId);
         }
-        this.onBufferInit?.(bufId, document);
+        this.onBufferInit?.(bufId, document, text, version);
         buffer.listen("lines", this.receivedBufferEvent);
         actions.fireNvimEvent("document_buffer_init", bufId);
     }
@@ -833,7 +835,7 @@ export class BufferManager implements Disposable {
 
         this.externalTextDocuments.add(doc);
         this.textDocumentToBufferId.set(doc, id);
-        this.onBufferInit?.(id, doc);
+        this.onBufferInit?.(id, doc, doc.getText(), doc.version);
 
         const windows = await this.client.windows;
         let closeWinId = 0;

@@ -32,6 +32,17 @@ import {
 
 const logger = createLogger("DocumentChangeManager");
 
+interface IDocumentContent {
+    text: string;
+    version: number;
+}
+
+interface IDocumentChange {
+    docText: string;
+    docVersion: number;
+    contentChanges: TextDocumentChangeEvent["contentChanges"];
+}
+
 export class DocumentChangeManager implements Disposable {
     private disposables: Disposable[] = [];
     /**
@@ -67,7 +78,8 @@ export class DocumentChangeManager implements Disposable {
      * ! This is used to convert vscode ranges to neovim bytes.
      * ! It's possible to just fetch content from neovim and check instead of tracking here, but this will add unnecessary lag
      */
-    private documentContentInNeovim: WeakMap<TextDocument, string> = new WeakMap();
+    private documentContentInNeovim: WeakMap<TextDocument, IDocumentContent> = new WeakMap();
+    private documentChangeQueue: WeakMap<TextDocument, IDocumentChange[]> = new WeakMap();
     /**
      * Dot repeat workaround
      */
@@ -134,9 +146,13 @@ export class DocumentChangeManager implements Disposable {
         }
     }
 
-    private onBufferInit: BufferManager["onBufferInit"] = (id, doc) => {
-        logger.log(doc.uri, LogLevel.Debug, `Init buffer content for bufId: ${id}, uri: ${doc.uri.toString()}`);
-        this.documentContentInNeovim.set(doc, doc.getText());
+    private onBufferInit: BufferManager["onBufferInit"] = (bufId, doc, initText, initVersion) => {
+        logger.log(
+            doc.uri,
+            LogLevel.Debug,
+            `Init buffer content for bufId: ${bufId}, uri: ${doc.uri}, version: ${initVersion}`,
+        );
+        this.documentContentInNeovim.set(doc, { text: initText, version: initVersion });
     };
 
     private onNeovimChangeEvent: BufferManager["onBufferEvent"] = (
@@ -292,7 +308,7 @@ export class DocumentChangeManager implements Disposable {
                         this.cursorAfterTextDocumentChange.set(editor.document, editor.selection.active);
                         docPromises.forEach((p) => p.resolve && p.resolve());
                         logger.log(doc.uri, LogLevel.Debug, `Changes succesfully applied for ${doc.uri.toString()}`);
-                        this.documentContentInNeovim.set(doc, doc.getText());
+                        this.documentContentInNeovim.set(doc, { text: doc.getText(), version: doc.version });
                     } else {
                         docPromises.forEach((p) => {
                             p.promise.catch(() =>
@@ -325,21 +341,39 @@ export class DocumentChangeManager implements Disposable {
 
     private onChangeTextDocument = async (e: TextDocumentChangeEvent): Promise<void> => {
         const { document: doc } = e;
-        const origText = this.documentContentInNeovim.get(doc);
-        if (origText == null) {
-            logger.log(
-                doc.uri,
-                LogLevel.Warning,
-                `Can't get last known neovim content for ${doc.uri.toString()}, skipping`,
-            );
-            return;
-        }
-        this.documentContentInNeovim.set(doc, doc.getText());
-        await this.documentChangeLock.runExclusive(async () => await this.onChangeTextDocumentLocked(e, origText));
+
+        if (!this.documentChangeQueue.has(doc)) this.documentChangeQueue.set(doc, []);
+        this.documentChangeQueue.get(doc)!.push({
+            docText: doc.getText(),
+            docVersion: doc.version,
+            contentChanges: e.contentChanges,
+        });
+        console.log("Push queue count: ", this.documentChangeQueue.get(doc)!.length);
+
+        if (!this.documentContentInNeovim.has(doc)) return;
+
+        await this.documentChangeLock.runExclusive(async () => {
+            const content = this.documentContentInNeovim.get(doc);
+            const queuedChanges = this.documentChangeQueue.get(doc);
+            if (!content || !queuedChanges) return;
+
+            this.documentChangeQueue.set(doc, []);
+            const validChanges = queuedChanges.filter((change) => change.docVersion > content.version);
+            console.log("🚀 ~ DocumentChangeManager ~ validChanges:", validChanges.length);
+
+            for (const change of validChanges) {
+                const content = this.documentContentInNeovim.get(doc)!;
+                await this.processTextDocumentChange(doc, change, content);
+                this.documentContentInNeovim.set(doc, { text: change.docText, version: change.docVersion });
+            }
+        });
     };
 
-    private onChangeTextDocumentLocked = async (e: TextDocumentChangeEvent, origText: string): Promise<void> => {
-        const { document: doc, contentChanges } = e;
+    private processTextDocumentChange = async (
+        doc: TextDocument,
+        { contentChanges }: IDocumentChange,
+        originContent: IDocumentContent,
+    ): Promise<void> => {
         logger.log(doc.uri, LogLevel.Debug, `Change text document for: ${doc.uri}`);
         const editor = window.visibleTextEditors.find((e) => e.document === doc);
         const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
@@ -381,15 +415,16 @@ export class DocumentChangeManager implements Disposable {
             }
         }
 
+        const originLines = originContent.text.split(eol);
         const changeArgs = [];
         for (const change of contentChanges) {
             const {
                 text,
                 range: { start, end },
             } = change;
-            const startBytes = convertCharNumToByteNum(origText.split(eol)[start.line], start.character);
-            const endBytes = convertCharNumToByteNum(origText.split(eol)[end.line], end.character);
-            changeArgs.push([start.line, startBytes, end.line, endBytes, text.split(eol)]);
+            const startBytes = convertCharNumToByteNum(originLines[start.line], start.character);
+            const endBytes = convertCharNumToByteNum(originLines[end.line], end.character);
+            changeArgs.push([start.line, startBytes, end.line, endBytes, text.split(eol)] as const);
         }
 
         const bufTick: number = await this.client.request("nvim_buf_get_changedtick", [bufId]);
@@ -410,11 +445,9 @@ export class DocumentChangeManager implements Disposable {
         // After synchronizing the changes to nvim, the cursor
         // position/visual range of nvim will change. And the changed result is
         // usually incorrect, so synchronization is forced here.
-        if (!this.main.modeManager.isInsertMode) {
-            if (editor && editor === activeEditor) {
-                // Don't await here, since it will cause a deadlock
-                this.main.cursorManager.applySelectionChanged(editor);
-            }
+        if (editor && editor === activeEditor && !this.main.modeManager.isInsertMode) {
+            // Don't await here, since it will cause a deadlock
+            this.main.cursorManager.applySelectionChanged(editor);
         }
     };
 }
