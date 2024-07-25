@@ -385,7 +385,7 @@ export class DocumentChangeManager implements Disposable {
             const validChanges = queuedChanges.filter(
                 (change) =>
                     // Always handle dirty-state changes
-                    !change.isDirtyStateChange && change.version > lastKnownContent.version,
+                    change.isDirtyStateChange || change.version > lastKnownContent.version,
             );
 
             for (const change of validChanges) {
@@ -401,7 +401,7 @@ export class DocumentChangeManager implements Disposable {
         documentChange: DocumentChange,
         originContent: IDocumentContent,
     ): Promise<void> => {
-        const { contentChanges, isDirty, version } = documentChange;
+        const { contentChanges, isDirty, version, isDirtyStateChange } = documentChange;
 
         logger.log(doc.uri, LogLevel.Debug, `Change text document for: ${doc.uri}`);
         const editor = window.visibleTextEditors.find((e) => e.document === doc);
@@ -411,11 +411,13 @@ export class DocumentChangeManager implements Disposable {
             return;
         }
 
-        // Avoid manually setting modified to prevent issues with Neovim's modified management
-        // 1. VSCode may trigger a dirty change before a content change
-        // 2. If content changes and dirty is true, it will be automatically set
-        //    when syncing the content change to Neovim
-        const isDirtyStateChange = contentChanges.length === 0;
+        // Manually setting 'modified' may interfere with Neovim's management of the 'modified' state,
+        // for example, not resetting 'modified' after an undo operation.
+        // 1. VSCode may trigger a dirty change before a content change.
+        // 2. The dirty flag may be false, but the content changes are not empty.
+        // 3. If content changes and dirty is true, it will be automatically set when syncing the content change to Neovim.
+        // Therefore, when isDirty is false, 'modified' needs to be manually set to false before and after syncing.
+        // When isDirty is true, Neovim will automatically set 'modified' to true after syncing.
         if (isDirtyStateChange && !isDirty) {
             await this.client.request("nvim_buf_set_option", [bufId, "modified", false]);
         }
@@ -468,6 +470,10 @@ export class DocumentChangeManager implements Disposable {
         if (editor) this.main.cursorManager.setWantInsertCursorUpdate(editor, false);
 
         await actions.lua("handle_changes", bufId, changeArgs);
+
+        if (!isDirty) {
+            await this.client.request("nvim_buf_set_option", [bufId, "modified", false]);
+        }
 
         // Mainly for the changes caused by some vscode commands in visual mode.
         // e.g. move line up/down
