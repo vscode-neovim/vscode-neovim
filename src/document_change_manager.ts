@@ -377,31 +377,21 @@ export class DocumentChangeManager implements Disposable {
         if (!this.documentContentInNeovim.has(doc)) return;
 
         await this.documentChangeLock.runExclusive(async () => {
-            const lastKnownContent = this.documentContentInNeovim.get(doc);
-            const queuedChanges = this.documentChangeQueue.get(doc);
-            if (!lastKnownContent || !queuedChanges) return; // Defensive
-
+            const queuedChanges = this.documentChangeQueue.get(doc) ?? [];
             this.documentChangeQueue.set(doc, []);
-            const validChanges = queuedChanges.filter(
-                (change) =>
-                    // Always handle dirty-state changes
-                    change.isDirtyStateChange || change.version > lastKnownContent.version,
-            );
-
-            for (const change of validChanges) {
-                const lastKnownContent = this.documentContentInNeovim.get(doc)!;
-                await this.processTextDocumentChange(doc, change, lastKnownContent);
-                this.documentContentInNeovim.set(doc, { text: change.text, version: change.version });
+            for (const change of queuedChanges) {
+                await this.processTextDocumentChange(doc, change);
             }
         });
     };
 
-    private processTextDocumentChange = async (
-        doc: TextDocument,
-        documentChange: DocumentChange,
-        originContent: IDocumentContent,
-    ): Promise<void> => {
-        const { contentChanges, isDirty, version, isDirtyStateChange } = documentChange;
+    private processTextDocumentChange = async (doc: TextDocument, change: DocumentChange): Promise<void> => {
+        const lastKnownContent = this.documentContentInNeovim.get(doc);
+        if (!lastKnownContent) return; // won't happen
+        const { contentChanges, isDirty, isDirtyStateChange, version } = change;
+        if (!isDirtyStateChange && version <= lastKnownContent.version) return;
+
+        this.documentContentInNeovim.set(doc, { text: change.text, version: change.version });
 
         logger.log(doc.uri, LogLevel.Debug, `Change text document for: ${doc.uri}`);
         const editor = window.visibleTextEditors.find((e) => e.document === doc);
@@ -446,15 +436,15 @@ export class DocumentChangeManager implements Disposable {
             }
         }
 
-        const originLines = originContent.text.split(eol);
+        const lastLines = lastKnownContent.text.split(eol);
         const changeArgs = [];
         for (const change of contentChanges) {
             const {
                 text,
                 range: { start, end },
             } = change;
-            const startBytes = convertCharNumToByteNum(originLines[start.line], start.character);
-            const endBytes = convertCharNumToByteNum(originLines[end.line], end.character);
+            const startBytes = convertCharNumToByteNum(lastLines[start.line], start.character);
+            const endBytes = convertCharNumToByteNum(lastLines[end.line], end.character);
             changeArgs.push([start.line, startBytes, end.line, endBytes, text.split(eol)] as const);
         }
 
