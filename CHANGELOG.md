@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.18.6](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.5...v1.18.6) (2024-07-26)
+
+
+### Bug Fixes
+
+* avoid unnecessary rpcnotify that cause crashs (temporary fix) ([#2179](https://github.com/vscode-neovim/vscode-neovim/issues/2179)) ([cc54e2b](https://github.com/vscode-neovim/vscode-neovim/commit/cc54e2b0738c495f3ea6eef3ba9dbef6d37d3ec8))
+* **highlight:** leading dashes could be combined with statuscolumn ([#2187](https://github.com/vscode-neovim/vscode-neovim/issues/2187)) ([9eb7eed](https://github.com/vscode-neovim/vscode-neovim/commit/9eb7eed232d6f849106951fc7ee44521bf051f32))
+* queue text document change events ([#2183](https://github.com/vscode-neovim/vscode-neovim/issues/2183)) ([8944a06](https://github.com/vscode-neovim/vscode-neovim/commit/8944a066e66b544da359ad1bb0781bb663a7c53a))
+
 ## [1.18.5](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.4...v1.18.5) (2024-07-20)
 
 
