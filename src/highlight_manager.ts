@@ -8,6 +8,9 @@ import { VimCell } from "./highlights/types";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
 
+// We have fixed statuscolumn width
+const STATUSCOLUMN_WIDTH = 20;
+
 export class HighlightManager implements Disposable {
     private disposables: Disposable[] = [];
     private redrawWaitGroup = new WaitGroup();
@@ -102,10 +105,15 @@ export class HighlightManager implements Disposable {
         const gridOffset = this.main.viewportManager.getGridOffset(gridId);
         const drawLine = gridOffset.line + row;
         // Offset for the statuscolumn
-        // We have fixed the width of the statuscolumn to 20.
         const startCol = col + gridOffset.character;
-        const [vimCol, gutterWidth] = startCol < 20 ? [0, 1] : [startCol - 20, 0];
-        cells.splice(0, gutterWidth);
+        // No reason for startCol to equal STATUSCOLUMN_WIDTH
+        const vimCol = startCol < STATUSCOLUMN_WIDTH ? 0 : startCol - STATUSCOLUMN_WIDTH;
+        if (startCol < STATUSCOLUMN_WIDTH) {
+            // leading dashes could be combined with statuscolumn
+            const delta = STATUSCOLUMN_WIDTH - startCol;
+            if (cells[0][2]! > delta) cells[0][2]! -= delta;
+            else cells.shift();
+        }
 
         this.getGrid(gridId).handleGridLine(drawLine, vimCol, cells);
     }
