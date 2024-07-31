@@ -1,3 +1,4 @@
+import "core-js/actual/array/find-last";
 import * as vscode from "vscode";
 
 import actions from "./actions";
