@@ -2161,6 +2161,7 @@
     "dependencies": {
         "@jpwilliams/waitgroup": "^2.1.1",
         "async-mutex": "^0.5.0",
+        "core-js": "^3.37.1",
         "fast-myers-diff": "^3.2.0",
         "grapheme-splitter": "^1.0.4",
         "lodash": "^4.17.21",
