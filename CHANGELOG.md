@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.7](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.6...v1.18.7) (2024-08-02)
+
+
+### chore
+
+* release 1.18.7 ([9b64ffb](https://github.com/vscode-neovim/vscode-neovim/commit/9b64ffb37dd11edc98b4f85848a0c3624e82a825))
+
 ## [1.18.6](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.5...v1.18.6) (2024-07-26)
 
 
