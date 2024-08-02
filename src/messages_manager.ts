@@ -17,7 +17,6 @@ export class MessagesManager implements Disposable {
     private redrawing = Promise.resolve();
 
     private revealOutput: boolean = false;
-    private replaceOutput: boolean = false;
     private displayHistory: boolean = false;
     private didChange: boolean = false;
 
@@ -42,18 +41,17 @@ export class MessagesManager implements Disposable {
         disposeAll(this.disposables);
     }
 
-    private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
+    private handleRedraw({ name, args }: EventBusData<"redraw">): void {
         switch (name) {
             case "msg_show": {
-                let lineCount = 0;
                 for (const [type, content, replaceLast] of args) {
-                    // Ignore return_prompt
-                    //
                     // A note to future readers: return_prompt is sent much more often with ui_messages. It may
                     // not do what you expect from what :help ui says, so be careful about using these events.
                     // See: https://github.com/vscode-neovim/vscode-neovim/issues/2046#issuecomment-2144175058
                     if (type === "return_prompt") {
-                        this.replaceOutput = true;
+                        // This kinda mimics normal neovim behavior, but it's not exactly the
+                        // same because we still don't require a keypress/hide the panel afterwards.
+                        this.revealOutput = true;
                         continue;
                     }
 
@@ -65,13 +63,7 @@ export class MessagesManager implements Disposable {
                         this.messageBuffer.pop();
                     }
                     this.messageBuffer.push(text);
-
-                    lineCount += text.split("\n").length;
                 }
-
-                const cmdheight = (await this.main.client.getOption("cmdheight")) as number;
-                // Before Nvim 0.10, cmdheight is unchangeable, and it's always 0.
-                this.revealOutput ||= lineCount > Math.max(1, cmdheight);
                 break;
             }
 
@@ -94,34 +86,55 @@ export class MessagesManager implements Disposable {
                 }
 
                 this.displayHistory = true;
-                this.replaceOutput = true;
                 this.revealOutput = true;
                 break;
             }
 
-            case "msg_history_clear": {
+            case "msg_history_clear":
+                // NOTE: this does not actually correspond to the `:messages clear`
+                // command, but to when neovim wants us to clear our history buffer.
                 this.historyBuffer = [];
-                this.replaceOutput = true;
                 break;
-            }
 
             default:
                 return;
         }
 
-        this.didChange = true;
+        switch (name) {
+            case "msg_clear":
+            case "msg_history_clear":
+                // These clear messages are often followed by a flush whenever neovim
+                // thinks it's "done" showing those messages, resulting in an empty output
+                // panel instead of the desired display. To avoid flushing the now-empty
+                // buffer, we skip setting didChange so the flush becomes a no-op.
+                // Seems likely caused by/related to https://github.com/neovim/neovim/issues/20416
+                break;
+
+            default:
+                this.didChange = true;
+        }
+
         logger.trace(name, inspect(args, { depth: 5, compact: 3 }));
     }
 
-    private handleFlush(): void {
+    private async handleFlush(): Promise<void> {
         if (!this.didChange) return;
 
         const messages = this.displayHistory ? this.historyBuffer : this.messageBuffer;
-        logger.trace(`Flushing ${this.displayHistory ? "history " : ""}message buffer: ${inspect(messages)}`);
-        const msg = this.ensureEOL(messages.join("\n"));
+        logger.trace(`Flushing ${this.displayHistory ? "history" : "message"} buffer: ${inspect(messages)}`);
 
-        this.writeMessage(msg);
-        if (this.revealOutput) {
+        const msg = messages.join("\n");
+
+        const lineCount = msg.split("\n").length;
+        const cmdheight = (await this.main.client.getOption("cmdheight")) as number;
+        // Before Nvim 0.10, cmdheight is unchangeable, and it's always 0.
+        const shouldReveal = this.revealOutput || lineCount > Math.max(1, cmdheight);
+
+        const { didChange, revealOutput, displayHistory } = this;
+        logger.trace(inspect({ didChange, revealOutput, displayHistory, lineCount }));
+
+        this.writeMessage(this.ensureEOL(msg));
+        if (shouldReveal) {
             this.channel.show(true);
         }
 
@@ -129,19 +142,14 @@ export class MessagesManager implements Disposable {
         this.didChange = false;
         this.displayHistory = false;
         this.revealOutput = false;
-        this.replaceOutput = false;
     }
 
     private writeMessage(msg: string): void {
-        if (msg.length > 0) {
-            logger.info(inspect(msg));
-        }
-
-        if (this.replaceOutput) {
-            this.channel.replace(msg);
-        } else if (msg.length !== 0) {
-            this.channel.append(msg);
-        }
+        logger.info(inspect(msg));
+        // We use clear() instead of replace() because the latter is a noop
+        // for falsy values but we always want to clear to match nvim behavior.
+        this.channel.clear();
+        this.channel.append(msg);
     }
 
     private ensureEOL(msg: string): string {
