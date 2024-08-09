@@ -18,7 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
-        "vscode": "^1.89.0"
+        "vscode": "^1.90.0"
     },
     "keywords": [
         "keybindings",
@@ -2157,7 +2157,7 @@
         "@types/mocha": "^10.0.7",
         "@types/node": "^20.14.9",
         "@types/sinonjs__fake-timers": "^8.1.5",
-        "@types/vscode": "1.89.0",
+        "@types/vscode": "^1.90.0",
         "@vscode/test-electron": "^2.4.0",
         "@vscode/vsce": "^2.29.0",
         "eslint": "^8.57.0",
@@ -2178,7 +2178,6 @@
     "dependencies": {
         "@jpwilliams/waitgroup": "^2.1.1",
         "async-mutex": "^0.5.0",
-        "core-js": "^3.37.1",
         "fast-myers-diff": "^3.2.0",
         "grapheme-splitter": "^1.0.4",
         "lodash": "^4.17.21",
