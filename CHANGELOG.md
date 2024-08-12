@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.18.8](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.7...v1.18.8) (2024-08-12)
+
+
+### Bug Fixes
+
+* handle `topline` in the `viewport-changed` event ([#2197](https://github.com/vscode-neovim/vscode-neovim/issues/2197)) ([c7145f2](https://github.com/vscode-neovim/vscode-neovim/commit/c7145f2ef8079168b80a20a04ef9022ed06924dc))
+* handle topline in the viewport-changed event ([c7145f2](https://github.com/vscode-neovim/vscode-neovim/commit/c7145f2ef8079168b80a20a04ef9022ed06924dc))
+
 ## [1.18.7](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.6...v1.18.7) (2024-08-02)
 
 
