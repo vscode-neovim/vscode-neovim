@@ -1,3 +1,13 @@
+-- Preload all vscode-neovim modules
+-- Some plugin managers customize the loader, which can cause issues
+do
+  local files = vim.api.nvim_get_runtime_file("lua/vscode/*.lua", true)
+  for _, file in ipairs(files) do
+    local modname = "vscode." .. vim.fs.basename(file):gsub("%.lua$", "")
+    require(modname)
+  end
+end
+
 local api = require("vscode.api")
 
 local default_optons = require("vscode.default-options")
