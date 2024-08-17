@@ -40,9 +40,11 @@ describe("Message output", () => {
 
     before(async () => {
         client = await attachTestNvimClient();
-        // Just for testing consistency with pre-0.10 versions:
-        await client.setOption("cmdheight", 0);
         await openTextDocument({ content: "" });
+    });
+
+    beforeEach(async () => {
+        await client.setOption("cmdheight", 2);
     });
 
     after(async () => {
@@ -109,11 +111,24 @@ describe("Message output", () => {
         assert.equal(outputEditor?.document.getText(), "");
     });
 
-    it("should reveal for return prompt", async () => {
+    it("should reveal for 'pattern not found' for cmdheight=1", async () => {
+        await client.setOption("cmdheight", 1);
         await sendNeovimKeys(client, "/foobar\n");
         await wait();
         let outputEditor = findOutputChannel();
         assert.equal(outputEditor?.document.getText(), "/foobar             \nE486: Pattern not found: foobar\n");
+
+        await sendCommandLine("messages");
+        await wait();
+        outputEditor = findOutputChannel();
+        assert.equal(outputEditor?.document.getText(), "emsg: E486: Pattern not found: foobar\n");
+    });
+
+    it("should suppress 'pattern not found' with cmdheight=2", async () => {
+        await sendNeovimKeys(client, "/foobar\n");
+        await wait();
+        let outputEditor = findOutputChannel();
+        assert.equal(outputEditor, undefined);
 
         await sendCommandLine("messages");
         await wait();
