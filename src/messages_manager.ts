@@ -44,16 +44,13 @@ export class MessagesManager implements Disposable {
     private handleRedraw({ name, args }: EventBusData<"redraw">): void {
         switch (name) {
             case "msg_show": {
-                for (const [type, content, replaceLast] of args) {
+                for (const [kind, content, replaceLast] of args) {
+                    // Ignore return_prompt
+                    //
                     // A note to future readers: return_prompt is sent much more often with ui_messages. It may
                     // not do what you expect from what :help ui says, so be careful about using these events.
                     // See: https://github.com/vscode-neovim/vscode-neovim/issues/2046#issuecomment-2144175058
-                    if (type === "return_prompt") {
-                        // This kinda mimics normal neovim behavior, but it's not exactly the
-                        // same because we still don't require a keypress/hide the panel afterwards.
-                        this.revealOutput = true;
-                        continue;
-                    }
+                    if (kind === "return_prompt") continue;
 
                     // NOTE: we could also potentially handle e.g. `echoerr` differently here,
                     // like logging at error level or displaying a toast etc.
@@ -127,14 +124,13 @@ export class MessagesManager implements Disposable {
 
         const lineCount = msg.split("\n").length;
         const cmdheight = (await this.main.client.getOption("cmdheight")) as number;
-        // Before Nvim 0.10, cmdheight is unchangeable, and it's always 0.
-        const shouldReveal = this.revealOutput || lineCount > Math.max(1, cmdheight);
+        const shouldRevealOutput = this.revealOutput || lineCount > cmdheight;
 
         const { didChange, revealOutput, displayHistory } = this;
         logger.trace(inspect({ didChange, revealOutput, displayHistory, lineCount }));
 
         this.writeMessage(this.ensureEOL(msg));
-        if (shouldReveal) {
+        if (shouldRevealOutput) {
             this.channel.show(true);
         }
 
@@ -146,10 +142,14 @@ export class MessagesManager implements Disposable {
 
     private writeMessage(msg: string): void {
         logger.info(inspect(msg));
-        // We use clear() instead of replace() because the latter is a noop
+        // We use clear() before replace() because the latter is a noop
         // for falsy values but we always want to clear to match nvim behavior.
         this.channel.clear();
-        this.channel.append(msg);
+        // And, we use append here instead of replace because append seems to
+        // take longer, which sometimes results in an empty panel if we reveal
+        // the (previously hidden) panel immediately afterward, particularly for
+        // large outputs.
+        this.channel.replace(msg);
     }
 
     private ensureEOL(msg: string): string {

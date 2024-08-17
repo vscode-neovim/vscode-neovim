@@ -7,7 +7,7 @@ local function setup()
   vim.g.loaded_matchparen = 1
 
   -- When enable `ext_messages`, `cmdheight` will be set to 0 by default.
-  vim.opt.cmdheight = 1
+  vim.opt.cmdheight = 2
 end
 
 return { setup = setup }
