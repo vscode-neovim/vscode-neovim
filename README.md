@@ -161,6 +161,24 @@ tab.
     fix this open Terminal and execute the following command:
     `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
 -   To fix the remapped escape key not working in Linux, set `"keyboard.dispatch": "keyCode"`.
+-   Since v1.18.0, using `u` (undo) or `r` (redo) may trigger save events, causing unexpected formatting if certain
+    VSCode settings are enabled. To prevent this, add one of the following to your Neovim config:
+
+    Vimscript:
+
+    ```vim
+    au BufEnter * au! BufModifiedSet
+    ```
+
+    Lua:
+
+    ```lua
+    vim.api.nvim_create_autocmd("BufEnter", {
+      callback = function()
+        vim.api.nvim_clear_autocmds({ group = "BufModifiedSet" })
+      end
+    })
+    ```
 
 ### Performance
 
