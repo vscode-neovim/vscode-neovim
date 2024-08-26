@@ -282,7 +282,8 @@ export class CursorManager implements Disposable {
         }
         // Store cursor position to reduce cursor synchronization
         this.neovimCursorPosition.set(editor, selections[0]);
-        if (!selections[0].isEqual(prevSelections[0])) {
+        // note: Same selections can have different anchor and active positions
+        if (!selections[0].active.isEqual(prevSelections[0].active)) {
             // 1. In normal mode, nvimActivePos equals to selections[0].active
             // 2. nvimActivePos is always the active position that we want to reveal
             this.triggerMovementFunctions(editor, nvimActivePos);
