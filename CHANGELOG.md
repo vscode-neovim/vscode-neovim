@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.9](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.8...v1.18.9) (2024-08-31)
+
+
+### Bug Fixes
+
+* **cursor:** compare active position, not selection ([#2213](https://github.com/vscode-neovim/vscode-neovim/issues/2213)) ([e9d6584](https://github.com/vscode-neovim/vscode-neovim/commit/e9d6584f324e6a5725305c27610dcbf722b1e9f8))
+
 ## [1.18.8](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.7...v1.18.8) (2024-08-12)
 
 
