@@ -79,9 +79,13 @@ Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.9.
 "`vscode-neovim.neovimExecutablePaths.win32/linux/darwin`", respective to your system. For example,
 "`C:\Neovim\bin\nvim.exe`" or "`/usr/local/bin/nvim`".
 
-> **Note:** If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to the
-> nvim binary. `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be available
-> through `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
+> **WSL Users:** If you want to use Neovim from WSL, set the `useWSL` configuration toggle and specify the Linux path to
+> the nvim binary. `wsl.exe` Windows binary and `wslpath` Linux binary are required for this. `wslpath` must be
+> available through `$PATH` Linux env setting. Use `wsl --list` to check for the correct default Linux distribution.
+>
+> **Snap Users:** If you want to use Neovim from Snap, the Neovim path must be resolved to the snap binary location. On
+> some systems it might be "`/snap/nvim/current/usr/bin/nvim`". To check if you're running as a snap package, see if
+> `which nvim` resolves to `/usr/bin/snap`.
 
 ### Neovim configuration
 
