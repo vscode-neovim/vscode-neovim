@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.18.10](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.9...v1.18.10) (2024-09-06)
+
+
+### Documentation
+
+* update README.md with snap installation details ([#2215](https://github.com/vscode-neovim/vscode-neovim/issues/2215)) ([429cb38](https://github.com/vscode-neovim/vscode-neovim/commit/429cb3878d29604aea1ab6559bf3dd5a693a4190))
+
+
+### Refactor
+
+* follow nvim ui-messages protocol ([#2177](https://github.com/vscode-neovim/vscode-neovim/issues/2177)) ([bc42292](https://github.com/vscode-neovim/vscode-neovim/commit/bc422929ca0314aafe98653ce2b7d88f4e643b0a))
+
 ## [1.18.9](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.8...v1.18.9) (2024-08-31)
 
 
