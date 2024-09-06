@@ -1,3 +1,5 @@
+import { inspect } from "util";
+
 import { Disposable, OutputChannel, window } from "vscode";
 
 import { EXT_NAME } from "./constants";
@@ -12,74 +14,142 @@ export class MessagesManager implements Disposable {
     private disposables: Disposable[] = [];
     private channel: OutputChannel;
 
+    private redrawing = Promise.resolve();
+
+    private revealOutput: boolean = false;
+    private displayHistory: boolean = false;
+    private didChange: boolean = false;
+
+    private messageBuffer: string[] = [];
+    private historyBuffer: string[] = [];
+
     public constructor(private readonly main: MainController) {
         this.channel = window.createOutputChannel(`${EXT_NAME} messages`);
-        this.disposables.push(this.channel, eventBus.on("redraw", this.handleRedraw, this));
+
+        // Prevent concurrent redraw / flush by chaining them on a single promise:
+        const redrawHandler = eventBus.on("redraw", (e) => {
+            this.redrawing = this.redrawing.then(() => this.handleRedraw(e));
+        });
+        const flushHandler = eventBus.on("flush-redraw", () => {
+            this.redrawing = this.redrawing.then(() => this.handleFlush());
+        });
+
+        this.disposables.push(redrawHandler, flushHandler);
     }
 
     public dispose(): void {
         disposeAll(this.disposables);
     }
 
-    private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
+    private handleRedraw({ name, args }: EventBusData<"redraw">): void {
         switch (name) {
             case "msg_show": {
-                const hasReturnPrompt = args.some(([type]) => type === "return_prompt");
-                const msg = args.reduce((acc, [type, content, clear]) => {
+                for (const [kind, content, replaceLast] of args) {
                     // Ignore return_prompt
                     //
                     // A note to future readers: return_prompt is sent much more often with ui_messages. It may
                     // not do what you expect from what :help ui says, so be careful about using these events.
                     // See: https://github.com/vscode-neovim/vscode-neovim/issues/2046#issuecomment-2144175058
-                    if (type === "return_prompt") return acc;
-                    if (clear) return "";
-                    return acc + content.map((c) => c[1]).join("");
-                }, "");
-                const outputMsg = hasReturnPrompt ? msg.replace(/\n$/, "") : msg;
+                    if (kind === "return_prompt") continue;
 
-                this.writeMessage(outputMsg);
+                    // NOTE: we could also potentially handle e.g. `echoerr` differently here,
+                    // like logging at error level or displaying a toast etc.
 
-                const lineCount = outputMsg.split("\n").length;
-                const cmdheight = (await this.main.client.getOption("cmdheight")) as number;
-                // Before Nvim 0.10, cmdheight is unchangeable, and it's always 0.
-                if (lineCount > Math.max(1, cmdheight)) {
-                    this.channel.show(true);
+                    const text = content.map(([_attrId, chunk]) => chunk).join("");
+                    if (replaceLast) {
+                        this.messageBuffer.pop();
+                    }
+                    this.messageBuffer.push(text);
                 }
+                break;
+            }
 
+            case "msg_clear": {
+                this.messageBuffer = [];
                 break;
             }
 
             case "msg_history_show": {
-                const lines = [];
-                for (const arg of args) {
-                    for (const list of arg) {
-                        for (const [commandName, content] of list) {
-                            const cmdContent = content.map((c) => c[1]).join("");
+                for (const [entries] of args) {
+                    for (const [commandName, content] of entries) {
+                        const cmdContent = content.map(([_attrId, chunk]) => chunk).join("");
 
-                            if (commandName.length === 0) {
-                                lines.push(cmdContent);
-                            } else {
-                                lines.push(`${commandName}: ${cmdContent}`);
-                            }
+                        if (commandName.length === 0) {
+                            this.historyBuffer.push(cmdContent);
+                        } else {
+                            this.historyBuffer.push(`${commandName}: ${cmdContent}`);
                         }
                     }
                 }
 
-                this.channel.show(true);
-                this.writeMessage(lines.join("\n"));
+                this.displayHistory = true;
+                this.revealOutput = true;
                 break;
             }
+
+            case "msg_history_clear":
+                // NOTE: this does not actually correspond to the `:messages clear`
+                // command, but to when neovim wants us to clear our history buffer.
+                this.historyBuffer = [];
+                break;
+
+            default:
+                return;
         }
+
+        switch (name) {
+            case "msg_clear":
+            case "msg_history_clear":
+                // These clear messages are often followed by a flush whenever neovim
+                // thinks it's "done" showing those messages, resulting in an empty output
+                // panel instead of the desired display. To avoid flushing the now-empty
+                // buffer, we skip setting didChange so the flush becomes a no-op.
+                // Seems likely caused by/related to https://github.com/neovim/neovim/issues/20416
+                break;
+
+            default:
+                this.didChange = true;
+        }
+
+        logger.trace(name, inspect(args, { depth: 5, compact: 3 }));
+    }
+
+    private async handleFlush(): Promise<void> {
+        if (!this.didChange) return;
+
+        const messages = this.displayHistory ? this.historyBuffer : this.messageBuffer;
+        logger.trace(`Flushing ${this.displayHistory ? "history" : "message"} buffer: ${inspect(messages)}`);
+
+        const msg = messages.join("\n");
+
+        const lineCount = msg.split("\n").length;
+        const cmdheight = (await this.main.client.getOption("cmdheight")) as number;
+        const shouldRevealOutput = this.revealOutput || lineCount > cmdheight;
+
+        const { didChange, revealOutput, displayHistory } = this;
+        logger.trace(inspect({ didChange, revealOutput, displayHistory, lineCount }));
+
+        this.writeMessage(this.ensureEOL(msg));
+        if (shouldRevealOutput) {
+            this.channel.show(true);
+        }
+
+        // Reset all the state for the next batch of redraw messages
+        this.didChange = false;
+        this.displayHistory = false;
+        this.revealOutput = false;
     }
 
     private writeMessage(msg: string): void {
-        if (msg.length === 0) {
-            return;
-        }
-
-        logger.info(msg);
-        const outputMsg = this.ensureEOL(msg);
-        this.channel.replace(outputMsg);
+        logger.info(inspect(msg));
+        // We use clear() before replace() because the latter is a noop
+        // for falsy values but we always want to clear to match nvim behavior.
+        this.channel.clear();
+        // And, we use append here instead of replace because append seems to
+        // take longer, which sometimes results in an empty panel if we reveal
+        // the (previously hidden) panel immediately afterward, particularly for
+        // large outputs.
+        this.channel.replace(msg);
     }
 
     private ensureEOL(msg: string): string {
