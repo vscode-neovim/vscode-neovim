@@ -68,7 +68,7 @@ mode and editor commands, making the best use of both editors.
 
 Install the [vscode-neovim](https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim) extension.
 
-Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.9.0** or greater (0.10 recommended).
+Install [Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim) **0.10.0** or greater.
 
 > **Note:** Though the extension strives to be as compatible as possible with older versions of Neovim, some older
 > versions may have quirks that are not present anymore. In light of this, certain configuration settings are
