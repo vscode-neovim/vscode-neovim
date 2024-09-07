@@ -1,4 +1,5 @@
 import path from "path";
+import { inspect } from "util";
 
 import { debounce } from "lodash";
 import { Buffer, NeovimClient } from "neovim";
@@ -581,7 +582,7 @@ export class BufferManager implements Disposable {
 
                 if (token?.isCancellationRequested) continue;
                 this.syncLayoutProgress.report("Cleaning up windows and buffers");
-                await this.cleanupWindowsAndBuffers(visibleEditors);
+                this.cleanupWindowsAndBuffers(visibleEditors);
 
                 if (token?.isCancellationRequested) continue;
                 this.syncLayoutProgress.report("Syncing visible editors");
@@ -603,7 +604,7 @@ export class BufferManager implements Disposable {
 
     private syncEditorLayoutDebounced = debounce(this.syncEditorLayout, 100, { leading: false, trailing: true });
 
-    private async cleanupWindowsAndBuffers(visibleEditors: TextEditor[]): Promise<void> {
+    private cleanupWindowsAndBuffers(visibleEditors: TextEditor[]): void {
         const unusedWindows: number[] = [];
         const unusedBuffers: number[] = [];
         // close windows
@@ -614,6 +615,7 @@ export class BufferManager implements Disposable {
             this.winIdToEditor.delete(winId);
             unusedWindows.push(winId);
         });
+
         // delete buffers
         [...this.textDocumentToBufferId.entries()].forEach(([document, bufId]) => {
             if (!document.isClosed) return;
@@ -622,8 +624,19 @@ export class BufferManager implements Disposable {
             this.textDocumentToBufferId.delete(document);
             unusedBuffers.push(bufId);
         });
-        unusedWindows.length && (await actions.lua("close_windows", unusedWindows));
-        unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
+
+        // We don't await the result of closing these as a workaround for #2136,
+        // so that the user isn't blocked forever in case the nvim client gets stuck.
+        if (unusedWindows.length) {
+            actions
+                .lua("close_windows", unusedWindows)
+                .catch((err) => logger.warn(`Failed to cleanup windows ${inspect(unusedWindows)}: ${err}`));
+        }
+        if (unusedBuffers.length) {
+            actions
+                .lua("delete_buffers", unusedBuffers)
+                .catch((err) => logger.warn(`Failed to cleanup buffers ${inspect(unusedBuffers)}: ${err}`));
+        }
     }
 
     private async syncVisibleEditors(visibleEditors: TextEditor[]): Promise<void> {

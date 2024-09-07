@@ -34,7 +34,7 @@ export class MessagesManager implements Disposable {
             this.redrawing = this.redrawing.then(() => this.handleFlush());
         });
 
-        this.disposables.push(redrawHandler, flushHandler);
+        this.disposables.push(redrawHandler, flushHandler, this.channel);
     }
 
     public dispose(): void {
