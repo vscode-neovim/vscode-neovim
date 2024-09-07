@@ -24,18 +24,35 @@ EOF
 lua << EOF
 local MIN_VERSION = vim.g.vscode_nvim_min_version
 
-local outdated = not (vim.version and vim.version.parse)
-if not outdated then
-  local cur = vim.version()
+local cmp_result = 1
+local is_prerelease = false
+if vim.version and vim.version.parse then
+  local v = vim.version()
+  local curr = { v.major, v.minor, v.patch }
   local min = vim.version.parse(MIN_VERSION)
-  outdated = vim.version.lt(cur, min)
+  cmp_result = vim.version.cmp(curr, min)
+  is_prerelease = not not v.prerelease
+else
+  cmp_result = -1
 end
-if outdated then
-  local msg = "vscode-neovim requires nvim version "
+
+local warning
+if cmp_result < 0 then
+  warning = 'vscode-neovim requires nvim version '
     .. MIN_VERSION
-    .. " or higher. Install the [latest stable version](https://github.com/neovim/neovim/releases/latest)."
-  local cmd = "await vscode.window.showErrorMessage(args)"
-  vim.rpcnotify(vim.g.vscode_channel, "vscode-action", "eval", { args = { cmd, msg } })
+    .. ' or higher. Install the [latest stable version](https://github.com/neovim/neovim/releases/latest).'
+elseif cmp_result == 0 and is_prerelease then
+  warning = 'vscode-neovim requires nvim version '
+    .. MIN_VERSION
+    .. ' or higher. Current version is a prerelease of '
+    .. MIN_VERSION
+    .. '. Install the [latest stable version](https://github.com/neovim/neovim/releases/latest).'
+end
+
+if warning then
+  vim.rpcnotify(vim.g.vscode_channel, 'vscode-action', 'eval', {
+    args = { 'await vscode.window.showErrorMessage(args)', warning },
+  })
 end
 EOF
 
