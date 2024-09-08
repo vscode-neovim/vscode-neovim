@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.11](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.10...v1.18.11) (2024-09-08)
+
+
+### Bug Fixes
+
+* **startup:** unclear "minimum version" message for nvim prerelease ([#2229](https://github.com/vscode-neovim/vscode-neovim/issues/2229)) ([88cf605](https://github.com/vscode-neovim/vscode-neovim/commit/88cf6059f5fc327af14e1930dfe3c31b213e97c3))
+
 ## [1.18.10](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.9...v1.18.10) (2024-09-06)
 
 
