@@ -1,5 +1,4 @@
 import path from "path";
-import { inspect } from "util";
 
 import { debounce } from "lodash";
 import { Buffer, NeovimClient } from "neovim";
@@ -582,6 +581,7 @@ export class BufferManager implements Disposable {
 
                 if (token?.isCancellationRequested) continue;
                 this.syncLayoutProgress.report("Cleaning up windows and buffers");
+                // Intentionally not `awaited`, see comment in function for details:
                 this.cleanupWindowsAndBuffers(visibleEditors);
 
                 if (token?.isCancellationRequested) continue;
@@ -625,17 +625,16 @@ export class BufferManager implements Disposable {
             unusedBuffers.push(bufId);
         });
 
-        // We don't await the result of closing these as a workaround for #2136,
-        // so that the user isn't blocked forever in case the nvim client gets stuck.
-        if (unusedWindows.length) {
+        if (unusedWindows.length || unusedBuffers.length) {
+            const toCleanup = { windows: unusedWindows, buffers: unusedBuffers };
+            // Log if cleanup takes a long time, in case the request is never fulfilled
+            const logSlowCleanup = setTimeout(() => logger.warn("Cleanup took longer than 5s: ", toCleanup), 5000);
+            // We don't await the result of this cleanup as a workaround for #2136,
+            // so that the user isn't blocked forever in case the nvim client gets stuck.
             actions
-                .lua("close_windows", unusedWindows)
-                .catch((err) => logger.warn(`Failed to cleanup windows ${inspect(unusedWindows)}: ${err}`));
-        }
-        if (unusedBuffers.length) {
-            actions
-                .lua("delete_buffers", unusedBuffers)
-                .catch((err) => logger.warn(`Failed to cleanup buffers ${inspect(unusedBuffers)}: ${err}`));
+                .lua("cleanup_windows_and_buffers", toCleanup)
+                .catch((err) => logger.warn("Failed to cleanup", toCleanup, err))
+                .finally(() => clearTimeout(logSlowCleanup));
         }
     }
 
