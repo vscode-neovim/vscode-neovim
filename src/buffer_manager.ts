@@ -581,7 +581,8 @@ export class BufferManager implements Disposable {
 
                 if (token?.isCancellationRequested) continue;
                 this.syncLayoutProgress.report("Cleaning up windows and buffers");
-                await this.cleanupWindowsAndBuffers(visibleEditors);
+                // Intentionally not `awaited`, see comment in function for details:
+                this.cleanupWindowsAndBuffers(visibleEditors);
 
                 if (token?.isCancellationRequested) continue;
                 this.syncLayoutProgress.report("Syncing visible editors");
@@ -603,7 +604,7 @@ export class BufferManager implements Disposable {
 
     private syncEditorLayoutDebounced = debounce(this.syncEditorLayout, 100, { leading: false, trailing: true });
 
-    private async cleanupWindowsAndBuffers(visibleEditors: TextEditor[]): Promise<void> {
+    private cleanupWindowsAndBuffers(visibleEditors: TextEditor[]): void {
         const unusedWindows: number[] = [];
         const unusedBuffers: number[] = [];
         // close windows
@@ -614,6 +615,7 @@ export class BufferManager implements Disposable {
             this.winIdToEditor.delete(winId);
             unusedWindows.push(winId);
         });
+
         // delete buffers
         [...this.textDocumentToBufferId.entries()].forEach(([document, bufId]) => {
             if (!document.isClosed) return;
@@ -622,8 +624,18 @@ export class BufferManager implements Disposable {
             this.textDocumentToBufferId.delete(document);
             unusedBuffers.push(bufId);
         });
-        unusedWindows.length && (await actions.lua("close_windows", unusedWindows));
-        unusedBuffers.length && (await actions.lua("delete_buffers", unusedBuffers));
+
+        if (unusedWindows.length || unusedBuffers.length) {
+            const toCleanup = { windows: unusedWindows, buffers: unusedBuffers };
+            // Log if cleanup takes a long time, in case the request is never fulfilled
+            const logSlowCleanup = setTimeout(() => logger.warn("Cleanup took longer than 5s: ", toCleanup), 5000);
+            // We don't await the result of this cleanup as a workaround for #2136,
+            // so that the user isn't blocked forever in case the nvim client gets stuck.
+            actions
+                .lua("cleanup_windows_and_buffers", toCleanup)
+                .catch((err) => logger.warn("Failed to cleanup", toCleanup, err))
+                .finally(() => clearTimeout(logSlowCleanup));
+        }
     }
 
     private async syncVisibleEditors(visibleEditors: TextEditor[]): Promise<void> {

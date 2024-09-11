@@ -27,18 +27,19 @@ function M.scroll_viewport(vscode_topline, vscode_endline)
   end
 end
 
----Close windows
----@param wins number[]
-function M.close_windows(wins)
-  for _, win in ipairs(wins) do
+---@class CleanupOpts
+---@field windows number[]
+---@field buffers number[]
+
+---Close windows and buffers. This is done together in one call to reduce RPC
+---overhead, but still ensures buffer cleanup happens after window cleanup.
+---@param opts CleanupOpts
+function M.cleanup_windows_and_buffers(opts)
+  for _, win in ipairs(opts.windows) do
     pcall(vim.api.nvim_win_close, win, true)
   end
-end
 
----Delete buffers
----@param bufs number[]
-function M.delete_buffers(bufs)
-  for _, buf in ipairs(bufs) do
+  for _, buf in ipairs(opts.buffers) do
     pcall(vim.api.nvim_buf_delete, buf, { force = true })
   end
 end
