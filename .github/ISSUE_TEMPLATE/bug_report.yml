@@ -17,11 +17,11 @@ body:
       attributes:
           label: "Check the following:"
           options:
-              - label: 'I have checked the behavior after setting "vscode-neovim.neovimClean" in VSCode settings.'
+              - label: 'I have tried setting `vscode-neovim.neovimClean` in VSCode settings and **restarting VSCode.**'
                 required: true
               - label: "I have read the vscode-neovim docs."
                 required: true
-              - label: "I have searched existing issues."
+              - label: "I have searched existing (closed!) issues."
                 required: true
     - type: input
       attributes:
@@ -37,7 +37,7 @@ body:
           required: true
     - type: textarea
       attributes:
-          label: Describe the bug
+          label: Problem (including [log messages](https://github.com/vscode-neovim/vscode-neovim?tab=readme-ov-file#troubleshooting))
           description: Clear and concise description of what the bug is. When did this issue first appear?
       validations:
           required: true
