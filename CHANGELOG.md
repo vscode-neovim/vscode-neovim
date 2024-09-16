@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.18.12](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.11...v1.18.12) (2024-09-16)
+
+
+### Bug Fixes
+
+* **buffers:** async window/buffer cleanup [#2230](https://github.com/vscode-neovim/vscode-neovim/issues/2230) ([396a0bc](https://github.com/vscode-neovim/vscode-neovim/commit/396a0bc3fb0a37fc6014470f4609808e17920c98))
+
+
+### Documentation
+
+* update issue template ([00197da](https://github.com/vscode-neovim/vscode-neovim/commit/00197da06342d210f381bc25e0185a448bef063d))
+
 ## [1.18.11](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.10...v1.18.11) (2024-09-08)
 
 

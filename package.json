@@ -8,7 +8,7 @@
         "ui",
         "workspace"
     ],
-    "version": "1.18.11",
+    "version": "1.18.12",
     "repository": {
         "type": "git",
         "url": "https://github.com/asvetliakov/vscode-neovim"
