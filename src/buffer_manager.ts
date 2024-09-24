@@ -642,6 +642,12 @@ export class BufferManager implements Disposable {
         // Open/change neovim windows
         for (const editor of visibleEditors) {
             const { document: doc } = editor;
+            // Skip syncing Github Copilot chat windows.
+            // Issue: https://github.com/vscode-neovim/vscode-neovim/issues/2184
+            if (doc.uri.scheme === "vscode-chat-code-block") {
+                logger.log(doc.uri, LogLevel.Debug, `Skipping copilot chat code block: ${doc.uri}`);
+                continue;
+            }
             logger.log(doc.uri, LogLevel.Debug, `Visible editor, viewColumn: ${editor.viewColumn}, doc: ${doc.uri}`);
             // create buffer first if not known to the system
             // creating initially not listed buffer to prevent firing autocmd events when
