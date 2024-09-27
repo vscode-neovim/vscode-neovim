@@ -576,8 +576,8 @@ export class BufferManager implements Disposable {
                 this.isLayoutOutdated = false;
                 const token = this.syncLayoutSource?.token;
 
-                const visibleEditors = [...window.visibleTextEditors];
                 const activeEditor = window.activeTextEditor;
+                const visibleEditors = this.filterVisibleEditors([...window.visibleTextEditors], activeEditor);
 
                 if (token?.isCancellationRequested) continue;
                 this.syncLayoutProgress.report("Cleaning up windows and buffers");
@@ -642,12 +642,6 @@ export class BufferManager implements Disposable {
         // Open/change neovim windows
         for (const editor of visibleEditors) {
             const { document: doc } = editor;
-            // Skip syncing Github Copilot chat windows.
-            // Issue: https://github.com/vscode-neovim/vscode-neovim/issues/2184
-            if (doc.uri.scheme === "vscode-chat-code-block") {
-                logger.log(doc.uri, LogLevel.Debug, `Skipping copilot chat code block: ${doc.uri}`);
-                continue;
-            }
             logger.log(doc.uri, LogLevel.Debug, `Visible editor, viewColumn: ${editor.viewColumn}, doc: ${doc.uri}`);
             // create buffer first if not known to the system
             // creating initially not listed buffer to prevent firing autocmd events when
@@ -721,6 +715,26 @@ export class BufferManager implements Disposable {
         }
     }
     // #endregion
+
+    // this filters out the configured schemes from the visible editors.
+    // it is used to prevent syncing/neovim window creation for certain extensions that cause problems
+    // it is a workaround for figuring out the underlying issue
+    private filterVisibleEditors(editors: TextEditor[], activeEditor: TextEditor | undefined): TextEditor[] {
+        if (config.disableExtensionWindowSyncingList.length === 0) return editors;
+        return editors.filter((editor) => {
+            const { document } = editor;
+            // Always include the active editor
+            if (editor === activeEditor) {
+                return true;
+            }
+            // skip syncing the docs with the specified schemes
+            const shouldInclude = !config.disableExtensionWindowSyncingList.includes(document.uri.scheme);
+            if (!shouldInclude) {
+                logger.debug(`Skipping editor with scheme: ${document.uri.scheme}`);
+            }
+            return shouldInclude;
+        });
+    }
 
     private onDidChangeEditorOptions = (editor: TextEditor): void => {
         // Debounce, ensure sending the latest options.
