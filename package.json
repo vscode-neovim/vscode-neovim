@@ -43,37 +43,43 @@
                     "type": "string",
                     "default": "nvim",
                     "title": "Neovim executable path on Windows",
-                    "markdownDescription": "Path to Nvim executable if running VS Code on Windows. \n- Example: `C:\\tools\\neovim\\Neovim\\bin\\nvim.exe` (if you installed using Chocolatey)\n- If you want to use Windows Subsystem for Linux, enable the `useWSL` setting and set `neovimExecutablePaths.linux` instead"
+                    "markdownDescription": "Path to Nvim executable if running VS Code on Windows. \n- Example: `C:\\tools\\neovim\\Neovim\\bin\\nvim.exe` (if you installed using Chocolatey)\n- If you want to use Windows Subsystem for Linux, enable the `useWSL` setting and set `neovimExecutablePaths.linux` instead",
+                    "ignoreSync": true
                 },
                 "vscode-neovim.neovimExecutablePaths.darwin": {
                     "type": "string",
                     "default": "nvim",
                     "title": "Neovim executable path on macOS",
-                    "markdownDescription": "Path to Nvim executable if running VS Code on macOS."
+                    "markdownDescription": "Path to Nvim executable if running VS Code on macOS.",
+                    "ignoreSync": true
                 },
                 "vscode-neovim.neovimExecutablePaths.linux": {
                     "type": "string",
                     "default": "nvim",
                     "title": "Neovim executable path on Linux (and in WSL)",
-                    "markdownDescription": "Path to Nvim executable if running VS Code on Linux or WSL. \n- Example: `/usr/bin/nvim`\n- If `useWSL` setting is checked, vscode-neovim will look for this path in default WSL distro."
+                    "markdownDescription": "Path to Nvim executable if running VS Code on Linux or WSL. \n- Example: `/usr/bin/nvim`\n- If `useWSL` setting is checked, vscode-neovim will look for this path in default WSL distro.",
+                    "ignoreSync": true
                 },
                 "vscode-neovim.neovimInitVimPaths.win32": {
                     "type": "string",
                     "default": "",
                     "title": "Custom init.vim path on Windows",
-                    "markdownDescription": "Path to alternative `init.vim` file on Windows, equivalent to Nvim startup option `-u`. If `useWSL` is enabled, the value of the `neovimInitVimPaths.linux` setting will be used to find the init.vim file instead. You can also use `exists('g:vscode')` in your `init.vim` (or `vim.g.vscode` in `init.lua`) to check if Nvim is running in vscode."
+                    "markdownDescription": "Path to alternative `init.vim` file on Windows, equivalent to Nvim startup option `-u`. If `useWSL` is enabled, the value of the `neovimInitVimPaths.linux` setting will be used to find the init.vim file instead. You can also use `exists('g:vscode')` in your `init.vim` (or `vim.g.vscode` in `init.lua`) to check if Nvim is running in vscode.",
+                    "ignoreSync": true
                 },
                 "vscode-neovim.neovimInitVimPaths.darwin": {
                     "type": "string",
                     "default": "",
                     "title": "Custom init.vim path on macOS",
-                    "markdownDescription": "Path to alternative `init.vim` file on macOS, equivalent to Nvim startup option `-u`. You can also use `exists('g:vscode')` in your `init.vim` (or `vim.g.vscode` in `init.lua`) to check if Nvim is running in vscode."
+                    "markdownDescription": "Path to alternative `init.vim` file on macOS, equivalent to Nvim startup option `-u`. You can also use `exists('g:vscode')` in your `init.vim` (or `vim.g.vscode` in `init.lua`) to check if Nvim is running in vscode.",
+                    "ignoreSync": true
                 },
                 "vscode-neovim.neovimInitVimPaths.linux": {
                     "type": "string",
                     "default": "",
                     "title": "Custom init.vim path on Linux",
-                    "markdownDescription": "Path to alternative `init.vim` file on Linux or default WSL distro, equivalent to Nvim startup option `-u`. If the `useWSL` setting is checked, this path will be used to find `init.vim` in Windows Subsystem for Linux. You can also use `exists('g:vscode')` in your `init.vim` (or `vim.g.vscode` in `init.lua`) to check if Nvim is running in vscode."
+                    "markdownDescription": "Path to alternative `init.vim` file on Linux or default WSL distro, equivalent to Nvim startup option `-u`. If the `useWSL` setting is checked, this path will be used to find `init.vim` in Windows Subsystem for Linux. You can also use `exists('g:vscode')` in your `init.vim` (or `vim.g.vscode` in `init.lua`) to check if Nvim is running in vscode.",
+                    "ignoreSync": true
                 },
                 "vscode-neovim.afterInitConfig": {
                     "type": "array",
@@ -265,7 +271,8 @@
                 "vscode-neovim.logPath": {
                     "type": "string",
                     "default": "",
-                    "description": "Log file path"
+                    "description": "Log file path",
+                    "ignoreSync": true
                 },
                 "vscode-neovim.logOutputToConsole": {
                     "type": "boolean",
