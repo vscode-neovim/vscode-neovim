@@ -97,4 +97,23 @@ else
   end
 end
 
+-- Wrapper for nvim_set_option_value that sets the option only if the value differs
+function M.set_option_value(name, value, opts)
+  opts = opts or {}
+  local current = api.nvim_get_option_value(name, opts)
+  if current ~= value then
+    api.nvim_set_option_value(name, value, opts)
+  end
+end
+
+-- Wrapper for set_option_value to set a buffer option
+function M.buf_set_option(buf, name, value)
+  return M.set_option_value(name, value, { buf = buf })
+end
+
+-- Wrapper for set_option_value to set a window option
+function M.win_set_option(win, name, value)
+  return M.set_option_value(name, value, { win = win })
+end
+
 return M
