@@ -79,14 +79,6 @@ export class Config implements Disposable {
         return this.cfg.get(`${settingPrefix}.${platform}`);
     }
 
-    private getNeovimPath(): string {
-        return this.getSystemSpecificSetting("neovimExecutablePaths") ?? "nvim";
-    }
-
-    private getNeovimInitPath(): string | undefined {
-        return this.getSystemSpecificSetting("neovimInitVimPaths");
-    }
-
     get highlights(): { [key: string]: ThemableDecorationRenderOptions } {
         return this.cfg.get("highlightGroups.highlights")!;
     }
@@ -121,10 +113,12 @@ export class Config implements Disposable {
         return this.cfg.get("neovimViewportHeightExtend", 1);
     }
     get neovimPath() {
-        return this.getNeovimPath();
+        const s = this.getSystemSpecificSetting("neovimExecutablePaths")?.replace(/\\/g, "/");
+        return s ?? "nvim";
     }
     get neovimInitPath() {
-        return this.getNeovimInitPath() ?? "";
+        const s = this.getSystemSpecificSetting("neovimInitVimPaths")?.replace(/\\/g, "/");
+        return s ?? "";
     }
     get clean() {
         return this.cfg.get("neovimClean", false);
@@ -133,7 +127,7 @@ export class Config implements Disposable {
         return this.cfg.get("NVIM_APPNAME", "");
     }
     get logPath() {
-        return this.cfg.get("logPath", "");
+        return this.cfg.get("logPath", "")?.replace(/\\/g, "/");
     }
     get outputToConsole() {
         return this.cfg.get("logOutputToConsole", false);
