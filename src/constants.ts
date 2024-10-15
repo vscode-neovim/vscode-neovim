@@ -1,5 +1,7 @@
 export const NVIM_MIN_VERSION = "0.10.0";
 
+export const isWindows = process.platform === "win32";
+
 export const GlyphChars = {
     COMMAND: "\u2318",
     SEARCH_FORWARD: "\u27f3",

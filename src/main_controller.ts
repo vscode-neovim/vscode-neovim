@@ -11,7 +11,7 @@ import { BufferManager } from "./buffer_manager";
 import { CommandLineManager } from "./cmdline_manager";
 import { CommandsController } from "./commands_controller";
 import { config } from "./config";
-import { NVIM_MIN_VERSION } from "./constants";
+import { isWindows, NVIM_MIN_VERSION } from "./constants";
 import { CursorManager } from "./cursor_manager";
 import { DocumentChangeManager } from "./document_change_manager";
 import { eventBus } from "./eventBus";
@@ -20,7 +20,7 @@ import { createLogger } from "./logger";
 import { MessagesManager } from "./messages_manager";
 import { ModeManager } from "./mode_manager";
 import { TypingManager } from "./typing_manager";
-import { disposeAll, findLastEvent, VSCodeContext, wslpath } from "./utils";
+import { disposeAll, findLastEvent, toSlashes, VSCodeContext, wslExe, wslpath } from "./utils";
 import { ViewportManager } from "./viewport_manager";
 
 interface RequestResponse {
@@ -165,7 +165,10 @@ export class MainController implements vscode.Disposable {
     }
 
     private buildSpawnArgs(): [string, string[]] {
-        let extensionPath = this.extContext.extensionPath.replace(/\\/g, "\\\\");
+        let extensionPath = toSlashes(
+            this.extContext.extensionPath,
+            isWindows, // Always a Windows path on win32 (regardless of WSL).
+        );
         if (config.useWsl) {
             extensionPath = wslpath(extensionPath);
         }
@@ -176,7 +179,7 @@ export class MainController implements vscode.Disposable {
         const args = [];
 
         if (config.useWsl) {
-            args.push("C:\\Windows\\system32\\wsl.exe");
+            args.push(wslExe);
             if (config.wslDistribution.length) {
                 args.push("-d", config.wslDistribution);
             }
@@ -201,7 +204,7 @@ export class MainController implements vscode.Disposable {
             "--embed",
             // Initialize vscode neovim modules
             "--cmd",
-            `source ${neovimPreScriptPath}`,
+            `execute 'source' fnameescape('${neovimPreScriptPath.replace(/'/g, "''")}')`,
         );
 
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
@@ -215,9 +218,7 @@ export class MainController implements vscode.Disposable {
 
         if (config.clean) {
             args.push("--clean");
-        }
-        // #1162
-        if (!config.clean && config.neovimInitPath) {
+        } else if (config.neovimInitPath) {
             args.push("-u", config.neovimInitPath);
         }
         if (config.NVIM_APPNAME) {

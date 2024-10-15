@@ -21,6 +21,9 @@ import { config } from "../config";
 import { convertByteNumToCharNum, convertCharNumToByteNum } from "./text";
 import { ManualPromise } from "./async";
 
+/** Full path, because "wsl.exe" may not be on PATH in the extension host's environment. */
+export const wslExe = "C:/Windows/system32/wsl.exe";
+
 /**
  * Stores last changes information for dot repeat
  */
@@ -237,7 +240,7 @@ export function rangesToSelections(
  */
 export const wslpath = (path: string) => {
     const distroArgs = config.wslDistribution.length ? ["-d", config.wslDistribution] : [];
-    const result = spawnSync("C:\\Windows\\system32\\wsl.exe", [...distroArgs, "wslpath", path], {
+    const result = spawnSync(wslExe, [...distroArgs, "wslpath", path], {
         encoding: "utf-8",
     });
     if (result.error) {

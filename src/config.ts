@@ -10,10 +10,8 @@ import {
     workspace,
 } from "vscode";
 
-import { CTRL_KEYS, EXT_ID, EXT_NAME } from "./constants";
-import { VSCodeContext, disposeAll } from "./utils";
-
-const isWindows = process.platform === "win32";
+import { CTRL_KEYS, EXT_ID, EXT_NAME, isWindows } from "./constants";
+import { VSCodeContext, disposeAll, toSlashes } from "./utils";
 
 type SettingPrefix = "neovimExecutablePaths" | "neovimInitVimPaths"; //this needs to be aligned with setting names in package.json
 
@@ -76,15 +74,9 @@ export class Config implements Disposable {
         //https://github.com/microsoft/vscode/blob/master/src/vs/base/common/platform.ts#L63
         let platform = process.platform as "win32" | "darwin" | "linux";
         platform = this.useWsl && platform === "win32" ? "linux" : platform;
-        return this.cfg.get(`${settingPrefix}.${platform}`);
-    }
-
-    private getNeovimPath(): string {
-        return this.getSystemSpecificSetting("neovimExecutablePaths") ?? "nvim";
-    }
-
-    private getNeovimInitPath(): string | undefined {
-        return this.getSystemSpecificSetting("neovimInitVimPaths");
+        const value = this.cfg.get<string>(`${settingPrefix}.${platform}`);
+        const isWinPath = platform === "win32";
+        return value === undefined ? value : toSlashes(value, isWinPath);
     }
 
     get highlights(): { [key: string]: ThemableDecorationRenderOptions } {
@@ -121,10 +113,10 @@ export class Config implements Disposable {
         return this.cfg.get("neovimViewportHeightExtend", 1);
     }
     get neovimPath() {
-        return this.getNeovimPath();
+        return this.getSystemSpecificSetting("neovimExecutablePaths") || "nvim";
     }
     get neovimInitPath() {
-        return this.getNeovimInitPath() ?? "";
+        return this.getSystemSpecificSetting("neovimInitVimPaths") ?? "";
     }
     get clean() {
         return this.cfg.get("neovimClean", false);
@@ -133,7 +125,7 @@ export class Config implements Disposable {
         return this.cfg.get("NVIM_APPNAME", "");
     }
     get logPath() {
-        return this.cfg.get("logPath", "");
+        return toSlashes(this.cfg.get("logPath", ""), isWindows);
     }
     get outputToConsole() {
         return this.cfg.get("logOutputToConsole", false);
