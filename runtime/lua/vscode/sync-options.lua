@@ -31,13 +31,13 @@ end
 ---@param lineNumbers "on"|"off"|"relative"
 local function set_number(win, lineNumbers)
   if lineNumbers == "relative" then
-    vim.wo[win].rnu = true
+    util.win_set_option(win, "relativenumber", true)
   elseif lineNumbers == "on" then
-    vim.wo[win].nu = true
-    vim.wo[win].rnu = false
+    util.win_set_option(win, "number", true)
+    util.win_set_option(win, "relativenumber", false)
   else
-    vim.wo[win].nu = false
-    vim.wo[win].rnu = false
+    util.win_set_option(win, "number", false)
+    util.win_set_option(win, "relativenumber", false)
   end
 end
 
@@ -46,30 +46,18 @@ end
 ---@param buf number
 ---@param opts EditorOptions
 local function set_options(buf, opts)
-  -- Due to debounce of editor options change event, in some special cases, buffer
-  -- may be deleted when starting to set options.
   if not api.nvim_buf_is_valid(buf) then
     return
   end
+
   api.nvim_buf_set_var(buf, "vscode_editor_options", opts)
-  if vim.bo[buf].ts ~= opts.tabSize then
-    vim.bo[buf].ts = opts.tabSize
-    vim.bo[buf].sw = opts.tabSize
-  end
-  if vim.bo[buf].et ~= opts.insertSpaces then
-    vim.bo[buf].et = opts.insertSpaces
-  end
 
-  local win
-  for _, w in ipairs(api.nvim_list_wins()) do
-    local win_buf = api.nvim_win_get_buf(w)
-    if win_buf == buf then
-      win = w
-      break
-    end
-  end
+  util.buf_set_option(buf, "tabstop", opts.tabSize)
+  util.buf_set_option(buf, "shiftwidth", opts.tabSize)
+  util.buf_set_option(buf, "expandtab", opts.insertSpaces)
 
-  if win then
+  local win = api.nvim_get_current_win()
+  if api.nvim_win_get_buf(win) == buf then
     set_number(win, opts.lineNumbers)
   end
 end
@@ -77,34 +65,39 @@ end
 ---Check changes from nvim
 ---Set vscode options
 local function _check_options()
-  ---@type EditorOptions?
-  local opts = vim.b.vscode_editor_options
-  if not opts then -- should not happen
-    return
-  end
-  if not vim.b.vscode_editor_options_first_checked then -- load the defaults
-    vim.b.vscode_editor_options_first_checked = true
-    vim.bo.ts = opts.tabSize
-    vim.bo.sw = opts.tabSize
-    vim.bo.expandtab = opts.insertSpaces
-    set_number(0, opts.lineNumbers)
+  local vscode_opts = vim.b.vscode_editor_options
+  if not vscode_opts then -- should not happen
     return
   end
 
+  if not vim.b.vscode_editor_options_first_checked then --load the defaults
+    vim.b.vscode_editor_options_first_checked = true
+    util.buf_set_option(0, "tabstop", vscode_opts.tabSize)
+    util.buf_set_option(0, "shiftwidth", vscode_opts.tabSize)
+    util.buf_set_option(0, "expandtab", vscode_opts.insertSpaces)
+    set_number(0, vscode_opts.lineNumbers)
+    return
+  end
+
+  local buf = api.nvim_get_current_buf()
   local ts, sw, et = vim.bo.ts, vim.bo.sw, vim.bo.et
-  local lineNumbers = get_number_style(vim.wo.nu, vim.wo.rnu)
 
   if sw ~= ts then
-    vim.bo.sw = ts -- must be the same
+    util.buf_set_option(buf, "shiftwidth", ts) -- must be the same
   end
 
-  if ts ~= opts.tabSize or et ~= opts.insertSpaces or lineNumbers ~= opts.lineNumbers then
-    opts.tabSize = ts
-    opts.insertSpaces = et
-    opts.lineNumbers = lineNumbers
-    vim.b.vscode_editor_options = opts
-    vscode.action("set_editor_options", { args = { api.nvim_get_current_buf(), opts } })
+  local nvim_opts = {
+    tabSize = ts,
+    insertSpaces = et,
+    lineNumbers = get_number_style(vim.wo.nu, vim.wo.rnu),
+  }
+
+  if vim.deep_equal(nvim_opts, vscode_opts) then
+    return
   end
+
+  vim.b.vscode_editor_options = nvim_opts
+  vscode.action("set_editor_options", { args = { buf, nvim_opts } })
 end
 
 local check_options = util.debounce(_check_options, 20)
