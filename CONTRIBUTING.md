@@ -11,31 +11,23 @@ the project.
 How to build (and install) from source:
 
 1. Clone the repo locally.
-
-```sh
-git clone https://github.com/vscode-neovim/vscode-neovim
-```
-
+    ```sh
+    git clone https://github.com/vscode-neovim/vscode-neovim
+    ```
 2. Install the dependencies.
-
-```sh
-npm install
-```
-
+    ```sh
+    npm install
+    ```
 3. Build the VSIX package:
-
-```sh
-npm run build
-```
-
-If you are developing the extension, and want to install your changes in your VSCode editor, it may be useful to instead
-run the following, so that VSCode does not cache your custom VSIX as the VSIX corresponding to an existing marketplace
-version:
-
-```sh
-npm run build:dev
-```
-
+    ```sh
+    npm run build
+    ```
+    - If you are developing the extension, and want to install your changes in your VSCode editor, it may be useful to
+      instead run the following, so that VSCode does not cache your custom VSIX as the VSIX corresponding to an existing
+      marketplace version:
+        ```sh
+        npm run build:dev
+        ```
 4. From VSCode, use the `Extensions: Install from VSIX` command to install the package.
 
 ### Develop
@@ -45,25 +37,21 @@ npm run build:dev
 
 ### Logging
 
-You can view the extension logs in one of three locations
+You can view the extension logs in one of these ways:
 
-1. Via the `vscode-neovim logs` Output channel
-
+1. Via the `vscode-neovim logs` Output channel.
+    - **To enable debug logs,** click the "gear" icon and select `Debug`, then click it again and choose
+      `Set As Default`.
+        - Alternatively, run the vscode command `Developer: Set Log Level...`, choose `vscode-neovim`, then **click the
+          ✓ icon** on the "Debug" item. This is required to "Set As Default", otherwise the log-level will be reset
+          after a vscode restart.
     - Note: some messages are not logged to the Output channel, to avoid infinite loop. This is decided by the
       [`logToOutputChannel` parameter](https://github.com/vscode-neovim/vscode-neovim/blob/7337ffd5009067d074af5371171f277cb522aa9b/src/logger.ts#L184).
-
-2. From the dev tools console (run the `Developer: Toggle Developer Tools` vscode command to see the console) by
-   enabling the `vscode-neovim.logOutputToConsole` setting.
-
+2. From the dev tools console (run the `Developer: Toggle Developer Tools` vscode command)
+    - **You must enable** the `vscode-neovim.logOutputToConsole` vscode setting for this to work.
     - If you ran the extension from the `Run Extension` button (see above), you can also view logs in the
-      `Debug Console` of your original VSCode window, but you will still need to enable
-      `vscode-neovim.logOutputToConsole`.
-
+      `Debug Console` of your original VSCode window, but you still must enable `vscode-neovim.logOutputToConsole`.
 3. From a log file of your choosing, by configuring the `vscode-neovim.logPath` setting.
-
-VSCode, by default, will only show messages at the "Info" level or above, but than can be changed by running the command
-`Developer Set Log Level...` -> `vscode-neovim` and selecting the desired log level. You can also do this by clicking
-the gear icon in the output pane, with `vscode-neovim` selected.
 
 ### Run Unit Tests
 
