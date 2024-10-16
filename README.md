@@ -1,5 +1,6 @@
-<h2 align="center"><img src="./images/icon.png" height="128"><br>VSCode Neovim</h2>
-<p align="center"><strong>VSCode Neovim Integration</strong></p>
+# VSCode Neovim
+
+<p align="center"><img src="./images/icon.png" height="128"><br>VSCode Neovim Integration</p>
 
 <p align=center>
 <a href="https://marketplace.visualstudio.com/items?itemName=asvetliakov.vscode-neovim"><img src="https://img.shields.io/visual-studio-marketplace/v/asvetliakov.vscode-neovim?color=%234c1&label=Visual%20Studio%20Marketplace"></a>
@@ -9,10 +10,10 @@
 
 [Neovim](https://neovim.io/) is a fork of Vim to allow greater extensibility and integration. This extension uses a
 fully embedded Neovim instance, no more half-complete Vim emulation! VSCode's native functionality is used for insert
-mode and editor commands, making the best use of both editors.
+mode and VSCode commands, making the best use of both editors.
 
--   🎉 Almost fully feature-complete Vim integration by utilizing Neovim as a backend.
--   🔧 Supports custom `init.vim` and many Vim plugins.
+-   🎉 Feature-complete Vim integration (except insert-mode and some Nvim UI plugins) by utilizing Nvim as a backend.
+-   🔧 Supports custom `init.lua` and most Nvim plugins.
 -   🥇 First-class and lag-free insert mode, letting VSCode do what it does best.
 -   🤝 Complete integration with VSCode features (lsp/autocompletion/snippets/multi-cursor/etc).
 
@@ -152,6 +153,8 @@ tab.
 ### Troubleshooting
 
 -   View the logs via `Output: Focus on Output View` and select `vscode-neovim`.
+    -   **To enable debug logs,** click the "gear" icon and select `Debug`, then click it again and choose
+        `Set As Default`.
 -   Enable `vscode-neovim.neovimClean` in VSCode settings, which starts Nvim _without_ your plugins (`nvim --clean`).
     Nvim plugins can do _anything_. Visual effects in particular can cause visual artifacts. vscode-neovim does its best
     to merge the visual effects of Nvim and VSCode, but it's far from perfect. You may need to disable some Nvim plugins
