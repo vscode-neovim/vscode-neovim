@@ -12,7 +12,7 @@ function getActionName(action: string) {
 class ActionManager implements Disposable {
     private disposables: Disposable[] = [];
     private actions: string[] = [];
-    private client!: NeovimClient;
+    private client?: NeovimClient;
 
     init() {
         this.initActions();
@@ -57,7 +57,7 @@ class ActionManager implements Disposable {
      * @param args arguments for the event
      */
     public fireNvimEvent(event: string, ...args: VimValue[]): void {
-        this.client.executeLua('require"vscode.api".fire_event(...)', [event, ...args]);
+        this.client?.executeLua('require"vscode.api".fire_event(...)', [event, ...args]);
     }
 
     /**
@@ -66,7 +66,7 @@ class ActionManager implements Disposable {
      * @param args arguments
      */
     public async lua<T = any>(fname: string, ...args: VimValue[]): Promise<T> {
-        return this.client.lua(`return require"vscode.internal".${fname}(...)`, args) as Promise<T>;
+        return this.client?.lua(`return require"vscode.internal".${fname}(...)`, args) as Promise<T>;
     }
 
     private initActions() {
@@ -116,7 +116,7 @@ class ActionManager implements Disposable {
     private initHooks() {
         this.disposables.push(
             window.onDidChangeWindowState((e) =>
-                this.client.command(`doautocmd ${e.focused ? "FocusGained" : "FocusLost"}`),
+                this.client?.command(`doautocmd ${e.focused ? "FocusGained" : "FocusLost"}`),
             ),
         );
     }
