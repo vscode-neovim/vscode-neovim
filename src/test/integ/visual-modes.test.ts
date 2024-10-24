@@ -1,5 +1,5 @@
 import { NeovimClient } from "neovim";
-import vscode from "vscode";
+import vscode, { commands } from "vscode";
 
 import {
     attachTestNvimClient,
@@ -602,6 +602,30 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 content: [""],
+            },
+            client,
+        );
+    });
+
+    it("Exit visual mode when canceling selection in VSCode", async () => {
+        await openTextDocument({ content: "test" });
+
+        await sendVSCodeKeys("viw");
+        await assertContent(
+            {
+                mode: "v",
+                neovimCursor: [0, 3],
+                vsCodeCursor: [0, 4],
+            },
+            client,
+        );
+
+        commands.executeCommand("cancelSelection");
+        await wait(200);
+        await assertContent(
+            {
+                mode: "n",
+                cursor: [0, 3],
             },
             client,
         );
