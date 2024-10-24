@@ -227,22 +227,14 @@ export async function assertContent(
     if (!editor) {
         throw new Error("No active editor");
     }
+
+    options.vsCodeCursor = options.vsCodeCursor ?? options.cursor;
+    options.neovimCursor = options.neovimCursor ?? options.cursor;
+
     try {
         if (options.content) {
             assert.deepEqual(await getCurrentBufferContents(client), options.content, "Neovim buffer content is wrong");
             assert.deepEqual(getVSCodeContent(), options.content, "VSCode content is wrong");
-        }
-        if (options.cursor) {
-            assert.deepEqual(
-                getVScodeCursor(editor),
-                options.cursor,
-                `Cursor position in vscode - ${options.cursor[0]}:${options.cursor[1]}`,
-            );
-            assert.deepEqual(
-                await getNeovimCursor(client),
-                options.cursor,
-                `Cursor position in neovim - ${options.cursor[0]}:${options.cursor[1]}`,
-            );
         }
         if (options.neovimCursor) {
             assert.deepEqual(
