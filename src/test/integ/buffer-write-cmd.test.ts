@@ -1,8 +1,9 @@
 import { strict as assert } from "assert";
 import path from "path";
+import { symlink } from "fs/promises";
 
 import { NeovimClient } from "neovim";
-import { Uri, commands, window, workspace } from "vscode";
+import { TextDocument, Uri, commands, window, workspace } from "vscode";
 
 import {
     attachTestNvimClient,
@@ -15,6 +16,22 @@ import {
 
 describe("BufWriteCmd integration", () => {
     const testFiles: Uri[] = [];
+    const cleanupCallbacks: (() => Promise<void>)[] = [];
+
+    const cleanupFile = async (uri: Uri) => {
+        try {
+            await workspace.fs.delete(uri);
+        } catch {
+            // ignore
+        }
+    };
+    const cleanupFolder = async (uri: Uri) => {
+        try {
+            await workspace.fs.delete(uri, { recursive: true, useTrash: false });
+        } catch {
+            // ignore
+        }
+    };
 
     const readFile = async (uri: Uri): Promise<string | undefined> => {
         try {
@@ -24,12 +41,44 @@ describe("BufWriteCmd integration", () => {
         }
     };
 
+    const getRandomString = () => Math.random().toString(36).substring(7);
+
     const openTestFile = async () => {
-        const uri = Uri.file(path.join(process.cwd(), Math.random().toString(36).substring(7)));
+        const uri = Uri.file(path.join(process.cwd(), getRandomString()));
+        cleanupCallbacks.push(() => cleanupFile(uri));
         testFiles.push(uri);
         await workspace.fs.writeFile(uri, new TextEncoder().encode("hello world"));
         const doc = await workspace.openTextDocument(uri);
         assert.equal(doc.getText(), "hello world");
+        await window.showTextDocument(doc);
+        await sendEscapeKey();
+        return doc;
+    };
+
+    // Replicate the following hierarchy:
+    //   /a/b
+    //   /c/test
+    // where "/a/b" is a symbolic link to "/c" and "/c/test" is a regular file.
+    const openTestFileInSymlinkedWorkspace = async (): Promise<TextDocument> => {
+        const folderAPath = path.join(process.cwd(), getRandomString());
+        const folderBPath = path.join(folderAPath, getRandomString());
+        const testFileSymbolicUri = Uri.file(path.join(folderBPath, "test"));
+        const folderCPath = path.join(process.cwd(), getRandomString());
+        const testFilePhysicalUri = Uri.file(path.join(folderCPath, "test"));
+
+        await workspace.fs.createDirectory(Uri.file(folderAPath));
+        await workspace.fs.createDirectory(Uri.file(folderCPath));
+        try {
+            await symlink(folderCPath, folderBPath, "dir");
+        } catch (_) {
+            // ignore, test is called multiple times at once
+        }
+        cleanupCallbacks.push(() => cleanupFolder(Uri.file(folderCPath)));
+        cleanupCallbacks.push(() => cleanupFolder(Uri.file(folderAPath)));
+
+        await workspace.fs.writeFile(testFilePhysicalUri, new TextEncoder().encode("hello friends"));
+        const doc = await workspace.openTextDocument(testFileSymbolicUri);
+        assert.equal(doc.getText(), "hello friends");
         await window.showTextDocument(doc);
         await sendEscapeKey();
         return doc;
@@ -40,13 +89,7 @@ describe("BufWriteCmd integration", () => {
         client = await attachTestNvimClient();
     });
     after(async () => {
-        for (const uri of testFiles) {
-            try {
-                await workspace.fs.delete(uri);
-            } catch {
-                // ignore
-            }
-        }
+        await Promise.all(cleanupCallbacks.map((fn) => fn.call(this)));
         await closeNvimClient(client);
         await closeAllActiveEditors();
     });
@@ -82,6 +125,20 @@ describe("BufWriteCmd integration", () => {
         await commands.executeCommand("workbench.action.closePanel");
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
+        assert.equal(await readFile(doc.uri), "hello world");
+    });
+
+    it("Writing to a file in a symlinked workspace", async () => {
+        const doc = await openTestFileInSymlinkedWorkspace();
+
+        await sendVSCodeKeys("cchello world");
+        await sendEscapeKey();
+        assert.equal(doc.isDirty, true);
+        assert.equal(doc.getText(), "hello world");
+
+        await client.command("w");
+        await wait(200);
+        assert.equal(doc.isDirty, false);
         assert.equal(await readFile(doc.uri), "hello world");
     });
 });
