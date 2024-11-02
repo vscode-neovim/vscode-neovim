@@ -340,6 +340,9 @@ function M.init_document_buffer(data)
   force_filetype()
   -- Set bufname before setting lines so that filetype detection can work ???
   api.nvim_buf_set_name(buf, data.bufname)
+  -- Let nvim resolve the physical path of our file to avoid relative path issues
+  -- with symbolic links when saving the buffer. #2284
+  api.nvim_buf_set_name(buf, api.nvim_buf_get_name(buf))
   api.nvim_buf_set_lines(buf, 0, -1, false, data.lines)
   -- set vscode controlled flag so we can check it neovim
   api.nvim_buf_set_var(buf, "vscode_controlled", true)
