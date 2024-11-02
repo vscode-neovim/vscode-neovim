@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.18.14](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.13...v1.18.14) (2024-11-02)
+
+
+### Bug Fixes
+
+* **buffers:** Fix saving to files inside symlinked workspaces ([#2302](https://github.com/vscode-neovim/vscode-neovim/issues/2302)) ([607b4c7](https://github.com/vscode-neovim/vscode-neovim/commit/607b4c7c387384d9a0e565ca4fb00cafe07112a3))
+* **startup:** null reference in onDidChangeWindowState handler [#2290](https://github.com/vscode-neovim/vscode-neovim/issues/2290) ([c3e8387](https://github.com/vscode-neovim/vscode-neovim/commit/c3e8387a9e9f923ec39c28af6cb8985ca431e438))
+
+
+### Documentation
+
+* how to configure Debug logging [#2291](https://github.com/vscode-neovim/vscode-neovim/issues/2291) ([292537b](https://github.com/vscode-neovim/vscode-neovim/commit/292537b7626b9ff82b7d9bf042145dd46b78e385))
+
 ## [1.18.13](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.12...v1.18.13) (2024-10-15)
 
 
