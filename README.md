@@ -133,7 +133,7 @@ tab.
 ### VSCode specific differences
 
 -   File and editor management commands such as `:e`/`:q`/`:vsplit`/`:tabnext`/etc are mapped to corresponding VSCode
-    commands and behavior may be different ([see below](#%EF%B8%8F--keybindings-shortcuts)).
+    commands and behavior may be different ([see below](#%EF%B8%8F-keybindings-shortcuts)).
     -   **Do not** use vim commands like `:e` in scripts/keybindings, they won't work. If you're using them in some
         custom commands/mappings, you might need to rebind them to call VSCode commands from Neovim with
         `require('vscode').call()` (see [API](#%EF%B8%8F-api)).
