@@ -1,7 +1,7 @@
 import assert from "assert";
 
 import { NeovimClient } from "neovim";
-import vscode, { DecorationOptions, Position, TextEditor, window } from "vscode";
+import vscode, { DecorationOptions, Position, TextEditor } from "vscode";
 
 import {
     attachTestNvimClient,
@@ -14,16 +14,13 @@ import {
 
 describe("Test highlights", () => {
     let client: NeovimClient;
-    let realWindow: typeof vscode.window | undefined;
-
-    const restoreWindow = (): void => {
-        if (realWindow) {
-            vscode.window = realWindow;
-            realWindow = undefined;
-        }
-    };
+    let orig_activeTextEditor: any;
+    let orig_visibleTextEditors: any;
 
     before(async () => {
+        orig_activeTextEditor = Object.getOwnPropertyDescriptor(vscode.window, "activeTextEditor");
+        orig_visibleTextEditors = Object.getOwnPropertyDescriptor(vscode.window, "visibleTextEditors");
+
         await closeAllActiveEditors();
         client = await attachTestNvimClient();
     });
@@ -33,13 +30,13 @@ describe("Test highlights", () => {
     });
 
     after(async () => {
-        restoreWindow();
         await closeNvimClient(client);
         await closeAllActiveEditors();
     });
 
     afterEach(() => {
-        restoreWindow();
+        Object.defineProperty(vscode.window, "activeTextEditor", orig_activeTextEditor);
+        Object.defineProperty(vscode.window, "visibleTextEditors", orig_visibleTextEditors);
     });
 
     it("extmark display overlay", async () => {
@@ -52,12 +49,14 @@ describe("Test highlights", () => {
         const curEditor = vscode.window.activeTextEditor;
         assert.ok(curEditor != null);
         const stubTextEditor = new TextEditorStub(curEditor);
-        realWindow = vscode.window;
-        vscode.window = {
-            activeTextEditor: stubTextEditor,
-            visibleTextEditors: [stubTextEditor],
-            createTextEditorDecorationType: window.createTextEditorDecorationType,
-        } as any;
+        Object.defineProperty(vscode.window, "activeTextEditor", {
+            get: () => stubTextEditor,
+            configurable: true, // Allows us to restore it later
+        });
+        Object.defineProperty(vscode.window, "visibleTextEditors", {
+            get: () => [stubTextEditor],
+            configurable: true, // Allows us to restore it later
+        });
 
         await client.command("hi ExtMarkRed guifg=#ff0000 guibg=#000000");
         await client.call("nvim_win_set_cursor", [0, [1, 1]]);
@@ -93,13 +92,14 @@ describe("Test highlights", () => {
         const curEditor = vscode.window.activeTextEditor;
         assert.ok(curEditor != null);
         const stubTextEditor = new TextEditorStub(curEditor);
-        realWindow = vscode.window;
-        vscode.window = {
-            ...realWindow,
-            activeTextEditor: stubTextEditor,
-            visibleTextEditors: [stubTextEditor],
-            createTextEditorDecorationType: window.createTextEditorDecorationType,
-        } as any;
+        Object.defineProperty(vscode.window, "activeTextEditor", {
+            get: () => stubTextEditor,
+            configurable: true, // Allows us to restore it later
+        });
+        Object.defineProperty(vscode.window, "visibleTextEditors", {
+            get: () => [stubTextEditor],
+            configurable: true, // Allows us to restore it later
+        });
 
         {
             await sendEscapeKey();
