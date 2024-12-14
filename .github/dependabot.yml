@@ -9,7 +9,10 @@ updates:
     - package-ecosystem: "npm"
       directory: "/"
       schedule:
-          interval: "monthly"
+          interval: "weekly"
+      ignore:
+          # @types/vscode must match our declared `engines.vscode` (in package.json).
+          - dependency-name: "@types/vscode"
       groups:
           dev-deps:
               dependency-type: "development"
@@ -18,4 +21,4 @@ updates:
     - package-ecosystem: "github-actions"
       directory: "/"
       schedule:
-          interval: "monthly"
+          interval: "weekly"
