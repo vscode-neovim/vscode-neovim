@@ -2154,7 +2154,7 @@
         "@johnnymorganz/stylua-bin": "^2.0.2",
         "@sinonjs/fake-timers": "^14.0.0",
         "@types/lodash": "^4.17.13",
-        "@types/mocha": "^10.0.7",
+        "@types/mocha": "^10.0.10",
         "@types/node": "^22.10.2",
         "@types/sinonjs__fake-timers": "^8.1.5",
         "@types/vscode": "^1.90.0",
