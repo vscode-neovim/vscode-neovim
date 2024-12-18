@@ -51,7 +51,7 @@ const keybinds = [
     {
         command: "vscode-neovim.escape",
         key: "Escape",
-        when: and("neovim.mode != normal"),
+        when: and("neovim.mode != normal", "(neovim.mode != insert || neovim.leaveInsertModeOnEscape)"),
     },
 ];
 

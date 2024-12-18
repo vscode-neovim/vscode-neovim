@@ -58,6 +58,7 @@ export class Config implements Disposable {
             VSCodeContext.set(`neovim.ctrlKeysNormal.${k}`, ctrlKeysNormalMode.includes(k));
             VSCodeContext.set(`neovim.ctrlKeysInsert.${k}`, ctrlKeysInsertMode.includes(k));
         });
+        VSCodeContext.set(`neovim.leaveInsertModeOnEscape`, this.leaveInsertModeOnEscape);
 
         if (!e) return;
         const requireRestart = this.requireRestartConfigs.find((c) => e.affectsConfiguration(c));
@@ -96,6 +97,9 @@ export class Config implements Disposable {
     }
     get ctrlKeysInsertMode(): string[] {
         return this.cfg.get<string[]>("ctrlKeysForInsertMode")!;
+    }
+    get leaveInsertModeOnEscape(): boolean {
+        return this.cfg.get<boolean>("leaveInsertModeOnEscape")!;
     }
     get editorLangIdExclusions(): string[] {
         return this.cfg.get<string[]>("editorLangIdExclusions")!;
