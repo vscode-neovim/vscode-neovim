@@ -688,6 +688,13 @@ Set by `editorLangIdExclusions`.
 Disable keybindings defined by this extension in certain filetypes. Please note that this will not affect all
 keybindings.
 
+#### Disable normal mode on escape
+
+Set by `leaveInsertModeOnEscape`.
+
+Do not enter normal mode when Escape key is pressed (or over-typed) while in insert mode. A composite escape keys
+combination (see [Composite escape keys](#composite-escape-keys)) is required to actually use Neovim.
+
 #### Remove other vscode or passthrough keybindings
 
 If the above configuration flags do not provide enough control, you can remove the keybindings by editing your

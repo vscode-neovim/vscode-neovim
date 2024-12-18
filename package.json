@@ -238,6 +238,11 @@
                         "w"
                     ]
                 },
+                "vscode-neovim.leaveInsertModeOnEscape": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Escape key will leave insert mode to enter normal mode"
+                },
                 "vscode-neovim.editorLangIdExclusions": {
                     "type": "array",
                     "uniqueItems": true,
@@ -483,7 +488,7 @@
             {
                 "command": "vscode-neovim.escape",
                 "key": "Escape",
-                "when": "editorTextFocus && neovim.init && editorLangId not in neovim.editorLangIdExclusions && neovim.mode != normal"
+                "when": "editorTextFocus && neovim.init && editorLangId not in neovim.editorLangIdExclusions && neovim.mode != normal && (neovim.mode != insert || neovim.leaveInsertModeOnEscape)"
             },
             {
                 "command": "vscode-neovim.send",
