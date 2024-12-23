@@ -2154,7 +2154,7 @@
         "@johnnymorganz/stylua-bin": "^2.0.2",
         "@sinonjs/fake-timers": "^14.0.0",
         "@types/lodash": "^4.17.13",
-        "@types/mocha": "^10.0.7",
+        "@types/mocha": "^10.0.10",
         "@types/node": "^22.10.2",
         "@types/sinonjs__fake-timers": "^8.1.5",
         "@types/vscode": "^1.90.0",
@@ -2164,7 +2164,7 @@
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-import": "^2.31.0",
         "eslint-plugin-prettier": "^5.2.1",
-        "globals": "^15.13.0",
+        "globals": "^15.14.0",
         "husky": "^9.1.7",
         "mocha": "^11.0.1",
         "prettier": "^3.4.2",
@@ -2173,7 +2173,7 @@
         "typescript": "^5.7.2",
         "typescript-eslint": "^7.18.0",
         "webpack": "^5.97.1",
-        "webpack-cli": "^5.1.4"
+        "webpack-cli": "^6.0.1"
     },
     "dependencies": {
         "@jpwilliams/waitgroup": "^2.1.1",
