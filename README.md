@@ -302,7 +302,7 @@ local vscode = require('vscode')
 5. `vscode.get_config()`: gets a vscode setting value.
 6. `vscode.update_config()`: sets a vscode setting.
 7. `vscode.notify()`: shows a vscode message (see also Nvim's `vim.notify`).
-8. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/modules/code_actions.lua) for the
+8. `vscode.to_op()`: A helper for `map-operator`. See [code_actions.lua](./runtime/vscode/code_actions.lua) for the
    usage
 9. `g:vscode_clipboard`: Clipboard provider using VSCode's clipboard API. Used by default when in WSL. See
    `:h g:clipboard` for more details. Usage: `vim.g.clipboard = vim.g.vscode_clipboard`
@@ -534,7 +534,7 @@ Parameters:
 - `opts` (table): Map of optional parameters:
     - `args` (any): a value to make available as the `args` variable in javascript. Can be a single value such as a
       string or a table of multiple values.
-- `timeout` (number): The number of milliseconds to wait for the evalution to complete before cancelling. By default
+- `timeout` (number): The number of milliseconds to wait for the evaluation to complete before cancelling. By default
   there is no timeout.
 
 Returns:
