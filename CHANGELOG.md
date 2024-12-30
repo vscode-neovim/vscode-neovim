@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.15](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.14...v1.18.15) (2024-12-30)
+
+
+### Documentation
+
+* fix link [#2327](https://github.com/vscode-neovim/vscode-neovim/issues/2327) ([e0eba53](https://github.com/vscode-neovim/vscode-neovim/commit/e0eba53505efbffbf7c046fb347a915b14bebdd0))
+
 ## [1.18.14](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.13...v1.18.14) (2024-11-02)
 
 
