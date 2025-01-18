@@ -139,10 +139,17 @@ local function setup_win_hl_ns()
   end
 end
 
-local function setup_treesitter_highlighting()
-  -- We don't need any treesitter highlights
-  for _, buf in ipairs(api.nvim_list_bufs()) do
-    vim.treesitter.stop(buf)
+local function disable_treesitter_highlights()
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    pcall(function()
+      -- Hack to disable treesitter highlighting by shimming
+      -- `for_each_highlight_state()`. Could use `vim.treesitter.stop()`, but
+      -- this seems to have unintended side-effects as per
+      -- https://github.com/vscode-neovim/vscode-neovim/issues/2355
+      local highlighter = vim.treesitter.highlighter.active[buf]
+      ---@diagnostic disable-next-line: duplicate-set-field
+      function highlighter:for_each_highlight_state() end
+    end)
   end
 end
 
@@ -154,7 +161,7 @@ local function setup()
     group = group,
     callback = function()
       setup_win_hl_ns()
-      setup_treesitter_highlighting()
+      disable_treesitter_highlights()
     end,
   })
   api.nvim_create_autocmd({ "ColorScheme", "Syntax", "FileType" }, {
@@ -174,7 +181,7 @@ local function setup()
   api.nvim_create_autocmd({ "VimEnter", "UIEnter" }, {
     group = group,
     callback = function()
-      setup_treesitter_highlighting()
+      disable_treesitter_highlights()
       setup_globals()
       setup_syntax_groups()
       setup_syntax_overrides()
