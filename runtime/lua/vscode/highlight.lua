@@ -142,7 +142,7 @@ end
 local function disable_treesitter_highlights()
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     pcall(function()
-      -- Hack to disable treesitter highlighting by shimming
+      -- Hack to disable treesitter highlighting by monkey patching
       -- `for_each_highlight_state()`. Could use `vim.treesitter.stop()`, but
       -- this seems to have unintended side-effects as per
       -- https://github.com/vscode-neovim/vscode-neovim/issues/2355
