@@ -617,7 +617,7 @@ You can also use `v:lua.require("vscode")` to access the API from VimScript.
 
 ## ⌨️ Keybindings (shortcuts)
 
-There are three types of default/user keybindings in vscode-neovim:
+There are three types of default/user keybindings:
 
 - **Neovim keybindings**: These are the keybindings that are defined in the extension's vimscript files or the user's
   `init.vim` file. These provide code navigation, buffer management, and other neovim-specific overrides.
@@ -638,6 +638,9 @@ Nvim features to see documentation and all defined shortcuts:
     - Note that `:help` for `<C-…>` bindings is spelled `CTRL-…`. For example to see the help for `<c-w>`, run
       `:help CTRL-W`.
 - Search the online Nvim documentation: <https://neovim.io/doc/user/>
+- Reference the VSCode docs:
+    - Key Bindings: https://code.visualstudio.com/docs/getstarted/keybindings
+    - `"when"` clause: https://code.visualstudio.com/api/references/when-clause-contexts
 
 ### Keybinding Passthroughs
 
@@ -651,11 +654,12 @@ To add a custom passthrough, for example <kbd>A-h</kbd> in normal mode, add to y
 ```jsonc
 {
     "command": "vscode-neovim.send",
-    // the key sequence to activate the binding
+    // Invoke the binding with this key sequence.
     "key": "alt+h",
-    // don't activate during insert mode
+    // Don't activate during insert mode.
+    // Docs for "when": https://code.visualstudio.com/api/references/when-clause-contexts
     "when": "editorTextFocus && neovim.mode != insert",
-    // the input to send to Neovim
+    // Send this input to Neovim.
     "args": "<A-h>",
 }
 ```
