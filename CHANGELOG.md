@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.18.15](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.14...v1.18.15) (2025-01-20)
+
+
+### Bug Fixes
+
+* treesitter language injections ([#2356](https://github.com/vscode-neovim/vscode-neovim/issues/2356)) ([4077b73](https://github.com/vscode-neovim/vscode-neovim/commit/4077b73eaf4e0eb7f302f38a3d5b93f7d15c7933))
+
+
+### Documentation
+
+* fix link [#2327](https://github.com/vscode-neovim/vscode-neovim/issues/2327) ([e0eba53](https://github.com/vscode-neovim/vscode-neovim/commit/e0eba53505efbffbf7c046fb347a915b14bebdd0))
+* vscode docs for the "when" clause [#2358](https://github.com/vscode-neovim/vscode-neovim/issues/2358) ([1180372](https://github.com/vscode-neovim/vscode-neovim/commit/1180372bc0b147af02d4e956a944bb817e02e905)), closes [#2357](https://github.com/vscode-neovim/vscode-neovim/issues/2357)
+
 ## [1.18.14](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.13...v1.18.14) (2024-11-02)
 
 
