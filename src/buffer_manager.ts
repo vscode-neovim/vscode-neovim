@@ -576,7 +576,7 @@ export class BufferManager implements Disposable {
                 this.isLayoutOutdated = false;
                 const token = this.syncLayoutSource?.token;
 
-                const visibleEditors = [...window.visibleTextEditors];
+                const visibleEditors = [...window.visibleTextEditors].filter((e) => e.viewColumn !== undefined);
                 const activeEditor = window.activeTextEditor;
 
                 if (token?.isCancellationRequested) continue;
