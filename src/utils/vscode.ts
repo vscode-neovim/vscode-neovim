@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 
 import { calcPatch } from "fast-myers-diff";
 import {
@@ -236,9 +236,14 @@ export function rangesToSelections(
  * @returns WSL path
  */
 export const wslpath = (path: string) => {
-    // execSync returns a newline character at the end
-    const distro = config.wslDistribution.length ? `-d ${config.wslDistribution}` : "";
-    return execSync(`C:\\Windows\\system32\\wsl.exe ${distro} wslpath '${path}'`).toString().trim();
+    const distroArgs = config.wslDistribution.length ? ["-d", config.wslDistribution] : [];
+    const result = spawnSync("C:\\Windows\\system32\\wsl.exe", [...distroArgs, "wslpath", path], {
+        encoding: "utf-8",
+    });
+    if (result.error) {
+        throw new Error(`Failed to run wslpath: ${result.error.message}`);
+    }
+    return result.stdout.trim();
 };
 
 // Credit: https://github.com/VSCodeVim/Vim/blob/5dc9fbf9e7c31a523a348066e61605ed6caf62da/src/util/vscodeContext.ts
