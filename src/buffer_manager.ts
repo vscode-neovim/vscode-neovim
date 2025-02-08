@@ -678,7 +678,7 @@ export class BufferManager implements Disposable {
     }
 
     private async syncActiveEditor(activeEditor?: TextEditor): Promise<void> {
-        if (!activeEditor) return;
+        if (!activeEditor || !activeEditor.viewColumn) return;
         const winId = this.textEditorToWinId.get(activeEditor);
         const uri = activeEditor.document.uri;
         if (!winId) {
