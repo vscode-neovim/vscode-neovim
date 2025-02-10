@@ -243,7 +243,7 @@ export const wslpath = (path: string) => {
     if (result.error) {
         throw new Error(`Failed to run wslpath: ${result.error.message}`);
     }
-    return result.stdout.replace(/\r\n/g, "\n").trim();
+    return result.stdout.trim();
 };
 
 // Credit: https://github.com/VSCodeVim/Vim/blob/5dc9fbf9e7c31a523a348066e61605ed6caf62da/src/util/vscodeContext.ts
