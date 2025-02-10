@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.16](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.15...v1.18.16) (2025-02-10)
+
+
+### Bug Fixes
+
+* replace execSync with spawnSync ([#2376](https://github.com/vscode-neovim/vscode-neovim/issues/2376)) ([f245bf7](https://github.com/vscode-neovim/vscode-neovim/commit/f245bf7c75a0a7e26d45f3eab9ce2c3df402630e))
+
 ## [1.18.15](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.14...v1.18.15) (2025-01-20)
 
 
