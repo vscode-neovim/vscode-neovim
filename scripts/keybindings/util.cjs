@@ -3,6 +3,8 @@ const keymap = {
     delete: "Del",
     shift: "S",
     ctrl: "C",
+    "[bracketleft]": "[",
+    "[bracketright]": "]",
 };
 
 /**

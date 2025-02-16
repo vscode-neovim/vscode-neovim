@@ -9,6 +9,11 @@ const keybinds = [
     },
     {
         command: "vscode-neovim.escape",
+        key: "ctrl+[BracketLeft]", // fix ctrl+[ mapping on macOS non-US keyboard layout
+        when: and(),
+    },
+    {
+        command: "vscode-neovim.escape",
         key: "ctrl+c",
         when: and(
             "neovim.mode == normal",

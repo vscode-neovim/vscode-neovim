@@ -168,6 +168,11 @@ tab.
   this open Terminal and execute the following command:
   `defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false`.
 - To fix the remapped escape key not working in Linux, set `"keyboard.dispatch": "keyCode"`.
+- Two VSCode developer commands are useful for keybindings debugging:
+    - `Developer: Toggle Keyboard Shortcuts Troubleshooting` for tracing VSCode emitted keypresses and their processing
+      via defined keybindings.
+    - `Developer: Inspect Key Mapping` for getting the recognized mappings for the current keyboard layout inside
+      VSCode.
 
 ### Performance
 

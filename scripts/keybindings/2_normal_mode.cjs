@@ -27,7 +27,16 @@ const when =
 // Generate Ctrl keys
 // const defaults = "abdefhijklortuvwxyz/]";
 // ! ctrl+c is special and is defined in common
-const ctrlKeys = [..."abdefghijklmnopqrstuvwxyz/]", "right", "left", "up", "down", "backspace", "delete"];
+const ctrlKeys = [
+    ..."abdefghijklmnopqrstuvwxyz/]",
+    "[BracketRight]",
+    "right",
+    "left",
+    "up",
+    "down",
+    "backspace",
+    "delete",
+];
 
 ctrlKeys.forEach((k) => {
     let cmd = "vscode-neovim.send";
