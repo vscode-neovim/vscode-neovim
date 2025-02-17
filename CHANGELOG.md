@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.17](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.16...v1.18.17) (2025-02-17)
+
+
+### Bug Fixes
+
+* **defaults:** keybindings for ctrl+[BracketLeft], ctrl+[BracketRight] as alternatives for ctrl+[ and ctrl+]. ([#2390](https://github.com/vscode-neovim/vscode-neovim/issues/2390)) ([cdbead6](https://github.com/vscode-neovim/vscode-neovim/commit/cdbead63951da0af72b5cd9e9e77a8697944ae42))
+
 ## [1.18.16](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.15...v1.18.16) (2025-02-10)
 
 
