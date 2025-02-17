@@ -467,6 +467,11 @@
             },
             {
                 "command": "vscode-neovim.escape",
+                "key": "ctrl+[BracketLeft]",
+                "when": "editorTextFocus && neovim.init && editorLangId not in neovim.editorLangIdExclusions"
+            },
+            {
+                "command": "vscode-neovim.escape",
                 "key": "ctrl+c",
                 "when": "editorTextFocus && neovim.init && editorLangId not in neovim.editorLangIdExclusions && neovim.mode == normal && neovim.ctrlKeysNormal.c && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible"
             },
@@ -739,6 +744,12 @@
             },
             {
                 "command": "vscode-neovim.send",
+                "key": "ctrl+[BracketRight]",
+                "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.[BracketRight] && editorLangId not in neovim.editorLangIdExclusions",
+                "args": "<C-]>"
+            },
+            {
+                "command": "vscode-neovim.send",
                 "key": "ctrl+right",
                 "when": "editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.right && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-right>"
@@ -933,6 +944,12 @@
                 "command": "vscode-neovim.send",
                 "key": "ctrl+]",
                 "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.] && editorLangId not in neovim.editorLangIdExclusions",
+                "args": "<C-]>"
+            },
+            {
+                "command": "vscode-neovim.send",
+                "key": "ctrl+[BracketRight]",
+                "when": "editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.[BracketRight] && editorLangId not in neovim.editorLangIdExclusions",
                 "args": "<C-]>"
             },
             {
@@ -1424,6 +1441,12 @@
             {
                 "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r ctrl+]",
+                "when": "neovim.init && neovim.mode == cmdline",
+                "args": "<C-r><C-]>"
+            },
+            {
+                "command": "vscode-neovim.send-cmdline",
+                "key": "ctrl+r ctrl+[BracketRight]",
                 "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r><C-]>"
             },

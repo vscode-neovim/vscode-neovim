@@ -63,7 +63,7 @@ for (const key in shifts) {
 }
 
 // ctrl+r {ctrl+key, key}
-[..."abcdefghijklmnopqrstuvwxyz]"].forEach((k) => {
+[..."abcdefghijklmnopqrstuvwxyz]", "[BracketRight]"].forEach((k) => {
     let key = `ctrl+${k}`;
     let args = key2arg(key);
     add(`ctrl+r ${key}`, `<C-r>${args}`);
