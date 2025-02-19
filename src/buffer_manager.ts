@@ -252,7 +252,7 @@ export class BufferManager implements Disposable {
     }
 
     public isExternalTextDocument(textDoc: TextDocument): boolean {
-        if (textDoc.uri.scheme === "output") {
+        if (textDoc.uri.scheme !== "file") {
             return true;
         }
         return this.externalTextDocuments.has(textDoc);
@@ -576,7 +576,7 @@ export class BufferManager implements Disposable {
                 this.isLayoutOutdated = false;
                 const token = this.syncLayoutSource?.token;
 
-                const visibleEditors = [...window.visibleTextEditors].filter((e) => e.viewColumn !== undefined);
+                const visibleEditors = [...window.visibleTextEditors];
                 const activeEditor = window.activeTextEditor;
 
                 if (token?.isCancellationRequested) continue;
@@ -678,7 +678,7 @@ export class BufferManager implements Disposable {
     }
 
     private async syncActiveEditor(activeEditor?: TextEditor): Promise<void> {
-        if (!activeEditor || !activeEditor.viewColumn) return;
+        if (!activeEditor) return;
         const winId = this.textEditorToWinId.get(activeEditor);
         const uri = activeEditor.document.uri;
         if (!winId) {
@@ -763,6 +763,9 @@ export class BufferManager implements Disposable {
         const { version } = document;
         const bufname = await this.bufnameForTextDocument(document);
 
+        const modifiable = !this.isExternalTextDocument(document);
+        const dirty = this.isExternalTextDocument(document) ? false : document.isDirty;
+
         await actions.lua("init_document_buffer", {
             buf: bufId,
             bufname: bufname,
@@ -770,8 +773,8 @@ export class BufferManager implements Disposable {
             uri: document.uri.toString(),
             uri_data: document.uri.toJSON(),
             editor_options: makeEditorOptionsVariable(editor?.options),
-            modifiable: !this.isExternalTextDocument(document),
-            modified: document.isDirty,
+            modifiable: modifiable,
+            modified: dirty,
             filetype: resolveDocumentFiletype(document),
         });
 
