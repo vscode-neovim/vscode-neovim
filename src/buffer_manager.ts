@@ -765,13 +765,15 @@ export class BufferManager implements Disposable {
 
         const modifiable = !this.isExternalTextDocument(document);
         const dirty = this.isExternalTextDocument(document) ? false : document.isDirty;
+        const uri_str = modifiable ? document.uri.toString() : undefined;
+        const uri_data = modifiable ? document.uri.toJSON() : undefined;
 
         await actions.lua("init_document_buffer", {
             buf: bufId,
             bufname: bufname,
             lines: lines,
-            uri: document.uri.toString(),
-            uri_data: document.uri.toJSON(),
+            uri: uri_str,
+            uri_data: uri_data,
             editor_options: makeEditorOptionsVariable(editor?.options),
             modifiable: modifiable,
             modified: dirty,
