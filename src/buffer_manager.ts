@@ -1,4 +1,5 @@
 import path from "path";
+import { randomUUID } from "crypto";
 
 import { debounce } from "lodash";
 import { Buffer, NeovimClient } from "neovim";
@@ -796,7 +797,8 @@ export class BufferManager implements Disposable {
             return config.useWsl ? actions.lua<string>("wslpath", uri.fsPath) : uri.fsPath;
         }
         // We don't care about the name of the buffer if it's not a file
-        return uri.toString();
+        // use UUID instead of using uri which could be very long for uri's from editors like github copilot.
+        return randomUUID().toString();
     }
 
     /**
