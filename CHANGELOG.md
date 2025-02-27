@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.18](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.17...v1.18.18) (2025-02-27)
+
+
+### Bug Fixes
+
+* we need to execute treesitter parsing manually ([#2400](https://github.com/vscode-neovim/vscode-neovim/issues/2400)) ([81f5202](https://github.com/vscode-neovim/vscode-neovim/commit/81f5202cff7146f22c48a5a07adcf230a82bfc96))
+
 ## [1.18.17](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.16...v1.18.17) (2025-02-17)
 
 
