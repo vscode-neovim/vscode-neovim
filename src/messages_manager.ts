@@ -20,8 +20,8 @@ export class MessagesManager implements Disposable {
     private displayHistory: boolean = false;
     private didChange: boolean = false;
 
-    private messageBuffer: string[] = [];
-    private historyBuffer: string[] = [];
+    private messageBuffer: MessageBuffer = new MessageBuffer();
+    private historyBuffer: MessageBuffer = new MessageBuffer();
 
     public constructor(private readonly main: MainController) {
         this.channel = window.createOutputChannel(`${EXT_NAME} messages`);
@@ -65,7 +65,7 @@ export class MessagesManager implements Disposable {
             }
 
             case "msg_clear": {
-                this.messageBuffer = [];
+                this.messageBuffer.clear();
                 break;
             }
 
@@ -90,7 +90,7 @@ export class MessagesManager implements Disposable {
             case "msg_history_clear":
                 // NOTE: this does not actually correspond to the `:messages clear`
                 // command, but to when neovim wants us to clear our history buffer.
-                this.historyBuffer = [];
+                this.historyBuffer.clear();
                 break;
 
             default:
@@ -120,9 +120,8 @@ export class MessagesManager implements Disposable {
         const messages = this.displayHistory ? this.historyBuffer : this.messageBuffer;
         logger.trace(`Flushing ${this.displayHistory ? "history" : "message"} buffer: ${inspect(messages)}`);
 
-        const msg = messages.join("\n");
-
-        const lineCount = msg.split("\n").length;
+        const msg = messages.message;
+        const lineCount = messages.lineCount;
         const cmdheight = (await this.main.client.getOption("cmdheight")) as number;
         const shouldRevealOutput = this.revealOutput || lineCount > cmdheight;
 
@@ -158,5 +157,29 @@ export class MessagesManager implements Disposable {
         }
 
         return msg + "\n";
+    }
+}
+
+class MessageBuffer {
+    private buffer: string[] = [];
+
+    public push(message: string): void {
+        this.buffer.push(message);
+    }
+
+    public pop(): string | undefined {
+        return this.buffer.pop();
+    }
+
+    public clear(): void {
+        this.buffer = [];
+    }
+
+    public get message(): string {
+        return this.buffer.join("\n").replaceAll("\r\n", "\n");
+    }
+
+    public get lineCount(): number {
+        return this.message.split("\n").length;
     }
 }
