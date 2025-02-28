@@ -369,9 +369,7 @@ export class CursorManager implements Disposable {
             );
 
             if (selection.isEmpty) {
-                // exit visual mode when clicking elsewhere
-                if (this.main.modeManager.isVisualMode && kind === TextEditorSelectionChangeKind.Mouse)
-                    await this.client.input("<Esc>");
+                if (this.main.modeManager.isVisualMode) await this.client.input("<Esc>");
                 await this.updateNeovimCursorPosition(editor, selection.active);
             } else {
                 if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
