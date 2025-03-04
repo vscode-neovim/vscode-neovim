@@ -1,4 +1,5 @@
 import path from "path";
+import { randomUUID } from "crypto";
 
 import { debounce } from "lodash";
 import { Buffer, NeovimClient } from "neovim";
@@ -763,15 +764,21 @@ export class BufferManager implements Disposable {
         const { version } = document;
         const bufname = await this.bufnameForTextDocument(document);
 
+        const modifiable = !this.isExternalTextDocument(document);
+        const isFile = document.uri.scheme === "file";
+        const dirty = isFile ? document.isDirty : false;
+        const uri_str = isFile ? document.uri.toString() : undefined;
+        const uri_data = isFile ? document.uri.toJSON() : undefined;
+
         await actions.lua("init_document_buffer", {
             buf: bufId,
             bufname: bufname,
             lines: lines,
-            uri: document.uri.toString(),
-            uri_data: document.uri.toJSON(),
+            uri: uri_str,
+            uri_data: uri_data,
             editor_options: makeEditorOptionsVariable(editor?.options),
-            modifiable: !this.isExternalTextDocument(document),
-            modified: document.isDirty,
+            modifiable: modifiable,
+            modified: dirty,
             filetype: resolveDocumentFiletype(document),
         });
 
@@ -790,7 +797,8 @@ export class BufferManager implements Disposable {
             return config.useWsl ? actions.lua<string>("wslpath", uri.fsPath) : uri.fsPath;
         }
         // We don't care about the name of the buffer if it's not a file
-        return uri.toString();
+        // use UUID instead of using uri which could be very long for uri's from editors like github copilot.
+        return randomUUID().toString();
     }
 
     /**
