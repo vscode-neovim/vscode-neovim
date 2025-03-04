@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.19](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.18...v1.18.19) (2025-03-04)
+
+
+### Bug Fixes
+
+* **test:** normalize EOL ([#2402](https://github.com/vscode-neovim/vscode-neovim/issues/2402)) ([c095de7](https://github.com/vscode-neovim/vscode-neovim/commit/c095de724ed0aeb3d94f9bc8552fffedc4dbecff))
+
 ## [1.18.18](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.17...v1.18.18) (2025-02-27)
 
 
