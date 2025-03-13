@@ -369,8 +369,10 @@ export class CursorManager implements Disposable {
             );
 
             if (selection.isEmpty) {
-                // exit visual mode when clicking elsewhere
-                if (this.main.modeManager.isVisualMode && kind === TextEditorSelectionChangeKind.Mouse)
+                // This logic only executes in non-insert mode. In this case, the primary selection is empty,
+                // but other selections are not. This situation usually occurs due to block selection synchronized from neovim.
+                // In this case, we only need to update the cursor position without exiting visual mode.
+                if (this.main.modeManager.isVisualMode && editor.selections.every((s) => s.isEmpty))
                     await this.client.input("<Esc>");
                 await this.updateNeovimCursorPosition(editor, selection.active);
             } else {
