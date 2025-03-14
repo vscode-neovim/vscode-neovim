@@ -356,9 +356,10 @@ export class CursorManager implements Disposable {
         await this.main.changeManager.documentChangeLock.waitForUnlock();
         logger.debug(`Waiting done`);
 
-        // ignore selection change caused by buffer edit
         const selection = editor.selection;
-        const hasMultipleSelections = editor.selections.length > 1;
+        const isSingleSelection = editor.selections.length === 1;
+
+        // ignore selection change caused by buffer edit
         const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(editor.document);
         if (documentChange && documentChange.isEqual(selection.active)) {
             logger.debug(`Skipping onSelectionChanged event since it was selection produced by doc change`);
@@ -366,14 +367,21 @@ export class CursorManager implements Disposable {
             logger.debug(
                 `Applying changed selection, kind: ${kind},  cursor: [${selection.active.line}, ${
                     selection.active.character
-                }], isMultiSelection: ${hasMultipleSelections}`,
+                }], isSingleSelection: ${isSingleSelection}`,
             );
 
             if (selection.isEmpty) {
                 // exit visual mode when clicking mouse elsewhere or cancelling selection
-                if (this.main.modeManager.isVisualMode && !hasMultipleSelections) {
+                const isMouseChange = kind === TextEditorSelectionChangeKind.Mouse;
+                const isNvimChange =
+                    kind === TextEditorSelectionChangeKind.Command &&
+                    this.neovimCursorPosition.get(editor)?.isEqual(selection);
+                const shouldExitVisualMode = isMouseChange || (isSingleSelection && !isNvimChange);
+
+                if (this.main.modeManager.isVisualMode && shouldExitVisualMode) {
                     await this.client.input("<Esc>");
                 }
+
                 await this.updateNeovimCursorPosition(editor, selection.active);
             } else if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection) {
                 await this.updateNeovimVisualSelection(editor, selection);
