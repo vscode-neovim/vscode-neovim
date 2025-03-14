@@ -358,6 +358,7 @@ export class CursorManager implements Disposable {
 
         // ignore selection change caused by buffer edit
         const selection = editor.selection;
+        const hasMultipleSelections = editor.selections.length > 1;
         const documentChange = this.main.changeManager.eatDocumentCursorAfterChange(editor.document);
         if (documentChange && documentChange.isEqual(selection.active)) {
             logger.debug(`Skipping onSelectionChanged event since it was selection produced by doc change`);
@@ -365,19 +366,17 @@ export class CursorManager implements Disposable {
             logger.debug(
                 `Applying changed selection, kind: ${kind},  cursor: [${selection.active.line}, ${
                     selection.active.character
-                }], isMultiSelection: ${editor.selections.length > 1}`,
+                }], isMultiSelection: ${hasMultipleSelections}`,
             );
 
             if (selection.isEmpty) {
-                // This logic only executes in non-insert mode. In this case, the primary selection is empty,
-                // but other selections are not. This situation usually occurs due to block selection synchronized from neovim.
-                // In this case, we only need to update the cursor position without exiting visual mode.
-                if (this.main.modeManager.isVisualMode && editor.selections.every((s) => s.isEmpty))
+                // exit visual mode when clicking mouse elsewhere or cancelling selection
+                if (this.main.modeManager.isVisualMode && !hasMultipleSelections) {
                     await this.client.input("<Esc>");
+                }
                 await this.updateNeovimCursorPosition(editor, selection.active);
-            } else {
-                if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection)
-                    await this.updateNeovimVisualSelection(editor, selection);
+            } else if (kind !== TextEditorSelectionChangeKind.Mouse || !config.disableMouseSelection) {
+                await this.updateNeovimVisualSelection(editor, selection);
             }
         }
 
