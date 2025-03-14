@@ -2,7 +2,7 @@ import { strict as assert } from "assert";
 import net from "net";
 
 import { NeovimClient, attach } from "neovim";
-import {
+import vscode, {
     TextEditor,
     window,
     workspace,
@@ -328,7 +328,20 @@ export async function setCursor(line: number, char: number, waitTimeout = 250, e
 }
 
 export async function copyVSCodeSelection(): Promise<void> {
-    await sendVSCodeCommand("editor.action.clipboardCopyAction");
+    // TODO: somehome this action is not working since vscode 1.98.0
+    // await sendVSCodeCommand("editor.action.clipboardCopyAction");
+
+    const editor = window.activeTextEditor;
+    if (!editor) return;
+    const sortedSelections = editor.selections.toSorted((a, b) => {
+        if (a.start.line === b.start.line) {
+            return a.start.character - b.start.character;
+        } else {
+            return a.start.line - b.start.line;
+        }
+    });
+    const text = sortedSelections.map((s) => editor.document.getText(s)).join("\n");
+    await vscode.env.clipboard.writeText(text);
 }
 export async function pasteVSCode(): Promise<void> {
     await sendVSCodeCommand("editor.action.clipboardPasteAction");
