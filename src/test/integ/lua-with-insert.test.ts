@@ -105,4 +105,19 @@ describe("Lua vscode.with_insert", function () {
         await sendVSCodeKeys("xxx");
         await assertContent({ content: ["xxx", "xxx 123", "12 xxx"] }, client);
     });
+
+    it("possible race condition", async () => {
+        await openTestDocument();
+        await sendEscapeKey();
+        await sendNeovimKeys(client, "gg0jllvll");
+        await client.lua(`
+            local vscode = require('vscode')
+            vscode.with_insert(function()
+                vscode.action('editor.action.selectHighlights')
+            end)
+            `);
+        await wait(200);
+        await sendVSCodeKeys("xxx");
+        await assertContent({ content: ["abc", "abxxx23", "12 abc"] }, client);
+    });
 });
