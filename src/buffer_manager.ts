@@ -104,6 +104,11 @@ export class BufferManager implements Disposable {
     private syncLayoutProgress: Progress;
 
     /**
+     * Source for cancellation token used to cancel window change operation
+     */
+    private windowChangedTokenSource?: CancellationTokenSource;
+
+    /**
      * Text documents originated externally, as consequence of neovim command, like :help or :PlugStatus
      */
     private externalTextDocuments: WeakSet<TextDocument> = new Set();
@@ -163,7 +168,7 @@ export class BufferManager implements Disposable {
             eventBus.on("redraw", this.handleRedraw, this),
             eventBus.on("open-file", this.handleOpenFile, this),
             eventBus.on("external-buffer", this.handleExternalBuffer, this),
-            eventBus.on("window-changed", ([winId]) => this.handleWindowChangedDebounced(winId)),
+            eventBus.on("window-changed", this.onWindowChanged, this),
             eventBus.on("BufModifiedSet", ([data]) => this.handleBufferModifiedSet(data)),
         );
         actions.add(
@@ -371,7 +376,7 @@ export class BufferManager implements Disposable {
         }
     }
 
-    private handleWindowChanged = async (winId: number): Promise<void> => {
+    private handleWindowChanged = async (winId: number, token: CancellationToken): Promise<void> => {
         logger.debug(`window changed, target window id: ${winId}`);
         if (winId === 1000) {
             // This event is triggered by our layout sync, skip it
@@ -390,18 +395,29 @@ export class BufferManager implements Disposable {
             return returnToActiveEditor();
         }
         if (window.activeTextEditor === targetEditor) return;
+
         // since the event could be triggered by vscode side operations
         // we need to wait a bit to let vscode finish its internal operations
         // then check if the target editor is still the same
         await wait(50);
         await this.waitForLayoutSync();
+
+        // When switching tabs (changing the active editor) very quickly, the
+        // data for the ongoing window switch operation might be outdated
+        if (token.isCancellationRequested) {
+            logger.debug(`Cancelling window change operation for winId: ${winId}`);
+            return;
+        }
+
         // triggered by vscode side operations
         if (window.activeTextEditor === undefined) {
             // e.g. open settings, open keyboard shortcuts settings which overrides active editor
             logger.debug(`activeTextEditor is undefined, skipping`);
             return;
         }
+
         await this.main.cursorManager.waitForCursorUpdate(window.activeTextEditor);
+
         const { id: curwin } = await this.client.getWindow();
         targetEditor = this.getEditorFromWinId(curwin);
         if (!targetEditor) {
@@ -409,7 +425,9 @@ export class BufferManager implements Disposable {
             return returnToActiveEditor();
         }
         if (window.activeTextEditor === targetEditor) return;
+
         await this.main.cursorManager.waitForCursorUpdate(targetEditor);
+
         const uri = targetEditor.document.uri;
         const { scheme } = uri;
         switch (scheme) {
@@ -443,6 +461,13 @@ export class BufferManager implements Disposable {
     };
 
     private handleWindowChangedDebounced = debounce(this.handleWindowChanged, 100, { leading: false, trailing: true });
+
+    private onWindowChanged = (data: EventBusData<"window-changed">) => {
+        const [winId] = data;
+        this.windowChangedTokenSource?.cancel();
+        this.windowChangedTokenSource = new CancellationTokenSource();
+        this.handleWindowChangedDebounced(winId, this.windowChangedTokenSource.token);
+    };
 
     private async syncDocumentDirtyState(): Promise<void> {
         const states = Array.from(this.textDocumentToBufferId.entries()).map(([doc, bufId]) => ({
@@ -689,19 +714,12 @@ export class BufferManager implements Disposable {
             // If we reach here, then the current window in Neovim is out of sync with the
             // active editor, which manifests itself as the editor being completely unresponsive
             // when in normal mode
-            logger.log(
-                uri,
-                LogLevel.Error,
-                `Unable to determine neovim window id for editor, viewColumn: ${activeEditor.viewColumn}, docUri: ${uri}`,
-            );
+            logger.log(uri, LogLevel.Error, `Unable to determine neovim window id for editor, docUri: ${uri}`);
             return;
         }
         if ((await this.client.window).id === winId) return;
-        logger.log(
-            uri,
-            LogLevel.Debug,
-            `Setting active editor - viewColumn: ${activeEditor.viewColumn}, winId: ${winId}`,
-        );
+        logger.log(uri, LogLevel.Debug, `Setting active editor - winId: ${winId}`);
+        this.windowChangedTokenSource?.cancel();
         await this.main.cursorManager.updateNeovimCursorPosition(activeEditor, activeEditor.selection.active);
         if (this.main.modeManager.isVisualMode) {
             // https://github.com/vscode-neovim/vscode-neovim/issues/1577
