@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.18.19](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.18...v1.18.19) (2025-03-15)
+
+
+### Bug Fixes
+
+* **api:** add delay for cursor synchronization in with_insert ([#2415](https://github.com/vscode-neovim/vscode-neovim/issues/2415)) ([15191dd](https://github.com/vscode-neovim/vscode-neovim/commit/15191dd161615c1f2f2aa6a0b737ddeb7d70ae06))
+* do not open the file automatically after writing ([#2416](https://github.com/vscode-neovim/vscode-neovim/issues/2416)) ([2564492](https://github.com/vscode-neovim/vscode-neovim/commit/2564492ca5e0ba65e89602abee6e0d77fa3f43be))
+* exit visual mode on mouse click or selection cancel ([#2300](https://github.com/vscode-neovim/vscode-neovim/issues/2300)) ([fe35981](https://github.com/vscode-neovim/vscode-neovim/commit/fe3598163d468b5daac76299c3f796cfdeeb5d29))
+* Fix assertContent cursor position parameter ([fe35981](https://github.com/vscode-neovim/vscode-neovim/commit/fe3598163d468b5daac76299c3f796cfdeeb5d29))
+* improve window change handling with cancellation support ([#2417](https://github.com/vscode-neovim/vscode-neovim/issues/2417)) ([0520846](https://github.com/vscode-neovim/vscode-neovim/commit/0520846ad9c583f89648020261323d0845cbb3cf))
+* **test:** normalize EOL ([#2402](https://github.com/vscode-neovim/vscode-neovim/issues/2402)) ([c095de7](https://github.com/vscode-neovim/vscode-neovim/commit/c095de724ed0aeb3d94f9bc8552fffedc4dbecff))
+* **test:** use custom `clipboardCopyAction` implementation ([#2414](https://github.com/vscode-neovim/vscode-neovim/issues/2414)) ([4a7675f](https://github.com/vscode-neovim/vscode-neovim/commit/4a7675fe6ed45478d8e6745fefd04717ab1afd48))
+* treat all auto-generated documents as external ([#2418](https://github.com/vscode-neovim/vscode-neovim/issues/2418)) ([9754628](https://github.com/vscode-neovim/vscode-neovim/commit/9754628e9baff55f62cf4a9bb15cf239ae9cceee))
+
 ## [1.18.18](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.17...v1.18.18) (2025-02-27)
 
 
