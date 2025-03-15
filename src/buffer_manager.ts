@@ -549,7 +549,7 @@ export class BufferManager implements Disposable {
             await workspace.fs.writeFile(saveUri, bytes);
             window.setStatusBarMessage(`Saved "${path.basename(saveUri.fsPath)}"`, 3000);
         } catch (error) {
-            window.showErrorMessage(`Failed to save ${saveUri.fsPath}: ${error}`);
+            window.showErrorMessage(`Failed to save "${saveUri.fsPath}": ${error}`);
         }
     }
 
