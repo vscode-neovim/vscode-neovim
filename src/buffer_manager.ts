@@ -545,9 +545,12 @@ export class BufferManager implements Disposable {
 
         const text = document.getText();
         const bytes = new TextEncoder().encode(text);
-        await workspace.fs.writeFile(saveUri, bytes);
-        const doc = await workspace.openTextDocument(saveUri);
-        await window.showTextDocument(doc);
+        try {
+            await workspace.fs.writeFile(saveUri, bytes);
+            window.setStatusBarMessage(`Saved "${path.basename(saveUri.fsPath)}"`, 3000);
+        } catch (error) {
+            window.showErrorMessage(`Failed to save "${saveUri.fsPath}": ${error}`);
+        }
     }
 
     // #region Sync layout
