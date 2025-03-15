@@ -493,7 +493,11 @@ function M.with_insert(callback)
     api.nvim_win_set_cursor(0, end_pos)
     startinsert("<Esc>" .. (vim.o.selection ~= "exclusive" and "a" or "i"))
 
-    run_callback(ranges)
+    -- Wait for the cursor synchronization task to complete in VSCode
+    vim.defer_fn(function()
+      run_callback(ranges)
+    end, 30)
+
     return
   end
 
