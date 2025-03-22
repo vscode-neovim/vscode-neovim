@@ -133,7 +133,14 @@ export class BufferManager implements Disposable {
      */
     private bufferProvider: BufferProvider;
 
+    /**
+     * Used to debounce the editor options change event
+     */
     private editorOptionsChangedTimers: WeakMap<TextEditor, NodeJS.Timeout> = new WeakMap();
+    /**
+     * Avoids unnecessary sending of options to neovim
+     */
+    private editorOptionsMap = new WeakMap<TextEditor, TextEditorOptions>();
 
     /**
      * Buffer event delegate
@@ -739,9 +746,22 @@ export class BufferManager implements Disposable {
     // #endregion
 
     private onDidChangeEditorOptions = (editor: TextEditor): void => {
-        // Debounce, ensure sending the latest options.
         let timer = this.editorOptionsChangedTimers.get(editor);
         clearTimeout(timer);
+
+        const oldOptions = { ...this.editorOptionsMap.get(editor) };
+        const newOptions = { ...editor.options };
+        this.editorOptionsMap.set(editor, newOptions);
+
+        if (
+            oldOptions &&
+            oldOptions.tabSize === newOptions.tabSize &&
+            oldOptions.insertSpaces === newOptions.insertSpaces &&
+            oldOptions.lineNumbers === newOptions.lineNumbers
+        ) {
+            return;
+        }
+
         timer = setTimeout(() => {
             const bufId = this.textDocumentToBufferId.get(editor.document);
             if (bufId) {
