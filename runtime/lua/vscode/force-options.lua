@@ -39,6 +39,10 @@ local function force_global_options()
   vim.opt.ruler = false
   vim.opt.colorcolumn = nil
 
+  if vim.fn.exists("&winborder") == 1 then
+    vim.opt.winborder = ""
+  end
+
   forceoptions(vim.opt)
 end
 
