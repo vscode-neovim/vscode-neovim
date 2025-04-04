@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.18.20](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.19...v1.18.20) (2025-04-04)
+
+
+### Bug Fixes
+
+* force `winborder` to `none` ([#2444](https://github.com/vscode-neovim/vscode-neovim/issues/2444)) ([4a444b4](https://github.com/vscode-neovim/vscode-neovim/commit/4a444b4c60dc3dd6381fa66d3e6ebccca618d15b))
+
+
+### Performance Improvements
+
+* avoid unnecessary sending of editor options to neovim ([#2419](https://github.com/vscode-neovim/vscode-neovim/issues/2419)) ([041e540](https://github.com/vscode-neovim/vscode-neovim/commit/041e540ab30e9dd6474292755ef2152ff8018d01))
+
 ## [1.18.19](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.18...v1.18.19) (2025-03-15)
 
 
