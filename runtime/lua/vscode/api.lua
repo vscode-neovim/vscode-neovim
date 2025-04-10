@@ -280,7 +280,7 @@ end
 ---Update configuration value
 ---@param name string|string[] The configuration name or an array of configuration names.
 ---@param value unknown|unknown[]  The new value for the configuration.
----@param target "global"|"workspace" The configuration target
+---@param target nil|"global"|"workspace"|"workspace_folder" The configuration target. Defaults to "workspace_folder".
 function M.update_config(name, value, target)
   vim.validate({ name = { name, { "s", "t" } } })
   local name_is_table = type(name) == "table"
@@ -291,8 +291,8 @@ function M.update_config(name, value, target)
     error([[The "value" is a table, but the "name" is not]])
   end
   assert(
-    target == nil or target == "global" or target == "workspace",
-    [["target" can only be nil or one from "global" and "workspace"]]
+    target == nil or target == "global" or target == "workspace" or target == "workspace_folder",
+    [[The "target" must be nil or one of "global", "workspace", or "workspace_folder"]]
   )
   return M.call("update_config", { args = { name, value, target } })
 end

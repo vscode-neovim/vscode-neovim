@@ -90,20 +90,25 @@ class ActionManager implements Disposable {
                 return config.get(names);
             }
         });
-        this.add("update_config", async (names: string | string[], values: any, target?: "global" | "workspace") => {
-            const config = workspace.getConfiguration();
-            let targetConfig = null;
-            if (target) {
-                targetConfig = target === "global" ? ConfigurationTarget.Global : ConfigurationTarget.Workspace;
-            }
-            if (!Array.isArray(names)) {
-                names = [names];
-                values = [values];
-            }
-            for (const [idx, name] of names.entries()) {
-                await config.update(name, values[idx], targetConfig);
-            }
-        });
+        this.add(
+            "update_config",
+            async (names: string | string[], values: any, target?: "global" | "workspace" | "workspace_folder") => {
+                const config = workspace.getConfiguration();
+                const targetConfig =
+                    target === "global"
+                        ? ConfigurationTarget.Global
+                        : target === "workspace"
+                          ? ConfigurationTarget.Workspace
+                          : ConfigurationTarget.WorkspaceFolder;
+                if (!Array.isArray(names)) {
+                    names = [names];
+                    values = [values];
+                }
+                for (const [idx, name] of names.entries()) {
+                    await config.update(name, values[idx], targetConfig);
+                }
+            },
+        );
         this.add("start-multiple-cursors", (ranges: Range[]) => {
             const editor = window.activeTextEditor;
             if (editor && ranges.length) {
