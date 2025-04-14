@@ -496,7 +496,8 @@ Parameters:
 
 - `name` (string|string[]): The configuration name or an array of configuration names.
 - `value` (unknown|unknown[]): The new value for the configuration.
-- `target` ("global"|"workspace"): The configuration target. Optional
+- `target` ("global"|"workspace"|"workspace_folder"): The configuration target. Optional, defaults to
+  "workspace_folder".
 
 Examples:
 
