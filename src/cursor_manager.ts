@@ -40,6 +40,10 @@ export class CursorManager implements Disposable {
      */
     private cursorModes: Map<string, CursorInfo> = new Map();
     /**
+     * Default cursor style for the editor, used as the cursor style in insert mode.
+     */
+    private defaultCursorStyle: TextEditorCursorStyle = TextEditorCursorStyle.Line;
+    /**
      * Cursor positions per editor in neovim
      * ! Note: we should track this because setting cursor as consequence of neovim event will trigger onDidChangeTextEditorSelection with Command kind
      * ! And we should skip it and don't try to send cursor update into neovim again, otherwise few things may break, especially jumplist
@@ -94,20 +98,20 @@ export class CursorManager implements Disposable {
     private updateCursorStyleTimeouts = new Set<NodeJS.Timeout>();
 
     public constructor(private main: MainController) {
-        const updateCursorStyle = () => {
-            this.updateCursorStyle();
+        const updateEditorCursorStyle = () => {
+            this.updateEditorCursorStyle();
             // Sometimes the cursor is reset to the default style.
             // Currently, can reproduce this issue when jumping between cells in Notebook.
             const timeout = setTimeout(() => {
-                this.updateCursorStyle();
+                this.updateEditorCursorStyle();
                 this.updateCursorStyleTimeouts.delete(timeout);
             }, 100);
             this.updateCursorStyleTimeouts.add(timeout);
         };
         this.disposables.push(
             window.onDidChangeTextEditorSelection(this.onSelectionChanged),
-            window.onDidChangeVisibleTextEditors(updateCursorStyle),
-            window.onDidChangeActiveTextEditor(updateCursorStyle),
+            window.onDidChangeVisibleTextEditors(updateEditorCursorStyle),
+            window.onDidChangeActiveTextEditor(updateEditorCursorStyle),
             eventBus.on("redraw", this.handleRedraw, this),
             eventBus.on("flush-redraw", this.handleRedrawFlush, this),
             eventBus.on("visual-changed", ([winId]) => {
@@ -115,19 +119,31 @@ export class CursorManager implements Disposable {
                 if (gridId) this.gridCursorUpdates.addForceUpdate(gridId);
             }),
             main.viewportManager.onCursorChanged((grid) => this.gridCursorUpdates.addForceUpdate(grid)),
-            // Reset the cursor style
+            workspace.onDidChangeConfiguration((e) => {
+                if (e.affectsConfiguration("editor.cursorStyle")) {
+                    this.updateDefaultCursorStyle();
+                    this.updateEditorCursorStyle();
+                }
+            }),
+            // Reset the cursor style when the extension is deactivated
             new Disposable(() => {
                 this.updateCursorStyleTimeouts.forEach((t) => clearTimeout(t));
-                const styleName = workspace
-                    .getConfiguration("editor")
-                    .get("cursorStyle", "line")
-                    .split("-")
-                    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-                    .join("");
-                const style = TextEditorCursorStyle[styleName as any];
-                window.visibleTextEditors.forEach((e) => (e.options.cursorStyle = style as any));
+                window.visibleTextEditors.forEach((e) => (e.options.cursorStyle = this.defaultCursorStyle));
             }),
         );
+
+        // Set default cursor style
+        this.updateDefaultCursorStyle();
+    }
+
+    private updateDefaultCursorStyle(): void {
+        const styleName = workspace
+            .getConfiguration("editor")
+            .get("cursorStyle", "line")
+            .split("-")
+            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+            .join("");
+        this.defaultCursorStyle = TextEditorCursorStyle[styleName as any] as any;
     }
 
     private handleRedraw({ name, args }: EventBusData<"redraw">): void {
@@ -156,7 +172,7 @@ export class CursorManager implements Disposable {
                 if (this.main.modeManager.isInsertMode) {
                     this.setWantInsertCursorUpdate(window.activeTextEditor, true);
                 }
-                args.forEach((arg) => this.updateCursorStyle(arg[0]));
+                args.forEach((arg) => this.updateEditorCursorStyle(arg[0]));
                 break;
             }
         }
@@ -174,7 +190,7 @@ export class CursorManager implements Disposable {
         ]);
     }
 
-    private updateCursorStyle(modeName: string = this.main.modeManager.currentMode.name): void {
+    private updateEditorCursorStyle(modeName: string = this.main.modeManager.currentMode.name): void {
         const modeConf = this.cursorModes.get(modeName);
         if (!modeConf) {
             return;
@@ -188,7 +204,7 @@ export class CursorManager implements Disposable {
         } else if (modeConf.cursorShape === "horizontal") {
             style = TextEditorCursorStyle.Underline;
         } else {
-            style = TextEditorCursorStyle.Line;
+            style = this.defaultCursorStyle;
         }
         for (const editor of window.visibleTextEditors) {
             editor.options.cursorStyle = style;
@@ -304,7 +320,7 @@ export class CursorManager implements Disposable {
 
         // when dragging mouse, pre-emptively hide cursor to not clash with fake cursor
         if (kind === TextEditorSelectionChangeKind.Mouse && !textEditor.selection.isEmpty) {
-            this.updateCursorStyle("visual");
+            this.updateEditorCursorStyle("visual");
         }
 
         // Why no wait when selection is empty?
@@ -345,7 +361,7 @@ export class CursorManager implements Disposable {
 
     public applySelectionChanged = async (editor: TextEditor, kind?: TextEditorSelectionChangeKind): Promise<void> => {
         // reset cursor style if needed
-        this.updateCursorStyle(this.main.modeManager.currentMode.name);
+        this.updateEditorCursorStyle(this.main.modeManager.currentMode.name);
 
         // wait for possible layout updates first
         logger.debug(`Waiting for possible layout completion operation`);
