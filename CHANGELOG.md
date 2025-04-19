@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.18.20](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.19...v1.18.20) (2025-04-19)
+
+
+### Bug Fixes
+
+* **api:** update configuration target options to include "workspace_folder" ([#2447](https://github.com/vscode-neovim/vscode-neovim/issues/2447)) ([68f68b9](https://github.com/vscode-neovim/vscode-neovim/commit/68f68b9562e34a1c72e0ed9478d73bb293e283a0))
+* force `winborder` to `none` ([#2444](https://github.com/vscode-neovim/vscode-neovim/issues/2444)) ([4a444b4](https://github.com/vscode-neovim/vscode-neovim/commit/4a444b4c60dc3dd6381fa66d3e6ebccca618d15b))
+* use the cursor style from VS Code as the style for insert mode ([#2455](https://github.com/vscode-neovim/vscode-neovim/issues/2455)) ([2a632e0](https://github.com/vscode-neovim/vscode-neovim/commit/2a632e0ee0f2576ec3569f02c219a5ddbe18ff6b))
+
+
+### Performance Improvements
+
+* avoid unnecessary sending of editor options to neovim ([#2419](https://github.com/vscode-neovim/vscode-neovim/issues/2419)) ([041e540](https://github.com/vscode-neovim/vscode-neovim/commit/041e540ab30e9dd6474292755ef2152ff8018d01))
+
 ## [1.18.19](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.18...v1.18.19) (2025-03-15)
 
 
