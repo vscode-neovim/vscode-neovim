@@ -152,7 +152,7 @@ tab.
 
 ### Troubleshooting
 
-- View the logs via `Output: Focus on Output View` and select `vscode-neovim`.
+- View the logs via `Output: Focus on Output View` and select `vscode-neovim logs`.
     - **To enable debug logs,** click the "gear" icon and select `Debug`, then click it again and choose
       `Set As Default`.
 - Enable `vscode-neovim.neovimClean` in VSCode settings, which starts Nvim _without_ your plugins (`nvim --clean`). Nvim
