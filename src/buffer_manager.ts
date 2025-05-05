@@ -619,7 +619,11 @@ export class BufferManager implements Disposable {
 
                 const activeEditor = window.activeTextEditor;
 
-                // NOTE: See #2407
+                // NOTE: Issue #2407 is caused by a current bug in nvim when
+                // handling RPC requests. https://github.com/neovim/neovim/issues/31316
+                // To mitigate it, we exclude editors without a ViewColumn
+                // (e.g., input boxes, chat code blocks) to reduce sync operations.
+                // These editors are usually temporary, so the impact is minimal.
                 if (this.excludeEditorsWithoutViewColumn == null) {
                     const nvim0_10 = (await this.client.call("has", "nvim-0.10")) === 1;
                     this.excludeEditorsWithoutViewColumn = nvim0_10;
