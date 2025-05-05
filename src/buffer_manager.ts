@@ -143,6 +143,11 @@ export class BufferManager implements Disposable {
     private editorOptionsMap = new WeakMap<TextEditor, TextEditorOptions>();
 
     /**
+     * Should we control the editor layout when there is no viewColumn
+     */
+    private excludeEditorsWithoutViewColumn: boolean | undefined;
+
+    /**
      * Buffer event delegate
      */
     public onBufferEvent?: (
@@ -612,8 +617,16 @@ export class BufferManager implements Disposable {
                 this.isLayoutOutdated = false;
                 const token = this.syncLayoutSource?.token;
 
-                const visibleEditors = [...window.visibleTextEditors];
                 const activeEditor = window.activeTextEditor;
+
+                // NOTE: See #2407
+                if (this.excludeEditorsWithoutViewColumn == null) {
+                    const nvim0_10 = (await this.client.call("has", "nvim-0.10")) === 1;
+                    this.excludeEditorsWithoutViewColumn = nvim0_10;
+                }
+                const visibleEditors = this.excludeEditorsWithoutViewColumn
+                    ? [...window.visibleTextEditors].filter((e) => e.viewColumn != null || e === activeEditor)
+                    : [...window.visibleTextEditors];
 
                 if (token?.isCancellationRequested) continue;
                 this.syncLayoutProgress.report("Cleaning up windows and buffers");
