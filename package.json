@@ -391,13 +391,9 @@
                     "default": [
                         "output",
                         "vscode-chat-code-block",
-                        "vscode-copilot-chat-code-block",
-                        "copilot-panel",
-                        "copilot-chat-panel",
-                        "copilot-chat-editor",
-                        "copilot-editor"
+                        "vscode-copilot-chat-code-block"
                     ],
-                    "markdownDescription": "Specifies the `scheme` of documents generated automatically by the program, such as: `output`, `vscode-chat-code-block`, `copilot-editor`. For such documents, vscode-neovim will ignore some insignificant errors, such as cursor setting errors, and will not attempt to control these editors with Neovim."
+                    "markdownDescription": "Specifies the `scheme` of documents generated automatically by the program, such as: `output`, `vscode-chat-code-block`. For such documents, vscode-neovim will ignore some insignificant errors, such as cursor setting errors."
                 }
             }
         },
