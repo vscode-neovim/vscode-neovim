@@ -143,6 +143,11 @@ export class BufferManager implements Disposable {
     private editorOptionsMap = new WeakMap<TextEditor, TextEditorOptions>();
 
     /**
+     * Should we control the editor layout when there is no viewColumn
+     */
+    private excludeEditorsWithoutViewColumn: boolean | undefined;
+
+    /**
      * Buffer event delegate
      */
     public onBufferEvent?: (
@@ -612,8 +617,26 @@ export class BufferManager implements Disposable {
                 this.isLayoutOutdated = false;
                 const token = this.syncLayoutSource?.token;
 
-                const visibleEditors = [...window.visibleTextEditors];
                 const activeEditor = window.activeTextEditor;
+
+                // NOTE: Issue #2407 is caused by a current bug in nvim when
+                // handling RPC requests. https://github.com/neovim/neovim/issues/31316
+                // To mitigate it, we exclude editors without a ViewColumn
+                // (e.g., input boxes, chat code blocks) to reduce sync operations.
+                // These editors are usually temporary, so the impact is minimal.
+                if (this.excludeEditorsWithoutViewColumn == null) {
+                    const nvim0_10 = (await this.client.call("has", "nvim-0.10")) === 1;
+                    this.excludeEditorsWithoutViewColumn = nvim0_10;
+                }
+                const visibleEditors = this.excludeEditorsWithoutViewColumn
+                    ? [...window.visibleTextEditors].filter(
+                          (e) =>
+                              e.viewColumn != null ||
+                              e === activeEditor ||
+                              // These two schemes are special cases where we want to sync
+                              ["output", "vscode-notebook-cell"].includes(e.document.uri.scheme),
+                      )
+                    : [...window.visibleTextEditors];
 
                 if (token?.isCancellationRequested) continue;
                 this.syncLayoutProgress.report("Cleaning up windows and buffers");
