@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.18.21](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.20...v1.18.21) (2025-05-07)
+
+
+### Bug Fixes
+
+* ignore editors without `ViewColumn` in nvim-0.10 ([#2470](https://github.com/vscode-neovim/vscode-neovim/issues/2470)) ([b7a9faf](https://github.com/vscode-neovim/vscode-neovim/commit/b7a9faf75b5bffde6a9f01de56411ad7c349e11f))
+
+
+### Documentation
+
+* fix old name for logs Output channel [#2460](https://github.com/vscode-neovim/vscode-neovim/issues/2460) ([38f8d86](https://github.com/vscode-neovim/vscode-neovim/commit/38f8d86ecea0801ef18e03e5a6cded49d8ca51fd))
+
 ## [1.18.20](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.19...v1.18.20) (2025-04-19)
 
 
