@@ -629,7 +629,13 @@ export class BufferManager implements Disposable {
                     this.excludeEditorsWithoutViewColumn = nvim0_10;
                 }
                 const visibleEditors = this.excludeEditorsWithoutViewColumn
-                    ? [...window.visibleTextEditors].filter((e) => e.viewColumn != null || e === activeEditor)
+                    ? [...window.visibleTextEditors].filter(
+                          (e) =>
+                              e.viewColumn != null ||
+                              e === activeEditor ||
+                              // These two schemes are special cases where we want to sync
+                              ["output", "vscode-notebook-cell"].includes(e.document.uri.scheme),
+                      )
                     : [...window.visibleTextEditors];
 
                 if (token?.isCancellationRequested) continue;
