@@ -439,8 +439,9 @@ end
 ---````
 ---
 ---@param callback function Callback function to run after switching to insert mode.
-function M.with_insert(callback)
-  vim.validate({ callback = { callback, "f" } })
+---@param ms? number Milliseconds to defer the callback. Defaults to 30.
+function M.with_insert(callback, ms)
+  vim.validate({ callback = { callback, "f" }, ms = { ms, "n", true } })
 
   local mode = api.nvim_get_mode().mode
 
@@ -496,7 +497,7 @@ function M.with_insert(callback)
     -- Wait for the cursor synchronization task to complete in VSCode
     vim.defer_fn(function()
       run_callback(ranges)
-    end, 30)
+    end, ms or 30)
 
     return
   end
