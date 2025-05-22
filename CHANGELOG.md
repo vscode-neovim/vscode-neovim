@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.22](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.21...v1.18.22) (2025-05-22)
+
+
+### Bug Fixes
+
+* add optional delay parameter to with_insert callback ([#2479](https://github.com/vscode-neovim/vscode-neovim/issues/2479)) ([ae4d02c](https://github.com/vscode-neovim/vscode-neovim/commit/ae4d02c047bdba9aab7907176b60c7b2ec8b0d0a))
+
 ## [1.18.21](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.20...v1.18.21) (2025-05-07)
 
 
