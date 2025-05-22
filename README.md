@@ -41,7 +41,7 @@ mode and VSCode commands, making the best use of both editors.
     - [vscode.notify(msg)](#vscodenotifymsg)
     - [vscode.eval(code\[, opts, timeout\])](#vscodeevalcode-opts-timeout)
     - [vscode.eval_async(code\[, opts\])](#vscodeeval_asynccode-opts)
-    - [vscode.with_insert(callback)](#vscodewith_insertcallback)
+    - [vscode.with_insert(callback\[, ms\])](#vscodewith_insertcallback-ms)
     - [Builtin module overrides](#builtin-module-overrides)
     - [VimScript](#vimscript)
 - [⌨️ Keybindings (shortcuts)](#️-keybindings-shortcuts)
@@ -570,7 +570,7 @@ Parameters:
         - `ret` is the result
         - If no callback is provided, error will be shown as a VSCode notification.
 
-### vscode.with_insert(callback)
+### vscode.with_insert(callback[, ms])
 
 Perform operations in insert mode. If in visual mode, this function will **preserve the selection** after switching to
 insert mode.
@@ -578,6 +578,7 @@ insert mode.
 Parameters:
 
 - `callback` (function): Callback function to run after switching to insert mode
+- `ms` (number, optional): Milliseconds to defer the callback. Defaults to 30.
 
 Example: make `editor.action.addSelectionToNextFindMatch` work correctly in any mode.
 
