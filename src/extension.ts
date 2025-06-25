@@ -96,7 +96,7 @@ function verifyExperimentalAffinity(): void {
 
     vscode.window
         .showWarningMessage(
-            "No affinity assigned to vscode-neovim. It is recommended to assign affinity for major performance improvements. Would you like to set default affinity? [Learn more](https://github.com/vscode-neovim/vscode-neovim#performance)",
+            "No affinity assigned to vscode-neovim. It is recommended to assign affinity for major performance improvements. Would you like to set default affinity? [Learn more](https://github.com/vscode-neovim/vscode-neovim/issues/1051)",
             "Yes",
             "Cancel",
         )
