@@ -1,162 +1,224 @@
 import { inspect } from "util";
 
-import { Disposable, OutputChannel, window } from "vscode";
+import { Disposable, OutputChannel, StatusBarAlignment, StatusBarItem, window } from "vscode";
 
-import { EXT_NAME } from "./constants";
+import { EXT_ID, EXT_NAME } from "./constants";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
+import { config } from "./config";
 
 const logger = createLogger("MessagesManager");
 
-export class MessagesManager implements Disposable {
+const CHANNEL_NAME = `${EXT_NAME} messages`;
+const IGNORED_KINDS_IN_MESSAGE_AREA = ["bufwrite", "search_cmd", "search_count", "undo"];
+
+enum StatusType {
+    Mode, // msg_showmode
+    Cmd, // msg_showcmd
+    Msg, // msg_show, msg_clear
+    StatusLine, // (custom) statusline
+}
+
+/**
+ * StatusBar wrapper to manage the status line in VSCode
+ */
+class StatusLine implements Disposable {
     private disposables: Disposable[] = [];
-    private channel: OutputChannel;
 
-    private redrawing = Promise.resolve();
+    // ui events items
+    private modeText = "";
+    private cmdText = "";
+    private msgText = "";
+    // statusline text
+    private statusline = "";
 
-    private revealOutput: boolean = false;
-    private displayHistory: boolean = false;
-    private didChange: boolean = false;
+    private statusBar: StatusBarItem;
 
-    private messageBuffer: string[] = [];
-    private historyBuffer: string[] = [];
+    public constructor() {
+        this.statusBar = window.createStatusBarItem("vscode-neovim-status", StatusBarAlignment.Left, -10);
+        this.statusBar.show();
 
-    public constructor(private readonly main: MainController) {
-        this.channel = window.createOutputChannel(`${EXT_NAME} messages`);
-
-        // Prevent concurrent redraw / flush by chaining them on a single promise:
-        const redrawHandler = eventBus.on("redraw", (e) => {
-            this.redrawing = this.redrawing.then(() => this.handleRedraw(e));
-        });
-        const flushHandler = eventBus.on("flush-redraw", () => {
-            this.redrawing = this.redrawing.then(() => this.handleFlush());
-        });
-
-        this.disposables.push(redrawHandler, flushHandler, this.channel);
+        this.disposables.push(this.statusBar);
     }
 
-    public dispose(): void {
+    public setStatus(status: string, type: StatusType): void {
+        switch (type) {
+            case StatusType.Mode:
+                this.modeText = status;
+                break;
+            case StatusType.Cmd:
+                this.cmdText = status;
+                break;
+            case StatusType.Msg:
+                this.msgText = status;
+                break;
+            case StatusType.StatusLine:
+                this.statusline = status;
+                break;
+        }
+        this.statusBar.text = [this.statusline, this.modeText, this.cmdText, this.msgText]
+            .map((i) => i.replace(/\n/g, " ").trim())
+            .filter((i) => i.length)
+            .join(config.statusLineSeparator);
+    }
+
+    dispose() {
         disposeAll(this.disposables);
     }
+}
 
-    private handleRedraw({ name, args }: EventBusData<"redraw">): void {
+export class MessagesManager implements Disposable {
+    private disposables: Disposable[] = [];
+    private redrawing = Promise.resolve();
+
+    private statusLine: StatusLine;
+    private channel: OutputChannel;
+
+    private messageBuffer: string[] = [];
+
+    private messageAreaVisible: boolean = false;
+    private revealOutput: boolean = false;
+    private didChange: boolean = false;
+
+    public constructor(private readonly main: MainController) {
+        this.channel = window.createOutputChannel(CHANNEL_NAME);
+        this.statusLine = new StatusLine();
+
+        this.disposables.push(
+            this.channel,
+            this.statusLine,
+            // Prevent concurrent redraw / flush by chaining them on a single promise
+            eventBus.on("redraw", (e) => {
+                this.redrawing = this.redrawing.then(() => this.handleRedraw(e));
+            }),
+            eventBus.on("flush-redraw", () => {
+                this.redrawing = this.redrawing.then(() => this.handleFlush());
+            }),
+            window.onDidChangeVisibleTextEditors(() => {
+                // Simulate the event when the user closes the message output panel.
+                // We assume the user has already viewed the messages, so we clear them.
+                const messageAreaVisible = window.visibleTextEditors.some(
+                    (editor) =>
+                        editor.document.uri.scheme === "output" &&
+                        editor.document.uri.path.includes(EXT_ID) &&
+                        editor.document.uri.path.includes(CHANNEL_NAME),
+                );
+                if (this.messageAreaVisible !== messageAreaVisible && !messageAreaVisible) {
+                    this.messageBuffer = [];
+                    this.channel.clear();
+                }
+                this.messageAreaVisible = messageAreaVisible;
+            }),
+            eventBus.on("statusline", ([status]) => this.statusLine.setStatus(status, StatusType.StatusLine)),
+        );
+    }
+
+    private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
         switch (name) {
+            case "msg_showcmd": {
+                const [content] = args[0];
+                const cmdMsg = content.map(([_, msg]) => msg).join("");
+                this.statusLine.setStatus(cmdMsg, StatusType.Cmd);
+                break;
+            }
+            case "msg_showmode": {
+                const [content] = args[0];
+                const modeMsg = content.map(([_, msg]) => msg).join("");
+                this.statusLine.setStatus(modeMsg, StatusType.Mode);
+                break;
+            }
             case "msg_show": {
-                for (const [kind, content, replaceLast] of args) {
-                    // Ignore return_prompt
-                    //
-                    // A note to future readers: return_prompt is sent much more often with ui_messages. It may
-                    // not do what you expect from what :help ui says, so be careful about using these events.
-                    // See: https://github.com/vscode-neovim/vscode-neovim/issues/2046#issuecomment-2144175058
-                    if (kind === "return_prompt") continue;
+                const [kind, content, replaceLast, _history, append] = args[0];
 
-                    // NOTE: we could also potentially handle e.g. `echoerr` differently here,
-                    // like logging at error level or displaying a toast etc.
-
-                    const text = content.map(([_attrId, chunk]) => chunk).join("");
-                    if (replaceLast) {
-                        this.messageBuffer.pop();
-                    }
-                    this.messageBuffer.push(text);
+                if (kind === "empty") {
+                    this.messageBuffer = [];
+                    this.didChange = true;
+                    this.revealOutput = false;
+                    this.statusLine.setStatus("", StatusType.Msg);
+                    break;
                 }
+
+                const newMsg = content.map(([_attrId, chunk]) => chunk).join("");
+
+                const messageBuffer = [...this.messageBuffer];
+
+                if (replaceLast) {
+                    messageBuffer.pop();
+                }
+
+                if (messageBuffer.length > 0 && append) {
+                    messageBuffer[messageBuffer.length - 1] += newMsg;
+                } else {
+                    messageBuffer.push(newMsg);
+                }
+
+                // Always update the status line with the latest message
+                this.statusLine.setStatus(messageBuffer[messageBuffer.length - 1], StatusType.Msg);
+
+                if (IGNORED_KINDS_IN_MESSAGE_AREA.includes(kind)) {
+                    break;
+                }
+
+                this.messageBuffer = messageBuffer;
+
+                // Insert an empty line between new and old messages for better distinction
+                if (this.messageBuffer.length > 1) {
+                    this.messageBuffer.splice(this.messageBuffer.length - 1, 0, "");
+                }
+
+                this.didChange = true;
+                const latestMessage = this.messageBuffer[this.messageBuffer.length - 1];
+                this.revealOutput = this.revealOutput || latestMessage.split("\n").length > (await this.getCmdheight());
+
                 break;
             }
-
-            case "msg_clear": {
-                this.messageBuffer = [];
-                break;
-            }
-
             case "msg_history_show": {
-                for (const [entries] of args) {
-                    for (const [commandName, content] of entries) {
-                        const cmdContent = content.map(([_attrId, chunk]) => chunk).join("");
+                const [entries] = args[0];
 
-                        if (commandName.length === 0) {
-                            this.historyBuffer.push(cmdContent);
-                        } else {
-                            this.historyBuffer.push(`${commandName}: ${cmdContent}`);
-                        }
-                    }
-                }
-
-                this.displayHistory = true;
+                this.messageBuffer = entries.map(([_, content]) => content.map(([_, chunk]) => chunk).join(""));
+                this.didChange = true;
                 this.revealOutput = true;
                 break;
             }
-
-            case "msg_history_clear":
-                // NOTE: this does not actually correspond to the `:messages clear`
-                // command, but to when neovim wants us to clear our history buffer.
-                this.historyBuffer = [];
+            case "msg_clear": {
+                this.messageBuffer = [];
+                this.channel.clear();
+                this.statusLine.setStatus("", StatusType.Msg);
                 break;
-
+            }
             default:
                 return;
         }
 
-        switch (name) {
-            case "msg_clear":
-            case "msg_history_clear":
-                // These clear messages are often followed by a flush whenever neovim
-                // thinks it's "done" showing those messages, resulting in an empty output
-                // panel instead of the desired display. To avoid flushing the now-empty
-                // buffer, we skip setting didChange so the flush becomes a no-op.
-                // Seems likely caused by/related to https://github.com/neovim/neovim/issues/20416
-                break;
-
-            default:
-                this.didChange = true;
-        }
-
-        logger.trace(name, inspect(args, { depth: 5, compact: 3 }));
+        logger.trace(`Redraw event: ${name} with args: ${inspect(args)}`);
     }
 
-    private async handleFlush(): Promise<void> {
+    private handleFlush(): void {
         if (!this.didChange) return;
 
-        const messages = this.displayHistory ? this.historyBuffer : this.messageBuffer;
-        logger.trace(`Flushing ${this.displayHistory ? "history" : "message"} buffer: ${inspect(messages)}`);
-
-        const msg = messages.join("\n");
-
-        const lineCount = msg.split("\n").length;
-        const cmdheight = (await this.main.client.getOption("cmdheight")) as number;
-        const shouldRevealOutput = this.revealOutput || lineCount > cmdheight;
-
-        const { didChange, revealOutput, displayHistory } = this;
-        logger.trace(inspect({ didChange, revealOutput, displayHistory, lineCount }));
-
-        this.writeMessage(this.ensureEOL(msg));
-        if (shouldRevealOutput) {
+        this.channel.clear();
+        this.messageBuffer.forEach((item) => this.channel.appendLine(item));
+        if (this.revealOutput) {
             this.channel.show(true);
         }
 
-        // Reset all the state for the next batch of redraw messages
         this.didChange = false;
-        this.displayHistory = false;
         this.revealOutput = false;
     }
 
-    private writeMessage(msg: string): void {
-        logger.info(inspect(msg));
-        // We use clear() before replace() because the latter is a noop
-        // for falsy values but we always want to clear to match nvim behavior.
-        this.channel.clear();
-        // And, we use append here instead of replace because append seems to
-        // take longer, which sometimes results in an empty panel if we reveal
-        // the (previously hidden) panel immediately afterward, particularly for
-        // large outputs.
-        this.channel.replace(msg);
+    public async getCmdheight(): Promise<number> {
+        let result = 1;
+        try {
+            result = (await this.main.client.getOption("cmdheight")) as number;
+        } catch (e) {
+            logger.error("Failed to get cmdheight option:", e);
+        }
+        return result;
     }
 
-    private ensureEOL(msg: string): string {
-        if (msg.length === 0 || msg[msg.length - 1] === "\n") {
-            return msg;
-        }
-
-        return msg + "\n";
+    public dispose(): void {
+        disposeAll(this.disposables);
     }
 }
