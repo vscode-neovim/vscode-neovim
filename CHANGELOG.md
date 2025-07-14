@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.23](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.22...v1.18.23) (2025-07-14)
+
+
+### Bug Fixes
+
+* fallback statusline to empty ([#2518](https://github.com/vscode-neovim/vscode-neovim/issues/2518)) ([ec20106](https://github.com/vscode-neovim/vscode-neovim/commit/ec20106a05b24d1c294cafad86c92909ac0256c9))
+
 ## [1.18.22](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.21...v1.18.22) (2025-05-22)
 
 
