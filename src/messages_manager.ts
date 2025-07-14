@@ -117,6 +117,10 @@ export class MessagesManager implements Disposable {
 
     private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
         switch (name) {
+            case "msg_ruler": {
+                // useless for now
+                break;
+            }
             case "msg_showcmd": {
                 const [content] = args[0];
                 const cmdMsg = content.map(([_, msg]) => msg).join("");
