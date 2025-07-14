@@ -168,7 +168,7 @@ export class MessagesManager implements Disposable {
                 this.messageBuffer = messageBuffer;
 
                 // Insert an empty line between new and old messages for better distinction
-                if (this.messageBuffer.length > 1) {
+                if (!replaceLast && !append && this.messageBuffer.length > 1) {
                     this.messageBuffer.splice(this.messageBuffer.length - 1, 0, "");
                 }
 
@@ -212,8 +212,7 @@ export class MessagesManager implements Disposable {
     private handleFlush(): void {
         if (!this.didChange) return;
 
-        this.channel.clear();
-        this.messageBuffer.forEach((item) => this.channel.appendLine(item));
+        this.channel.replace(this.messageBuffer.join("\n"));
         if (this.revealOutput) {
             this.channel.show(true);
         }
