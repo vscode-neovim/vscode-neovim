@@ -196,7 +196,17 @@ export class MessagesManager implements Disposable {
                 return;
         }
 
-        logger.trace(`Redraw event: ${name} with args: ${inspect(args)}`);
+        switch (name) {
+            // "msg_showmode"  would cause a lot of noise in the logs
+            case "msg_show":
+            case "msg_history_show":
+            case "msg_clear":
+            case "msg_showcmd":
+                logger.trace(`Redraw event: ${name} with args: ${inspect(args, { depth: 5 })}`);
+                break;
+            default:
+                break;
+        }
     }
 
     private handleFlush(): void {
