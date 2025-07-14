@@ -6,14 +6,11 @@ local curr_status = ""
 local function refresh()
   local status = ""
 
-  if vim.o.laststatus == 0 then
+  if vim.o.laststatus == 0 or vim.o.statusline == "" then
     status = ""
   else
-    status = api.nvim_eval_statusline(vim.o.statusline, {}).str
-  end
-
-  if #status > 0 then
-    status = status:gsub("\n", " "):gsub("%s+", " ")
+    local str = api.nvim_eval_statusline(vim.o.statusline, {}).str
+    status = str:gsub("\n", " "):gsub("%s+", " ")
   end
 
   if curr_status ~= status then
