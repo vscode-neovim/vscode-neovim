@@ -82,6 +82,10 @@ export class MessagesManager implements Disposable {
     private revealOutput: boolean = false;
     private didChange: boolean = false;
 
+    // True if the last message is from message history.
+    // History is cleared when new messages appear to avoid confusion.
+    private isShowingHistory: boolean = false;
+
     public constructor(private readonly main: MainController) {
         this.channel = window.createOutputChannel(CHANNEL_NAME);
         this.statusLine = new StatusLine();
@@ -144,6 +148,13 @@ export class MessagesManager implements Disposable {
                     break;
                 }
 
+                if (this.isShowingHistory) {
+                    // If we are showing history, clear it when a new message appears
+                    this.isShowingHistory = false;
+                    this.messageBuffer = [];
+                    this.didChange = true;
+                }
+
                 const newMsg = content.map(([_attrId, chunk]) => chunk).join("");
 
                 const messageBuffer = [...this.messageBuffer];
@@ -184,6 +195,7 @@ export class MessagesManager implements Disposable {
                 this.messageBuffer = entries.map(([_, content]) => content.map(([_, chunk]) => chunk).join(""));
                 this.didChange = true;
                 this.revealOutput = true;
+                this.isShowingHistory = true;
                 break;
             }
             case "msg_clear": {
