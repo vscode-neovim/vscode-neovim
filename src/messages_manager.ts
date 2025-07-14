@@ -1,6 +1,7 @@
 import { inspect } from "util";
 
 import { Disposable, OutputChannel, StatusBarAlignment, StatusBarItem, window } from "vscode";
+import { cloneDeep } from "lodash";
 
 import { EXT_ID, EXT_NAME } from "./constants";
 import { EventBusData, eventBus } from "./eventBus";
@@ -69,6 +70,16 @@ class StatusLine implements Disposable {
     }
 }
 
+class Message {
+    constructor(
+        public kind: string,
+        public text: string,
+        public replaceLast: boolean,
+        public append: boolean,
+        public isNew: boolean,
+    ) {}
+}
+
 export class MessagesManager implements Disposable {
     private disposables: Disposable[] = [];
     private redrawing = Promise.resolve();
@@ -76,15 +87,15 @@ export class MessagesManager implements Disposable {
     private statusLine: StatusLine;
     private channel: OutputChannel;
 
-    private messageBuffer: string[] = [];
-
+    // True if the message output panel is visible.
     private messageAreaVisible: boolean = false;
-    private revealOutput: boolean = false;
+    // True if the last redraw event changed the messages.
     private didChange: boolean = false;
-
     // True if the last message is from message history.
     // History is cleared when new messages appear to avoid confusion.
     private isShowingHistory: boolean = false;
+    // Store all ui messages.
+    private messages: Message[] = [];
 
     public constructor(private readonly main: MainController) {
         this.channel = window.createOutputChannel(CHANNEL_NAME);
@@ -110,7 +121,8 @@ export class MessagesManager implements Disposable {
                         editor.document.uri.path.includes(CHANNEL_NAME),
                 );
                 if (this.messageAreaVisible !== messageAreaVisible && !messageAreaVisible) {
-                    this.messageBuffer = [];
+                    logger.trace("Message area closed, clearing messages");
+                    this.messages = [];
                     this.channel.clear();
                 }
                 this.messageAreaVisible = messageAreaVisible;
@@ -119,7 +131,17 @@ export class MessagesManager implements Disposable {
         );
     }
 
-    private async handleRedraw({ name, args }: EventBusData<"redraw">): Promise<void> {
+    private handleRedraw({ name, args }: EventBusData<"redraw">) {
+        switch (name) {
+            // "msg_showmode"  would cause a lot of noise in the logs
+            case "msg_show":
+            case "msg_history_show":
+            case "msg_clear":
+            case "msg_showcmd":
+                logger.trace(`Redraw event: ${name} with args: ${inspect(args, { depth: 5 })}`);
+                break;
+        }
+
         switch (name) {
             case "msg_ruler": {
                 // useless for now
@@ -138,99 +160,122 @@ export class MessagesManager implements Disposable {
                 break;
             }
             case "msg_show": {
-                const [kind, content, replaceLast, _history, append] = args[0];
-
-                if (kind === "empty") {
-                    this.messageBuffer = [];
-                    this.didChange = true;
-                    this.revealOutput = false;
-                    this.statusLine.setStatus("", StatusType.Msg);
-                    break;
-                }
-
                 if (this.isShowingHistory) {
-                    // If we are showing history, clear it when a new message appears
                     this.isShowingHistory = false;
-                    this.messageBuffer = [];
-                    this.didChange = true;
+                    this.messages = [];
                 }
 
-                const newMsg = content.map(([_attrId, chunk]) => chunk).join("");
+                for (const [kind, content, replaceLast, _history, append] of args) {
+                    if (kind === "empty") {
+                        this.messages = [];
+                        this.didChange = true;
+                        this.statusLine.setStatus("", StatusType.Msg);
+                        continue;
+                    }
 
-                const messageBuffer = [...this.messageBuffer];
-
-                if (replaceLast) {
-                    messageBuffer.pop();
+                    const text = content.map(([_, chunk]) => chunk).join("");
+                    const message = new Message(kind, text, replaceLast, append, true);
+                    this.messages.push(message);
                 }
-
-                if (messageBuffer.length > 0 && append) {
-                    messageBuffer[messageBuffer.length - 1] += newMsg;
-                } else {
-                    messageBuffer.push(newMsg);
-                }
-
-                // Always update the status line with the latest message
-                this.statusLine.setStatus(messageBuffer[messageBuffer.length - 1], StatusType.Msg);
-
-                if (IGNORED_KINDS_IN_MESSAGE_AREA.includes(kind)) {
-                    break;
-                }
-
-                this.messageBuffer = messageBuffer;
-
-                // Insert an empty line between new and old messages for better distinction
-                if (!replaceLast && !append && this.messageBuffer.length > 1) {
-                    this.messageBuffer.splice(this.messageBuffer.length - 1, 0, "");
-                }
-
-                this.didChange = true;
-                const latestMessage = this.messageBuffer[this.messageBuffer.length - 1];
-                this.revealOutput = this.revealOutput || latestMessage.split("\n").length > (await this.getCmdheight());
 
                 break;
             }
             case "msg_history_show": {
-                const [entries] = args[0];
-
-                this.messageBuffer = entries.map(([_, content]) => content.map(([_, chunk]) => chunk).join(""));
-                this.didChange = true;
-                this.revealOutput = true;
                 this.isShowingHistory = true;
+
+                this.messages = [];
+
+                for (const [entries] of args) {
+                    for (const [_, content] of entries) {
+                        const text = content.map(([_, chunk]) => chunk).join("");
+                        const message = new Message("", text, false, false, true);
+                        this.messages.push(message);
+                    }
+                }
+
                 break;
             }
             case "msg_clear": {
-                this.messageBuffer = [];
+                this.messages = [];
                 this.channel.clear();
                 this.statusLine.setStatus("", StatusType.Msg);
                 break;
             }
-            default:
-                return;
         }
 
-        switch (name) {
-            // "msg_showmode"  would cause a lot of noise in the logs
-            case "msg_show":
-            case "msg_history_show":
-            case "msg_clear":
-            case "msg_showcmd":
-                logger.trace(`Redraw event: ${name} with args: ${inspect(args, { depth: 5 })}`);
-                break;
-            default:
-                break;
-        }
+        this.didChange = this.didChange || name === "msg_show" || name === "msg_history_show";
     }
 
-    private handleFlush(): void {
+    private async handleFlush() {
         if (!this.didChange) return;
 
-        this.channel.replace(this.messageBuffer.join("\n"));
-        if (this.revealOutput) {
-            this.channel.show(true);
+        this.didChange = false;
+
+        this.refreshStatusLineMessage();
+        await this.refreshOutputMessages();
+
+        this.messages.forEach((message) => {
+            message.isNew = false;
+        });
+    }
+
+    private refreshStatusLineMessage() {
+        const messages = [];
+
+        for (const message of cloneDeep(this.messages)) {
+            if (messages.length > 0 && message.replaceLast) {
+                messages[messages.length - 1] = message;
+            } else if (messages.length > 0 && message.append) {
+                messages[messages.length - 1].text += message.text;
+                messages[messages.length - 1].isNew = message.isNew;
+            } else {
+                messages.push(message);
+            }
         }
 
-        this.didChange = false;
-        this.revealOutput = false;
+        const lastestMessage = messages
+            .filter((m) => m.isNew)
+            .map((m) => m.text)
+            .join("\n");
+
+        this.statusLine.setStatus(lastestMessage, StatusType.Msg);
+    }
+
+    private async refreshOutputMessages() {
+        const messages = [];
+
+        const filteredMessages = this.messages.filter((m) => !IGNORED_KINDS_IN_MESSAGE_AREA.includes(m.kind));
+
+        for (const message of cloneDeep(filteredMessages)) {
+            if (messages.length > 0 && message.replaceLast) {
+                messages[messages.length - 1] = message;
+            } else if (messages.length > 0 && message.append) {
+                messages[messages.length - 1].text += message.text;
+                messages[messages.length - 1].isNew = message.isNew;
+            } else {
+                messages.push(message);
+            }
+        }
+
+        const oldMsg = messages
+            .filter((m) => !m.isNew)
+            .map((m) => m.text)
+            .join("\n");
+        const newMsg = messages
+            .filter((m) => m.isNew)
+            .map((m) => m.text)
+            .join("\n");
+
+        if (this.messageAreaVisible) {
+            // User has already seen the old messages
+            this.channel.replace(newMsg);
+        } else {
+            this.channel.replace(oldMsg + (oldMsg ? "\n" : "") + newMsg);
+        }
+
+        if (this.isShowingHistory || newMsg.split("\n").length > (await this.getCmdheight())) {
+            this.channel.show(true);
+        }
     }
 
     public async getCmdheight(): Promise<number> {
