@@ -219,49 +219,39 @@ export class MessagesManager implements Disposable {
         });
     }
 
-    private refreshStatusLineMessage() {
-        const messages = [];
-
-        for (const message of cloneDeep(this.messages)) {
-            if (messages.length > 0 && message.replaceLast) {
-                messages[messages.length - 1] = message;
-            } else if (messages.length > 0 && message.append) {
-                messages[messages.length - 1].text += message.text;
-                messages[messages.length - 1].isNew = message.isNew;
+    private mergeMessages(messages: Message[]): Message[] {
+        const merged: Message[] = [];
+        for (const message of cloneDeep(messages)) {
+            if (merged.length > 0 && message.replaceLast) {
+                merged[merged.length - 1] = message;
+            } else if (merged.length > 0 && message.append) {
+                merged[merged.length - 1].text += message.text;
+                merged[merged.length - 1].isNew = message.isNew;
             } else {
-                messages.push(message);
+                merged.push(message);
             }
         }
+        return merged;
+    }
 
-        const lastestMessage = messages
+    private refreshStatusLineMessage() {
+        const merged = this.mergeMessages(this.messages);
+        const newMsg = merged
             .filter((m) => m.isNew)
             .map((m) => m.text)
             .join("\n");
-
-        this.statusLine.setStatus(lastestMessage, StatusType.Msg);
+        this.statusLine.setStatus(newMsg, StatusType.Msg);
     }
 
     private async refreshOutputMessages() {
-        const messages = [];
+        const filtered = this.messages.filter((m) => !IGNORED_KINDS_IN_MESSAGE_AREA.includes(m.kind));
+        const merged = this.mergeMessages(filtered);
 
-        const filteredMessages = this.messages.filter((m) => !IGNORED_KINDS_IN_MESSAGE_AREA.includes(m.kind));
-
-        for (const message of cloneDeep(filteredMessages)) {
-            if (messages.length > 0 && message.replaceLast) {
-                messages[messages.length - 1] = message;
-            } else if (messages.length > 0 && message.append) {
-                messages[messages.length - 1].text += message.text;
-                messages[messages.length - 1].isNew = message.isNew;
-            } else {
-                messages.push(message);
-            }
-        }
-
-        const oldMsg = messages
+        const oldMsg = merged
             .filter((m) => !m.isNew)
             .map((m) => m.text)
             .join("\n");
-        const newMsg = messages
+        const newMsg = merged
             .filter((m) => m.isNew)
             .map((m) => m.text)
             .join("\n");
