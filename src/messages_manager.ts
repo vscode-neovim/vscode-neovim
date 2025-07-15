@@ -202,6 +202,14 @@ export class MessagesManager implements Disposable {
                 this.statusLine.setStatus("", StatusType.Msg);
                 break;
             }
+            case "cmdline_show": {
+                // Since 'msg_clear' is only emitted after the screen is cleared,
+                // there's no appropriate moment to clear the message in the statusline.
+                // To address this, clear the statusline message when entering command-line mode,
+                // similar to Neovim’s behavior.
+                this.statusLine.setStatus("", StatusType.Msg);
+                break;
+            }
         }
 
         this.didChange = this.didChange || name === "msg_show" || name === "msg_history_show";
