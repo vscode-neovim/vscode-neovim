@@ -261,7 +261,7 @@ export class MessagesManager implements Disposable {
             // User has already seen the old messages
             this.channel.replace(newMsg);
         } else {
-            this.channel.replace(oldMsg && newMsg ? `${oldMsg}\n${newMsg}` : oldMsg + newMsg);
+            this.channel.replace(oldMsg ? `${oldMsg}\n\n${newMsg}` : newMsg);
         }
 
         if (this.isShowingHistory || newMsg.split("\n").length > (await this.getCmdheight())) {
