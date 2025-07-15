@@ -124,6 +124,7 @@ export class MessagesManager implements Disposable {
                     logger.trace("Message area closed, clearing messages");
                     this.messages = [];
                     this.channel.clear();
+                    this.statusLine.setStatus("", StatusType.Msg);
                 }
                 this.messageAreaVisible = messageAreaVisible;
             }),
@@ -260,7 +261,7 @@ export class MessagesManager implements Disposable {
             // User has already seen the old messages
             this.channel.replace(newMsg);
         } else {
-            this.channel.replace(oldMsg + (oldMsg ? "\n" : "") + newMsg);
+            this.channel.replace(oldMsg && newMsg ? `${oldMsg}\n${newMsg}` : oldMsg + newMsg);
         }
 
         if (this.isShowingHistory || newMsg.split("\n").length > (await this.getCmdheight())) {
