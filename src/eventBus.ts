@@ -77,20 +77,33 @@ type RedrawEventArgs =
           [
               kind:
                   | ""
+                  | "empty"
+                  | "bufwrite"
                   | "confirm"
-                  | "confirm_sub"
                   | "emsg"
                   | "echo"
                   | "echomsg"
                   | "echoerr"
+                  | "completion"
+                  | "list_cmd"
                   | "lua_error"
+                  | "lua_print"
                   | "rpc_error"
-                  | "return_prompt"
                   | "quickfix"
+                  | "search_cmd"
                   | "search_count"
+                  | "shell_cmd"
+                  | "shell_err"
+                  | "shell_out"
+                  | "shell_ret"
+                  | "undo"
+                  | "verbose"
+                  | "wildlist"
                   | "wmsg",
               content: MsgShowContent,
               replace_last: boolean,
+              history: boolean,
+              append: boolean,
           ]
       >
     | IRedrawEventArg<"msg_showcmd", [content: MsgShowContent]>
@@ -103,8 +116,7 @@ type RedrawEventArgs =
               mode_info: { name: string; cursor_shape: "block" | "horizontal" | "vertical" }[],
           ]
       >
-    | IRedrawEventArg<"msg_history_show", [entries: [kind: string, MsgShowContent][]]>
-    | IRedrawEventArg<"msg_history_clear">
+    | IRedrawEventArg<"msg_history_show", [entries: [kind: string, MsgShowContent][], prev_cmd: boolean]>
     | IRedrawEventArg<"msg_clear">
     | IRedrawEventArg<"mode_change", [mode: string, mode_idx: number]>
     | IRedrawEventArg<
