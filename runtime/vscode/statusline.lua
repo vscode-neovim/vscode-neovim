@@ -3,10 +3,12 @@ local api = vim.api
 local ns = api.nvim_create_namespace("vscode.statusline")
 local curr_status = ""
 
+local DEFAULT_STATUSLINE = api.nvim_get_option_info2("statusline", {}).default
+
 local function refresh()
   local status = ""
 
-  if vim.o.laststatus == 0 or vim.o.statusline == "" then
+  if vim.o.laststatus == 0 or vim.o.statusline == "" or vim.o.statusline == DEFAULT_STATUSLINE then
     status = ""
   else
     local str = api.nvim_eval_statusline(vim.o.statusline, {}).str
