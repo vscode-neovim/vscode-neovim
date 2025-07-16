@@ -1,19 +1,26 @@
 local api = vim.api
 
 local ns = api.nvim_create_namespace("vscode.statusline")
+
+local function get_status()
+  if vim.o.laststatus == 0 then
+    return ""
+  end
+
+  local info = api.nvim_get_option_info2("statusline", {})
+
+  if not info.was_set then
+    return ""
+  end
+
+  local str = api.nvim_eval_statusline(vim.o.statusline, {}).str
+  return str:gsub("\n", " "):gsub("%s+", " ")
+end
+
 local curr_status = ""
 
-local DEFAULT_STATUSLINE = api.nvim_get_option_info2("statusline", {}).default
-
 local function refresh()
-  local status = ""
-
-  if vim.o.laststatus == 0 or vim.o.statusline == "" or vim.o.statusline == DEFAULT_STATUSLINE then
-    status = ""
-  else
-    local str = api.nvim_eval_statusline(vim.o.statusline, {}).str
-    status = str:gsub("\n", " "):gsub("%s+", " ")
-  end
+  local status = get_status()
 
   if curr_status ~= status then
     curr_status = status
