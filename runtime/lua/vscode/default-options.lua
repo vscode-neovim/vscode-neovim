@@ -8,6 +8,9 @@ local function setup()
 
   -- When enable `ext_messages`, `cmdheight` will be set to 0 by default.
   vim.opt.cmdheight = 2
+
+  -- Change the default statusline to an empty string
+  vim.opt.statusline = "%##"
 end
 
 return { setup = setup }
