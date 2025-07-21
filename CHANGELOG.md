@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.18.24](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.23...v1.18.24) (2025-07-21)
+
+
+### Documentation
+
+* fix affinity link [#2501](https://github.com/vscode-neovim/vscode-neovim/issues/2501) ([f0ad116](https://github.com/vscode-neovim/vscode-neovim/commit/f0ad11658e739bdd7f78cd698c4f5a10efb5a735))
+
 ## [1.18.23](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.22...v1.18.23) (2025-07-14)
 
 
