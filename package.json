@@ -2165,9 +2165,9 @@
         "test:integration": "node ./out/test/runIntegrationTest.js",
         "pretest:unit": "npm run test-compile",
         "pretest:integration": "npm run test-compile",
-        "vscode:prepublish": "webpack --mode production",
-        "webpack": "webpack --mode development",
-        "webpack-dev": "webpack --mode development --watch",
+        "vscode:prepublish": "rspack --mode production",
+        "webpack": "rspack --mode development",
+        "webpack-dev": "rspack --mode development --watch",
         "test-compile": "tsc -p ./",
         "prepare": "husky",
         "build": "vsce package -o vscode-neovim.vsix",
@@ -2175,6 +2175,8 @@
     },
     "devDependencies": {
         "@johnnymorganz/stylua-bin": "^2.0.2",
+        "@rspack/cli": "^1.4.10",
+        "@rspack/core": "^1.4.10",
         "@sinonjs/fake-timers": "^14.0.0",
         "@types/lodash": "^4.17.16",
         "@types/mocha": "^10.0.7",
@@ -2194,9 +2196,7 @@
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.5.2",
         "typescript": "^5.8.2",
-        "typescript-eslint": "^7.18.0",
-        "webpack": "^5.98.0",
-        "webpack-cli": "^6.0.1"
+        "typescript-eslint": "^7.18.0"
     },
     "dependencies": {
         "@jpwilliams/waitgroup": "^2.1.1",
