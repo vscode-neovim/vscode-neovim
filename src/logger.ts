@@ -8,6 +8,7 @@ import { disposeAll } from "./utils";
 import { EXT_NAME } from "./constants";
 
 export interface ILogger {
+    outputChannel(): vscode.LogOutputChannel | undefined;
     trace(...args: any[]): void;
     debug(...args: any[]): void;
     info(...args: any[]): void;
@@ -37,7 +38,7 @@ export class Logger implements Disposable {
     private filePath: string | undefined;
     private level!: vscode.LogLevel;
     private logToConsole!: boolean;
-    private outputChannel!: vscode.LogOutputChannel;
+    private outputChannel?: vscode.LogOutputChannel;
 
     /**
      * Setup logging for the extension.
@@ -156,6 +157,7 @@ export class Logger implements Disposable {
         const logger = this.loggers.has(scope)
             ? this.loggers.get(scope)!
             : {
+                  outputChannel: () => this.outputChannel,
                   trace: (...args: any[]) => {
                       if (this.level <= vscode.LogLevel.Trace) {
                           this.log(vscode.LogLevel.Trace, scope, logToOutputChannel, args);

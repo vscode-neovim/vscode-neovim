@@ -47,10 +47,20 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         await plugin.init();
     } catch (e) {
         vscode.window
-            .showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`, "Restart")
+            .showErrorMessage(
+                `[Failed to start nvim] ${e instanceof Error ? e.message : e}`,
+                "Update Nvim",
+                "View Logs",
+                "Restart",
+            )
             .then((value) => {
-                if (value === "Restart") {
-                    vscode.commands.executeCommand("vscode-neovim.restart");
+                if (value === "Update Nvim") {
+                    void vscode.env.openExternal(vscode.Uri.parse("https://github.com/neovim/neovim/releases/latest"));
+                } else if (value === "View Logs") {
+                    void vscode.commands.executeCommand("workbench.panel.output.focus");
+                    logger.outputChannel()?.show();
+                } else if (value === "Restart") {
+                    void vscode.commands.executeCommand("vscode-neovim.restart");
                 }
             });
     }
