@@ -294,11 +294,14 @@ export class CommandLineManager implements Disposable {
             this.input.title = "Confirmation";
         }
 
-        // Set the confirmation message as the value (readonly)
-        this.input.value = message;
-        this.state.lastTypedText = message;
+        // Set the confirmation message as the placeholder text
+        this.input.placeholder = message;
 
-        // Mark that we're not expecting redraws from typing
+        // Clear the input value so user can type their response
+        this.input.value = "";
+        this.state.lastTypedText = "";
+
+        // We expect immediate input from the user
         this.state.redrawExpected = false;
 
         // Show the confirmation dialog
