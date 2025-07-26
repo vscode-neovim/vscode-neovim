@@ -258,7 +258,11 @@ export class CommandLineManager implements Disposable {
             case ":":
                 return `${GlyphChars.COMMAND} VIM Command Line:`;
             default:
-                return modeOrPrompt;
+                // Handle confirmation prompts - they often contain text like "replace with" or "y/n/a/q/l/^E/^Y?"
+                if (modeOrPrompt.includes("replace with") || modeOrPrompt.match(/y\/n\/a\/q\/l/)) {
+                    return "Replace confirmation";
+                }
+                return modeOrPrompt || "Input";
         }
     }
 
@@ -274,4 +278,6 @@ export class CommandLineManager implements Disposable {
     private isVisible(): boolean {
         return this.state.level !== undefined;
     }
+
+
 }
