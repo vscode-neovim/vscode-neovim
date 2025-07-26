@@ -274,4 +274,41 @@ export class CommandLineManager implements Disposable {
     private isVisible(): boolean {
         return this.state.level !== undefined;
     }
+
+    /**
+     * Show a confirmation prompt for operations like search & replace with confirmation
+     * @param message The confirmation message to display
+     * @param kind The kind of confirmation ("confirm" or "confirm_sub")
+     */
+    public showConfirmationPrompt(message: string, kind: string): void {
+        logger.debug(`showConfirmationPrompt: "${message}" (${kind})`);
+
+        // Reset state for new confirmation
+        this.reset();
+        this.state.level = 1;
+
+        // Set the title and message appropriately
+        if (kind === "confirm_sub") {
+            this.input.title = "Replace confirmation";
+        } else {
+            this.input.title = "Confirmation";
+        }
+
+        // Set the confirmation message as the value (readonly)
+        this.input.value = message;
+        this.state.lastTypedText = message;
+
+        // Mark that we're not expecting redraws from typing
+        this.state.redrawExpected = false;
+
+        // Show the confirmation dialog
+        this.showInput();
+
+        // Focus the input so user can respond
+        setTimeout(() => {
+            if (this.isVisible()) {
+                this.input.show();
+            }
+        }, 50);
+    }
 }
