@@ -258,7 +258,11 @@ export class CommandLineManager implements Disposable {
             case ":":
                 return `${GlyphChars.COMMAND} VIM Command Line:`;
             default:
-                return modeOrPrompt;
+                // Handle confirmation prompts - they often contain text like "replace with" or "y/n/a/q/l/^E/^Y?"
+                if (modeOrPrompt.includes("replace with") || modeOrPrompt.match(/y\/n\/a\/q\/l/)) {
+                    return "Replace confirmation";
+                }
+                return modeOrPrompt || "Input";
         }
     }
 
@@ -275,43 +279,5 @@ export class CommandLineManager implements Disposable {
         return this.state.level !== undefined;
     }
 
-    /**
-     * Show a confirmation prompt for operations like search & replace with confirmation
-     * @param message The confirmation message to display
-     * @param kind The kind of confirmation ("confirm" or "confirm_sub")
-     */
-    public showConfirmationPrompt(message: string, kind: string): void {
-        logger.debug(`showConfirmationPrompt: "${message}" (${kind})`);
 
-        // Reset state for new confirmation
-        this.reset();
-        this.state.level = 1;
-
-        // Set the title and message appropriately
-        if (kind === "confirm_sub") {
-            this.input.title = "Replace confirmation";
-        } else {
-            this.input.title = "Confirmation";
-        }
-
-        // Set the confirmation message as the placeholder text
-        this.input.placeholder = message;
-
-        // Clear the input value so user can type their response
-        this.input.value = "";
-        this.state.lastTypedText = "";
-
-        // We expect immediate input from the user
-        this.state.redrawExpected = false;
-
-        // Show the confirmation dialog
-        this.showInput();
-
-        // Focus the input so user can respond
-        setTimeout(() => {
-            if (this.isVisible()) {
-                this.input.show();
-            }
-        }, 50);
-    }
 }
