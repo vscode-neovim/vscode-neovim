@@ -258,7 +258,11 @@ export class CommandLineManager implements Disposable {
             case ":":
                 return `${GlyphChars.COMMAND} VIM Command Line:`;
             default:
-                return modeOrPrompt;
+                // Handle confirmation prompts - they often contain text like "replace with" or "y/n/a/q/l/^E/^Y?"
+                if (modeOrPrompt.includes("replace with") || modeOrPrompt.match(/y\/n\/a\/q\/l/)) {
+                    return "Replace confirmation";
+                }
+                return modeOrPrompt || "Input";
         }
     }
 
@@ -274,4 +278,30 @@ export class CommandLineManager implements Disposable {
     private isVisible(): boolean {
         return this.state.level !== undefined;
     }
+
+    public showConfirmationPrompt(text: string, kind: "confirm" | "confirm_sub"): void {
+        logger.debug(`showConfirmationPrompt: "${text}" (kind: ${kind})`);
+        
+        if (!this.isVisible()) {
+            // Reset the state if this is a new dialog
+            this.reset();
+        }
+
+        // Set a level to mark this as visible
+        this.state.level = 1;
+        
+        // Set the title based on the kind of confirmation
+        if (kind === "confirm_sub" || text.includes("replace with")) {
+            this.input.title = "Replace confirmation";
+        } else {
+            this.input.title = "Confirmation";
+        }
+        
+        // Use placeholder text to show the confirmation message
+        this.input.placeholder = text;
+        
+        this.showInput();
+    }
+
+
 }
