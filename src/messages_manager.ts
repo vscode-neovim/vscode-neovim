@@ -52,7 +52,12 @@ export class MessagesManager implements Disposable {
                     // See: https://github.com/vscode-neovim/vscode-neovim/issues/2046#issuecomment-2144175058
                     if (kind === "return_prompt") continue;
 
-
+                    // Handle confirmation prompts via command line instead of logging them
+                    if (kind === "confirm" || kind === "confirm_sub") {
+                        const text = content.map(([_attrId, chunk]) => chunk).join("");
+                        this.main.commandLineManager.showConfirmationPrompt(text, kind);
+                        continue;
+                    }
 
                     // NOTE: we could also potentially handle e.g. `echoerr` differently here,
                     // like logging at error level or displaying a toast etc.
