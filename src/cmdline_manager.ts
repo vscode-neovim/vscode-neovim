@@ -2,7 +2,7 @@ import { Disposable, QuickInputButton, QuickPick, QuickPickItem, ThemeIcon, comm
 
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { disposeAll, ManualPromise } from "./utils";
 import { createLogger } from "./logger";
 import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
 import { GlyphChars } from "./constants";
@@ -43,6 +43,13 @@ export class CommandLineManager implements Disposable {
     // A queue of incoming events. See docblock for more details, but this is used to resolve an inherent
     // race condition in the way we handle events.
     private queue = new CmdlineQueue();
+
+    // Chain of tasks to handle redraw events.
+    private taskChain: Promise<void> = Promise.resolve();
+    // Promise that resolves when the input is hidden.
+    // Since the input is hidden asynchronously, we need to wait for it to be
+    // hidden before proceeding with the next task.
+    private inputHiddenPromise?: ManualPromise;
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -94,7 +101,7 @@ export class CommandLineManager implements Disposable {
 
         const handle = this.queue.handleNvimRedrawEvent(event);
         if (handle) {
-            this.handleRedrawEvent(event);
+            this.taskChain = this.taskChain.then(() => this.handleRedrawEvent(event));
         }
     }
 
@@ -215,9 +222,11 @@ export class CommandLineManager implements Disposable {
             logger.debug("onHide: flushing events");
             batch.forEach((event) => {
                 // Process the events we we're waiting for
-                this.handleRedrawEvent(event);
+                this.taskChain = this.taskChain.then(() => this.handleRedrawEvent(event));
             });
         }
+
+        this.inputHiddenPromise?.resolve();
     };
 
     private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
@@ -268,6 +277,9 @@ export class CommandLineManager implements Disposable {
 
     private hideInput() {
         this.state.level = undefined;
+        this.inputHiddenPromise?.resolve();
+        this.inputHiddenPromise = new ManualPromise();
+        this.taskChain = this.taskChain.then(() => this.inputHiddenPromise?.promise);
         this.input.hide();
     }
 
