@@ -15,7 +15,7 @@ jobs:
                 os: [macos-latest, ubuntu-latest, windows-latest]
         runs-on: ${{ matrix.os }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
 
             - name: Setup Node
               uses: actions/setup-node@v4
@@ -57,7 +57,7 @@ jobs:
         name: Create extension
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
             - uses: actions/setup-node@v4
               with:
                   node-version: "18"
@@ -91,7 +91,7 @@ jobs:
                         { "type": "refactor", "section": "Refactor", "hidden": false },
                         { "type": "perf", "section": "Performance Improvements", "hidden": false }
                       ]
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
               if: ${{ steps.release.outputs.release_created }}
             - uses: actions/setup-node@v4
               if: ${{ steps.release.outputs.release_created }}
