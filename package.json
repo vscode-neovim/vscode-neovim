@@ -421,42 +421,6 @@
             {
                 "command": "vscode-neovim.escape",
                 "title": "Neovim: Send escape key to neovim, or other keys that will exit insert mode"
-            },
-            {
-                "command": "vscode-neovim.commit-cmdline",
-                "title": "Neovim: Accept cmdline"
-            },
-            {
-                "command": "vscode-neovim.complete-selection-cmdline",
-                "title": "Neovim: Complete selection cmdline"
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
-                "title": "Neovim: Send key in cmdline"
-            },
-            {
-                "command": "vscode-neovim.ctrl-b",
-                "title": "Neovim: ctrl-b"
-            },
-            {
-                "command": "vscode-neovim.ctrl-d",
-                "title": "Neovim: ctrl-d"
-            },
-            {
-                "command": "vscode-neovim.ctrl-e",
-                "title": "Neovim: ctrl-e"
-            },
-            {
-                "command": "vscode-neovim.ctrl-f",
-                "title": "Neovim: ctrl-f"
-            },
-            {
-                "command": "vscode-neovim.ctrl-u",
-                "title": "Neovim: ctrl-u"
-            },
-            {
-                "command": "vscode-neovim.ctrl-y",
-                "title": "Neovim: ctrl-y"
             }
         ],
         "keybindings": [
