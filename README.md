@@ -152,6 +152,7 @@ tab.
 
 ### Troubleshooting
 
+- To fix intermittent problems, you can run the `Neovim: Restart Extension` command to restart the extension.
 - View the logs via `Output: Focus on Output View` and select `vscode-neovim logs`.
     - **To enable debug logs,** click the "gear" icon and select `Debug`, then click it again and choose
       `Set As Default`.
