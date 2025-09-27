@@ -1,7 +1,7 @@
 name: Bug Report
 description: File a bug/issue
 title: "bug: "
-labels: [bug, triage]
+type: "Bug"
 body:
     - type: markdown
       attributes:
@@ -27,6 +27,12 @@ body:
       attributes:
           label: "Neovim version (nvim -v)"
           placeholder: "0.8.0 commit db1b0ee3b30f"
+      validations:
+          required: true
+    - type: input
+      attributes:
+          label: "VSCode version and flavor (Cursor, vscodium, …)"
+          placeholder: "VSCode 1.x"
       validations:
           required: true
     - type: input

@@ -1,7 +1,7 @@
 name: Feature Request
 description: Suggest a new feature
 title: "feature: "
-labels: [enhancement, triage]
+type: "Feature"
 body:
     - type: checkboxes
       attributes:

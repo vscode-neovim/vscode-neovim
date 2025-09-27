@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+    - name: Usage or configuration question
+      url: https://github.com/vscode-neovim/vscode-neovim/discussions
+      about: Ask about configuration and usage of vscode-neovim
