@@ -334,6 +334,21 @@
                     "default": "|",
                     "description": "Separator used by statusline"
                 },
+                "vscode-neovim.statusLineItems": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                        "type": "string",
+                        "pattern": "(statusline|mode|cmd|msg)"
+                    },
+                    "default": [
+                        "statusline",
+                        "mode",
+                        "cmd",
+                        "msg"
+                    ],
+                    "description": "Order of status line items displayed"
+                },
                 "vscode-neovim.compositeTimeout": {
                     "type": "number",
                     "default": 300,
