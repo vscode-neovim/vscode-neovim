@@ -142,7 +142,7 @@ export class Config implements Disposable {
         return this.cfg.get("statusLineSeparator", "|");
     }
     get statusLineItems(): ("statusline" | "mode" | "cmd" | "msg")[] {
-        return this.cfg.get("statusLineItems", ["statusline","mode","cmd","msg"]);
+        return this.cfg.get("statusLineItems", ["statusline", "mode", "cmd", "msg"]);
     }
 
     get normalSelectionDebounceTime() {
