@@ -347,7 +347,7 @@
                         "cmd",
                         "msg"
                     ],
-                    "description": "Order of status line items displayed"
+                    "description": "Info displayed in the statusbar"
                 },
                 "vscode-neovim.compositeTimeout": {
                     "type": "number",
