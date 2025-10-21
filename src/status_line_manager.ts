@@ -70,7 +70,23 @@ export class StatusLineManager implements Disposable {
     }
 
     private updateStatus() {
-        this.statusBar.text = [this._statusline, this._modeText, this._cmdText, this._msgText]
+        const textItems = config.statusLineItems
+            .map((i) => {
+                switch (i) {
+                    case "statusline":
+                        return this._statusline;
+                    case "mode":
+                        return this._modeText;
+                    case "cmd":
+                        return this._cmdText;
+                    case "msg":
+                        return this._msgText;
+                    default:
+                        return null;
+                }
+            })
+            .filter((t) => t !== null);
+        this.statusBar.text = textItems
             .map((i) => i.replace(/\n/g, " ").trim())
             .filter((i) => i.length)
             .join(config.statusLineSeparator);
