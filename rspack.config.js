@@ -4,10 +4,10 @@
 
 const path = require("path");
 
-const webpack = require("webpack");
+const { rspack } = require("@rspack/core");
+const { defineConfig } = require("@rspack/cli");
 
-/**@type {import('webpack').Configuration}*/
-const config = {
+const config = defineConfig({
     target: "node", // vscode extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
 
     entry: "./src/extension.ts", // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
@@ -48,11 +48,11 @@ const config = {
         level: "log",
     },
     plugins: [
-        new webpack.EnvironmentPlugin({
+        new rspack.DefinePlugin({
             // stop neovim winston spam
             NVIM_NODE_LOG_LEVEL: "error",
             ALLOW_CONSOLE: true,
         }),
     ],
-};
+});
 module.exports = config;
