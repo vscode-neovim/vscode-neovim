@@ -168,7 +168,7 @@ export class MainController implements vscode.Disposable {
     }
 
     private buildSpawnArgs(): [string, string[]] {
-        let extensionPath = this.extContext.extensionPath.replace(/\\/g, "\\\\");
+        let extensionPath = this.extContext.extensionPath.replace(/\\/g, "/");
         if (config.useWsl) {
             extensionPath = wslpath(extensionPath);
         }
@@ -179,7 +179,7 @@ export class MainController implements vscode.Disposable {
         const args = [];
 
         if (config.useWsl) {
-            args.push("C:\\Windows\\system32\\wsl.exe");
+            args.push("C:/Windows/system32/wsl.exe");
             if (config.wslDistribution.length) {
                 args.push("-d", config.wslDistribution);
             }
@@ -218,9 +218,7 @@ export class MainController implements vscode.Disposable {
 
         if (config.clean) {
             args.push("--clean");
-        }
-        // #1162
-        if (!config.clean && config.neovimInitPath) {
+        } else if (config.neovimInitPath) {
             args.push("-u", config.neovimInitPath);
         }
         if (config.NVIM_APPNAME) {
