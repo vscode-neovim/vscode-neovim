@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.18.25](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.24...v1.18.25) (2025-11-22)
+
+
+### Documentation
+
+* issue templates [#2561](https://github.com/vscode-neovim/vscode-neovim/issues/2561) ([2cd7661](https://github.com/vscode-neovim/vscode-neovim/commit/2cd7661795f7e434d4637492d73c257eceb5605b))
+* mention `Neovim: Restart Extension` command [#2546](https://github.com/vscode-neovim/vscode-neovim/issues/2546) ([e133169](https://github.com/vscode-neovim/vscode-neovim/commit/e133169b2966e2eeb26d33d8071e5219a96a584f))
+
 ## [1.18.24](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.23...v1.18.24) (2025-08-08)
 
 
