@@ -68,7 +68,7 @@ jobs:
               run: npx vsce package -o vscode-neovim-${{github.sha}}.vsix
             - name: Upload extension
               if: runner.os == 'Linux'
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: vscode-neovim
                   path: vscode-neovim-${{github.sha}}.vsix
