@@ -2204,7 +2204,7 @@
         "fast-myers-diff": "^3.2.0",
         "grapheme-splitter": "^1.0.4",
         "lodash": "^4.17.21",
-        "neovim": "^5.3.0",
+        "neovim": "^5.4.0",
         "ts-wcwidth": "^2.0.3"
     }
 }
