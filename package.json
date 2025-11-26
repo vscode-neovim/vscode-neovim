@@ -394,6 +394,11 @@
                         "vscode-copilot-chat-code-block"
                     ],
                     "markdownDescription": "Specifies the `scheme` of documents generated automatically by the program, such as: `output`, `vscode-chat-code-block`. For such documents, vscode-neovim will ignore some insignificant errors, such as cursor setting errors."
+                },
+                "vscode-neovim.disableMessages": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Disable the 'vscode-neovim messages' output channel. When enabled, Neovim messages (`:echo`, `:messages`, errors) will not be displayed in VS Code's Output panel. Requires extension restart."
                 }
             }
         },
