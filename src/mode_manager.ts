@@ -104,6 +104,7 @@ export class ModeManager implements Disposable {
 
     private handleModeChanged([mode]: EventBusData<"mode-changed">) {
         logger.debug(`Changing mode to ${mode}`);
+        const prevMode = this.mode;
         this.mode = new Mode(mode);
         if (!this.isInsertMode && this.isRecording) {
             this.isRecording = false;
@@ -111,6 +112,13 @@ export class ModeManager implements Disposable {
         }
         VSCodeContext.set("neovim.mode", this.mode.name);
         logger.debug(`Setting mode context to ${this.mode.name}`);
+
+        // Handle transition from visual to normal mode
+        if (prevMode.isVisual && this.mode.isNormal) {
+            logger.debug("Exiting visual mode");
+            VSCodeContext.set("neovim.isVisualMode", false);
+        }
+
         this.eventEmitter.fire(null);
     }
 
