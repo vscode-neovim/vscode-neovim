@@ -159,7 +159,12 @@ export class BufferManager implements Disposable {
         more: boolean,
     ) => void;
 
-    public onBufferInit?: (bufId: number, doc: TextDocument, initDocText: string, initDocVersion: number) => void;
+    public onBufferInit?: (
+        bufId: number,
+        doc: TextDocument,
+        initDocText: string,
+        initDocVersion: number,
+    ) => void | Promise<void>;
 
     private get client() {
         return this.main.client;
@@ -717,10 +722,9 @@ export class BufferManager implements Disposable {
                     logger.error(`Cannot create a buffer, code: ${buf}`);
                     continue;
                 }
-                await this.initBufferForDocument(doc, buf, editor);
-
-                logger.log(doc.uri, LogLevel.Debug, `Document: ${doc.uri}, BufId: ${buf.id}`);
                 this.textDocumentToBufferId.set(doc, buf.id);
+                logger.log(doc.uri, LogLevel.Debug, `Document: ${doc.uri}, BufId: ${buf.id}`);
+                await this.initBufferForDocument(doc, buf, editor);
             }
             if (this.textEditorToWinId.has(editor)) continue;
             const editorBufferId = this.textDocumentToBufferId.get(doc)!;
@@ -849,7 +853,7 @@ export class BufferManager implements Disposable {
         if (!this.isExternalTextDocument(document)) {
             await actions.lua("clear_undo", bufId);
         }
-        this.onBufferInit?.(bufId, document, text, version);
+        await this.onBufferInit?.(bufId, document, text, version);
         buffer.listen("lines", this.receivedBufferEvent);
         actions.fireNvimEvent("document_buffer_init", bufId);
     }
@@ -917,7 +921,7 @@ export class BufferManager implements Disposable {
 
         this.externalTextDocuments.add(doc);
         this.textDocumentToBufferId.set(doc, id);
-        this.onBufferInit?.(id, doc, doc.getText(), doc.version);
+        await this.onBufferInit?.(id, doc, doc.getText(), doc.version);
 
         const windows = await this.client.windows;
         let closeWinId = 0;
