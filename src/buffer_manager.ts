@@ -373,9 +373,19 @@ export class BufferManager implements Disposable {
                 const buffers = await this.client.buffers;
                 const buf = buffers.find((b) => b.id === bufnr);
                 if (buf) {
-                    await this.initBufferForDocument(doc, buf);
+                    // Set the mapping before init so that queued onChangeTextDocument events
+                    // drained in DocumentChangeManager.onBufferInit can resolve the buffer id.
+                    // Roll back on failure so the document isn't stuck in a half-initialized state.
+                    this.textDocumentToBufferId.set(doc, bufnr);
+                    try {
+                        await this.initBufferForDocument(doc, buf);
+                    } catch (e) {
+                        this.textDocumentToBufferId.delete(doc);
+                        throw e;
+                    }
+                } else {
+                    this.textDocumentToBufferId.set(doc, bufnr);
                 }
-                this.textDocumentToBufferId.set(doc, bufnr);
             }
             if (window.activeTextEditor?.document !== doc) {
                 const editor = await window.showTextDocument(doc, {
@@ -722,9 +732,19 @@ export class BufferManager implements Disposable {
                     logger.error(`Cannot create a buffer, code: ${buf}`);
                     continue;
                 }
+                // Set the mapping before init so that any onChangeTextDocument events fired
+                // during the async init flow can resolve the buffer id when drained in
+                // DocumentChangeManager.onBufferInit. Roll the mapping back on failure so a
+                // future sync can retry init instead of treating this doc as initialized.
                 this.textDocumentToBufferId.set(doc, buf.id);
                 logger.log(doc.uri, LogLevel.Debug, `Document: ${doc.uri}, BufId: ${buf.id}`);
-                await this.initBufferForDocument(doc, buf, editor);
+                try {
+                    await this.initBufferForDocument(doc, buf, editor);
+                } catch (e) {
+                    this.textDocumentToBufferId.delete(doc);
+                    logger.log(doc.uri, LogLevel.Error, (e as Error).message);
+                    continue;
+                }
             }
             if (this.textEditorToWinId.has(editor)) continue;
             const editorBufferId = this.textDocumentToBufferId.get(doc)!;
