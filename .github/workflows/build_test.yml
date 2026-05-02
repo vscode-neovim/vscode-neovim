@@ -23,10 +23,6 @@ jobs:
                   node-version: "18"
                   cache: "npm"
 
-            - name: Update Homebrew Caches
-              if: matrix.os == 'macos-latest'
-              run: brew update
-
             - name: Install Neovim
               uses: rhysd/action-setup-vim@v1
               id: vim
