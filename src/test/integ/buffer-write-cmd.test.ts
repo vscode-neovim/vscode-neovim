@@ -113,14 +113,14 @@ describe("BufWriteCmd integration", () => {
 
     it("Writing to command should not trigger saving", async () => {
         const doc = await openTestFile();
+        const command = process.platform === "win32" ? "more > NUL" : "cat > /dev/null";
 
         await sendVSCodeKeys("ccaaa");
         await sendEscapeKey();
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
 
-        await client.command("w !cat");
-        // ↑May open the output panel
+        await client.command(`silent w !${command}`);
         await wait(200);
         await commands.executeCommand("workbench.action.closePanel");
         assert.equal(doc.isDirty, true);
