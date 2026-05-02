@@ -353,12 +353,16 @@ local function set_buffer_autocmd(buf)
       vscode.action("save_buffer", { args = { data } })
     end,
   })
-  local ok = pcall(api.nvim_create_autocmd, { "BufModifiedSet" }, {
+  local ok, create_err = pcall(api.nvim_create_autocmd, { "BufModifiedSet" }, {
     buffer = buf,
     callback = notify_modified,
   })
   if ok then
     return
+  end
+
+  if type(create_err) ~= "string" or not create_err:find("BufModifiedSet", 1, true) then
+    error(create_err)
   end
 
   local last_modified = vim.bo[buf].mod
