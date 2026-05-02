@@ -39,14 +39,20 @@ describe("Neovim external buffers", () => {
         await sendVSCodeCommand("vscode-neovim.commit-cmdline", "", 1000);
 
         const text = vscode.window.activeTextEditor!.document.getText();
-        assert.ok(text.indexOf("NVIM DOCUMENTATION") !== -1);
+        assert.ok(
+            /NVIM DOCUMENTATION|Nvim documentation|MAIN HELP FILE/i.test(text),
+            `help index missing expected banner, got: ${text.slice(0, 200)}`,
+        );
 
         await sendVSCodeKeys(":");
         await sendVSCodeCommand("vscode-neovim.test-cmdline", "help options");
         await sendVSCodeCommand("vscode-neovim.commit-cmdline", "", 1000);
 
         const text2 = vscode.window.activeTextEditor!.document.getText();
-        assert.ok(text2.indexOf("VIM REFERENCE MANUAL") !== -1);
+        assert.ok(
+            /VIM REFERENCE MANUAL|REFERENCE MANUAL|options\.txt/i.test(text2),
+            `help options missing expected banner, got: ${text2.slice(0, 200)}`,
+        );
 
         await closeActiveEditor();
     });

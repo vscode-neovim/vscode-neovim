@@ -546,6 +546,11 @@ export class BufferManager implements Disposable {
         const currentPath = normalize(current_name);
         const targetPath = normalize(target_name);
 
+        // :w !cmd — filter/shell write; not a filesystem path. Avoid saveAs/save dialogs that hang tests/CI.
+        if (targetPath.startsWith("!")) {
+            return;
+        }
+
         if (currentPath === targetPath) {
             await workspace.save(docUri);
             return;

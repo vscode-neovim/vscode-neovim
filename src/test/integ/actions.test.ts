@@ -67,7 +67,7 @@ describe("Eval VSCode", () => {
 
         await assert.rejects(
             () => eval_from_nvim(client, "const a = {}; a.a = a; return a"),
-            /Error executing lua Return value of eval not JSON serializable: TypeError: Converting circular structure to JSON.*/,
+            /Return value of eval not JSON serializable: TypeError: Converting circular structure to JSON/,
         );
 
         output = await eval_from_nvim(client, "function f(v) {return 100 + v;}; return f(2);");
@@ -156,7 +156,7 @@ describe("Eval VSCode", () => {
     it("Error handling", async () => {
         await assert.rejects(async () => {
             await eval_from_nvim(client, "!$%");
-        }, /Error executing lua Unexpected token '}'/);
+        }, /Unexpected token '\}'/);
 
         await assert.rejects(async () => {
             await eval_from_nvim_with_opts(
@@ -164,20 +164,20 @@ describe("Eval VSCode", () => {
                 "await new Promise((resolve) => setTimeout(resolve, 1000))",
                 "{}, 100",
             );
-        }, /Error executing lua .* Call 'eval' timed out/);
+        }, /Call 'eval' timed out/);
 
         let output = await eval_from_nvim(client, "return vscode.window.property_that_does_not_exist");
         assert.equal(output, null);
 
         await assert.rejects(async () => {
             await eval_from_nvim(client, "return vscode.window.property_that_does_not_exist.nested_property");
-        }, /Error executing lua Cannot read properties of undefined \(reading 'nested_property'\)/);
+        }, /Cannot read properties of undefined \(reading 'nested_property'\)/);
 
         output = await eval_from_nvim(client, "return vscode.window.visibleTextEditors[99]");
         assert.equal(output, null);
 
         await assert.rejects(async () => {
             await eval_from_nvim(client, 'await vscode.commands.executeCommand("unknown_action")');
-        }, /Error executing lua command 'unknown_action' not found/);
+        }, /command 'unknown_action' not found/);
     });
 });

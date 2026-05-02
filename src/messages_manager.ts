@@ -138,6 +138,9 @@ export class MessagesManager implements Disposable {
         this.didChange = false;
         this.displayHistory = false;
         this.revealOutput = false;
+        // Staging buffers must not persist across flushes or later msg_show events accumulate duplicates.
+        this.messageBuffer = [];
+        this.historyBuffer = [];
     }
 
     private writeMessage(msg: string): void {
