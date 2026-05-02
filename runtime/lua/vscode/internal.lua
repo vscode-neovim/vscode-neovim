@@ -6,6 +6,50 @@ local util = require("vscode.util")
 
 local M = {}
 
+local function get_buf_var(buf, name)
+  local ok, value = pcall(api.nvim_buf_get_var, buf, name)
+  if ok then
+    return value
+  end
+end
+
+local function find_duplicate_document_buffer(buf, name, uri)
+  for _, candidate in ipairs(api.nvim_list_bufs()) do
+    if candidate ~= buf and api.nvim_buf_is_valid(candidate) then
+      local candidate_name = api.nvim_buf_get_name(candidate)
+      local candidate_uri = get_buf_var(candidate, "vscode_uri")
+      local candidate_controlled = get_buf_var(candidate, "vscode_controlled")
+
+      local name_matches = candidate_name == name or candidate_uri == uri
+      local is_vscode_document = candidate_controlled == true or candidate_uri == uri
+
+      if name_matches and is_vscode_document then
+        return candidate
+      end
+    end
+  end
+end
+
+local function set_document_buffer_name(buf, name, uri)
+  local ok, err = pcall(api.nvim_buf_set_name, buf, name)
+  if ok then
+    return
+  end
+
+  if type(err) == "string" and err:find("E95:", 1, true) then
+    local duplicate = find_duplicate_document_buffer(buf, name, uri)
+    if duplicate then
+      pcall(api.nvim_buf_delete, duplicate, { force = true })
+      ok, err = pcall(api.nvim_buf_set_name, buf, name)
+      if ok then
+        return
+      end
+    end
+  end
+
+  error(err)
+end
+
 ---call from vscode to sync viewport with neovim
 ---@param vscode_topline number the top line of vscode visible range
 ---@param vscode_endline number the end line of vscode visible range
@@ -288,6 +332,13 @@ end
 --- 1. Implements :write and related commands, via buftype=acwrite. #521 #1260
 --- 2. Syncs buffer modified status with vscode. #247
 local function set_buffer_autocmd(buf)
+  local function notify_modified(ev)
+    fn.VSCodeExtensionNotify("BufModifiedSet", {
+      buf = ev.buf,
+      modified = vim.bo[ev.buf].mod,
+    })
+  end
+
   api.nvim_create_autocmd({ "BufWriteCmd" }, {
     buffer = buf,
     callback = function(ev)
@@ -302,13 +353,23 @@ local function set_buffer_autocmd(buf)
       vscode.action("save_buffer", { args = { data } })
     end,
   })
-  api.nvim_create_autocmd({ "BufModifiedSet" }, {
+  local ok = pcall(api.nvim_create_autocmd, { "BufModifiedSet" }, {
+    buffer = buf,
+    callback = notify_modified,
+  })
+  if ok then
+    return
+  end
+
+  local last_modified = vim.bo[buf].mod
+  api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufWritePost" }, {
     buffer = buf,
     callback = function(ev)
-      fn.VSCodeExtensionNotify("BufModifiedSet", {
-        buf = ev.buf,
-        modified = vim.bo[ev.buf].mod,
-      })
+      local modified = vim.bo[ev.buf].mod
+      if modified ~= last_modified then
+        last_modified = modified
+        notify_modified(ev)
+      end
     end,
   })
 end
@@ -339,10 +400,10 @@ function M.init_document_buffer(data)
 
   force_filetype()
   -- Set bufname before setting lines so that filetype detection can work ???
-  api.nvim_buf_set_name(buf, data.bufname)
+  set_document_buffer_name(buf, data.bufname, data.uri)
   -- Let nvim resolve the physical path of our file to avoid relative path issues
   -- with symbolic links when saving the buffer. #2284
-  api.nvim_buf_set_name(buf, api.nvim_buf_get_name(buf))
+  set_document_buffer_name(buf, api.nvim_buf_get_name(buf), data.uri)
   api.nvim_buf_set_lines(buf, 0, -1, false, data.lines)
   -- set vscode controlled flag so we can check it neovim
   api.nvim_buf_set_var(buf, "vscode_controlled", true)
