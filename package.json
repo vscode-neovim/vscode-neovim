@@ -18,6 +18,7 @@
         "email": "devpieron@gmail.com"
     },
     "engines": {
+        "node": "22.x",
         "vscode": "^1.90.0"
     },
     "keywords": [
