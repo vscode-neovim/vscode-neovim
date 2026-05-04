@@ -13,23 +13,21 @@ local function get_buf_var(buf, name)
   end
 end
 
+---Finds a hidden stale buffer for the same VS Code document that blocks naming during init.
 local function find_duplicate_document_buffer(buf, name, uri)
   for _, candidate in ipairs(api.nvim_list_bufs()) do
     if candidate ~= buf and api.nvim_buf_is_valid(candidate) then
       local candidate_name = api.nvim_buf_get_name(candidate)
       local candidate_uri = get_buf_var(candidate, "vscode_uri")
-      local candidate_controlled = get_buf_var(candidate, "vscode_controlled")
 
-      local name_matches = candidate_name == name or candidate_uri == uri
-      local is_vscode_document = candidate_controlled == true or candidate_uri == uri
-
-      if name_matches and is_vscode_document then
+      if candidate_name == name and candidate_uri == uri and vim.tbl_isempty(fn.win_findbuf(candidate)) then
         return candidate
       end
     end
   end
 end
 
+---Retries E95 buffer naming after removing a stale same-document duplicate.
 local function set_document_buffer_name(buf, name, uri)
   local ok, err = pcall(api.nvim_buf_set_name, buf, name)
   if ok then
@@ -39,10 +37,12 @@ local function set_document_buffer_name(buf, name, uri)
   if type(err) == "string" and err:find("E95:", 1, true) then
     local duplicate = find_duplicate_document_buffer(buf, name, uri)
     if duplicate then
-      pcall(api.nvim_buf_delete, duplicate, { force = true })
-      ok, err = pcall(api.nvim_buf_set_name, buf, name)
-      if ok then
-        return
+      local delete_ok = pcall(api.nvim_buf_delete, duplicate, { force = true })
+      if delete_ok then
+        ok, err = pcall(api.nvim_buf_set_name, buf, name)
+        if ok then
+          return
+        end
       end
     end
   end
@@ -344,6 +344,7 @@ local function set_buffer_autocmd(buf)
     callback = function(ev)
       local current_name = api.nvim_buf_get_name(ev.buf)
       local target_name = ev.match
+
       local data = {
         buf = ev.buf,
         bang = vim.v.cmdbang == 1,
