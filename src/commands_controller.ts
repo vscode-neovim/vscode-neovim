@@ -1,4 +1,4 @@
-import vscode, { Disposable, commands } from "vscode";
+import vscode, { Disposable, commands, Selection } from "vscode";
 
 import { config } from "./config";
 import { eventBus } from "./eventBus";
@@ -29,8 +29,22 @@ export class CommandsController implements Disposable {
     }
 
     /// SCROLL COMMANDS ///
-    private scrollPage = (by: "page" | "halfPage", to: "up" | "down"): void => {
+    private scrollPage = async (by: "page" | "halfPage", to: "up" | "down"): Promise<void> => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+
+        const wasVisualMode = this.main.modeManager.isVisualMode;
+        let visualAnchor: Selection | undefined;
+        if (wasVisualMode) {
+            visualAnchor = editor.selection;
+        }
+
         vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: true });
+
+        if (visualAnchor && this.main.modeManager.isVisualMode) {
+            const newActive = editor.selection.active;
+            editor.selections = [new Selection(visualAnchor.anchor, newActive)];
+        }
     };
 
     private scrollLine = (to: "up" | "down"): void => {
