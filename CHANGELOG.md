@@ -1,5 +1,27 @@
 # Change Log
 
+## [1.19.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.24...v1.19.0) (2026-05-12)
+
+
+### Features
+
+* Add statusLineItems config option ([#2560](https://github.com/vscode-neovim/vscode-neovim/issues/2560)) ([6a356a4](https://github.com/vscode-neovim/vscode-neovim/commit/6a356a465770cba9d9b67deaceb38b6b19f3aee2))
+
+
+### Bug Fixes
+
+* handle Neovim buffer sync compatibility ([a952bb1](https://github.com/vscode-neovim/vscode-neovim/commit/a952bb191a4ccbe508fd737ca2299d256d41c5ad))
+* integration tests ([20a1f6c](https://github.com/vscode-neovim/vscode-neovim/commit/20a1f6c18c4e3e089ea7534bb397b6f8df8d58ad))
+* **lua:** avoid naming conflicts from stale hidden buffers ([3f462e3](https://github.com/vscode-neovim/vscode-neovim/commit/3f462e3d2133d46fb4c24c8dca0f31b1275364a9))
+* only fallback BufModifiedSet autocmd on unsupported event ([7e561f7](https://github.com/vscode-neovim/vscode-neovim/commit/7e561f7803536dc2b63bdbe17f3fce86dd359ef3))
+* preserve visual line/block mode when scrolling with C-d/C-u [#2617](https://github.com/vscode-neovim/vscode-neovim/issues/2617) ([f62ee6a](https://github.com/vscode-neovim/vscode-neovim/commit/f62ee6a88411ef47804893dcf153adcd9122bbc0)), closes [#2434](https://github.com/vscode-neovim/vscode-neovim/issues/2434)
+
+
+### Documentation
+
+* issue templates [#2561](https://github.com/vscode-neovim/vscode-neovim/issues/2561) ([2cd7661](https://github.com/vscode-neovim/vscode-neovim/commit/2cd7661795f7e434d4637492d73c257eceb5605b))
+* mention `Neovim: Restart Extension` command [#2546](https://github.com/vscode-neovim/vscode-neovim/issues/2546) ([e133169](https://github.com/vscode-neovim/vscode-neovim/commit/e133169b2966e2eeb26d33d8071e5219a96a584f))
+
 ## [1.18.24](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.23...v1.18.24) (2025-08-08)
 
 
