@@ -39,7 +39,7 @@ export class CommandsController implements Disposable {
             visualAnchor = editor.selection;
         }
 
-        vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: true });
+        await vscode.commands.executeCommand("editorScroll", { to, by, revealCursor: true });
 
         if (visualAnchor && this.main.modeManager.isVisualMode) {
             const newActive = editor.selection.active;
