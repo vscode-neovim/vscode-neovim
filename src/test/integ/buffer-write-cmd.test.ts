@@ -9,6 +9,7 @@ import {
     attachTestNvimClient,
     closeAllActiveEditors,
     closeNvimClient,
+    sendNeovimKeys,
     sendEscapeKey,
     sendVSCodeKeys,
     wait,
@@ -120,7 +121,10 @@ describe("BufWriteCmd integration", () => {
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
 
-        await client.command(`silent w !${command}`);
+        // `client.command()` waits for the Ex command to finish, but `:write !cmd`
+        // enters Neovim's hit-enter prompt. Drive it through the input queue and
+        // include the final <CR> to dismiss that prompt.
+        await sendNeovimKeys(client, `:silent! write !${command}<CR><CR>`, 1000);
         await wait(200);
         await commands.executeCommand("workbench.action.closePanel");
         assert.equal(doc.isDirty, true);
