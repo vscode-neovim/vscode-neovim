@@ -344,6 +344,9 @@ local function set_buffer_autocmd(buf)
     callback = function(ev)
       local current_name = api.nvim_buf_get_name(ev.buf)
       local target_name = ev.match
+      if vim.startswith(target_name, "!") then
+        return
+      end
 
       local data = {
         buf = ev.buf,
