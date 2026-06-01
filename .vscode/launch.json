@@ -22,7 +22,6 @@
             "smartStep": true,
             "runtimeExecutable": "${execPath}",
             "args": [
-                "--disable-extensions",
                 "--disable-extension=vscode.git",
                 "--disable-extension=vscode.git-base",
                 "--extensionDevelopmentPath=${workspaceFolder}",
