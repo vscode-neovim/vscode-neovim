@@ -14,6 +14,7 @@ import {
     sendVSCodeCommand,
     sendVSCodeKeys,
     wait,
+    waitForCondition,
 } from "./integrationUtils";
 
 function findOutputChannel(): TextEditor | undefined {
@@ -24,11 +25,24 @@ function findOutputChannel(): TextEditor | undefined {
     });
 }
 
-// On Windows, VSCode uses \r\n as the line break in output documents.
-function assertOutputContent(expected: string) {
+function getOutputContent(): string | undefined {
     const outputEditor = findOutputChannel();
     const content = outputEditor?.document.getText();
-    assert.equal(content != null ? content.replace(/\r\n/g, "\n") : content, expected);
+    // On Windows, VSCode uses \r\n as the line break in output documents.
+    return content != null ? content.replace(/\r\n/g, "\n") : content;
+}
+
+async function assertOutputContent(expected: string) {
+    await waitForCondition(
+        () => {
+            assert.equal(getOutputContent(), expected);
+            return true;
+        },
+        {
+            timeout: 3000,
+            message: `Expected output channel content ${JSON.stringify(expected)}`,
+        },
+    );
 }
 
 async function sendCommandLine(command: string) {
@@ -66,18 +80,15 @@ describe("Message output", () => {
 
     it("should reveal output panel with contents", async () => {
         await sendCommandLine("echo 1 | echom 2 | echo 3 | echom 4");
-        await wait();
-        assertOutputContent("1\n2\n3\n4\n");
+        await assertOutputContent("1\n2\n3\n4\n");
         await hideOutputPanel();
 
         await sendCommandLine("messages");
-        await wait();
-        assertOutputContent("echomsg: 2\nechomsg: 4\n");
+        await assertOutputContent("echomsg: 2\nechomsg: 4\n");
         await hideOutputPanel();
 
         await sendCommandLine("echo 5 | echo 6 | echo 7");
-        await wait();
-        assertOutputContent("5\n6\n7\n");
+        await assertOutputContent("5\n6\n7\n");
     });
 
     it("should reveal after first line", async () => {
@@ -87,38 +98,30 @@ describe("Message output", () => {
         const outputEditor = findOutputChannel();
         assert.equal(outputEditor, undefined);
 
-        await wait(1400);
-        assertOutputContent("1\n2\n3\n");
+        await assertOutputContent("1\n2\n3\n");
         await hideOutputPanel();
 
         await sendCommandLine("messages");
-        await wait();
-        assertOutputContent("echomsg: 1\nechomsg: 2\nechomsg: 3\n");
+        await assertOutputContent("echomsg: 1\nechomsg: 2\nechomsg: 3\n");
     });
 
     it("should clear history", async () => {
         await sendCommandLine("echom 1 | echom 2 | echom 3");
-        await wait();
         await sendCommandLine("messages");
-        await wait();
-        assertOutputContent("echomsg: 1\nechomsg: 2\nechomsg: 3\n");
+        await assertOutputContent("echomsg: 1\nechomsg: 2\nechomsg: 3\n");
 
         await sendCommandLine("messages clear");
-        await wait();
         await sendCommandLine("messages");
-        await wait();
-        assertOutputContent("");
+        await assertOutputContent("");
     });
 
     it("should reveal for 'pattern not found' for cmdheight=1", async () => {
         await client.setOption("cmdheight", 1);
         await sendNeovimKeys(client, "/foobar\n");
-        await wait();
-        assertOutputContent("/foobar             \nE486: Pattern not found: foobar\n");
+        await assertOutputContent("/foobar             \nE486: Pattern not found: foobar\n");
 
         await sendCommandLine("messages");
-        await wait();
-        assertOutputContent("emsg: E486: Pattern not found: foobar\n");
+        await assertOutputContent("emsg: E486: Pattern not found: foobar\n");
     });
 
     it("should suppress 'pattern not found' with cmdheight=2", async () => {
@@ -128,7 +131,6 @@ describe("Message output", () => {
         assert.equal(outputEditor, undefined);
 
         await sendCommandLine("messages");
-        await wait();
-        assertOutputContent("emsg: E486: Pattern not found: foobar\n");
+        await assertOutputContent("emsg: E486: Pattern not found: foobar\n");
     });
 });

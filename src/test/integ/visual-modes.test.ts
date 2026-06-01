@@ -12,15 +12,25 @@ import {
     openTextDocument,
     sendInsertKey,
     wait,
+    getNeovimVersion,
+    isNeovimVersionAtLeast,
 } from "./integrationUtils";
 
 describe("Visual modes test", () => {
     let client: NeovimClient;
+    let nvimAtLeast013 = false;
+
     before(async () => {
         client = await attachTestNvimClient();
+        nvimAtLeast013 = isNeovimVersionAtLeast(await getNeovimVersion(client), 0, 13);
     });
     after(async () => {
         await closeNvimClient(client);
+        await closeAllActiveEditors();
+    });
+
+    afterEach(async () => {
+        await sendEscapeKey().catch(() => undefined);
         await closeAllActiveEditors();
     });
 
@@ -98,8 +108,11 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("vi{");
         await assertContent(
             {
-                cursor: [4, 1],
-                vsCodeSelections: [new vscode.Selection(2, 0, 4, 1)],
+                neovimCursor: [4, 1],
+                vsCodeCursor: nvimAtLeast013 ? [5, 0] : [4, 1],
+                vsCodeSelections: [
+                    nvimAtLeast013 ? new vscode.Selection(2, 0, 5, 0) : new vscode.Selection(2, 0, 4, 1),
+                ],
             },
             client,
         );
@@ -153,7 +166,9 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("V");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 0, 1, 14)],
+                vsCodeSelections: [
+                    nvimAtLeast013 ? new vscode.Selection(1, 0, 2, 0) : new vscode.Selection(1, 0, 1, 14),
+                ],
             },
             client,
         );
@@ -162,7 +177,9 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("w");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 0, 1, 14)],
+                vsCodeSelections: [
+                    nvimAtLeast013 ? new vscode.Selection(1, 0, 2, 0) : new vscode.Selection(1, 0, 1, 14),
+                ],
             },
             client,
         );
@@ -177,7 +194,9 @@ describe("Visual modes test", () => {
         await sendVSCodeKeys("kk");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(1, 14, 0, 0)],
+                vsCodeSelections: [
+                    nvimAtLeast013 ? new vscode.Selection(2, 0, 0, 0) : new vscode.Selection(1, 14, 0, 0),
+                ],
             },
             client,
         );
@@ -353,11 +372,17 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "i",
-                vsCodeSelections: [
-                    new vscode.Selection(0, 14, 0, 14),
-                    new vscode.Selection(1, 15, 1, 15),
-                    new vscode.Selection(2, 13, 2, 13),
-                ],
+                vsCodeSelections: nvimAtLeast013
+                    ? [
+                          new vscode.Selection(1, 0, 1, 0),
+                          new vscode.Selection(2, 0, 2, 0),
+                          new vscode.Selection(2, 13, 2, 13),
+                      ]
+                    : [
+                          new vscode.Selection(0, 14, 0, 14),
+                          new vscode.Selection(1, 15, 1, 15),
+                          new vscode.Selection(2, 13, 2, 13),
+                      ],
             },
             client,
         );
@@ -367,7 +392,9 @@ describe("Visual modes test", () => {
         await assertContent(
             {
                 mode: "n",
-                content: [" testblah1 abctest", "  testblah2 abctest", "testblah3 abctest"],
+                content: nvimAtLeast013
+                    ? [" testblah1 abc", "test  testblah2 abc", "testtestblah3 abctest"]
+                    : [" testblah1 abctest", "  testblah2 abctest", "testblah3 abctest"],
             },
             client,
         );

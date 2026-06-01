@@ -25,6 +25,11 @@ describe("Simulated insert keys", () => {
         await closeAllActiveEditors();
     });
 
+    afterEach(async () => {
+        await sendEscapeKey().catch(() => undefined);
+        await closeAllActiveEditors();
+    });
+
     it("Handles nvim cursor movement commands after sending ctrl+o key", async () => {
         await openTextDocument({ content: "test" });
         await setCursor(0, 2);
@@ -149,7 +154,7 @@ describe("Simulated insert keys", () => {
 
         await sendVSCodeKeys("wi");
         await sendVSCodeKeys("blah blah");
-        await sendVSCodeCommand("vscode-neovim.send", "<C-u>");
+        await sendVSCodeCommand("vscode-neovim.send", "<C-u>", 500);
 
         await sendEscapeKey();
         await assertContent(

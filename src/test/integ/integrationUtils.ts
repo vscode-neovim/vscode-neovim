@@ -40,6 +40,34 @@ export async function wait(timeout = 400): Promise<void> {
     await new Promise((res) => setTimeout(res, timeout));
 }
 
+export async function waitForCondition(
+    condition: () => boolean | Promise<boolean>,
+    options: { timeout?: number; interval?: number; message?: string } = {},
+): Promise<void> {
+    const { timeout = 2000, interval = 50, message = "Timed out waiting for condition" } = options;
+    const start = Date.now();
+    let lastError: unknown;
+
+    while (Date.now() - start <= timeout) {
+        try {
+            if (await condition()) {
+                return;
+            }
+            lastError = undefined;
+        } catch (error) {
+            lastError = error;
+        }
+        await wait(interval);
+    }
+
+    if (lastError instanceof Error) {
+        lastError.message = `${message}: ${lastError.message}`;
+        throw lastError;
+    }
+
+    throw new Error(message);
+}
+
 export async function attachTestNvimClient(): Promise<NeovimClient> {
     const NV_HOST = process.env.NEOVIM_DEBUG_HOST || "127.0.0.1";
     const NV_PORT = process.env.NEOVIM_DEBUG_PORT || 4000;
@@ -64,6 +92,24 @@ export async function closeNvimClient(client: NeovimClient): Promise<void> {
     await wait(500);
     // destroy the connection forcefully if it hasn't already been closed.
     conn.resetAndDestroy();
+}
+
+export interface NeovimVersion {
+    major: number;
+    minor: number;
+    patch: number;
+}
+
+export async function getNeovimVersion(client: NeovimClient): Promise<NeovimVersion> {
+    const [major, minor, patch] = (await client.lua(`
+        local version = vim.version()
+        return { version.major, version.minor, version.patch or 0 }
+    `)) as number[];
+    return { major, minor, patch };
+}
+
+export function isNeovimVersionAtLeast(version: NeovimVersion, major: number, minor: number): boolean {
+    return version.major > major || (version.major === major && version.minor >= minor);
 }
 
 export async function getCurrentBufferName(client: NeovimClient): Promise<string> {

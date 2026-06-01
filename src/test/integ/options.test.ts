@@ -14,6 +14,7 @@ import {
     sendVSCodeKeys,
     setCursor,
     wait,
+    waitForCondition,
 } from "./integrationUtils";
 
 describe("Synchronize editor options", () => {
@@ -23,8 +24,10 @@ describe("Synchronize editor options", () => {
         await client.command("setglobal modeline");
         await client.command("augroup TestOptions");
         // number
-        await client.command("autocmd InsertEnter * set nu nornu");
-        await client.command("autocmd InsertLeave * set nu rnu");
+        await client.command("autocmd InsertEnter * setlocal number");
+        await client.command("autocmd InsertEnter * setlocal norelativenumber");
+        await client.command("autocmd InsertLeave * setlocal number");
+        await client.command("autocmd InsertLeave * setlocal relativenumber");
         // tab
         await client.command("autocmd FileType * setlocal noexpandtab tabstop=100");
         await client.command("augroup END");
@@ -38,36 +41,73 @@ describe("Synchronize editor options", () => {
         await closeAllActiveEditors();
     });
 
+    afterEach(async () => {
+        await client.command("setlocal norelativenumber");
+        await client.command("setlocal nonumber");
+        await closeAllActiveEditors();
+    });
+
+    async function assertLineNumbers(
+        editor: vscode.TextEditor,
+        expected: vscode.TextEditorLineNumbersStyle,
+        label: string,
+    ): Promise<void> {
+        const expectedNvimStyle =
+            expected === vscode.TextEditorLineNumbersStyle.Off
+                ? "off"
+                : expected === vscode.TextEditorLineNumbersStyle.On
+                  ? "on"
+                  : "relative";
+        const getNvimStyle = async () =>
+            client.lua(`
+                return vim.wo.rnu and 'relative' or vim.wo.nu and 'on' or 'off'
+            `);
+
+        await waitForCondition(
+            async () => {
+                await client.command("doautocmd CursorMoved");
+                assert.equal(await getNvimStyle(), expectedNvimStyle, `${label} in nvim`);
+                assert.equal(editor.options.lineNumbers, expected, label);
+                await wait(100);
+                assert.equal(await getNvimStyle(), expectedNvimStyle, `${label} in nvim after editor option echo`);
+                assert.equal(editor.options.lineNumbers, expected, `${label} after editor option echo`);
+                return true;
+            },
+            {
+                timeout: 3000,
+                message: `Expected lineNumbers to be ${expected} after ${label}`,
+            },
+        );
+    }
+
     it("number & relativenumber", async () => {
         const editor = await openTextDocument({ content: "testing...\n".repeat(10) });
-        await wait(200);
+        await client.command("setlocal norelativenumber");
+        await client.command("setlocal nonumber");
+        await assertLineNumbers(editor, vscode.TextEditorLineNumbersStyle.Off, "reset");
 
         await setCursor(3, 0);
-        await wait(200);
 
-        await client.command("set nu");
-        await wait(400);
-        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.On);
+        await client.command("setlocal number");
+        await client.command("setlocal norelativenumber");
+        await assertLineNumbers(editor, vscode.TextEditorLineNumbersStyle.On, "set nu nornu");
 
-        await client.command("set rnu");
-        await wait(200);
-        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Relative);
+        await client.command("setlocal number");
+        await client.command("setlocal relativenumber");
+        await assertLineNumbers(editor, vscode.TextEditorLineNumbersStyle.Relative, "set nu rnu");
 
-        await client.command("set nornu");
-        await wait(200);
-        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.On);
+        await client.command("setlocal norelativenumber");
+        await assertLineNumbers(editor, vscode.TextEditorLineNumbersStyle.On, "set nornu");
 
-        await client.command("set nonu");
-        await wait(200);
-        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Off);
+        await client.command("setlocal norelativenumber");
+        await client.command("setlocal nonumber");
+        await assertLineNumbers(editor, vscode.TextEditorLineNumbersStyle.Off, "set nonu nornu");
 
         await sendVSCodeKeys("i");
-        await wait(200);
-        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.On);
+        await assertLineNumbers(editor, vscode.TextEditorLineNumbersStyle.On, "InsertEnter");
 
         await sendEscapeKey();
-        await wait(200);
-        assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Relative);
+        await assertLineNumbers(editor, vscode.TextEditorLineNumbersStyle.Relative, "InsertLeave");
     });
 
     async function checkTab(editor: vscode.TextEditor): Promise<void> {

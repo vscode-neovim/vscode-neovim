@@ -21,12 +21,34 @@ import {
     sendInsertKey,
     sendVSCodeCommand,
     sendNeovimKeys,
+    getNeovimVersion,
+    isNeovimVersionAtLeast,
+    waitForCondition,
 } from "./integrationUtils";
+
+type AssertContentOptions = Parameters<typeof assertContent>[0];
+
+async function waitForEditorState(
+    options: AssertContentOptions,
+    client: NeovimClient,
+    message = "Expected editor state to sync",
+): Promise<void> {
+    await waitForCondition(
+        async () => {
+            await assertContent(options, client);
+            return true;
+        },
+        { timeout: 5000, message },
+    );
+}
 
 describe("VSCode integration specific stuff", () => {
     let client: NeovimClient;
+    let nvimAtLeast013 = false;
+
     before(async () => {
         client = await attachTestNvimClient();
+        nvimAtLeast013 = isNeovimVersionAtLeast(await getNeovimVersion(client), 0, 13);
     });
     after(async () => {
         await closeNvimClient(client);
@@ -186,6 +208,7 @@ describe("VSCode integration specific stuff", () => {
         await client.command("au BufEnter * stopinsert");
         await wait(500);
         await sendVSCodeCommand("workbench.action.focusSecondEditorGroup", "", 1000);
+        await waitForEditorState({ content: ["blah2"], mode: "n" }, client, "Expected second editor group to sync");
         await sendInsertKey("I");
         await assertContent(
             {
@@ -198,13 +221,14 @@ describe("VSCode integration specific stuff", () => {
         // make sure the changes will be synced with neovim
         await sendVSCodeKeys("test", 1000);
         await sendVSCodeCommand("workbench.action.focusFirstEditorGroup", "", 2000);
-        await assertContent(
+        await waitForEditorState(
             {
                 content: ["blah1"],
                 cursorStyle: "block",
                 mode: "n",
             },
             client,
+            "Expected first editor group to sync",
         );
 
         await sendVSCodeKeys("V");
@@ -217,12 +241,13 @@ describe("VSCode integration specific stuff", () => {
         );
 
         await sendVSCodeCommand("workbench.action.focusSecondEditorGroup", "", 2000);
-        await assertContent(
+        await waitForEditorState(
             {
                 content: ["testblah2"],
                 mode: "n",
             },
             client,
+            "Expected second editor group to resync",
         );
     });
 
@@ -325,21 +350,25 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeKeys("gg0100j", 1000);
 
         await sendVSCodeCommand("workbench.action.focusFirstEditorGroup", "", 2000);
+        await waitForEditorState({ cursor: [50, 0] }, client, "Expected first editor cursor to sync");
         await sendVSCodeKeys("l");
-        await assertContent(
+        await waitForEditorState(
             {
                 cursor: [50, 1],
             },
             client,
+            "Expected first editor cursor movement",
         );
 
         await sendVSCodeCommand("workbench.action.focusSecondEditorGroup", "", 1000);
+        await waitForEditorState({ cursor: [100, 0] }, client, "Expected second editor cursor to sync");
         await sendVSCodeKeys("l");
-        await assertContent(
+        await waitForEditorState(
             {
                 cursor: [100, 1],
             },
             client,
+            "Expected second editor cursor movement",
         );
     });
 
@@ -367,7 +396,9 @@ describe("VSCode integration specific stuff", () => {
         await sendVSCodeCommand("workbench.action.quickOpen");
         await assertContent(
             {
-                vsCodeSelections: [new vscode.Selection(0, 0, 1, 2)],
+                vsCodeSelections: [
+                    nvimAtLeast013 ? new vscode.Selection(0, 0, 2, 0) : new vscode.Selection(0, 0, 1, 2),
+                ],
             },
             client,
         );
