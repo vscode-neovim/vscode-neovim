@@ -164,7 +164,7 @@ export class BufferManager implements Disposable {
         doc: TextDocument,
         initDocText: string,
         initDocVersion: number,
-    ) => void | Promise<void>;
+    ) => Promise<void>;
 
     private get client() {
         return this.main.client;
