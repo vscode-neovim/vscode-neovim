@@ -186,7 +186,8 @@ function M.get_selections(win)
   -- normal
 
   if not is_visual then
-    local pos = vim.lsp.util.make_position_params(win, "utf-16").position
+    local cursor = api.nvim_win_get_cursor(win)
+    local pos = util.lsp_position(buf, cursor[1], cursor[2])
     return { { start = pos, ["end"] = pos } }
   end
 
@@ -210,7 +211,7 @@ function M.get_selections(win)
       end_pos = { end_pos[1], #(fn.getbufline(buf, end_pos[1])[1] or "") }
     end
 
-    local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, buf, "utf-16").range
+    local range = util.lsp_range(buf, start_pos[1], start_pos[2], end_pos[1], end_pos[2])
     if not start_from_left then
       range = { start = range["end"], ["end"] = range.start }
     end
@@ -248,7 +249,7 @@ function M.get_selections(win)
     end)
     if start_vcol > line_diswidth then
       if line_1 == curr_line_1 then
-        local pos = { line = line_0, character = ({ vim.str_utfindex(line_text) })[2] }
+        local pos = { line = line_0, character = util.utf16_col(line_text, #line_text) }
         table.insert(ranges, { start = pos, ["end"] = pos })
       else
         -- ignore
@@ -258,12 +259,13 @@ function M.get_selections(win)
       local end_col = util.virtcol2col(win, line_1, end_vcol)
       local start_col_offset = fn.strlen(util.get_char_at(line_1, start_col, buf) or "")
       local end_col_offset = fn.strlen(util.get_char_at(line_1, end_col, buf) or "")
-      local range = vim.lsp.util.make_given_range_params(
-        { line_1, math.max(0, start_col - start_col_offset) },
-        { line_1, math.max(0, end_col - end_col_offset) },
+      local range = util.lsp_range(
         buf,
-        "utf-16"
-      ).range
+        line_1,
+        math.max(0, start_col - start_col_offset),
+        line_1,
+        math.max(0, end_col - end_col_offset)
+      )
       if not start_from_left then
         range = { start = range["end"], ["end"] = range.start }
       end
@@ -273,7 +275,8 @@ function M.get_selections(win)
 
   if #ranges == 0 then
     -- impossible
-    local pos = vim.lsp.util.make_position_params(win, "utf-16").position
+    local cursor = api.nvim_win_get_cursor(win)
+    local pos = util.lsp_position(buf, cursor[1], cursor[2])
     return { { start = pos, ["end"] = pos } }
   end
 
