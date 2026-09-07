@@ -4,22 +4,30 @@ import path from "path";
 import { NeovimClient } from "neovim";
 import vscode, { Uri, ViewColumn, commands, window, workspace } from "vscode";
 
-import { attachTestNvimClient, closeAllActiveEditors, closeNvimClient, wait } from "./integrationUtils";
+import {
+    attachTestNvimClient,
+    closeAllActiveEditors,
+    closeNvimClient,
+    hideOutputPanel,
+    wait,
+    waitForCondition,
+} from "./integrationUtils";
 
 describe("handle window changed event", () => {
     let client: NeovimClient;
 
-    const winIdTextMap = new Map<number, string>();
-
-    const findWinId = (text: string) => {
-        for (const [winId, winText] of winIdTextMap.entries()) {
-            if (winText.includes(text)) return winId;
+    // Windows are looked up per switch: an editor that stops being visible loses its Nvim
+    // window, and gets a new one when it is shown again.
+    const findWinId = async (text: string) => {
+        for (const win of await client.getWindows()) {
+            const lines = await win.buffer.lines;
+            if (lines.join("\n").includes(text)) return win.id;
         }
-        return 0; // should not happen
+        throw new Error(`no Nvim window showing ${JSON.stringify(text)}`);
     };
 
-    async function setWin(winId: number) {
-        await client.request("nvim_set_current_win", [winId]);
+    async function setWin(text: string) {
+        await client.request("nvim_set_current_win", [await findWinId(text)]);
     }
 
     let textEditor1: vscode.TextEditor;
@@ -55,11 +63,7 @@ describe("handle window changed event", () => {
         await commands.executeCommand("workbench.panel.output.focus");
         await wait(400); // don't change
 
-        const wins = await client.getWindows();
-        for (const win of wins) {
-            const lines = await win.buffer.lines;
-            winIdTextMap.set(win.id, lines.join("\n"));
-        }
+        await hideOutputPanel();
     });
     after(async () => {
         await closeNvimClient(client);
@@ -68,38 +72,41 @@ describe("handle window changed event", () => {
     });
 
     it("text editor", async () => {
-        setWin(findWinId("text 1"));
-        await wait(800);
-        assert.equal(window.activeTextEditor, textEditor1);
+        await setWin("text 1");
+        await waitForCondition(() => assert.equal(window.activeTextEditor, textEditor1), 8000);
 
-        setWin(findWinId("text 2"));
-        await wait(400);
-        assert.equal(window.activeTextEditor, textEditor2);
+        await setWin("text 2");
+        await waitForCondition(() => assert.equal(window.activeTextEditor, textEditor2), 8000);
     });
 
     it("notebook", async () => {
-        setWin(findWinId("cell 1"));
-        await wait(1000);
-        assert.equal(window.activeNotebookEditor, notebookEditor);
-        assert.equal(window.activeTextEditor!.document.getText(), "cell 1");
+        await setWin("cell 1");
+        await waitForCondition(() => {
+            assert.equal(window.activeNotebookEditor, notebookEditor);
+            assert.equal(window.activeTextEditor?.document.getText(), "cell 1");
+        }, 8000);
 
-        setWin(findWinId("cell 2"));
-        await wait(1000);
-        assert.equal(window.activeNotebookEditor, notebookEditor);
-        assert.equal(window.activeTextEditor!.document.getText(), "cell 2");
+        await setWin("cell 2");
+        await waitForCondition(() => {
+            assert.equal(window.activeNotebookEditor, notebookEditor);
+            assert.equal(window.activeTextEditor?.document.getText(), "cell 2");
+        }, 8000);
     });
 
     it("output", async () => {
-        setWin(findWinId("output"));
+        // Give the channel a window again: the setup closed the panel.
+        outputChannel.show(true);
         await wait(400);
-        assert.notEqual(window.activeTextEditor, undefined);
-        assert.equal(window.activeTextEditor!.document.getText(), "output");
+
+        await setWin("output");
+        await waitForCondition(() => assert.equal(window.activeTextEditor?.document.getText(), "output"), 8000);
     });
 
     it("should ignore window change event when it isn't from neovim", async () => {
         await commands.executeCommand("workbench.action.openGlobalKeybindings");
-        await wait(400);
-        assert.equal(window.activeTextEditor, undefined);
-        assert.equal(window.activeNotebookEditor, undefined);
+        await waitForCondition(() => {
+            assert.equal(window.activeTextEditor, undefined);
+            assert.equal(window.activeNotebookEditor, undefined);
+        }, 8000);
     });
 });

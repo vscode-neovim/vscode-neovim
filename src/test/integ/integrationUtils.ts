@@ -162,6 +162,17 @@ export async function sendVSCodeCommand(command: string, args: unknown = "", wai
     await wait(waitTimeout);
 }
 
+/** Closes the panel, waiting until no output editor is left visible. */
+export async function hideOutputPanel(): Promise<void> {
+    await commands.executeCommand("workbench.action.closePanel");
+    await waitForCondition(() =>
+        assert.ok(
+            !window.visibleTextEditors.some((e) => e.document.uri.scheme === "output"),
+            "output panel should be hidden",
+        ),
+    );
+}
+
 export async function sendVSCodeKeysAtomic(keys: string, waitTimeout = 250): Promise<void> {
     await sendVSCodeCommand("type", { text: keys }, waitTimeout);
 }

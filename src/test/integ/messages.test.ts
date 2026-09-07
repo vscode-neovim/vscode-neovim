@@ -7,6 +7,7 @@ import { EXT_ID } from "../../constants";
 
 import {
     attachTestNvimClient,
+    hideOutputPanel,
     closeAllActiveEditors,
     closeNvimClient,
     openTextDocument,
@@ -39,11 +40,6 @@ async function sendCommandLine(command: string) {
     await sendVSCodeKeys(":");
     await sendVSCodeCommand("vscode-neovim.test-cmdline", command);
     await sendVSCodeCommand("vscode-neovim.commit-cmdline");
-}
-
-async function hideOutputPanel() {
-    await sendVSCodeCommand("workbench.action.closePanel");
-    await wait();
 }
 
 describe("Message output", () => {
