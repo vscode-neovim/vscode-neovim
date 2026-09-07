@@ -21,6 +21,7 @@ import {
     sendInsertKey,
     sendVSCodeCommand,
     sendNeovimKeys,
+    itSkipMacos,
 } from "./integrationUtils";
 
 describe("VSCode integration specific stuff", () => {
@@ -172,7 +173,7 @@ describe("VSCode integration specific stuff", () => {
         );
     });
 
-    it("Current mode is canceled when switching between editor panes", async () => {
+    itSkipMacos("Current mode is canceled when switching between editor panes", async () => {
         await openTextDocument({
             content: "blah1",
         });
@@ -314,7 +315,7 @@ describe("VSCode integration specific stuff", () => {
     });
 
     // !Passes only when the runner is in foreground
-    it("Cursor is preserved if same doc is opened in two editor columns", async () => {
+    itSkipMacos("Cursor is preserved if same doc is opened in two editor columns", async () => {
         const doc = (
             await openTextDocument(path.join(__dirname, "../../../test_fixtures/cursor-preserved-between-columns.txt"))
         ).document;

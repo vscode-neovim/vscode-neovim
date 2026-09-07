@@ -6,6 +6,7 @@ import vscode, { Uri, ViewColumn, commands, window, workspace } from "vscode";
 
 import {
     attachTestNvimClient,
+    describeSkipMacos,
     closeAllActiveEditors,
     closeNvimClient,
     hideOutputPanel,
@@ -13,7 +14,7 @@ import {
     waitForCondition,
 } from "./integrationUtils";
 
-describe("handle window changed event", () => {
+describeSkipMacos("handle window changed event", () => {
     let client: NeovimClient;
 
     // Windows are looked up per switch: an editor that stops being visible loses its Nvim

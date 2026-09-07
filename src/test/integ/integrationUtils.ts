@@ -63,6 +63,14 @@ export async function waitForCondition(
     }
 }
 
+/**
+ * Mocha's `describe`/`it` for tests that need the VSCode window to hold focus. It does not on
+ * macOS: neither `workbench.action.focus*EditorGroup` nor `window.showTextDocument()` moves
+ * `activeTextEditor` there.
+ */
+export const describeSkipMacos = process.platform === "darwin" ? describe.skip : describe;
+export const itSkipMacos = process.platform === "darwin" ? it.skip : it;
+
 export async function attachTestNvimClient(): Promise<NeovimClient> {
     const NV_HOST = process.env.NEOVIM_DEBUG_HOST || "127.0.0.1";
     const NV_PORT = process.env.NEOVIM_DEBUG_PORT || 4000;
