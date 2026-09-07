@@ -10,6 +10,7 @@ import {
     closeAllActiveEditors,
     closeNvimClient,
     sendEscapeKey,
+    sendNeovimKeys,
     sendVSCodeKeys,
     wait,
 } from "./integrationUtils";
@@ -120,7 +121,10 @@ describe("BufWriteCmd integration", () => {
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
 
-        await client.command(`silent w !${command}`);
+        // `:w !cmd` triggers the hit-enter prompt, send <CR> to continue.
+        const write = client.command(`silent w !${command}`);
+        await sendNeovimKeys(client, "<CR>");
+        await write;
         await wait(200);
         await commands.executeCommand("workbench.action.closePanel");
         assert.equal(doc.isDirty, true);

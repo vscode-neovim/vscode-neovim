@@ -40,6 +40,29 @@ export async function wait(timeout = 400): Promise<void> {
     await new Promise((res) => setTimeout(res, timeout));
 }
 
+/**
+ * Waits for an expected state, until `assertion` does not throw an error.
+ * Rethrows the last failure on `timeout`.
+ */
+export async function waitForCondition(
+    assertion: () => void | Promise<void>,
+    timeout = 3000,
+    interval = 50,
+): Promise<void> {
+    const deadline = Date.now() + timeout;
+    for (;;) {
+        try {
+            await assertion();
+            return;
+        } catch (e) {
+            if (Date.now() >= deadline) {
+                throw e;
+            }
+        }
+        await wait(interval);
+    }
+}
+
 export async function attachTestNvimClient(): Promise<NeovimClient> {
     const NV_HOST = process.env.NEOVIM_DEBUG_HOST || "127.0.0.1";
     const NV_PORT = process.env.NEOVIM_DEBUG_PORT || 4000;
@@ -167,17 +190,13 @@ export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTim
 
 export async function sendEscapeKey(timeout = 250): Promise<void> {
     await commands.executeCommand("vscode-neovim.escape");
-    while (!hasVSCodeCursorStyle("block")) {
-        await wait(50);
-    }
+    await waitForCondition(() => assert.ok(hasVSCodeCursorStyle("block"), "escape should give a block cursor"), 10000);
     await wait(timeout);
 }
 
 export async function sendInsertKey(key = "i", timeout = 250): Promise<void> {
     await sendVSCodeKeys(key, 0);
-    while (!hasVSCodeCursorStyle("line")) {
-        await wait(50);
-    }
+    await waitForCondition(() => assert.ok(hasVSCodeCursorStyle("line"), `"${key}" should give a line cursor`), 10000);
     await wait(timeout);
 }
 
