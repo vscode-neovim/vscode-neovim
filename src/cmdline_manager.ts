@@ -103,7 +103,7 @@ export class CommandLineManager implements Disposable {
             case "cmdline_show": {
                 const [content, _pos, firstc, prompt, _indent, level] = args[0];
                 const allContent = content.map(([, str]) => str).join("");
-                logger.debug(`cmdline_show: "${content}"`);
+                logger.debug(`cmdline_show: "${allContent}"`);
                 this.cmdlineShow(allContent, firstc, prompt, level);
                 break;
             }

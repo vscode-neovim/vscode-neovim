@@ -139,7 +139,9 @@ export class GridLineHandler {
                     add(cell, cell.text);
                     for (let i = 0; i < calcTabCells(currCharCol) - 1; i++) {
                         cell = cellIter.takeNext();
-                        cell && add(cell, cell.text);
+                        if (cell) {
+                            add(cell, cell.text);
+                        }
                     }
 
                     break;
@@ -155,8 +157,12 @@ export class GridLineHandler {
                     add(cell, cell.text);
                     if (!isDouble(cell.text)) {
                         const nextCell = cellIter.takeNext();
-                        nextCell && add(nextCell, nextCell.text);
-                        extraCols && add(nextCell ?? cell, " ".repeat(extraCols));
+                        if (nextCell) {
+                            add(nextCell, nextCell.text);
+                        }
+                        if (extraCols) {
+                            add(nextCell ?? cell, " ".repeat(extraCols));
+                        }
                     }
 
                     break;

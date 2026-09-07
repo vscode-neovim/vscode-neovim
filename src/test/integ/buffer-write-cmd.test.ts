@@ -72,7 +72,7 @@ describe("BufWriteCmd integration", () => {
         await workspace.fs.createDirectory(Uri.file(folderCPath));
         try {
             await symlink(folderCPath, folderBPath, "dir");
-        } catch (_) {
+        } catch {
             // ignore, test is called multiple times at once
         }
         cleanupCallbacks.push(() => cleanupFolder(Uri.file(folderCPath)));

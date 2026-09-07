@@ -957,7 +957,7 @@ export class BufferManager implements Disposable {
                     try {
                         finalCol = convertByteNumToCharNum(doc.lineAt(finalLine).text, neovimCursor[1]);
                         logger.debug(`Adjusted cursor: [${finalLine}, ${finalCol}]`);
-                    } catch (e) {
+                    } catch {
                         logger.warn(`Unable to get cursor pos for external buffer: ${id}`);
                     }
 

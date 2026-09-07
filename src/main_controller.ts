@@ -75,8 +75,8 @@ export class MainController implements vscode.Disposable {
         );
         const spawnPromise = new Promise<void>((resolve, reject) => {
             this.nvimProc.once("spawn", () => resolve());
-            this.nvimProc.once("close", (code, signal) => reject(`Neovim exited: ${code} ${signal}`));
-            this.nvimProc.once("error", (err) => reject(`Neovim spawn error: ${err.message}`));
+            this.nvimProc.once("close", (code, signal) => reject(new Error(`Neovim exited: ${code} ${signal}`)));
+            this.nvimProc.once("error", (err) => reject(new Error(`Neovim spawn error: ${err.message}`)));
         });
         await spawnPromise;
         this.nvimProc.removeAllListeners();

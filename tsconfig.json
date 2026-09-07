@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "module": "commonjs",
+        "moduleResolution": "bundler",
         "target": "ES2015",
         "outDir": "out",
         "lib": ["ES2023"],
@@ -9,7 +10,6 @@
         "types": ["node", "mocha"],
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "moduleResolution": "node",
         "noUnusedLocals": true,
         "noImplicitOverride": true,
         "forceConsistentCasingInFileNames": true,

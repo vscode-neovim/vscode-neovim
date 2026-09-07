@@ -4,6 +4,8 @@ import * as vscode from "vscode";
 import Mocha from "mocha";
 import "source-map-support/register";
 
+const asError = (err: unknown): Error => (err instanceof Error ? err : new Error(String(err)));
+
 export async function run(): Promise<void> {
     let test_regex = process.env.NEOVIM_TEST_REGEX;
     if (test_regex === undefined) {
@@ -42,11 +44,11 @@ export async function run(): Promise<void> {
                         }
                     });
                 } catch (err) {
-                    e(err);
+                    e(asError(err));
                 }
             },
             (err) => {
-                e(err);
+                e(asError(err));
             },
         );
     });
