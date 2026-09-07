@@ -73,20 +73,10 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: google-github-actions/release-please-action@v3
+            # Configured by release-please-config.json: setting `release-type` here would
+            # switch the action to its no-config mode and ignore that file.
+            - uses: googleapis/release-please-action@v5
               id: release
-              with:
-                  release-type: node
-                  package-name: vscode-neovim
-                  bump-minor-pre-major: true
-                  changelog-types: >
-                      [
-                        { "type": "feat", "section": "Features", "hidden": false },
-                        { "type": "fix", "section": "Bug Fixes", "hidden": false },
-                        { "type": "docs", "section": "Documentation", "hidden": false },
-                        { "type": "refactor", "section": "Refactor", "hidden": false },
-                        { "type": "perf", "section": "Performance Improvements", "hidden": false }
-                      ]
             - uses: actions/checkout@v7
               if: ${{ steps.release.outputs.release_created }}
             - uses: actions/setup-node@v7

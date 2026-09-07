@@ -1,0 +1,16 @@
+{
+    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+    "packages": {
+        ".": {
+            "release-type": "node",
+            "package-name": "vscode-neovim",
+            "changelog-sections": [
+                { "type": "feat", "section": "Features", "hidden": false },
+                { "type": "fix", "section": "Bug Fixes", "hidden": false },
+                { "type": "docs", "section": "Documentation", "hidden": true },
+                { "type": "refactor", "section": "Refactor", "hidden": false },
+                { "type": "perf", "section": "Performance Improvements", "hidden": false }
+            ]
+        }
+    }
+}
