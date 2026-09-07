@@ -5,7 +5,7 @@ import * as sinon from "@sinonjs/fake-timers";
 import { StatusLineMessageTimer } from "../../../status_line/status_line_message_timer";
 
 describe("StatusLineMessageTimer", () => {
-    let clock: sinon.InstalledClock;
+    let clock: ReturnType<typeof sinon.install>;
     beforeEach(() => {
         clock = sinon.install();
     });
