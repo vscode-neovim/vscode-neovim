@@ -2192,7 +2192,7 @@
     "devDependencies": {
         "@johnnymorganz/stylua-bin": "^2.0.2",
         "@sinonjs/fake-timers": "^14.0.0",
-        "@types/lodash": "^4.17.16",
+        "@types/lodash": "^4.17.25",
         "@types/mocha": "^10.0.7",
         "@types/node": "^22.13.13",
         "@types/sinonjs__fake-timers": "^8.1.5",
@@ -2219,7 +2219,7 @@
         "async-mutex": "^0.5.0",
         "fast-myers-diff": "^3.2.0",
         "grapheme-splitter": "^1.0.4",
-        "lodash": "^4.17.21",
+        "lodash": "^4.18.1",
         "neovim": "^5.4.0",
         "ts-wcwidth": "^2.0.3"
     }
