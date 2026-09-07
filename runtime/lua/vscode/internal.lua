@@ -135,11 +135,33 @@ end
 do
   --- Replay changes for dotrepeat ---
 
-  local _curr_win, _temp_buf, _temp_win
+  local _curr_win, _temp_buf, _temp_win, _replaying
+
+  -- Insert entered from blockwise visual: Nvim replicates the insert across the selection
+  -- on <Esc>, and the replay's window switch loses that pending state.
+  local _block_insert = false
+  local group = api.nvim_create_augroup("vscode.dotrepeat", { clear = true })
+  api.nvim_create_autocmd("ModeChanged", {
+    group = group,
+    pattern = "*:i*",
+    callback = function()
+      _block_insert = vim.v.event.old_mode == "\22"
+    end,
+  })
+  api.nvim_create_autocmd("InsertLeave", {
+    group = group,
+    callback = function()
+      _block_insert = false
+    end,
+  })
 
   ---@param edits string
   ---@param deletes number
   function M.dotrepeat_sync(edits, deletes)
+    if _block_insert then
+      return
+    end
+    _replaying = true
     local ei = vim.opt.ei:get()
     vim.opt.ei = "all"
 
@@ -160,6 +182,10 @@ do
   end
 
   function M.dotrepeat_restore()
+    if not _replaying then
+      return
+    end
+    _replaying = false
     local ei = vim.opt.ei:get()
     vim.opt.ei = "all"
 
