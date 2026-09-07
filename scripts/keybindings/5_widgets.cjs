@@ -107,42 +107,42 @@ const keybinds = [
     {
         key: "z o",
         command: "list.expand",
-        when: "!editorTextFocus && !inputFocus",
+        when: "!editorTextFocus && !inputFocus && listFocus",
     },
     {
         key: "z shift+o",
         command: "list.expand",
-        when: "!editorTextFocus && !inputFocus",
+        when: "!editorTextFocus && !inputFocus && listFocus",
     },
     {
         key: "z c",
         command: "list.collapse",
-        when: "!editorTextFocus && !inputFocus",
+        when: "!editorTextFocus && !inputFocus && listFocus",
     },
     {
         key: "z shift+c",
         command: "list.collapseAllToFocus",
-        when: "!editorTextFocus && !inputFocus",
+        when: "!editorTextFocus && !inputFocus && listFocus",
     },
     {
         key: "z a",
         command: "list.toggleExpand",
-        when: "!editorTextFocus && !inputFocus",
+        when: "!editorTextFocus && !inputFocus && listFocus",
     },
     {
         key: "z shift+a",
         command: "list.toggleExpand",
-        when: "!editorTextFocus && !inputFocus",
+        when: "!editorTextFocus && !inputFocus && listFocus",
     },
     {
         key: "z m",
         command: "list.collapseAll",
-        when: "!editorTextFocus && !inputFocus",
+        when: "!editorTextFocus && !inputFocus && listFocus",
     },
     {
         key: "z shift+m",
         command: "list.collapseAll",
-        when: "!editorTextFocus && !inputFocus",
+        when: "!editorTextFocus && !inputFocus && listFocus",
     },
     {
         key: "tab",

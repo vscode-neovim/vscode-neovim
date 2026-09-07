@@ -6,3 +6,4 @@ node_modules
 Session.vim
 *.vsix
 *.zip
+.claude/

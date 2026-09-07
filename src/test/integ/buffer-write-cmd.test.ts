@@ -3,13 +3,15 @@ import path from "path";
 import { symlink } from "fs/promises";
 
 import { NeovimClient } from "neovim";
-import { TextDocument, Uri, commands, window, workspace } from "vscode";
+import { TextDocument, Uri, window, workspace } from "vscode";
 
 import {
     attachTestNvimClient,
     closeAllActiveEditors,
     closeNvimClient,
+    hideOutputPanel,
     sendEscapeKey,
+    sendNeovimKeys,
     sendVSCodeKeys,
     wait,
 } from "./integrationUtils";
@@ -120,9 +122,12 @@ describe("BufWriteCmd integration", () => {
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
 
-        await client.command(`silent w !${command}`);
+        // `:w !cmd` triggers the hit-enter prompt, send <CR> to continue.
+        const write = client.command(`silent w !${command}`);
+        await sendNeovimKeys(client, "<CR>");
+        await write;
         await wait(200);
-        await commands.executeCommand("workbench.action.closePanel");
+        await hideOutputPanel();
         assert.equal(doc.isDirty, true);
         assert.equal(doc.getText(), "aaa");
         assert.equal(await readFile(doc.uri), "hello world");

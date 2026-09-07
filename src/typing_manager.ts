@@ -301,7 +301,9 @@ export class TypingManager implements Disposable {
                     window.activeTextEditor.selection.active,
                     false,
                 );
-            await this.main.changeManager.syncDotRepeatWithNeovim();
+            if (this.isExitingInsertMode) {
+                await this.main.changeManager.syncDotRepeatWithNeovim();
+            }
             const keys = normalizeInputString(this.pendingKeysAfterExit);
             logger.debug(`Pending keys sent with ${key}: ${keys}`);
             this.pendingKeysAfterExit = "";

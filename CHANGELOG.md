@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.19.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.19.0...v1.19.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* **keymap:** scope list fold keybindings to listFocus [#2626](https://github.com/vscode-neovim/vscode-neovim/issues/2626) ([f8141d0](https://github.com/vscode-neovim/vscode-neovim/commit/f8141d02a76a6073d703e55dfea4aa8c59cd42a3))
+
 ## [1.19.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.18.24...v1.19.0) (2026-05-12)
 
 

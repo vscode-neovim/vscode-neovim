@@ -16,12 +16,12 @@ jobs:
                 neovim-version: [stable, nightly]
         runs-on: ${{ matrix.os }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
 
             - name: Setup Node
               uses: actions/setup-node@v6
               with:
-                  node-version: "18"
+                  node-version-file: package.json
                   cache: "npm"
 
             - name: Install Neovim
@@ -53,10 +53,10 @@ jobs:
         name: Create extension
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
             - uses: actions/setup-node@v6
               with:
-                  node-version: "18"
+                  node-version-file: package.json
                   cache: "npm"
             - name: npm install
               run: npm ci --silent
@@ -64,7 +64,7 @@ jobs:
               run: npx vsce package -o vscode-neovim-${{github.sha}}.vsix
             - name: Upload extension
               if: runner.os == 'Linux'
-              uses: actions/upload-artifact@v5
+              uses: actions/upload-artifact@v7
               with:
                   name: vscode-neovim
                   path: vscode-neovim-${{github.sha}}.vsix
@@ -87,12 +87,12 @@ jobs:
                         { "type": "refactor", "section": "Refactor", "hidden": false },
                         { "type": "perf", "section": "Performance Improvements", "hidden": false }
                       ]
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
               if: ${{ steps.release.outputs.release_created }}
             - uses: actions/setup-node@v6
               if: ${{ steps.release.outputs.release_created }}
               with:
-                  node-version: "18"
+                  node-version-file: package.json
                   cache: "npm"
             - name: npm install
               if: ${{ steps.release.outputs.release_created }}

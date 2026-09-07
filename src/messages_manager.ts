@@ -52,6 +52,10 @@ export class MessagesManager implements Disposable {
                     // See: https://github.com/vscode-neovim/vscode-neovim/issues/2046#issuecomment-2144175058
                     if (kind === "return_prompt") continue;
 
+                    // An `empty` message (`:echo ""`) has no content. Skipping it clears the output when it is the only
+                    // message of the batch, and otherwise leaves the other messages alone.
+                    if (kind === "empty") continue;
+
                     // NOTE: we could also potentially handle e.g. `echoerr` differently here,
                     // like logging at error level or displaying a toast etc.
 
@@ -65,6 +69,7 @@ export class MessagesManager implements Disposable {
             }
 
             case "msg_clear": {
+                // Nvim cleared the screen (`CTRL-L`, `:mode`).
                 this.messageBuffer = [];
                 break;
             }
@@ -88,9 +93,15 @@ export class MessagesManager implements Disposable {
             }
 
             case "msg_history_clear":
-                // NOTE: this does not actually correspond to the `:messages clear`
+                // Nvim 0.11 and older: this does not actually correspond to the `:messages clear`
                 // command, but to when neovim wants us to clear our history buffer.
                 this.historyBuffer = [];
+                break;
+
+            case "cmdline_hide":
+                // Leaving the cmdline resets Nvim's message area, so the output must be
+                // rewritten even for a command that emits nothing, e.g. `:messages` with
+                // an empty history.
                 break;
 
             default:
@@ -100,11 +111,9 @@ export class MessagesManager implements Disposable {
         switch (name) {
             case "msg_clear":
             case "msg_history_clear":
-                // These clear messages are often followed by a flush whenever neovim
-                // thinks it's "done" showing those messages, resulting in an empty output
-                // panel instead of the desired display. To avoid flushing the now-empty
-                // buffer, we skip setting didChange so the flush becomes a no-op.
-                // Seems likely caused by/related to https://github.com/neovim/neovim/issues/20416
+                // Dropping staged text is not a change to write. Nvim 0.11 and older emit
+                // these after a message batch as well, where a rewrite would blank the panel
+                // instead of showing the messages.
                 break;
 
             default:
@@ -115,7 +124,13 @@ export class MessagesManager implements Disposable {
     }
 
     private async handleFlush(): Promise<void> {
-        if (!this.didChange) return;
+        if (!this.didChange) {
+            // A redraw without a message means Nvim's message area is idle, so the next msg_show belongs to a new
+            // batch. Nvim does not announce this with msg_clear. The channel still keeps its text.
+            this.messageBuffer = [];
+            this.historyBuffer = [];
+            return;
+        }
 
         const messages = this.displayHistory ? this.historyBuffer : this.messageBuffer;
         logger.trace(`Flushing ${this.displayHistory ? "history" : "message"} buffer: ${inspect(messages)}`);
@@ -134,13 +149,11 @@ export class MessagesManager implements Disposable {
             this.channel.show(true);
         }
 
-        // Reset all the state for the next batch of redraw messages
+        // Reset all the state for the next batch of redraw messages. The staging buffers
+        // are kept, bc a single batch can span several flushes: `:echom 1 | sleep 1 | echom 2`.
         this.didChange = false;
         this.displayHistory = false;
         this.revealOutput = false;
-        // Staging buffers must not persist across flushes or later msg_show events accumulate duplicates.
-        this.messageBuffer = [];
-        this.historyBuffer = [];
     }
 
     private writeMessage(msg: string): void {

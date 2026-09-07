@@ -15,7 +15,16 @@ import {
     openTextDocument,
     sendVSCodeKeysAtomic,
     wait,
+    waitForCondition,
 } from "./integrationUtils";
+
+// The help buffer reaches VSCode a moment after the Ex command returns.
+async function assertActiveEditorMatches(banner: RegExp, what: string): Promise<void> {
+    await waitForCondition(() => {
+        const text = vscode.window.activeTextEditor?.document.getText() ?? "";
+        assert.ok(banner.test(text), `${what} missing expected banner, got: ${text.slice(0, 200)}`);
+    });
+}
 
 describe("Neovim external buffers", () => {
     let client: NeovimClient;
@@ -38,21 +47,13 @@ describe("Neovim external buffers", () => {
         await sendVSCodeCommand("vscode-neovim.test-cmdline", "help");
         await sendVSCodeCommand("vscode-neovim.commit-cmdline", "", 1000);
 
-        const text = vscode.window.activeTextEditor!.document.getText();
-        assert.ok(
-            /NVIM DOCUMENTATION|Nvim documentation|MAIN HELP FILE/i.test(text),
-            `help index missing expected banner, got: ${text.slice(0, 200)}`,
-        );
+        await assertActiveEditorMatches(/NVIM DOCUMENTATION|Nvim documentation|MAIN HELP FILE/i, "help index");
 
         await sendVSCodeKeys(":");
         await sendVSCodeCommand("vscode-neovim.test-cmdline", "help options");
         await sendVSCodeCommand("vscode-neovim.commit-cmdline", "", 1000);
 
-        const text2 = vscode.window.activeTextEditor!.document.getText();
-        assert.ok(
-            /VIM REFERENCE MANUAL|REFERENCE MANUAL|options\.txt/i.test(text2),
-            `help options missing expected banner, got: ${text2.slice(0, 200)}`,
-        );
+        await assertActiveEditorMatches(/VIM REFERENCE MANUAL|REFERENCE MANUAL|options\.txt/i, "help options");
 
         await closeActiveEditor();
     });

@@ -1,6 +1,8 @@
 local api = vim.api
 local fn = vim.fn
 
+local util = require("vscode.util")
+
 local M = {}
 
 ------------------------
@@ -399,7 +401,7 @@ do
         end_pos = { end_pos[1], #fn.getline(end_pos[1]) }
       end
 
-      local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, 0, "utf-16").range
+      local range = util.lsp_range(0, start_pos[1], start_pos[2], end_pos[1], end_pos[2])
       local is_single_line = range.start.line == range["end"].line
       local is_current_line = is_single_line and range.start.line == fn.line(".") - 1
       ---@type Context
@@ -488,7 +490,7 @@ function M.with_insert(callback, ms)
       end_pos = { end_pos[1], #fn.getline(end_pos[1]) }
     end
 
-    local range = vim.lsp.util.make_given_range_params(start_pos, end_pos, 0, "utf-16").range
+    local range = util.lsp_range(0, start_pos[1], start_pos[2], end_pos[1], end_pos[2])
     local ranges = { range }
 
     api.nvim_win_set_cursor(0, end_pos)

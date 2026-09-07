@@ -38,7 +38,7 @@ local function start_multi_cursor(right, skip_empty)
           e_col = math.min(#line, end_pos[2])
           s_col = math.min(e_col, start_pos[2])
         end
-        local range = vim.lsp.util.make_given_range_params({ row, s_col }, { row, e_col }, 0, "utf-16").range
+        local range = util.lsp_range(0, row, s_col, row, e_col)
         if right then
           range = { start = range["end"], ["end"] = range["end"] }
         else

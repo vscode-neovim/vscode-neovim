@@ -79,6 +79,7 @@ type RedrawEventArgs =
                   | ""
                   | "confirm"
                   | "confirm_sub"
+                  | "empty"
                   | "emsg"
                   | "echo"
                   | "echomsg"

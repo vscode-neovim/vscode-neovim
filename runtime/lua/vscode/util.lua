@@ -45,6 +45,55 @@ function M.get_line(bufnr, row)
   return M.get_lines(bufnr, { row })[row]
 end
 
+local str_utf16index = fn.has("nvim-0.11") == 1
+    and function(text, byte_col)
+      return vim.str_utfindex(text, "utf-16", byte_col)
+    end
+  or function(text, byte_col)
+    return select(2, vim.str_utfindex(text, byte_col))
+  end
+
+--- VSCode counts a position in UTF-16 code units, Nvim counts bytes.
+---
+---@param text string the line the column belongs to
+---@param byte_col integer zero-indexed byte column, clamped to `text`
+---@return integer zero-indexed UTF-16 column
+function M.utf16_col(text, byte_col)
+  byte_col = math.max(0, math.min(byte_col, #text))
+  return byte_col == 0 and 0 or str_utf16index(text, byte_col)
+end
+
+---@param buf integer
+---@param line integer one-indexed line
+---@param byte_col integer zero-indexed byte column
+---@return lsp.Position
+function M.lsp_position(buf, line, byte_col)
+  return { line = line - 1, character = M.utf16_col(M.get_line(buf, line - 1) or "", byte_col) }
+end
+
+--- Converts an inclusive Nvim byte range to an exclusive LSP range.
+---
+--- The end stops at the line end, so that a linewise range - which passes the whole
+--- line length as its end column - stays a valid position instead of running past it.
+---
+---@param buf integer
+---@param start_line integer one-indexed
+---@param start_col integer zero-indexed byte column
+---@param end_line integer one-indexed
+---@param end_col integer zero-indexed byte column, inclusive
+---@return lsp.Range
+function M.lsp_range(buf, start_line, start_col, end_line, end_col)
+  local end_text = M.get_line(buf, end_line - 1) or ""
+  local end_char = M.utf16_col(end_text, end_col)
+  if vim.o.selection ~= "exclusive" then
+    end_char = math.min(end_char + 1, M.utf16_col(end_text, #end_text))
+  end
+  return {
+    start = M.lsp_position(buf, start_line, start_col),
+    ["end"] = { line = end_line - 1, character = end_char },
+  }
+end
+
 --- Compare two positions
 ---@param a lsp.Position
 ---@param b lsp.Position
