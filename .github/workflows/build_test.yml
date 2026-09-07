@@ -16,7 +16,7 @@ jobs:
                 neovim-version: [stable, nightly]
         runs-on: ${{ matrix.os }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
 
             - name: Setup Node
               uses: actions/setup-node@v6
@@ -53,7 +53,7 @@ jobs:
         name: Create extension
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
             - uses: actions/setup-node@v6
               with:
                   node-version-file: package.json
@@ -87,7 +87,7 @@ jobs:
                         { "type": "refactor", "section": "Refactor", "hidden": false },
                         { "type": "perf", "section": "Performance Improvements", "hidden": false }
                       ]
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
               if: ${{ steps.release.outputs.release_created }}
             - uses: actions/setup-node@v6
               if: ${{ steps.release.outputs.release_created }}
