@@ -13,6 +13,10 @@ updates:
       ignore:
           # @types/vscode must match our declared `engines.vscode` (in package.json).
           - dependency-name: "@types/vscode"
+          # typescript-eslint rejects TS 7: "typescript-eslint does not support TS 7.0".
+          # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+          - dependency-name: "typescript"
+            versions: [">=7"]
       groups:
           dev-deps:
               dependency-type: "development"
