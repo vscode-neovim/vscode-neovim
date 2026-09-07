@@ -19,7 +19,6 @@ import { HighlightManager } from "./highlight_manager";
 import { createLogger } from "./logger";
 import { MessagesManager } from "./messages_manager";
 import { ModeManager } from "./mode_manager";
-import { StatusLineManager } from "./status_line_manager";
 import { TypingManager } from "./typing_manager";
 import { disposeAll, findLastEvent, VSCodeContext, wslpath } from "./utils";
 import { ViewportManager } from "./viewport_manager";
@@ -56,7 +55,6 @@ export class MainController implements vscode.Disposable {
     public cursorManager!: CursorManager;
     public commandsController!: CommandsController;
     public commandLineManager!: CommandLineManager;
-    public statusLineManager!: StatusLineManager;
     public highlightManager!: HighlightManager;
     public messagesManager!: MessagesManager;
     public viewportManager!: ViewportManager;
@@ -134,7 +132,6 @@ export class MainController implements vscode.Disposable {
             (this.highlightManager = new HighlightManager(this)),
             (this.changeManager = new DocumentChangeManager(this)),
             (this.commandLineManager = new CommandLineManager(this)),
-            (this.statusLineManager = new StatusLineManager(this)),
             (this.messagesManager = new MessagesManager(this)),
         );
 

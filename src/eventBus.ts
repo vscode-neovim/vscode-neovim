@@ -92,6 +92,8 @@ type RedrawEventArgs =
                   | "wmsg",
               content: MsgShowContent,
               replace_last: boolean,
+              history: boolean,
+              append: boolean,
           ]
       >
     | IRedrawEventArg<"msg_showcmd", [content: MsgShowContent]>
