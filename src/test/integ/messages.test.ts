@@ -4,6 +4,7 @@ import { NeovimClient } from "neovim";
 import { TextEditor, window } from "vscode";
 
 import { EXT_ID } from "../../constants";
+import { wait, waitUntil } from "../../utils";
 
 import {
     attachTestNvimClient,
@@ -14,8 +15,6 @@ import {
     sendNeovimKeys,
     sendVSCodeCommand,
     sendVSCodeKeys,
-    wait,
-    waitForCondition,
 } from "./integrationUtils";
 
 function findOutputChannel(): TextEditor | undefined {
@@ -29,7 +28,7 @@ function findOutputChannel(): TextEditor | undefined {
 // Windows uses \r\n as the line break in output documents, and Nvim right-pads a search
 // command with the room it reserves for the search count, so normalize both away.
 async function assertOutputContent(expected: string) {
-    await waitForCondition(() => {
+    await waitUntil(() => {
         const content = findOutputChannel()?.document.getText();
         const normalize = (text: string) => text.replace(/\r\n/g, "\n").replace(/ +$/gm, "");
         assert.equal(content != null ? normalize(content) : content, expected);
@@ -120,7 +119,7 @@ describe("Message output", () => {
 
     it("should suppress 'pattern not found' with cmdheight=2", async () => {
         await sendNeovimKeys(client, "/foobar\n");
-        await wait();
+        await wait(400);
         const outputEditor = findOutputChannel();
         assert.equal(outputEditor, undefined);
 

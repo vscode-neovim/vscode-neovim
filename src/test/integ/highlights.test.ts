@@ -3,13 +3,14 @@ import assert from "assert";
 import { NeovimClient } from "neovim";
 import vscode, { DecorationOptions, Position, TextEditor } from "vscode";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeAllActiveEditors,
     closeNvimClient,
     sendEscapeKey,
     sendNeovimKeys,
-    wait,
     waitForNvimBuffer,
 } from "./integrationUtils";
 

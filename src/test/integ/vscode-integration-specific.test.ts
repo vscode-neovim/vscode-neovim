@@ -6,10 +6,11 @@ import { strict as assert } from "assert";
 import vscode, { Selection } from "vscode";
 import { NeovimClient } from "neovim";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     assertContent,
-    wait,
     setCursor,
     sendVSCodeKeys,
     closeAllActiveEditors,
@@ -294,7 +295,7 @@ describe("VSCode integration specific stuff", () => {
 
         // make sure we're in first editor group
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
-        await wait();
+        await wait(400);
 
         await sendVSCodeKeys("gg5j", 0);
         await wait(1000);

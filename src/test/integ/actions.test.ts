@@ -5,13 +5,14 @@ import path from "path";
 
 import { NeovimClient } from "neovim";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeAllActiveEditors,
     closeNvimClient,
     openTextDocument,
     sendVSCodeCommand,
-    wait,
 } from "./integrationUtils";
 
 async function eval_from_nvim(client: NeovimClient, code: string): Promise<any> {

@@ -3,6 +3,8 @@ import { strict as assert } from "assert";
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
+import { wait, waitUntil } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeNvimClient,
@@ -14,13 +16,11 @@ import {
     getNeovimCursor,
     openTextDocument,
     sendVSCodeKeysAtomic,
-    wait,
-    waitForCondition,
 } from "./integrationUtils";
 
 // The help buffer reaches VSCode a moment after the Ex command returns.
 async function assertActiveEditorMatches(banner: RegExp, what: string): Promise<void> {
-    await waitForCondition(() => {
+    await waitUntil(() => {
         const text = vscode.window.activeTextEditor?.document.getText() ?? "";
         assert.ok(banner.test(text), `${what} missing expected banner, got: ${text.slice(0, 200)}`);
     });

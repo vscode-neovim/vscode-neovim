@@ -1,5 +1,7 @@
 import { NeovimClient } from "neovim";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     sendVSCodeKeys,
@@ -8,7 +10,6 @@ import {
     setCursor,
     closeNvimClient,
     openTextDocument,
-    wait,
 } from "./integrationUtils";
 
 describe("Yanking and pasting", () => {

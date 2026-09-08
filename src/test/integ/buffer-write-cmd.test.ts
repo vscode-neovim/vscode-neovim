@@ -5,6 +5,8 @@ import { symlink } from "fs/promises";
 import { NeovimClient } from "neovim";
 import { TextDocument, Uri, window, workspace } from "vscode";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeAllActiveEditors,
@@ -13,7 +15,6 @@ import {
     sendEscapeKey,
     sendNeovimKeys,
     sendVSCodeKeys,
-    wait,
     waitForNvimBuffer,
 } from "./integrationUtils";
 

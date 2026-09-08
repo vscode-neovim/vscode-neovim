@@ -3,6 +3,8 @@ import path from "path";
 import { NeovimClient } from "neovim";
 import { Position } from "vscode";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeNvimClient,
@@ -11,7 +13,6 @@ import {
     assertContent,
     sendNeovimKeys,
     openTextDocument,
-    wait,
 } from "./integrationUtils";
 
 describe("Jumplist & jump actions & marks", () => {

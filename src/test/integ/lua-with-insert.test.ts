@@ -1,5 +1,7 @@
 import { NeovimClient } from "neovim";
 
+import { wait } from "../../utils";
+
 import {
     assertContent,
     attachTestNvimClient,
@@ -9,7 +11,6 @@ import {
     sendEscapeKey,
     sendNeovimKeys,
     sendVSCodeKeys,
-    wait,
 } from "./integrationUtils";
 
 describe("Lua vscode.with_insert", function () {

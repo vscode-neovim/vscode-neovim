@@ -15,53 +15,7 @@ import vscode, {
     TextDocument,
 } from "vscode";
 
-/** Modes mapping
- * n - normal
- * v - visual
- * i - insert
- * r - replace
- * c - cmdline_normal
- * ci - cmdline_insert
- * cr - cmdline_replace
- * o - operator
- * ve - visual_select
- * e - cmdline_hover
- * s - statusline_hover
- * sd - statusline_drag
- * vs - vsep_hover
- * vd - vsep_drag
- * m - more
- * ml - more_lastline
- * sm - showmatch
- * can be combined, like no - normal operator
- */
-
-export async function wait(timeout = 400): Promise<void> {
-    await new Promise((res) => setTimeout(res, timeout));
-}
-
-/**
- * Waits for an expected state, until `assertion` does not throw an error.
- * Rethrows the last failure on `timeout`.
- */
-export async function waitForCondition(
-    assertion: () => void | Promise<void>,
-    timeout = 3000,
-    interval = 50,
-): Promise<void> {
-    const deadline = Date.now() + timeout;
-    for (;;) {
-        try {
-            await assertion();
-            return;
-        } catch (e) {
-            if (Date.now() >= deadline) {
-                throw e;
-            }
-        }
-        await wait(interval);
-    }
-}
+import { wait, waitUntil } from "../../utils";
 
 /**
  * Mocha's `describe`/`it` for tests that need the VSCode window to hold focus. It does not on
@@ -135,6 +89,28 @@ export async function getNeovimCursor(client: NeovimClient): Promise<[number, nu
     return [line1based - 1, col0based];
 }
 
+/**
+ * Modes:
+ * - n: normal
+ * - v: visual
+ * - i: insert
+ * - r: replace
+ * - c: cmdline_normal
+ * - ci: cmdline_insert
+ * - cr: cmdline_replace
+ * - o: operator
+ * - ve: visual_select
+ * - e: cmdline_hover
+ * - s: statusline_hover
+ * - sd: statusline_drag
+ * - vs: vsep_hover
+ * - vd: vsep_drag
+ * - m: more
+ * - ml: more_lastline
+ * - sm: showmatch
+ *
+ * Can be combined, e.g. "no" = "normal operator".
+ */
 export async function getCurrentNeovimMode(client: NeovimClient): Promise<string> {
     // return mode short name
     const mode = await client.mode;
@@ -178,7 +154,7 @@ export async function sendVSCodeCommand(command: string, args: unknown = "", wai
 /** Closes the panel, waiting until no output editor is left visible. */
 export async function hideOutputPanel(): Promise<void> {
     await commands.executeCommand("workbench.action.closePanel");
-    await waitForCondition(() =>
+    await waitUntil(() =>
         assert.ok(
             !window.visibleTextEditors.some((e) => e.document.uri.scheme === "output"),
             "output panel should be hidden",
@@ -232,7 +208,7 @@ export async function sendNeovimKeys(client: NeovimClient, keys: string, waitTim
 export async function sendEscapeKey(): Promise<void> {
     const wasNormalMode = hasVSCodeCursorStyle("block");
     await commands.executeCommand("vscode-neovim.escape");
-    await waitForCondition(() => assert.ok(hasVSCodeCursorStyle("block"), "escape should give a block cursor"), 10000);
+    await waitUntil(() => assert.ok(hasVSCodeCursorStyle("block"), "escape should give a block cursor"), 10000);
     if (wasNormalMode) {
         await wait(250);
     }
@@ -241,7 +217,7 @@ export async function sendEscapeKey(): Promise<void> {
 /** Enters insert mode, waiting until Nvim reports it via the cursor style. */
 export async function sendInsertKey(key = "i"): Promise<void> {
     await sendVSCodeKeys(key, 0);
-    await waitForCondition(() => assert.ok(hasVSCodeCursorStyle("line"), `"${key}" should give a line cursor`), 10000);
+    await waitUntil(() => assert.ok(hasVSCodeCursorStyle("line"), `"${key}" should give a line cursor`), 10000);
 }
 
 export async function sendVSCodeSpecialKey(
@@ -298,7 +274,7 @@ export async function assertContent(
     options.neovimCursor = options.neovimCursor ?? options.cursor;
 
     try {
-        await waitForCondition(() => assertContentOnce(options, client, editor));
+        await waitUntil(() => assertContentOnce(options, client, editor));
     } catch (e) {
         (e as Error).stack = stack;
         throw e;
@@ -434,7 +410,7 @@ export async function pasteVSCode(): Promise<void> {
  * it does. `b:vscode_uri` is set as part of that setup.
  */
 export async function waitForNvimBuffer(doc: TextDocument): Promise<void> {
-    await waitForCondition(async () =>
+    await waitUntil(async () =>
         assert.equal(
             await testClient!.request("nvim_buf_get_var", [0, "vscode_uri"]),
             doc.uri.toString(),

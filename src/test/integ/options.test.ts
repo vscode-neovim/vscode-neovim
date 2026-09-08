@@ -4,6 +4,8 @@ import path from "path";
 import { NeovimClient } from "neovim";
 import vscode from "vscode";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeAllActiveEditors,
@@ -13,7 +15,6 @@ import {
     sendNeovimKeys,
     sendVSCodeKeys,
     setCursor,
-    wait,
 } from "./integrationUtils";
 
 describe("Synchronize editor options", () => {

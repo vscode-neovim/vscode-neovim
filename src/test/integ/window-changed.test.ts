@@ -4,14 +4,14 @@ import path from "path";
 import { NeovimClient } from "neovim";
 import vscode, { Uri, ViewColumn, commands, window, workspace } from "vscode";
 
+import { wait, waitUntil } from "../../utils";
+
 import {
     attachTestNvimClient,
     describeSkipMacos,
     closeAllActiveEditors,
     closeNvimClient,
     hideOutputPanel,
-    wait,
-    waitForCondition,
 } from "./integrationUtils";
 
 describeSkipMacos("handle window changed event", () => {
@@ -31,11 +31,11 @@ describeSkipMacos("handle window changed event", () => {
      * Focuses the Nvim window showing `text`, until `assertion` confirms VSCode settled.
      */
     async function setWin(text: string, assertion: () => void) {
-        // Use a for-loop because retrying in `waitForCondition` polls faster than the extension's debounce.
+        // Use a for-loop because retrying in `waitUntil` polls faster than the extension's debounce.
         for (let attempts = 3; ; attempts--) {
             await client.request("nvim_set_current_win", [await findWinId(text)]);
             try {
-                return await waitForCondition(assertion, 3000);
+                return await waitUntil(assertion, 3000);
             } catch (e) {
                 if (attempts === 1) throw e;
             }
@@ -110,7 +110,7 @@ describeSkipMacos("handle window changed event", () => {
 
     it("should ignore window change event when it isn't from neovim", async () => {
         await commands.executeCommand("workbench.action.openGlobalKeybindings");
-        await waitForCondition(() => {
+        await waitUntil(() => {
             assert.equal(window.activeTextEditor, undefined);
             assert.equal(window.activeNotebookEditor, undefined);
         }, 8000);

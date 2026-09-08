@@ -1,6 +1,8 @@
 import { NeovimClient } from "neovim";
 import vscode, { commands } from "vscode";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeAllActiveEditors,
@@ -11,7 +13,6 @@ import {
     sendNeovimKeys,
     openTextDocument,
     sendInsertKey,
-    wait,
 } from "./integrationUtils";
 
 describe("Visual modes test", () => {

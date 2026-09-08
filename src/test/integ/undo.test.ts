@@ -5,11 +5,12 @@ import { strict as assert } from "assert";
 import vscode, { commands, window } from "vscode";
 import { NeovimClient } from "neovim";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     sendVSCodeKeys,
     assertContent,
-    wait,
     sendEscapeKey,
     closeAllActiveEditors,
     closeNvimClient,

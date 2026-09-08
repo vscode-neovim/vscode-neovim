@@ -4,12 +4,13 @@ import fs from "fs";
 
 import { NeovimClient } from "neovim";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeNvimClient,
     closeAllActiveEditors,
     assertContent,
-    wait,
     closeActiveEditor,
     openTextDocument,
 } from "./integrationUtils";

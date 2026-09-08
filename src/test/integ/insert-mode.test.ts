@@ -1,11 +1,12 @@
 import vscode, { Selection } from "vscode";
 import { NeovimClient } from "neovim";
 
+import { wait } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeNvimClient,
     closeAllActiveEditors,
-    wait,
     sendVSCodeKeys,
     assertContent,
     sendEscapeKey,

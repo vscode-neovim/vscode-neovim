@@ -3,6 +3,8 @@ import { strict as assert } from "assert";
 import { NeovimClient } from "neovim";
 import vscode from "vscode";
 
+import { wait } from "../../utils";
+
 import {
     assertContent,
     attachTestNvimClient,
@@ -12,7 +14,6 @@ import {
     sendEscapeKey,
     sendInsertKey,
     sendVSCodeKeys,
-    wait,
 } from "./integrationUtils";
 
 describe("Composite escape key", () => {

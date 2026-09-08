@@ -32,3 +32,26 @@ export class ManualPromise {
 export async function wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * Waits for an expected state, until `assertion` does not throw an error.
+ * Rethrows the last failure on `timeout`.
+ *
+ * @param assertion Throws while the expected state has not been reached.
+ * @param timeout Time (ms) to keep retrying before giving up.
+ * @param interval Time (ms) between attempts.
+ */
+export async function waitUntil(assertion: () => void | Promise<void>, timeout = 3000, interval = 50): Promise<void> {
+    const deadline = Date.now() + timeout;
+    for (;;) {
+        try {
+            await assertion();
+            return;
+        } catch (e) {
+            if (Date.now() >= deadline) {
+                throw e;
+            }
+        }
+        await wait(interval);
+    }
+}

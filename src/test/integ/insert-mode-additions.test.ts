@@ -3,6 +3,8 @@ import { strict as assert } from "assert";
 import vscode from "vscode";
 import { NeovimClient } from "neovim";
 
+import { waitUntil } from "../../utils";
+
 import {
     attachTestNvimClient,
     closeNvimClient,
@@ -16,7 +18,6 @@ import {
     sendInsertKey,
     sendVSCodeCommand,
     getCurrentBufferContents,
-    waitForCondition,
 } from "./integrationUtils";
 
 describe("Simulated insert keys", () => {
@@ -155,9 +156,7 @@ describe("Simulated insert keys", () => {
         await sendVSCodeKeys("blah blah");
         // `<C-u>` deletes the characters entered in this insert session, so it must not
         // overtake them on their way to Nvim: it would delete the whole line instead.
-        await waitForCondition(async () =>
-            assert.deepEqual(await getCurrentBufferContents(client), ["blah blah blahblah"]),
-        );
+        await waitUntil(async () => assert.deepEqual(await getCurrentBufferContents(client), ["blah blah blahblah"]));
         await sendVSCodeCommand("vscode-neovim.send", "<C-u>");
 
         await sendEscapeKey();

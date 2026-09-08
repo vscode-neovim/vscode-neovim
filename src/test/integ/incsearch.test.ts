@@ -3,6 +3,8 @@ import path from "path";
 
 import { NeovimClient } from "neovim";
 
+import { wait } from "../../utils";
+
 import {
     assertContent,
     attachTestNvimClient,
@@ -11,7 +13,6 @@ import {
     openTextDocument,
     sendNeovimKeys,
     sendVSCodeKeys,
-    wait,
 } from "./integrationUtils";
 
 describe("Test incsearch", () => {
