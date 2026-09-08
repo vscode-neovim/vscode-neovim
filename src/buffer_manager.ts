@@ -401,12 +401,10 @@ export class BufferManager implements Disposable {
             if (e) await window.showTextDocument(e.document, e.viewColumn);
         };
 
-        let targetEditor = this.getEditorFromWinId(winId);
-        if (!targetEditor) {
-            logger.debug(`target editor not found <check 1>, return to active editor`);
-            return returnToActiveEditor();
+        // `winId` is from the event, which can be stale by the time this debounced handler runs.
+        if (window.activeTextEditor && window.activeTextEditor === this.getEditorFromWinId(winId)) {
+            return;
         }
-        if (window.activeTextEditor === targetEditor) return;
 
         // since the event could be triggered by vscode side operations
         // we need to wait a bit to let vscode finish its internal operations
@@ -431,7 +429,7 @@ export class BufferManager implements Disposable {
         await this.main.cursorManager.waitForCursorUpdate(window.activeTextEditor);
 
         const { id: curwin } = await this.client.getWindow();
-        targetEditor = this.getEditorFromWinId(curwin);
+        const targetEditor = this.getEditorFromWinId(curwin);
         if (!targetEditor) {
             logger.debug(`target editor not found <check 2>, return to active editor`);
             return returnToActiveEditor();

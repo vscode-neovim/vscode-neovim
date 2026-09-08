@@ -27,8 +27,19 @@ describeSkipMacos("handle window changed event", () => {
         throw new Error(`no Nvim window showing ${JSON.stringify(text)}`);
     };
 
-    async function setWin(text: string) {
-        await client.request("nvim_set_current_win", [await findWinId(text)]);
+    /**
+     * Focuses the Nvim window showing `text`, until `assertion` confirms VSCode settled.
+     */
+    async function setWin(text: string, assertion: () => void) {
+        // Use a for-loop because retrying in `waitForCondition` polls faster than the extension's debounce.
+        for (let attempts = 3; ; attempts--) {
+            await client.request("nvim_set_current_win", [await findWinId(text)]);
+            try {
+                return await waitForCondition(assertion, 3000);
+            } catch (e) {
+                if (attempts === 1) throw e;
+            }
+        }
     }
 
     let textEditor1: vscode.TextEditor;
@@ -73,25 +84,20 @@ describeSkipMacos("handle window changed event", () => {
     });
 
     it("text editor", async () => {
-        await setWin("text 1");
-        await waitForCondition(() => assert.equal(window.activeTextEditor, textEditor1), 8000);
-
-        await setWin("text 2");
-        await waitForCondition(() => assert.equal(window.activeTextEditor, textEditor2), 8000);
+        await setWin("text 1", () => assert.equal(window.activeTextEditor, textEditor1));
+        await setWin("text 2", () => assert.equal(window.activeTextEditor, textEditor2));
     });
 
     it("notebook", async () => {
-        await setWin("cell 1");
-        await waitForCondition(() => {
+        await setWin("cell 1", () => {
             assert.equal(window.activeNotebookEditor, notebookEditor);
             assert.equal(window.activeTextEditor?.document.getText(), "cell 1");
-        }, 8000);
+        });
 
-        await setWin("cell 2");
-        await waitForCondition(() => {
+        await setWin("cell 2", () => {
             assert.equal(window.activeNotebookEditor, notebookEditor);
             assert.equal(window.activeTextEditor?.document.getText(), "cell 2");
-        }, 8000);
+        });
     });
 
     it("output", async () => {
@@ -99,8 +105,7 @@ describeSkipMacos("handle window changed event", () => {
         outputChannel.show(true);
         await wait(400);
 
-        await setWin("output");
-        await waitForCondition(() => assert.equal(window.activeTextEditor?.document.getText(), "output"), 8000);
+        await setWin("output", () => assert.equal(window.activeTextEditor?.document.getText(), "output"));
     });
 
     it("should ignore window change event when it isn't from neovim", async () => {
