@@ -443,10 +443,6 @@
                 "title": "Neovim: Accept cmdline"
             },
             {
-                "command": "vscode-neovim.complete-selection-cmdline",
-                "title": "Neovim: Complete selection cmdline"
-            },
-            {
                 "command": "vscode-neovim.send-cmdline",
                 "title": "Neovim: Send key in cmdline"
             },
@@ -475,6 +471,42 @@
                 "title": "Neovim: ctrl-y"
             }
         ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "vscode-neovim.commit-cmdline",
+                    "when": "false"
+                },
+                {
+                    "command": "vscode-neovim.send-cmdline",
+                    "when": "false"
+                },
+                {
+                    "command": "vscode-neovim.ctrl-b",
+                    "when": "false"
+                },
+                {
+                    "command": "vscode-neovim.ctrl-d",
+                    "when": "false"
+                },
+                {
+                    "command": "vscode-neovim.ctrl-e",
+                    "when": "false"
+                },
+                {
+                    "command": "vscode-neovim.ctrl-f",
+                    "when": "false"
+                },
+                {
+                    "command": "vscode-neovim.ctrl-u",
+                    "when": "false"
+                },
+                {
+                    "command": "vscode-neovim.ctrl-y",
+                    "when": "false"
+                }
+            ]
+        },
         "keybindings": [
             {
                 "command": "vscode-neovim.escape",
