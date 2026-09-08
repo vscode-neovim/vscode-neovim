@@ -6,6 +6,8 @@ on:
 
 permissions:
     contents: read
+    # webiny/action-conventional-commits reads the PR's commits.
+    pull-requests: read
 
 jobs:
     build:

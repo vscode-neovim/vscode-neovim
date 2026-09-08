@@ -3,8 +3,7 @@ name: Code Check & Test
 on: [pull_request, push]
 
 permissions:
-    contents: write
-    pull-requests: write
+    contents: read
 
 jobs:
     build:
@@ -72,6 +71,10 @@ jobs:
         name: release-please
         if: ${{ github.ref == 'refs/heads/master' }}
         runs-on: ubuntu-latest
+        permissions:
+            # Create the release commit, tag and GitHub release, and open the release PR.
+            contents: write
+            pull-requests: write
         steps:
             # Configured by release-please-config.json: setting `release-type` here would
             # switch the action to its no-config mode and ignore that file.
