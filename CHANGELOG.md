@@ -1,5 +1,26 @@
 # Change Log
 
+## [1.19.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.19.1...v1.19.2) (2026-09-08)
+
+
+### Bug Fixes
+
+* **ci:** broken release-please config [#2647](https://github.com/vscode-neovim/vscode-neovim/issues/2647) ([ac94663](https://github.com/vscode-neovim/vscode-neovim/commit/ac946636d4f2c39569077a914c9793d2ff5f826d))
+* **ci:** set permissions:read ([73004bd](https://github.com/vscode-neovim/vscode-neovim/commit/73004bda882757f4e844e707af2e7a6a7765da21))
+* **ci:** set permissions:read ([4f261e7](https://github.com/vscode-neovim/vscode-neovim/commit/4f261e7eba9e407af8ba57482396a5256e166e4e))
+* **dotrepeat:** replay clobbers the insert session ([87ddfb9](https://github.com/vscode-neovim/vscode-neovim/commit/87ddfb983cfa793e1b0e71f616513f658839884c))
+* hide internal commands from command palette [#2668](https://github.com/vscode-neovim/vscode-neovim/issues/2668) ([d1c38f5](https://github.com/vscode-neovim/vscode-neovim/commit/d1c38f5eb8e41e5b8ceac9446521cbc76708b070))
+* **messages:** output panel misses multi-flush messages [#2629](https://github.com/vscode-neovim/vscode-neovim/issues/2629) ([f2cfb7e](https://github.com/vscode-neovim/vscode-neovim/commit/f2cfb7e7b98729bbbfb123deb8eb4572d81b403d))
+* **visual:** wrong selections on nvim 0.13 [#2636](https://github.com/vscode-neovim/vscode-neovim/issues/2636) ([a8edd84](https://github.com/vscode-neovim/vscode-neovim/commit/a8edd845e4ca6c332a8a600d25867ee83a9b11e7))
+* **windows:** backslashes in path settings [#2286](https://github.com/vscode-neovim/vscode-neovim/issues/2286) ([48ab180](https://github.com/vscode-neovim/vscode-neovim/commit/48ab180ca2cd751d8088496e518099ecdfc95f09))
+* **window:** stale window-changed event steals focus back [#2666](https://github.com/vscode-neovim/vscode-neovim/issues/2666) ([9c86f0e](https://github.com/vscode-neovim/vscode-neovim/commit/9c86f0e777806d5d1a456f11b169c288bba5ef71))
+
+
+### Refactor
+
+* **messages:** merge statusline into MessagesManager [#2645](https://github.com/vscode-neovim/vscode-neovim/issues/2645) ([bed95d0](https://github.com/vscode-neovim/vscode-neovim/commit/bed95d09228848017718be480fdc1acdd34ae365))
+* **timeutil:** rename waitForCondition =&gt; waitUntil [#2667](https://github.com/vscode-neovim/vscode-neovim/issues/2667) ([bdce612](https://github.com/vscode-neovim/vscode-neovim/commit/bdce61226868b8ac1b3ee5de5edbf26ec039ddbe))
+
 ## [1.19.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.19.0...v1.19.1) (2026-07-21)
 
 
