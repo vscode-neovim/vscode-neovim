@@ -50,6 +50,9 @@ export class CommandLineManager implements Disposable {
     // Since the input is hidden asynchronously, we need to wait for it to be
     // hidden before proceeding with the next task.
     private inputHiddenPromise?: ManualPromise;
+    // Tracks whether the QuickPick is actually visible. Calling hide() while already hidden
+    // does not re-fire onDidHide, so we must not wait on it in that case.
+    private inputShown = false;
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -209,6 +212,9 @@ export class CommandLineManager implements Disposable {
     };
 
     private onHide = async (): Promise<void> => {
+        this.inputShown = false;
+        this.inputHiddenPromise?.resolve();
+
         if (this.state.ignoreHideEvent) {
             logger.debug("onHide: skipping event");
             this.state.ignoreHideEvent = false;
@@ -217,17 +223,20 @@ export class CommandLineManager implements Disposable {
             await this.main.client.input("<Esc>");
         }
 
+        this.flushEvents();
+    };
+
+    // Re-transmit the events queued while the input was hiding.
+    private flushEvents() {
         const batch = this.queue.flushBatch();
         if (batch !== null) {
-            logger.debug("onHide: flushing events");
+            logger.debug("flushing events");
             batch.forEach((event) => {
                 // Process the events we we're waiting for
                 this.taskChain = this.taskChain.then(() => this.handleRedrawEvent(event));
             });
         }
-
-        this.inputHiddenPromise?.resolve();
-    };
+    }
 
     private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
         if (e.length === 0) {
@@ -272,12 +281,22 @@ export class CommandLineManager implements Disposable {
     }
 
     private showInput() {
+        this.inputHiddenPromise?.resolve();
+        this.inputShown = true;
         this.input.show();
     }
 
     private hideInput() {
-        this.state.level = undefined;
         this.inputHiddenPromise?.resolve();
+        this.state.level = undefined;
+
+        if (!this.inputShown) {
+            // No `onHide` will fire for this hide, so do its queue work here instead.
+            this.state.ignoreHideEvent = false;
+            this.flushEvents();
+            return;
+        }
+
         this.inputHiddenPromise = new ManualPromise();
         this.taskChain = this.taskChain.then(() => this.inputHiddenPromise?.promise);
         this.input.hide();
