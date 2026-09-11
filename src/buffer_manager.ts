@@ -2,7 +2,6 @@ import path from "path";
 
 import { debounce } from "lodash";
 import { Buffer, NeovimClient } from "neovim";
-import { ATTACH } from "neovim/lib/api/Buffer";
 import {
     CancellationToken,
     CancellationTokenSource,
@@ -1017,7 +1016,6 @@ class BufferProvider implements TextDocumentContentProvider {
         }
 
         buf.listen("lines", this.receivedBufferEvent);
-        await buf[ATTACH](true);
 
         return lines.join("\n");
     }
