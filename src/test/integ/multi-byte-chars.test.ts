@@ -1,4 +1,5 @@
 import { NeovimClient } from "neovim";
+import vscode from "vscode";
 
 import {
     attachTestNvimClient,
@@ -285,5 +286,23 @@ describe("Multi-width characters", () => {
             },
             client,
         );
+    });
+
+    it("Works - visual mode over chars outside the BMP", async () => {
+        // 𝕜 is U+1D55C: one Nvim character, but two UTF-16 units for VSCode
+        await openTextDocument({ content: ["a𝕜b"].join("\n") });
+
+        await assertContent({ content: ["a𝕜b"], cursor: [0, 0] }, client);
+
+        await sendVSCodeKeys("v");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 1)] }, client);
+
+        await sendVSCodeKeys("l");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 3)] }, client);
+
+        await sendVSCodeKeys("l");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 4)] }, client);
+
+        await sendEscapeKey();
     });
 });
