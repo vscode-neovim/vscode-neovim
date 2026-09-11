@@ -1,5 +1,5 @@
 import { NeovimClient } from "neovim";
-import { VimValue } from "neovim/lib/types/VimValue";
+import type { VimValue } from "neovim/lib/types/VimValue";
 import { ConfigurationTarget, Disposable, Range, commands, window, workspace } from "vscode";
 
 import { eval_for_client } from "./actions_eval";
