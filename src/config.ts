@@ -17,6 +17,16 @@ type SettingPrefix = "neovimExecutablePaths" | "neovimInitVimPaths"; //this need
 
 export type CompositeKeys = { [key: string]: { command: string; args?: any[] } };
 
+/** Opens the vscode settings UI at the given setting id. */
+export async function openSettingsId(key: string): Promise<void> {
+    await commands.executeCommand("workbench.action.openSettings", `@id:${key}`);
+}
+
+/** Opens the vscode settings UI at the given settings name/prefix. */
+export async function openSettings(name: string): Promise<void> {
+    await commands.executeCommand("workbench.action.openSettings", name);
+}
+
 export class Config implements Disposable {
     private disposables: Disposable[] = [];
     private readonly root = EXT_NAME;

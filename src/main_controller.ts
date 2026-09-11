@@ -10,7 +10,7 @@ import actions from "./actions";
 import { BufferManager } from "./buffer_manager";
 import { CommandLineManager } from "./cmdline_manager";
 import { CommandsController } from "./commands_controller";
-import { config } from "./config";
+import { config, openSettings } from "./config";
 import { isWindows, NVIM_MIN_VERSION } from "./constants";
 import { CursorManager } from "./cursor_manager";
 import { DocumentChangeManager } from "./document_change_manager";
@@ -63,7 +63,7 @@ export class MainController implements vscode.Disposable {
 
     public async init(): Promise<void> {
         const [cmd, args] = this.buildSpawnArgs();
-        logger.info(`Starting nvim: ${cmd} ${args.join(" ")}`);
+        logger.info(`Starting: ${cmd} ${args.join(" ")}`);
         this.nvimProc = spawn(cmd, args);
         this.disposables.push(
             new Disposable(() => {
@@ -104,7 +104,6 @@ export class MainController implements vscode.Disposable {
         this.setClientInfo();
         await this.setCurrentDir();
         await this.client.setVar("vscode_channel", await this.client.channelId);
-        await this.client.setVar("vscode_nvim_min_version", NVIM_MIN_VERSION);
 
         // This is an exception. Should avoid doing this.
         Object.defineProperty(actions, "client", { get: () => this.client, configurable: true });
@@ -159,9 +158,56 @@ export class MainController implements vscode.Disposable {
 
     private _stop(msg: string) {
         vscode.commands.executeCommand("vscode-neovim.stop");
-        vscode.window.showErrorMessage(msg, "Restart").then((value) => {
-            if (value === "Restart") vscode.commands.executeCommand("vscode-neovim.restart");
+        vscode.window.showErrorMessage(msg, "Restart", "View Logs").then((value) => {
+            if (value === "Restart") {
+                vscode.commands.executeCommand("vscode-neovim.restart");
+            } else if (value === "View Logs") {
+                vscode.commands.executeCommand("vscode-neovim.viewLogs");
+            }
         });
+    }
+
+    /**
+     * The command that runs Nvim, or shows a message w/ buttons if there is a problem.
+     */
+    private resolveNvimCmd(minVersion: string): string[] {
+        // The user-configured command (checked, never substituted), else search.
+        const distro = config.wslDistribution.length ? ["-d", config.wslDistribution] : [];
+        const cmds = config.useWsl
+            ? [[wslExe, ...distro, config.neovimPath]]
+            : config.neovimPath !== "nvim"
+              ? [[config.neovimPath]]
+              : undefined;
+
+        const r = findNvim({ minVersion, orderBy: "desc", cmds });
+        logger.debug("Find nvim result: ", r);
+        const match = r.matches[0];
+        if (match) {
+            logger.info(`Found Nvim${cmds ? " (user-configured)" : ""}:`, match.cmd.join(" "));
+            return match.cmd;
+        }
+
+        // The details go to the log, which "View Logs" opens.
+        const tooOld = r.invalid.filter((v) => !v.error);
+        let msg = "";
+        if (tooOld.length > 0) {
+            msg = `Nvim ${minVersion} or newer is required (found ${tooOld[0].nvimVersion}).`;
+            logger.info(`${msg} Too old:`, tooOld.map((v) => `${v.cmd.join(" ")} : ${v.nvimVersion}`).join(", "));
+        } else {
+            msg = "Nvim not found. Install it, or set its path in settings.";
+            logger.info(msg, r.invalid.map((v) => `${v.cmd.join(" ")} : ${v.error?.message}`).join(", "));
+        }
+
+        vscode.window.showErrorMessage(msg, "Update Nvim", "Set Path", "View Logs").then((value) => {
+            if (value === "Update Nvim") {
+                vscode.env.openExternal(vscode.Uri.parse("https://neovim.io/doc/install/"));
+            } else if (value === "Set Path") {
+                openSettings("vscode-neovim.neovimExecutablePaths");
+            } else if (value === "View Logs") {
+                vscode.commands.executeCommand("vscode-neovim.viewLogs");
+            }
+        });
+        throw new Error(msg);
     }
 
     private buildSpawnArgs(): [string, string[]] {
@@ -176,36 +222,14 @@ export class MainController implements vscode.Disposable {
         // These paths get called inside WSL, they must be POSIX paths (forward slashes)
         const neovimPreScriptPath = path.posix.join(extensionPath, "runtime", "vscode-neovim.vim");
 
-        const args = [];
-
-        if (config.useWsl) {
-            args.push(wslExe);
-            if (config.wslDistribution.length) {
-                args.push("-d", config.wslDistribution);
-            }
-        }
-
-        let neovimPath = config.neovimPath;
-        // Only try to find nvim if the path is the default one
-        // And if we are not using WSL
-        if (neovimPath === "nvim" && !config.useWsl) {
-            const nvimResult = findNvim({ minVersion: NVIM_MIN_VERSION });
-            logger.debug("Find nvim result: ", nvimResult);
-            const matched = nvimResult.matches.find((match) => !match.error);
-            if (!matched) {
-                throw new Error("Unable to find a suitable neovim executable. Please check your neovim installation.");
-            }
-            neovimPath = matched.path;
-        }
-
-        args.push(
-            neovimPath,
+        const args: string[] = [
+            ...this.resolveNvimCmd(NVIM_MIN_VERSION),
             "-N",
             "--embed",
-            // Initialize vscode neovim modules
+            // Initialize vscode-neovim modules
             "--cmd",
             `execute 'source' fnameescape('${neovimPreScriptPath.replace(/'/g, "''")}')`,
-        );
+        ];
 
         if (parseInt(process.env.NEOVIM_DEBUG || "", 10) === 1) {
             args.push(

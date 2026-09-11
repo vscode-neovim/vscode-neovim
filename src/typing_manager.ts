@@ -2,7 +2,7 @@
 // Learn more: https://github.com/microsoft/vscode-extension-samples/tree/main/vim-sample
 import { commands, Disposable, TextEditor, TextEditorEdit, window, workspace } from "vscode";
 
-import { CompositeKeys, config } from "./config";
+import { CompositeKeys, config, openSettingsId } from "./config";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { disposeAll, normalizeInputString } from "./utils";
@@ -170,9 +170,16 @@ export class TypingManager implements Disposable {
         this.compositeSecondKeysForFirstKey = new Map();
         Object.keys(this.compositeKeys).forEach((key) => {
             if (!/^[ -~]{2}$/.test(key)) {
-                window.showErrorMessage(
-                    `Invalid composite key: ${key}. Composite key must be exactly 2 ASCII characters long.`,
-                );
+                window
+                    .showErrorMessage(
+                        `Invalid composite key: ${key}. Composite key must be exactly 2 ASCII characters long.`,
+                        "Configure",
+                    )
+                    .then((value) => {
+                        if (value === "Configure") {
+                            openSettingsId("vscode-neovim.compositeKeys");
+                        }
+                    });
                 return;
             }
             const [first, second] = key.split("");

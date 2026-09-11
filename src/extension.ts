@@ -2,9 +2,9 @@ import * as vscode from "vscode";
 
 import actions from "./actions";
 import { config } from "./config";
-import { EXT_ID } from "./constants";
+import { EXT_ID, EXT_NAME } from "./constants";
 import { eventBus } from "./eventBus";
-import { createLogger, logger as rootLogger } from "./logger";
+import { createLogger, getLogs, logger as rootLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { VSCodeContext, disposeAll } from "./utils";
 
@@ -13,9 +13,14 @@ const logger = createLogger(EXT_ID);
 // Store the disposables that need to be disposed of when the extension
 // deactivates and are not affected by the restart command.
 const disposables: vscode.Disposable[] = [];
+// Created once, with `disposables`: "vscode-neovim.restart" re-runs activate() without disposing either.
+let outputChannel: vscode.LogOutputChannel;
+
 export async function activate(context: vscode.ExtensionContext, isRestart = false): Promise<void> {
     if (!isRestart) {
+        outputChannel = vscode.window.createOutputChannel(EXT_NAME, { log: true });
         disposables.push(
+            outputChannel,
             vscode.commands.registerCommand("vscode-neovim.restart", async () => {
                 deactivate(true);
                 disposeAll(context.subscriptions);
@@ -25,12 +30,17 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
                 deactivate(true);
                 disposeAll(context.subscriptions);
             }),
+            vscode.commands.registerCommand("vscode-neovim.viewLogs", () => outputChannel.show()),
         );
+        if (process.env.NEOVIM_DEBUG) {
+            // Lets tests inspect log messages (see `getLogs`).
+            disposables.push(vscode.commands.registerCommand("_vscodeneovim._test", () => getLogs()));
+        }
         verifyExperimentalAffinity();
     }
 
     config.init();
-    rootLogger.init(config.logPath, config.outputToConsole);
+    rootLogger.init(config.logPath, config.outputToConsole, outputChannel);
     eventBus.init();
     actions.init();
     context.subscriptions.push(
@@ -47,10 +57,12 @@ export async function activate(context: vscode.ExtensionContext, isRestart = fal
         await plugin.init();
     } catch (e) {
         vscode.window
-            .showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`, "Restart")
+            .showErrorMessage(`[Failed to start nvim] ${e instanceof Error ? e.message : e}`, "Restart", "View Logs")
             .then((value) => {
                 if (value === "Restart") {
                     vscode.commands.executeCommand("vscode-neovim.restart");
+                } else if (value === "View Logs") {
+                    outputChannel.show();
                 }
             });
     }
