@@ -1,4 +1,4 @@
-name: Check Style and Quality
+name: lint
 
 on: [pull_request, push]
 
@@ -7,7 +7,7 @@ permissions:
 
 jobs:
     lint:
-        name: Lint
+        name: lint
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v7

@@ -1,4 +1,4 @@
-name: Code Check & Test
+name: test
 
 on: [pull_request, push]
 
@@ -7,7 +7,7 @@ permissions:
 
 jobs:
     build:
-        name: Build & Test (${{ matrix.os }}, nvim ${{ matrix.neovim-version }})
+        name: test (${{ matrix.os }}, nvim ${{ matrix.neovim-version }})
         strategy:
             fail-fast: false
             matrix:
@@ -50,7 +50,7 @@ jobs:
               with:
                   run: npm run test
     create:
-        name: Create extension
+        name: package-extension
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v7
