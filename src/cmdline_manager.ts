@@ -2,7 +2,7 @@ import { Disposable, QuickInputButton, QuickPick, QuickPickItem, ThemeIcon, comm
 
 import { EventBusData, eventBus } from "./eventBus";
 import { MainController } from "./main_controller";
-import { disposeAll } from "./utils";
+import { disposeAll, ManualPromise } from "./utils";
 import { createLogger } from "./logger";
 import { calculateInputAfterTextChange } from "./cmdline/cmdline_text";
 import { GlyphChars } from "./constants";
@@ -43,6 +43,16 @@ export class CommandLineManager implements Disposable {
     // A queue of incoming events. See docblock for more details, but this is used to resolve an inherent
     // race condition in the way we handle events.
     private queue = new CmdlineQueue();
+
+    // Chain of tasks to handle redraw events.
+    private taskChain: Promise<void> = Promise.resolve();
+    // Promise that resolves when the input is hidden.
+    // Since the input is hidden asynchronously, we need to wait for it to be
+    // hidden before proceeding with the next task.
+    private inputHiddenPromise?: ManualPromise;
+    // Tracks whether the QuickPick is actually visible. Calling hide() while already hidden
+    // does not re-fire onDidHide, so we must not wait on it in that case.
+    private inputShown = false;
 
     public constructor(private main: MainController) {
         eventBus.on("redraw", this.handleRedraw, this, this.disposables);
@@ -94,7 +104,7 @@ export class CommandLineManager implements Disposable {
 
         const handle = this.queue.handleNvimRedrawEvent(event);
         if (handle) {
-            this.handleRedrawEvent(event);
+            this.taskChain = this.taskChain.then(() => this.handleRedrawEvent(event));
         }
     }
 
@@ -202,6 +212,9 @@ export class CommandLineManager implements Disposable {
     };
 
     private onHide = async (): Promise<void> => {
+        this.inputShown = false;
+        this.inputHiddenPromise?.resolve();
+
         if (this.state.ignoreHideEvent) {
             logger.debug("onHide: skipping event");
             this.state.ignoreHideEvent = false;
@@ -210,15 +223,20 @@ export class CommandLineManager implements Disposable {
             await this.main.client.input("<Esc>");
         }
 
+        this.flushEvents();
+    };
+
+    // Re-transmit the events queued while the input was hiding.
+    private flushEvents() {
         const batch = this.queue.flushBatch();
         if (batch !== null) {
-            logger.debug("onHide: flushing events");
+            logger.debug("flushing events");
             batch.forEach((event) => {
                 // Process the events we we're waiting for
-                this.handleRedrawEvent(event);
+                this.taskChain = this.taskChain.then(() => this.handleRedrawEvent(event));
             });
         }
-    };
+    }
 
     private onSelection = async (e: readonly QuickPickItem[]): Promise<void> => {
         if (e.length === 0) {
@@ -263,11 +281,24 @@ export class CommandLineManager implements Disposable {
     }
 
     private showInput() {
+        this.inputHiddenPromise?.resolve();
+        this.inputShown = true;
         this.input.show();
     }
 
     private hideInput() {
+        this.inputHiddenPromise?.resolve();
         this.state.level = undefined;
+
+        if (!this.inputShown) {
+            // No `onHide` will fire for this hide, so do its queue work here instead.
+            this.state.ignoreHideEvent = false;
+            this.flushEvents();
+            return;
+        }
+
+        this.inputHiddenPromise = new ManualPromise();
+        this.taskChain = this.taskChain.then(() => this.inputHiddenPromise?.promise);
         this.input.hide();
     }
 
