@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.19.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.19.2...v1.19.3) (2026-09-11)
+
+
+### Bug Fixes
+
+* "Right-hand side of 'instanceof' is not an object" [#2672](https://github.com/vscode-neovim/vscode-neovim/issues/2672) ([97586d2](https://github.com/vscode-neovim/vscode-neovim/commit/97586d2599b9ef38ad9c5be37802991c83717665))
+
 ## [1.19.2](https://github.com/vscode-neovim/vscode-neovim/compare/v1.19.1...v1.19.2) (2026-09-08)
 
 
