@@ -296,7 +296,7 @@ BufferManager is responsible for the syncing of buffers and windows between vsco
 ## Maintenance
 
 Commits should be made using ['conventional commits'](https://www.conventionalcommits.org/en/v1.0.0/). This allows for
-automatic changelog generation and versioning.
-[Release-please](https://github.com/google-github-actions/release-please-action) is used to automatically make releases.
-It will accumulate merged PRs, and create a release PR. Once the release PR is merged, it will automatically create a
-release and tag it. It will also publish it to the visual studio marketplace using repository secrets.
+automatic changelog generation and versioning. [Release-please](https://github.com/googleapis/release-please-action) is
+used to automatically make releases. It will accumulate merged PRs, and create a release PR. Once the release PR is
+merged, it will automatically create a release and tag it. It will also publish it to the visual studio marketplace
+using repository secrets.
