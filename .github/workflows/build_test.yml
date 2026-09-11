@@ -36,7 +36,8 @@ jobs:
               run: npm run test-compile
 
             - name: Webpack
-              run: npm run webpack
+              # On Linux, test the production bundle (what `vsce package` publishes to the marketplace).
+              run: npx webpack --mode ${{ matrix.os == 'ubuntu-latest' && 'production' || 'development' }}
 
             - name: Test
               uses: coactions/setup-xvfb@v1
