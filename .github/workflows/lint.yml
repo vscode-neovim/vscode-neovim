@@ -23,3 +23,15 @@ jobs:
             - run: npm run lint:check
             - run: npm run format:check
             - run: npm run stylua:check
+
+    conventional-commits:
+        name: conventional-commits
+        if: ${{ github.event_name == 'pull_request' && github.base_ref == 'master' }}
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            # webiny/action-conventional-commits reads the PR's commits.
+            pull-requests: read
+        steps:
+            - uses: actions/checkout@v7
+            - uses: webiny/action-conventional-commits@v1.4.2
