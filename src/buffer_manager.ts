@@ -158,7 +158,12 @@ export class BufferManager implements Disposable {
         more: boolean,
     ) => void;
 
-    public onBufferInit?: (bufId: number, doc: TextDocument, initDocText: string, initDocVersion: number) => void;
+    public onBufferInit?: (
+        bufId: number,
+        doc: TextDocument,
+        initDocText: string,
+        initDocVersion: number,
+    ) => Promise<void>;
 
     private get client() {
         return this.main.client;
@@ -367,9 +372,19 @@ export class BufferManager implements Disposable {
                 const buffers = await this.client.buffers;
                 const buf = buffers.find((b) => b.id === bufnr);
                 if (buf) {
-                    await this.initBufferForDocument(doc, buf);
+                    // Set the mapping before init so that queued onChangeTextDocument events
+                    // drained in DocumentChangeManager.onBufferInit can resolve the buffer id.
+                    // Roll back on failure so the document isn't stuck in a half-initialized state.
+                    this.textDocumentToBufferId.set(doc, bufnr);
+                    try {
+                        await this.initBufferForDocument(doc, buf);
+                    } catch (e) {
+                        this.textDocumentToBufferId.delete(doc);
+                        throw e;
+                    }
+                } else {
+                    this.textDocumentToBufferId.set(doc, bufnr);
                 }
-                this.textDocumentToBufferId.set(doc, bufnr);
             }
             if (window.activeTextEditor?.document !== doc) {
                 const editor = await window.showTextDocument(doc, {
@@ -714,10 +729,19 @@ export class BufferManager implements Disposable {
                     logger.error(`Cannot create a buffer, code: ${buf}`);
                     continue;
                 }
-                await this.initBufferForDocument(doc, buf, editor);
-
-                logger.log(doc.uri, LogLevel.Debug, `Document: ${doc.uri}, BufId: ${buf.id}`);
+                // Set the mapping before init so that any onChangeTextDocument events fired
+                // during the async init flow can resolve the buffer id when drained in
+                // DocumentChangeManager.onBufferInit. Roll the mapping back on failure so a
+                // future sync can retry init instead of treating this doc as initialized.
                 this.textDocumentToBufferId.set(doc, buf.id);
+                logger.log(doc.uri, LogLevel.Debug, `Document: ${doc.uri}, BufId: ${buf.id}`);
+                try {
+                    await this.initBufferForDocument(doc, buf, editor);
+                } catch (e) {
+                    this.textDocumentToBufferId.delete(doc);
+                    logger.log(doc.uri, LogLevel.Error, (e as Error).message);
+                    continue;
+                }
             }
             if (this.textEditorToWinId.has(editor)) continue;
             const editorBufferId = this.textDocumentToBufferId.get(doc)!;
@@ -846,7 +870,7 @@ export class BufferManager implements Disposable {
         if (!this.isExternalTextDocument(document)) {
             await actions.lua("clear_undo", bufId);
         }
-        this.onBufferInit?.(bufId, document, text, version);
+        await this.onBufferInit?.(bufId, document, text, version);
         buffer.listen("lines", this.receivedBufferEvent);
         actions.fireNvimEvent("document_buffer_init", bufId);
     }
@@ -914,7 +938,7 @@ export class BufferManager implements Disposable {
 
         this.externalTextDocuments.add(doc);
         this.textDocumentToBufferId.set(doc, id);
-        this.onBufferInit?.(id, doc, doc.getText(), doc.version);
+        await this.onBufferInit?.(id, doc, doc.getText(), doc.version);
 
         const windows = await this.client.windows;
         let closeWinId = 0;
