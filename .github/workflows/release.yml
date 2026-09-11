@@ -3,6 +3,11 @@ name: Release
 on:
     push:
         branches: [master]
+    workflow_dispatch:
+        inputs:
+            publish-tag:
+                description: Publish this existing release to the Marketplace instead, e.g. v1.19.3.
+                type: string
 
 permissions:
     contents: read
@@ -10,7 +15,11 @@ permissions:
 jobs:
     release-please:
         name: release-please
+        if: ${{ !inputs.publish-tag }}
         runs-on: ubuntu-latest
+        outputs:
+            release_created: ${{ steps.release.outputs.release_created }}
+            tag_name: ${{ steps.release.outputs.tag_name }}
         permissions:
             # Create the release commit, tag and GitHub release, and open the release PR.
             contents: write
@@ -29,6 +38,7 @@ jobs:
                   cache: "npm"
             - name: npm install
               if: ${{ steps.release.outputs.release_created }}
+              # Let the vsce dev-dep in package.json decide which vsce version to use.
               run: npm ci --silent
             - name: vsce package
               if: ${{ steps.release.outputs.release_created }}
@@ -40,8 +50,30 @@ jobs:
               run:
                   gh release upload ${{ steps.release.outputs.tag_name }} vscode-neovim-${{
                   steps.release.outputs.tag_name }}.vsix
+
+    # Publishes to VSCode marketplace from the VSIX artifact published by the `release-please` job
+    # or specifically manually as `publish-tag`.
+    publish:
+        needs: release-please
+        # `!cancelled()`, else skipping release-please (a manual publish) would skip this too.
+        if:
+            ${{ !cancelled() && (inputs.publish-tag || (needs.release-please.result == 'success' &&
+            needs.release-please.outputs.release_created)) }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
+              with:
+                  node-version-file: package.json
+                  cache: "npm"
+            - name: npm install
+              # Let the vsce dev-dep in package.json decide which vsce version to use.
+              run: npm ci --silent
             - name: vsce publish
-              if: ${{ steps.release.outputs.release_created }}
               env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG: ${{ inputs.publish-tag || needs.release-please.outputs.tag_name }}
                   VSCE_PAT: ${{ secrets.VSCE_TOKEN }}
-              run: npx vsce publish
+              run: |
+                  gh release download "$TAG" --pattern "vscode-neovim-$TAG.vsix"
+                  npx vsce publish --packagePath "vscode-neovim-$TAG.vsix"
