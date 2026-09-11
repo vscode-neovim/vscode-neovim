@@ -296,7 +296,20 @@ BufferManager is responsible for the syncing of buffers and windows between vsco
 ## Maintenance
 
 Commits should be made using ['conventional commits'](https://www.conventionalcommits.org/en/v1.0.0/). This allows for
-automatic changelog generation and versioning. [Release-please](https://github.com/googleapis/release-please-action) is
-used to automatically make releases. It will accumulate merged PRs, and create a release PR. Once the release PR is
-merged, it will automatically create a release and tag it. It will also publish it to the visual studio marketplace
-using repository secrets.
+automatic changelog generation and versioning.
+
+### Release
+
+Releases are automated by [release-please](https://github.com/googleapis/release-please-action), which keeps a release
+PR open ("chore(master): release x.y.z") that bumps the version and updates `CHANGELOG.md`.
+
+To publish a release:
+
+1. Merge the release-please PR. On that push to master, `.github/workflows/release.yml` tags `vx.y.z`, creates the
+   GitHub release with the VSIX attached, and publishes that VSIX to the Marketplace.
+2. If the `publish` job failed, fix the cause, then publish the existing release: open the
+   [release workflow](https://github.com/vscode-neovim/vscode-neovim/actions/workflows/release.yml), click "Run
+   workflow", and enter the tag (`vx.y.z`).
+    - "The Personal Access Token used has expired": create a new [PAT](https://aka.ms/vscodepat) for the `asvetliakov`
+      publisher and save it as the `VSCE_TOKEN` repository secret.
+    - "Request timeout": nothing to fix; the Marketplace didn't answer in time.
