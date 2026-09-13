@@ -158,6 +158,17 @@ describe("BufWriteCmd integration", () => {
 
         await window.showTextDocument(physicalDoc, ViewColumn.Two);
         await waitForNvimBuffer(physicalDoc);
+        await sendVSCodeKeys("cchello physical path");
+        await sendEscapeKey();
+        assert.equal(physicalDoc.isDirty, true);
+        assert.equal(physicalDoc.getText(), "hello physical path");
+
+        await client.command("w");
+        await wait(200);
+        assert.equal(physicalDoc.isDirty, false);
+        assert.equal(await readFile(physicalDoc.uri), "hello physical path");
+        assert.equal(await readFile(symlinkedDoc.uri), "hello physical path");
+
         await window.showTextDocument(symlinkedDoc, ViewColumn.One);
         await waitForNvimBuffer(symlinkedDoc);
     });
