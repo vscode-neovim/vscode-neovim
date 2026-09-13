@@ -28,7 +28,7 @@ local function find_duplicate_document_buffer(buf, name, uri)
 end
 
 ---Retries E95 buffer naming after removing a stale same-document duplicate.
-local function set_document_buffer_name(buf, name, uri)
+local function set_document_buffer_name(buf, name, uri, ignore_name_collision)
   local ok, err = pcall(api.nvim_buf_set_name, buf, name)
   if ok then
     return
@@ -44,6 +44,9 @@ local function set_document_buffer_name(buf, name, uri)
           return
         end
       end
+    end
+    if ignore_name_collision then
+      return
     end
   end
 
@@ -437,7 +440,7 @@ function M.init_document_buffer(data)
   set_document_buffer_name(buf, data.bufname, data.uri)
   -- Let nvim resolve the physical path of our file to avoid relative path issues
   -- with symbolic links when saving the buffer. #2284
-  set_document_buffer_name(buf, api.nvim_buf_get_name(buf), data.uri)
+  set_document_buffer_name(buf, api.nvim_buf_get_name(buf), data.uri, true)
   api.nvim_buf_set_lines(buf, 0, -1, false, data.lines)
   -- set vscode controlled flag so we can check it neovim
   api.nvim_buf_set_var(buf, "vscode_controlled", true)
