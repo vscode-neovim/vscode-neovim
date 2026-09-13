@@ -28,6 +28,7 @@ describe("Test highlights", () => {
     });
 
     beforeEach(async () => {
+        await client.command("nohl");
         await closeAllActiveEditors();
     });
 
