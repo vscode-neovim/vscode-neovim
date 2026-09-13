@@ -224,4 +224,23 @@ describe("Command line", () => {
             client,
         );
     });
+
+    it("Should handle quickly showing and hiding properly - global replace confirmation", async () => {
+        await openTextDocument({ content: "hello\nhello\nhello\nhello\nhello" });
+
+        await sendNeovimKeys(client, ":%s/hello/world/gc<CR>");
+
+        await sendVSCodeCommand("vscode-neovim.send-cmdline", "y");
+        await sendVSCodeCommand("vscode-neovim.send-cmdline", "y");
+        await sendVSCodeCommand("vscode-neovim.send-cmdline", "n");
+        await sendVSCodeCommand("vscode-neovim.send-cmdline", "y");
+        await sendVSCodeCommand("vscode-neovim.send-cmdline", "y");
+
+        await assertContent(
+            {
+                content: ["world", "world", "hello", "world", "world"],
+            },
+            client,
+        );
+    });
 });
