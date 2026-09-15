@@ -403,7 +403,7 @@ local function set_document_buffer_name(buf, name, uri, uri_data)
   if type(err) == "string" and err:find("E95:", 1, true) and uri_data.scheme == "file" then
     local dir = vim.fs.dirname(name)
     local filename = vim.fs.basename(name)
-    local fallback_name = vim.fs.joinpath(dir, string.format("symlink_%d_%s", buf, filename))
+    local fallback_name = vim.fs.joinpath(dir, string.format("symlink_%d", buf), filename)
     api.nvim_buf_set_name(buf, fallback_name)
     return
   end
