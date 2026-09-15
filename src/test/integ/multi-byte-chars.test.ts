@@ -305,4 +305,34 @@ describe("Multi-width characters", () => {
 
         await sendEscapeKey();
     });
+
+    it("Works - visual mode over consecutive non-BMP chars", async () => {
+        await openTextDocument({ content: ["a𝕜𝕝b"].join("\n") });
+
+        await sendVSCodeKeys("v");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 1)] }, client);
+
+        await sendVSCodeKeys("ll");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 5)] }, client);
+
+        await sendVSCodeKeys("l");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 6)] }, client);
+
+        await sendEscapeKey();
+    });
+
+    it("Works - visual mode across mixed BMP and non-BMP chars", async () => {
+        await openTextDocument({ content: ["aᵩ𝕜b"].join("\n") });
+
+        await sendVSCodeKeys("v");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 1)] }, client);
+
+        await sendVSCodeKeys("ll");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 3)] }, client);
+
+        await sendVSCodeKeys("l");
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 5)] }, client);
+
+        await sendEscapeKey();
+    });
 });
