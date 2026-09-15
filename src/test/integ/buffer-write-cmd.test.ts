@@ -1,6 +1,6 @@
 import { strict as assert } from "assert";
 import path from "path";
-import { symlink } from "fs/promises";
+import { realpath, symlink } from "fs/promises";
 
 import { NeovimClient } from "neovim";
 import { TextDocument, Uri, window, workspace } from "vscode";
@@ -149,5 +149,27 @@ describe("BufWriteCmd integration", () => {
         await wait(200);
         assert.equal(doc.isDirty, false);
         assert.equal(await readFile(doc.uri), "hello world");
+    });
+
+    it("syncs physical and symlinked paths to the same file", async () => {
+        const symlinkedDoc = await openTestFileInSymlinkedWorkspace();
+        const physicalDoc = await workspace.openTextDocument(Uri.file(await realpath(symlinkedDoc.uri.fsPath)));
+        assert.notEqual(physicalDoc.uri.toString(), symlinkedDoc.uri.toString());
+
+        await window.showTextDocument(physicalDoc);
+        await waitForNvimBuffer(physicalDoc);
+        await sendVSCodeKeys("cchello physical path");
+        await sendEscapeKey();
+        assert.equal(physicalDoc.isDirty, true);
+        assert.equal(physicalDoc.getText(), "hello physical path");
+
+        await client.command("w");
+        await wait(200);
+        assert.equal(physicalDoc.isDirty, false);
+        assert.equal(await readFile(physicalDoc.uri), "hello physical path");
+        assert.equal(await readFile(symlinkedDoc.uri), "hello physical path");
+
+        await window.showTextDocument(symlinkedDoc);
+        await waitForNvimBuffer(symlinkedDoc);
     });
 });

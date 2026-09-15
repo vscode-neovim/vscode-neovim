@@ -165,4 +165,12 @@ function M.win_set_option(win, name, value)
   return M.set_option_value(name, value, { win = win })
 end
 
+---Get a buffer variable safely. Returns nil if the variable does not exist.
+function M.buf_get_var(buf, name)
+  local ok, value = pcall(api.nvim_buf_get_var, buf, name)
+  if ok then
+    return value
+  end
+end
+
 return M

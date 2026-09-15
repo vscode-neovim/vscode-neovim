@@ -6,50 +6,6 @@ local util = require("vscode.util")
 
 local M = {}
 
-local function get_buf_var(buf, name)
-  local ok, value = pcall(api.nvim_buf_get_var, buf, name)
-  if ok then
-    return value
-  end
-end
-
----Finds a hidden stale buffer for the same VS Code document that blocks naming during init.
-local function find_duplicate_document_buffer(buf, name, uri)
-  for _, candidate in ipairs(api.nvim_list_bufs()) do
-    if candidate ~= buf and api.nvim_buf_is_valid(candidate) then
-      local candidate_name = api.nvim_buf_get_name(candidate)
-      local candidate_uri = get_buf_var(candidate, "vscode_uri")
-
-      if candidate_name == name and candidate_uri == uri and vim.tbl_isempty(fn.win_findbuf(candidate)) then
-        return candidate
-      end
-    end
-  end
-end
-
----Retries E95 buffer naming after removing a stale same-document duplicate.
-local function set_document_buffer_name(buf, name, uri)
-  local ok, err = pcall(api.nvim_buf_set_name, buf, name)
-  if ok then
-    return
-  end
-
-  if type(err) == "string" and err:find("E95:", 1, true) then
-    local duplicate = find_duplicate_document_buffer(buf, name, uri)
-    if duplicate then
-      local delete_ok = pcall(api.nvim_buf_delete, duplicate, { force = true })
-      if delete_ok then
-        ok, err = pcall(api.nvim_buf_set_name, buf, name)
-        if ok then
-          return
-        end
-      end
-    end
-  end
-
-  error(err)
-end
-
 ---call from vscode to sync viewport with neovim
 ---@param vscode_topline number the top line of vscode visible range
 ---@param vscode_endline number the end line of vscode visible range
@@ -371,13 +327,18 @@ local function set_buffer_autocmd(buf)
   api.nvim_create_autocmd({ "BufWriteCmd" }, {
     buffer = buf,
     callback = function(ev)
-      local current_name = api.nvim_buf_get_name(ev.buf)
-      local target_name = ev.match
+      local current_name = vim.fs.normalize(api.nvim_buf_get_name(ev.buf))
+      local actual_name = vim.fs.normalize(util.buf_get_var(ev.buf, "vscode_bufname") or current_name)
+      local target_name = vim.fs.normalize(ev.match)
+
+      if target_name == current_name then
+        target_name = actual_name
+      end
 
       local data = {
         buf = ev.buf,
         bang = vim.v.cmdbang == 1,
-        current_name = current_name,
+        current_name = actual_name,
         target_name = target_name,
       }
       vscode.action("save_buffer", { args = { data } })
@@ -419,9 +380,50 @@ end
 ---@field modified boolean
 ---@field filetype string|vim.NIL
 
+local function set_document_buffer_name(buf, name, uri, uri_data)
+  do -- Remove stale duplicate buffer if it exists
+    for _, _buf in ipairs(api.nvim_list_bufs()) do
+      if _buf ~= buf and api.nvim_buf_is_valid(_buf) then
+        -- b:vscode_uri is the only reliable way to identify the buffer associated with the same document
+        if util.buf_get_var(_buf, "vscode_uri") == uri and vim.tbl_isempty(fn.win_findbuf(_buf)) then
+          pcall(api.nvim_buf_delete, _buf, { force = true })
+        end
+      end
+    end
+  end
+
+  local ok, err = pcall(api.nvim_buf_set_name, buf, name)
+  if ok then
+    return
+  end
+
+  -- Symlinks pointing to the same file cause E95 because Nvim disallows duplicate buffer targets.
+  -- Since bufname primarily serves filetype detection and actual save logic uses b:vscode_bufname,
+  -- fallback to a unique name while preserving filename/extension
+  if type(err) == "string" and err:find("E95:", 1, true) and uri_data.scheme == "file" then
+    local dir = vim.fs.dirname(name)
+    local filename = vim.fs.basename(name)
+    local fallback_name = vim.fs.joinpath(dir, string.format("symlink_%d_%s", buf, filename))
+    api.nvim_buf_set_name(buf, fallback_name)
+    return
+  end
+
+  error(err)
+end
+
 ---@param data InitDocumentBufferData
 function M.init_document_buffer(data)
   local buf = data.buf
+
+  -- Store necessary variables
+  api.nvim_buf_set_var(buf, "vscode_bufname", data.bufname)
+  -- set vscode controlled flag so we can check it neovim
+  api.nvim_buf_set_var(buf, "vscode_controlled", true)
+  -- In vscode same document can have different insertSpaces/tabSize settings per editor;
+  -- In Nvim it's per buffer. We assume here that these settings are same for all editors.
+  api.nvim_buf_set_var(buf, "vscode_editor_options", data.editor_options)
+  api.nvim_buf_set_var(buf, "vscode_uri", data.uri)
+  api.nvim_buf_set_var(buf, "vscode_uri_data", data.uri_data)
 
   -- 1. Force filetype before setting buffer name and lines, vim.filetype will handle the b:vscode_filetype
   -- 2. Finally, set the filetype again just in case
@@ -434,19 +436,8 @@ function M.init_document_buffer(data)
 
   force_filetype()
   -- Set bufname before setting lines so that filetype detection can work ???
-  set_document_buffer_name(buf, data.bufname, data.uri)
-  -- Let nvim resolve the physical path of our file to avoid relative path issues
-  -- with symbolic links when saving the buffer. #2284
-  set_document_buffer_name(buf, api.nvim_buf_get_name(buf), data.uri)
+  set_document_buffer_name(buf, data.bufname, data.uri, data.uri_data)
   api.nvim_buf_set_lines(buf, 0, -1, false, data.lines)
-  -- set vscode controlled flag so we can check it neovim
-  api.nvim_buf_set_var(buf, "vscode_controlled", true)
-  -- In vscode same document can have different insertSpaces/tabSize settings
-  -- per editor; in Nvim it's per buffer. We assume here that these settings are
-  -- same for all editors.
-  api.nvim_buf_set_var(buf, "vscode_editor_options", data.editor_options)
-  api.nvim_buf_set_var(buf, "vscode_uri", data.uri)
-  api.nvim_buf_set_var(buf, "vscode_uri_data", data.uri_data)
   -- force acwrite, which is similar to nofile, but will only be written via the
   -- BufWriteCmd autocommand. #521 #1260
   api.nvim_buf_set_option(buf, "buftype", "acwrite")
