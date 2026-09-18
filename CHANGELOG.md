@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.20.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.19.3...v1.20.0) (2026-09-18)
+
+
+### Features
+
+* **startup:** improve find-Nvim logic + failure handling [#2679](https://github.com/vscode-neovim/vscode-neovim/issues/2679) ([0cd2460](https://github.com/vscode-neovim/vscode-neovim/commit/0cd2460ab391ae9e154deed55fcf62c9dffd63ed))
+
+
+### Bug Fixes
+
+* **buffer:** resolve E95 naming conflicts for symlinked files ([#2684](https://github.com/vscode-neovim/vscode-neovim/issues/2684)) ([6fcf28d](https://github.com/vscode-neovim/vscode-neovim/commit/6fcf28d4eb08d3968042ff10dbd7b49ac7aa2936))
+* **cmdline:** handle async input hide race condition ([#2531](https://github.com/vscode-neovim/vscode-neovim/issues/2531)) ([19b7181](https://github.com/vscode-neovim/vscode-neovim/commit/19b718135fe9c5d7844ebd28a83e8508e85332eb))
+
 ## [1.19.3](https://github.com/vscode-neovim/vscode-neovim/compare/v1.19.2...v1.19.3) (2026-09-11)
 
 
