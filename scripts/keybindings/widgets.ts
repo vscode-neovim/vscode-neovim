@@ -1,4 +1,4 @@
-import type { Keybinding } from "./util.ts";
+import type { Keybinding } from "./util";
 
 export function getWidgetsKeybindings(): Keybinding[] {
     return [

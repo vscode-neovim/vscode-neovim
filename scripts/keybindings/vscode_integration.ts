@@ -1,5 +1,5 @@
-import { createKeybindingsBuilder } from "./util.ts";
-import type { Keybinding } from "./util.ts";
+import { createKeybindingsBuilder } from "./util";
+import type { Keybinding } from "./util";
 
 export function getVscodeIntegrationKeybindings(): Keybinding[] {
     const { add, keybinds } = createKeybindingsBuilder();
