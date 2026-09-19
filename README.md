@@ -550,6 +550,7 @@ Examples:
 local current_file = vscode.eval("return vscode.window.activeTextEditor.document.fileName")
 local current_tab_is_pinned = vscode.eval("return vscode.window.tabGroups.activeTabGroup.activeTab.isPinned")
 vscode.eval("await vscode.env.clipboard.writeText(args.text)", { args = { text = "some text" } })
+local vscode_app_name = vscode.eval("return vscode.env.appName")
 ```
 
 ### vscode.eval_async(code[, opts])
