@@ -1,43 +1,30 @@
-import { createKeybindingsBuilder, vscodeKeyToVimKey } from "./util";
+import { CTRL_KEYS } from "./normal_mode";
+import { buildWhen, EDITOR_CONTEXT, KeybindingsBuilder, vscodeKeyToVimKey } from "./util";
 import type { Keybinding } from "./util";
 
 export function getInsertModeKeybindings(): Keybinding[] {
-    const { add, keybinds } = createKeybindingsBuilder();
+    const builder = new KeybindingsBuilder();
 
-    const ctrlKeys = [
-        ..."abdefghijklmnopqrstuvwxyz/]",
-        "[BracketRight]",
-        "right",
-        "left",
-        "up",
-        "down",
-        "backspace",
-        "delete",
-    ];
-
-    ctrlKeys.forEach((k) => {
-        let cmd = "vscode-neovim.send";
-        const key = `ctrl+${k}`;
-        const args = vscodeKeyToVimKey(key);
-        const when = [
-            "editorTextFocus",
-            "neovim.init",
-            "neovim.mode == insert",
-            `neovim.ctrlKeysInsert.${k}`,
-            "editorLangId not in neovim.editorLangIdExclusions",
-        ].join(" && ");
-
-        switch (k) {
-            case "o":
-                cmd = "vscode-neovim.escape";
-                break;
-            case "r":
-                cmd = "vscode-neovim.send-blocking";
-                break;
+    for (const k of CTRL_KEYS) {
+        let command = "vscode-neovim.send";
+        if (k === "o") {
+            command = "vscode-neovim.escape";
+        } else if (k === "r") {
+            command = "vscode-neovim.send-blocking";
         }
 
-        add(key, when, args, cmd);
-    });
+        const key = `ctrl+${k}`;
+        const args = vscodeKeyToVimKey(key);
+        const when = buildWhen(
+            EDITOR_CONTEXT[0],
+            EDITOR_CONTEXT[1],
+            "neovim.mode == insert",
+            `neovim.ctrlKeysInsert.${k}`,
+            EDITOR_CONTEXT[2],
+        );
 
-    return keybinds;
+        builder.add({ command, key, when, args });
+    }
+
+    return builder.build();
 }

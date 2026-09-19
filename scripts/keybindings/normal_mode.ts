@@ -1,13 +1,24 @@
-import { createKeybindingsBuilder, vscodeKeyToVimKey } from "./util";
+import { buildWhen, EDITOR_CONTEXT, KeybindingsBuilder, vscodeKeyToVimKey } from "./util";
 import type { Keybinding } from "./util";
 
-export function getNormalModeKeybindings(): Keybinding[] {
-    const { add, keybinds } = createKeybindingsBuilder();
+export const CTRL_KEYS = [
+    ..."abdefghijklmnopqrstuvwxyz/]",
+    "[BracketRight]",
+    "right",
+    "left",
+    "up",
+    "down",
+    "backspace",
+    "delete",
+] as const;
 
-    const when =
+export function getNormalModeKeybindings(): Keybinding[] {
+    const builder = new KeybindingsBuilder();
+
+    const normalNavigationWhen =
         "neovim.init && (editorTextFocus && neovim.mode != insert && editorLangId not in neovim.editorLangIdExclusions || neovim.recording)";
 
-    [
+    const specialNavigationKeys = [
         "backspace",
         "shift+backspace",
         "delete",
@@ -24,39 +35,33 @@ export function getNormalModeKeybindings(): Keybinding[] {
         "shift+right",
         "home",
         "end",
-    ].forEach((key) => add(key, when, vscodeKeyToVimKey(key)));
-
-    const ctrlKeys = [
-        ..."abdefghijklmnopqrstuvwxyz/]",
-        "[BracketRight]",
-        "right",
-        "left",
-        "up",
-        "down",
-        "backspace",
-        "delete",
     ];
 
-    ctrlKeys.forEach((k) => {
-        let cmd = "vscode-neovim.send";
+    for (const key of specialNavigationKeys) {
+        builder.add({
+            key,
+            when: normalNavigationWhen,
+            args: vscodeKeyToVimKey(key),
+        });
+    }
+
+    const scrollKeys = new Set(["b", "d", "e", "f", "u", "y"]);
+
+    for (const k of CTRL_KEYS) {
+        const isScroll = scrollKeys.has(k);
+        const command = isScroll ? `vscode-neovim.ctrl-${k}` : "vscode-neovim.send";
         const key = `ctrl+${k}`;
-        let args: string | null = vscodeKeyToVimKey(key);
-        const ctrlWhen = [
-            "editorTextFocus",
-            "neovim.init",
+        const args = isScroll ? undefined : vscodeKeyToVimKey(key);
+        const when = buildWhen(
+            EDITOR_CONTEXT[0],
+            EDITOR_CONTEXT[1],
             "neovim.mode != insert",
             `neovim.ctrlKeysNormal.${k}`,
-            "editorLangId not in neovim.editorLangIdExclusions",
-        ].join(" && ");
+            EDITOR_CONTEXT[2],
+        );
 
-        // scrolling
-        if (["b", "d", "e", "f", "u", "y"].includes(k)) {
-            cmd = `vscode-neovim.ctrl-${k}`;
-            args = null;
-        }
+        builder.add({ command, key, when, args });
+    }
 
-        add(key, ctrlWhen, args, cmd);
-    });
-
-    return keybinds;
+    return builder.build();
 }

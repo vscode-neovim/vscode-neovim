@@ -525,7 +525,7 @@
             {
                 "command": "vscode-neovim.escape",
                 "key": "ctrl+c",
-                "when": "editorTextFocus && neovim.init && editorLangId not in neovim.editorLangIdExclusions && neovim.mode == normal && neovim.ctrlKeysNormal.c && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible"
+                "when": "editorTextFocus && neovim.init && editorLangId not in neovim.editorLangIdExclusions && neovim.mode == normal && !markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible && neovim.ctrlKeysNormal.c"
             },
             {
                 "command": "vscode-neovim.escape",
@@ -1527,163 +1527,163 @@
                 "args": "<C-\\>e"
             },
             {
-                "key": "j",
                 "command": "list.focusDown",
+                "key": "j",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "k",
                 "command": "list.focusUp",
+                "key": "k",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "h",
                 "command": "list.collapse",
+                "key": "h",
                 "when": "listFocus && !inputFocus"
             },
             {
+                "command": "list.select",
                 "key": "l",
-                "command": "list.select",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "enter",
                 "command": "list.select",
+                "key": "enter",
                 "when": "listFocus && !inputFocus && !notebookCellListFocused"
             },
             {
-                "key": "g g",
                 "command": "list.focusFirst",
+                "key": "g g",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "shift+g",
                 "command": "list.focusLast",
+                "key": "shift+g",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "o",
                 "command": "list.toggleExpand",
+                "key": "o",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "ctrl+u",
                 "command": "list.focusPageUp",
+                "key": "ctrl+u",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "ctrl+d",
                 "command": "list.focusPageDown",
+                "key": "ctrl+d",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "/",
                 "command": "list.find",
+                "key": "/",
                 "when": "listFocus && listSupportsFind && !inputFocus"
             },
             {
-                "key": "enter",
                 "command": "list.closeFind",
+                "key": "enter",
                 "when": "listFocus && treeFindOpen && inputFocus"
             },
             {
-                "key": "r",
                 "command": "renameFile",
+                "key": "r",
                 "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "d",
                 "command": "deleteFile",
+                "key": "d",
                 "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "y",
                 "command": "filesExplorer.copy",
-                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
+                "key": "y",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "x",
                 "command": "filesExplorer.cut",
-                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
+                "key": "x",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "p",
                 "command": "filesExplorer.paste",
+                "key": "p",
                 "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "v",
                 "command": "explorer.openToSide",
+                "key": "v",
                 "when": "explorerViewletFocus && explorerViewletVisible && !inputFocus"
             },
             {
-                "key": "a",
                 "command": "explorer.newFile",
+                "key": "a",
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
-                "key": "shift+a",
                 "command": "explorer.newFolder",
+                "key": "shift+a",
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
-                "key": "shift+r",
                 "command": "workbench.files.action.refreshFilesExplorer",
+                "key": "shift+r",
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
+                "command": "list.expand",
                 "key": "z o",
-                "command": "list.expand",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.expand",
                 "key": "z shift+o",
-                "command": "list.expand",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
-                "key": "z c",
                 "command": "list.collapse",
+                "key": "z c",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
-                "key": "z shift+c",
                 "command": "list.collapseAllToFocus",
+                "key": "z shift+c",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.toggleExpand",
                 "key": "z a",
-                "command": "list.toggleExpand",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.toggleExpand",
                 "key": "z shift+a",
-                "command": "list.toggleExpand",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.collapseAll",
                 "key": "z m",
-                "command": "list.collapseAll",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.collapseAll",
                 "key": "z shift+m",
-                "command": "list.collapseAll",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
-                "key": "tab",
                 "command": "togglePeekWidgetFocus",
+                "key": "tab",
                 "when": "inReferenceSearchEditor && neovim.mode == normal || referenceSearchVisible"
             },
             {
-                "key": "ctrl+n",
                 "command": "list.focusDown",
+                "key": "ctrl+n",
                 "when": "inReferenceSearchEditor && neovim.mode == normal"
             },
             {
-                "key": "ctrl+p",
                 "command": "list.focusUp",
+                "key": "ctrl+p",
                 "when": "inReferenceSearchEditor && neovim.mode == normal"
             },
             {
@@ -1707,13 +1707,13 @@
                 "when": "editorTextFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
             },
             {
-                "key": "ctrl+n",
                 "command": "selectNextSuggestion",
+                "key": "ctrl+n",
                 "when": "textInputFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
             },
             {
-                "key": "ctrl+p",
                 "command": "selectPrevSuggestion",
+                "key": "ctrl+p",
                 "when": "textInputFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
             },
             {
@@ -1727,23 +1727,33 @@
                 "when": "inQuickOpen && neovim.mode != cmdline"
             },
             {
-                "key": "ctrl+n",
                 "command": "selectNextCodeAction",
+                "key": "ctrl+n",
                 "when": "codeActionMenuVisible"
             },
             {
-                "key": "ctrl+p",
                 "command": "selectPrevCodeAction",
+                "key": "ctrl+p",
                 "when": "codeActionMenuVisible"
             },
             {
-                "key": "ctrl+w q",
+                "command": "focusNextRenameSuggestion",
+                "key": "ctrl+n",
+                "when": "renameInputVisible"
+            },
+            {
+                "command": "focusPreviousRenameSuggestion",
+                "key": "ctrl+p",
+                "when": "renameInputVisible"
+            },
+            {
                 "command": "workbench.action.closeActiveEditor",
+                "key": "ctrl+w q",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !filesExplorerFocus && !searchViewletFocus"
             },
             {
-                "key": "ctrl+Escape",
                 "command": "workbench.action.focusActiveEditorGroup",
+                "key": "ctrl+Escape",
                 "when": "terminalFocus"
             },
             {
@@ -1800,16 +1810,6 @@
                 "command": "editor.action.goToBottomHover",
                 "key": "shift+g",
                 "when": "editorHoverFocused"
-            },
-            {
-                "command": "focusNextRenameSuggestion",
-                "key": "ctrl+n",
-                "when": "renameInputVisible"
-            },
-            {
-                "command": "focusPreviousRenameSuggestion",
-                "key": "ctrl+p",
-                "when": "renameInputVisible"
             },
             {
                 "command": "-workbench.action.switchWindow",

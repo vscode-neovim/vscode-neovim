@@ -5,11 +5,19 @@ export interface Keybinding {
     args?: unknown;
 }
 
+export interface AddKeybindingOptions {
+    key: string;
+    command?: string;
+    when?: string | null;
+    args?: unknown;
+}
+
 const VSCODE_TO_VIM_KEY_MAP: Record<string, string> = {
     backspace: "BS",
     delete: "Del",
     shift: "S",
     ctrl: "C",
+    alt: "M",
     "[bracketleft]": "[",
     "[bracketright]": "]",
 };
@@ -20,31 +28,77 @@ export function vscodeKeyToVimKey(key: string): string {
         .split("+")
         .map((part) => VSCODE_TO_VIM_KEY_MAP[part] ?? part);
 
-    if (parts.length === 1) {
-        return `<${parts[0]}>`;
-    }
-    return `<${parts[0]}-${parts[1]}>`;
+    return `<${parts.join("-")}>`;
 }
 
-export function createKeybindingsBuilder() {
-    const keybinds: Keybinding[] = [];
-    const seen = new Map<string, Keybinding>();
+export const COMMON_NEGATED_OVERLAYS = [
+    "!markersNavigationVisible",
+    "!parameterHintsVisible",
+    "!inReferenceSearchEditor",
+    "!referenceSearchVisible",
+    "!dirtyDiffVisible",
+    "!notebookCellFocused",
+    "!findWidgetVisible",
+    "!notificationCenterVisible",
+] as const;
 
-    const add = (key: string, when?: string | null, commandArgs?: unknown, command = "vscode-neovim.send") => {
-        const bind: Keybinding = { command, key };
-        if (when != null) bind.when = when;
-        if (commandArgs != null) bind.args = commandArgs;
+export const EDITOR_CONTEXT = [
+    "editorTextFocus",
+    "neovim.init",
+    "editorLangId not in neovim.editorLangIdExclusions",
+] as const;
 
-        const dedupeKey = `${command}::${key}::${when ?? ""}`;
-        const existing = seen.get(dedupeKey);
+export function buildWhen(...conditions: (string | false | null | undefined)[]): string {
+    return conditions.filter(Boolean).join(" && ");
+}
+
+export class KeybindingsBuilder {
+    private readonly bindings: Keybinding[] = [];
+    private readonly seen = new Map<string, Keybinding>();
+
+    public add(options: AddKeybindingOptions): this;
+    public add(key: string, when?: string | null, args?: unknown, command?: string): this;
+    public add(
+        keyOrOptions: string | AddKeybindingOptions,
+        when?: string | null,
+        args?: unknown,
+        command = "vscode-neovim.send",
+    ): this {
+        let entry: Keybinding;
+
+        if (typeof keyOrOptions === "object") {
+            entry = {
+                command: keyOrOptions.command ?? "vscode-neovim.send",
+                key: keyOrOptions.key,
+            };
+            if (keyOrOptions.when != null) entry.when = keyOrOptions.when;
+            if (keyOrOptions.args != null) entry.args = keyOrOptions.args;
+        } else {
+            entry = { command, key: keyOrOptions };
+            if (when != null) entry.when = when;
+            if (args != null) entry.args = args;
+        }
+
+        const collisionKey = `${entry.command}::${entry.key}::${entry.when ?? ""}`;
+        const existing = this.seen.get(collisionKey);
         if (existing) {
             throw new Error(
-                `Duplicate keybinding detected:\nExisting: ${JSON.stringify(existing)}\nNew: ${JSON.stringify(bind)}`,
+                `Duplicate keybinding detected:\nExisting: ${JSON.stringify(existing)}\nNew: ${JSON.stringify(entry)}`,
             );
         }
-        seen.set(dedupeKey, bind);
-        keybinds.push(bind);
-    };
+        this.seen.set(collisionKey, entry);
+        this.bindings.push(entry);
+        return this;
+    }
 
-    return { add, keybinds };
+    public addAll(entries: AddKeybindingOptions[]): this {
+        for (const entry of entries) {
+            this.add(entry);
+        }
+        return this;
+    }
+
+    public build(): Keybinding[] {
+        return [...this.bindings];
+    }
 }

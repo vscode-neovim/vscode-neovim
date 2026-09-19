@@ -1,65 +1,39 @@
-import type { Keybinding } from "./util";
-
-const and = (...items: string[]) =>
-    ["editorTextFocus", "neovim.init", "editorLangId not in neovim.editorLangIdExclusions", ...items].join(" && ");
+import { buildWhen, COMMON_NEGATED_OVERLAYS, EDITOR_CONTEXT, Keybinding } from "./util";
 
 export function getCommonKeybindings(): Keybinding[] {
+    const baseEditorWhen = buildWhen(...EDITOR_CONTEXT);
+    const normalModeEscapeWhen = buildWhen(baseEditorWhen, "neovim.mode == normal", ...COMMON_NEGATED_OVERLAYS);
+
     return [
         {
             command: "vscode-neovim.escape",
             key: "ctrl+[",
-            when: and(),
+            when: baseEditorWhen,
         },
         {
             command: "vscode-neovim.escape",
-            key: "ctrl+[BracketLeft]", // fix ctrl+[ mapping on macOS non-US keyboard layout
-            when: and(),
-        },
-        {
-            command: "vscode-neovim.escape",
-            key: "ctrl+c",
-            when: and(
-                "neovim.mode == normal",
-                "neovim.ctrlKeysNormal.c", // special case!
-
-                "!markersNavigationVisible",
-                "!parameterHintsVisible",
-                "!inReferenceSearchEditor",
-                "!referenceSearchVisible",
-                "!dirtyDiffVisible",
-                "!notebookCellFocused",
-                "!findWidgetVisible",
-                "!notificationCenterVisible",
-            ),
+            key: "ctrl+[BracketLeft]",
+            when: baseEditorWhen,
         },
         {
             command: "vscode-neovim.escape",
             key: "ctrl+c",
-            when: and(
-                "neovim.mode != normal",
-                "neovim.ctrlKeysInsert.c", // special case!
-            ),
+            when: buildWhen(normalModeEscapeWhen, "neovim.ctrlKeysNormal.c"),
+        },
+        {
+            command: "vscode-neovim.escape",
+            key: "ctrl+c",
+            when: buildWhen(baseEditorWhen, "neovim.mode != normal", "neovim.ctrlKeysInsert.c"),
         },
         {
             command: "vscode-neovim.escape",
             key: "Escape",
-            when: and(
-                "neovim.mode == normal",
-
-                "!markersNavigationVisible",
-                "!parameterHintsVisible",
-                "!inReferenceSearchEditor",
-                "!referenceSearchVisible",
-                "!dirtyDiffVisible",
-                "!notebookCellFocused",
-                "!findWidgetVisible",
-                "!notificationCenterVisible",
-            ),
+            when: normalModeEscapeWhen,
         },
         {
             command: "vscode-neovim.escape",
             key: "Escape",
-            when: and("neovim.mode != normal"),
+            when: buildWhen(baseEditorWhen, "neovim.mode != normal"),
         },
     ];
 }

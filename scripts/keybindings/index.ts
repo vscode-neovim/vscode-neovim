@@ -2,16 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommonKeybindings } from "./common";
-import { getNormalModeKeybindings } from "./normal_mode";
-import { getInsertModeKeybindings } from "./insert_mode";
 import { getCmdlineKeybindings } from "./cmdline";
-import { getWidgetsKeybindings } from "./widgets";
+import { getCommonKeybindings } from "./common";
+import { getInsertModeKeybindings } from "./insert_mode";
+import { getNormalModeKeybindings } from "./normal_mode";
 import { getVscodeIntegrationKeybindings } from "./vscode_integration";
+import { getWidgetsKeybindings } from "./widgets";
 import type { Keybinding } from "./util";
 
 export function generateKeybindings(): Keybinding[] {
-    return [
+    const keybindings: Keybinding[] = [
         ...getCommonKeybindings(),
         ...getNormalModeKeybindings(),
         ...getInsertModeKeybindings(),
@@ -19,6 +19,17 @@ export function generateKeybindings(): Keybinding[] {
         ...getWidgetsKeybindings(),
         ...getVscodeIntegrationKeybindings(),
     ];
+
+    const seen = new Set<string>();
+    for (const bind of keybindings) {
+        const uniqueKey = `${bind.command}::${bind.key}::${bind.when ?? ""}`;
+        if (seen.has(uniqueKey)) {
+            throw new Error(`Duplicate keybinding found in final list: ${uniqueKey}`);
+        }
+        seen.add(uniqueKey);
+    }
+
+    return keybindings;
 }
 
 export function updatePackageJson(): void {
@@ -31,4 +42,6 @@ export function updatePackageJson(): void {
     fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4) + "\n");
 }
 
-updatePackageJson();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    updatePackageJson();
+}

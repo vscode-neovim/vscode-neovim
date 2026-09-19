@@ -1,16 +1,19 @@
-import { createKeybindingsBuilder } from "./util";
+import { KeybindingsBuilder } from "./util";
 import type { Keybinding } from "./util";
 
 export function getVscodeIntegrationKeybindings(): Keybinding[] {
-    const { add, keybinds } = createKeybindingsBuilder();
+    const builder = new KeybindingsBuilder();
 
-    add("ctrl+w", null, null, "-workbench.action.switchWindow");
-    add(
-        "ctrl+w ctrl+w",
-        "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)",
-        null,
-        "workbench.action.focusNextGroup",
-    );
+    builder.add({
+        key: "ctrl+w",
+        command: "-workbench.action.switchWindow",
+    });
+
+    builder.add({
+        key: "ctrl+w ctrl+w",
+        when: "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)",
+        command: "workbench.action.focusNextGroup",
+    });
 
     const windowActions: [string, string][] = [
         ["ctrl+w up", "workbench.action.navigateUp"],
@@ -31,8 +34,9 @@ export function getVscodeIntegrationKeybindings(): Keybinding[] {
         ["ctrl+w v", "workbench.action.splitEditorRight"],
     ];
 
-    for (const [key, cmd] of windowActions) {
-        add(key, "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus", null, cmd);
+    const windowActionWhen = "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus";
+    for (const [key, command] of windowActions) {
+        builder.add({ key, when: windowActionWhen, command });
     }
 
     const outputKeys: (string | [string, string])[] = [
@@ -49,15 +53,18 @@ export function getVscodeIntegrationKeybindings(): Keybinding[] {
         ["delete", "<Del>"],
     ];
 
+    const outputWhen =
+        "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output";
+
     for (const item of outputKeys) {
         const [key, arg] = Array.isArray(item) ? item : [item, item];
-        add(
+        builder.add({
             key,
-            "neovim.init && neovim.mode != insert && editorTextFocus && focusedView == workbench.panel.output",
-            arg,
-            "vscode-neovim.send",
-        );
+            when: outputWhen,
+            args: arg,
+            command: "vscode-neovim.send",
+        });
     }
 
-    return keybinds;
+    return builder.build();
 }
