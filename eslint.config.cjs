@@ -20,9 +20,7 @@ module.exports = tseslint.config(
                 ...globals.es6,
             },
             parserOptions: {
-                projectService: {
-                    allowDefaultProject: ["scripts/keybindings/*.ts"],
-                },
+                projectService: true,
                 tsconfigRootDir: __dirname,
             },
         },
