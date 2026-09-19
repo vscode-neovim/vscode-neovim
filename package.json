@@ -1276,12 +1276,6 @@
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r shift++",
-                "when": "neovim.init && neovim.mode == cmdline",
-                "args": "<C-r>="
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+-",
                 "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>_"
@@ -1873,22 +1867,22 @@
             },
             {
                 "command": "workbench.action.toggleEditorWidths",
-                "key": "ctrl+w _",
+                "key": "ctrl+w shift+-",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.increaseViewWidth",
-                "key": "ctrl+w >",
+                "key": "ctrl+w shift+.",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.decreaseViewWidth",
-                "key": "ctrl+w <",
+                "key": "ctrl+w shift+,",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.increaseViewHeight",
-                "key": "ctrl+w +",
+                "key": "ctrl+w shift+=",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
@@ -2203,15 +2197,15 @@
         ]
     },
     "scripts": {
-        "lint": "eslint --fix src",
-        "lint:check": "eslint src",
+        "lint": "eslint --fix src scripts",
+        "lint:check": "eslint src scripts",
         "format": "npm run prettier && npm run stylua",
         "format:check": "npm run prettier:check && npm run stylua:check",
         "prettier": "prettier --ignore-path .gitignore --ignore-path .prettierignore -w .",
         "prettier:check": "prettier --ignore-path .gitignore --ignore-path .prettierignore --check .",
         "stylua": "stylua .",
         "stylua:check": "stylua --check .",
-        "keybind": "node ./scripts/keybindings/index.cjs",
+        "keybind": "tsx ./scripts/keybindings/index.ts",
         "test": "npm run test:unit && npm run test:integration",
         "test:unit": "mocha --exit ./out/test/unit/*.js ./out/test/unit/**/*.js",
         "test:integration": "node ./out/test/runIntegrationTest.js",
@@ -2245,6 +2239,7 @@
         "prettier": "^3.9.6",
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.6.2",
+        "tsx": "^4.23.13",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.70.0",
         "webpack": "^5.110.3",
