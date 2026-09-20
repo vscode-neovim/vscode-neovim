@@ -2205,7 +2205,7 @@
         "prettier:check": "prettier --ignore-path .gitignore --ignore-path .prettierignore --check .",
         "stylua": "stylua .",
         "stylua:check": "stylua --check .",
-        "keybind": "tsx ./scripts/keybindings/index.ts",
+        "keybind": "tsx ./scripts/keybindings.ts",
         "test": "npm run test:unit && npm run test:integration",
         "test:unit": "mocha --exit ./out/test/unit/*.js ./out/test/unit/**/*.js",
         "test:integration": "node ./out/test/runIntegrationTest.js",
