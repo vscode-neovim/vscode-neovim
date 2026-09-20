@@ -99,6 +99,14 @@ export class KeybindingsBuilder {
     }
 
     public build(): Keybinding[] {
-        return [...this.bindings];
+        // Normalize output fields to ensure consistent property ordering and minimize diff churn.
+        return [
+            ...this.bindings.map((b) => ({
+                command: b.command,
+                key: b.key,
+                when: b.when,
+                args: b.args,
+            })),
+        ];
     }
 }
