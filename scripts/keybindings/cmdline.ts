@@ -32,6 +32,7 @@ export function getCmdlineKeybindings(): Keybinding[] {
 
     const SHIFT_KEY_TO_CMDLINE_REGISTER: Record<string, string> = {
         "'": '"',
+        "+": "=",
         0: ")",
         1: "!",
         2: "@",
