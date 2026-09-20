@@ -31,53 +31,17 @@ export function vscodeKeyToVimKey(key: string): string {
     return `<${parts.join("-")}>`;
 }
 
-export const COMMON_NEGATED_OVERLAYS = [
-    "!markersNavigationVisible",
-    "!parameterHintsVisible",
-    "!inReferenceSearchEditor",
-    "!referenceSearchVisible",
-    "!dirtyDiffVisible",
-    "!notebookCellFocused",
-    "!findWidgetVisible",
-    "!notificationCenterVisible",
-] as const;
-
-export const EDITOR_CONTEXT = [
-    "editorTextFocus",
-    "neovim.init",
-    "editorLangId not in neovim.editorLangIdExclusions",
-] as const;
-
-export function buildWhen(...conditions: (string | false | null | undefined)[]): string {
-    return conditions.filter(Boolean).join(" && ");
-}
-
 export class KeybindingsBuilder {
     private readonly bindings: Keybinding[] = [];
     private readonly seen = new Map<string, Keybinding>();
 
-    public add(options: AddKeybindingOptions): this;
-    public add(key: string, when?: string | null, args?: unknown, command?: string): this;
-    public add(
-        keyOrOptions: string | AddKeybindingOptions,
-        when?: string | null,
-        args?: unknown,
-        command = "vscode-neovim.send",
-    ): this {
-        let entry: Keybinding;
-
-        if (typeof keyOrOptions === "object") {
-            entry = {
-                key: keyOrOptions.key,
-                command: keyOrOptions.command ?? "vscode-neovim.send",
-            };
-            if (keyOrOptions.when != null) entry.when = keyOrOptions.when;
-            if (keyOrOptions.args != null) entry.args = keyOrOptions.args;
-        } else {
-            entry = { key: keyOrOptions, command };
-            if (when != null) entry.when = when;
-            if (args != null) entry.args = args;
-        }
+    public add(options: AddKeybindingOptions): this {
+        const entry: Keybinding = {
+            key: options.key,
+            command: options.command ?? "vscode-neovim.send",
+        };
+        if (options.when != null) entry.when = options.when;
+        if (options.args != null) entry.args = options.args;
 
         const collisionKey = `${entry.command}::${entry.key}::${entry.when ?? ""}`;
         const existing = this.seen.get(collisionKey);
@@ -88,13 +52,6 @@ export class KeybindingsBuilder {
         }
         this.seen.set(collisionKey, entry);
         this.bindings.push(entry);
-        return this;
-    }
-
-    public addAll(entries: AddKeybindingOptions[]): this {
-        for (const entry of entries) {
-            this.add(entry);
-        }
         return this;
     }
 

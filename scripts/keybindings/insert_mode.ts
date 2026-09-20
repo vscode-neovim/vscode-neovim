@@ -1,5 +1,5 @@
 import { CTRL_KEYS } from "./normal_mode";
-import { buildWhen, EDITOR_CONTEXT, KeybindingsBuilder, vscodeKeyToVimKey } from "./util";
+import { KeybindingsBuilder, vscodeKeyToVimKey } from "./util";
 import type { Keybinding } from "./util";
 
 export function getInsertModeKeybindings(): Keybinding[] {
@@ -15,13 +15,7 @@ export function getInsertModeKeybindings(): Keybinding[] {
 
         const key = `ctrl+${k}`;
         const args = vscodeKeyToVimKey(key);
-        const when = buildWhen(
-            EDITOR_CONTEXT[0],
-            EDITOR_CONTEXT[1],
-            "neovim.mode == insert",
-            `neovim.ctrlKeysInsert.${k}`,
-            EDITOR_CONTEXT[2],
-        );
+        const when = `editorTextFocus && neovim.init && neovim.mode == insert && neovim.ctrlKeysInsert.${k} && editorLangId not in neovim.editorLangIdExclusions`;
 
         builder.add({ command, key, when, args });
     }

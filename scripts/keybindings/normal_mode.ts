@@ -1,4 +1,4 @@
-import { buildWhen, EDITOR_CONTEXT, KeybindingsBuilder, vscodeKeyToVimKey } from "./util";
+import { KeybindingsBuilder, vscodeKeyToVimKey } from "./util";
 import type { Keybinding } from "./util";
 
 export const CTRL_KEYS = [
@@ -52,13 +52,7 @@ export function getNormalModeKeybindings(): Keybinding[] {
         const command = isScroll ? `vscode-neovim.ctrl-${k}` : "vscode-neovim.send";
         const key = `ctrl+${k}`;
         const args = isScroll ? undefined : vscodeKeyToVimKey(key);
-        const when = buildWhen(
-            EDITOR_CONTEXT[0],
-            EDITOR_CONTEXT[1],
-            "neovim.mode != insert",
-            `neovim.ctrlKeysNormal.${k}`,
-            EDITOR_CONTEXT[2],
-        );
+        const when = `editorTextFocus && neovim.init && neovim.mode != insert && neovim.ctrlKeysNormal.${k} && editorLangId not in neovim.editorLangIdExclusions`;
 
         builder.add({ command, key, when, args });
     }

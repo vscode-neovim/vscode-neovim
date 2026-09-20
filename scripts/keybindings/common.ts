@@ -1,14 +1,12 @@
-import { buildWhen, COMMON_NEGATED_OVERLAYS, EDITOR_CONTEXT, Keybinding } from "./util";
+import type { Keybinding } from "./util";
+
+const COMMON_NEGATED_OVERLAYS =
+    "!markersNavigationVisible && !parameterHintsVisible && !inReferenceSearchEditor && !referenceSearchVisible && !dirtyDiffVisible && !notebookCellFocused && !findWidgetVisible && !notificationCenterVisible";
 
 export function getCommonKeybindings(): Keybinding[] {
-    const baseEditorWhen = buildWhen(...EDITOR_CONTEXT);
-    const normalModeEscapeWhen = buildWhen(
-        baseEditorWhen,
-        "neovim.mode == normal",
-        "neovim.ctrlKeysNormal.c",
-        ...COMMON_NEGATED_OVERLAYS,
-    );
-    const normalModeEscapeKeyWhen = buildWhen(baseEditorWhen, "neovim.mode == normal", ...COMMON_NEGATED_OVERLAYS);
+    const baseEditorWhen = "editorTextFocus && neovim.init && editorLangId not in neovim.editorLangIdExclusions";
+    const normalModeEscapeWhen = `${baseEditorWhen} && neovim.mode == normal && neovim.ctrlKeysNormal.c && ${COMMON_NEGATED_OVERLAYS}`;
+    const normalModeEscapeKeyWhen = `${baseEditorWhen} && neovim.mode == normal && ${COMMON_NEGATED_OVERLAYS}`;
 
     return [
         {
@@ -29,7 +27,7 @@ export function getCommonKeybindings(): Keybinding[] {
         {
             command: "vscode-neovim.escape",
             key: "ctrl+c",
-            when: buildWhen(baseEditorWhen, "neovim.mode != normal", "neovim.ctrlKeysInsert.c"),
+            when: `${baseEditorWhen} && neovim.mode != normal && neovim.ctrlKeysInsert.c`,
         },
         {
             command: "vscode-neovim.escape",
@@ -39,7 +37,7 @@ export function getCommonKeybindings(): Keybinding[] {
         {
             command: "vscode-neovim.escape",
             key: "Escape",
-            when: buildWhen(baseEditorWhen, "neovim.mode != normal"),
+            when: `${baseEditorWhen} && neovim.mode != normal`,
         },
     ];
 }
