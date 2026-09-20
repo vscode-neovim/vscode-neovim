@@ -1599,7 +1599,7 @@
             {
                 "command": "filesExplorer.copy",
                 "key": "y",
-                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
             },
             {
                 "command": "filesExplorer.cut",

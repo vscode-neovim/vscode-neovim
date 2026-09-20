@@ -29,7 +29,11 @@ export function getWidgetsKeybindings(): Keybinding[] {
         "deleteFile",
         "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus",
     );
-    addList("y", "filesExplorer.copy", explorerWhen);
+    addList(
+        "y",
+        "filesExplorer.copy",
+        "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus",
+    );
     addList("x", "filesExplorer.cut", explorerWhen);
     addList(
         "p",
