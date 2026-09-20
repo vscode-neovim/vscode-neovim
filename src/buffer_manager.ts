@@ -181,33 +181,9 @@ export class BufferManager implements Disposable {
             eventBus.on("external-buffer", this.handleExternalBuffer, this),
             eventBus.on("window-changed", this.onWindowChanged, this),
             eventBus.on("BufModifiedSet", ([data]) => this.handleBufferModifiedSet(data)),
+            actions.add("set_editor_options", (bufId, options) => this.handleSetEditorOptions(bufId, options)),
+            actions.add("save_buffer", (data) => this.handleSaveBuf(data)),
         );
-        actions.add(
-            "set_editor_options",
-            (
-                bufId: number,
-                options: {
-                    tabSize: number;
-                    insertSpaces: boolean;
-                    lineNumbers: "on" | "off" | "relative";
-                },
-            ) => {
-                const [doc] = [...this.textDocumentToBufferId.entries()].find(([_, id]) => id === bufId) || [];
-                if (!doc) return;
-                const editor = window.visibleTextEditors.find((e) => e.document === doc);
-                if (!editor) return;
-                const { tabSize, insertSpaces, lineNumbers: numbers } = options;
-                const lineNumbers =
-                    numbers === "off"
-                        ? TextEditorLineNumbersStyle.Off
-                        : numbers === "on"
-                          ? TextEditorLineNumbersStyle.On
-                          : TextEditorLineNumbersStyle.Relative;
-                editor.options = { tabSize, insertSpaces, lineNumbers };
-            },
-        );
-
-        actions.add("save_buffer", (data) => this.handleSaveBuf(data));
     }
 
     public dispose(): void {
@@ -591,6 +567,28 @@ export class BufferManager implements Disposable {
         } catch (error) {
             window.showErrorMessage(`Failed to save "${saveUri.fsPath}": ${error}`);
         }
+    }
+
+    private handleSetEditorOptions(
+        bufId: number,
+        options: {
+            tabSize: number;
+            insertSpaces: boolean;
+            lineNumbers: "on" | "off" | "relative";
+        },
+    ) {
+        const [doc] = [...this.textDocumentToBufferId.entries()].find(([_, id]) => id === bufId) || [];
+        if (!doc) return;
+        const editor = window.visibleTextEditors.find((e) => e.document === doc);
+        if (!editor) return;
+        const { tabSize, insertSpaces, lineNumbers: numbers } = options;
+        const lineNumbers =
+            numbers === "off"
+                ? TextEditorLineNumbersStyle.Off
+                : numbers === "on"
+                  ? TextEditorLineNumbersStyle.On
+                  : TextEditorLineNumbersStyle.Relative;
+        editor.options = { tabSize, insertSpaces, lineNumbers };
     }
 
     // #region Sync layout

@@ -28,14 +28,25 @@ class ActionManager implements Disposable {
      * Add a new action
      * @param action The action string.
      * @param callback The callback function to be executed for the action.
+     * @returns A Disposable that can be used to remove the action.
      * @throws Error if the action already exists.
      */
-    add(action: string, callback: (...args: any[]) => any) {
+    add(action: string, callback: (...args: any[]) => any): Disposable {
         if (this.actions.includes(action)) {
             throw new Error(`Action "${action}" already exist`);
         }
         this.actions.push(action);
-        this.disposables.push(commands.registerCommand(getActionName(action), callback));
+        const commandDisposable = commands.registerCommand(getActionName(action), callback);
+        const actionDisposable = new Disposable(() => {
+            const index = this.actions.indexOf(action);
+            if (index !== -1) {
+                this.actions.splice(index, 1);
+            }
+            commandDisposable.dispose();
+            this.disposables = this.disposables.filter((d) => d !== actionDisposable);
+        });
+        this.disposables.push(actionDisposable);
+        return actionDisposable;
     }
 
     /**
