@@ -5,14 +5,14 @@ export function getVscodeIntegrationKeybindings(): Keybinding[] {
     const builder = new KeybindingsBuilder();
 
     builder.add({
-        key: "ctrl+w",
         command: "-workbench.action.switchWindow",
+        key: "ctrl+w",
     });
 
     builder.add({
+        command: "workbench.action.focusNextGroup",
         key: "ctrl+w ctrl+w",
         when: "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !(filesExplorerFocus || inSearchEditor || searchViewletFocus || replaceInputBoxFocus)",
-        command: "workbench.action.focusNextGroup",
     });
 
     const windowActions: [string, string][] = [
@@ -59,10 +59,10 @@ export function getVscodeIntegrationKeybindings(): Keybinding[] {
     for (const item of outputKeys) {
         const [key, arg] = Array.isArray(item) ? item : [item, item];
         builder.add({
+            command: "vscode-neovim.send",
             key,
             when: outputWhen,
             args: arg,
-            command: "vscode-neovim.send",
         });
     }
 

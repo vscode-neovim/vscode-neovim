@@ -68,13 +68,13 @@ export class KeybindingsBuilder {
 
         if (typeof keyOrOptions === "object") {
             entry = {
-                command: keyOrOptions.command ?? "vscode-neovim.send",
                 key: keyOrOptions.key,
+                command: keyOrOptions.command ?? "vscode-neovim.send",
             };
             if (keyOrOptions.when != null) entry.when = keyOrOptions.when;
             if (keyOrOptions.args != null) entry.args = keyOrOptions.args;
         } else {
-            entry = { command, key: keyOrOptions };
+            entry = { key: keyOrOptions, command };
             if (when != null) entry.when = when;
             if (args != null) entry.args = args;
         }

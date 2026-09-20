@@ -81,22 +81,21 @@ export function getWidgetsKeybindings(): Keybinding[] {
             "workbench.action.quickOpenSelectPrevious",
         ],
         ["codeActionMenuVisible", "selectNextCodeAction", "selectPrevCodeAction"],
-        ["renameInputVisible", "focusNextRenameSuggestion", "focusPreviousRenameSuggestion"],
     ];
     for (const [when, nextCmd, prevCmd] of nextPrevPairs) {
-        builder.add({ key: "ctrl+n", command: nextCmd, when });
-        builder.add({ key: "ctrl+p", command: prevCmd, when });
+        builder.add({ command: nextCmd, key: "ctrl+n", when });
+        builder.add({ command: prevCmd, key: "ctrl+p", when });
     }
 
     builder.add({
-        key: "ctrl+w q",
         command: "workbench.action.closeActiveEditor",
+        key: "ctrl+w q",
         when: "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !filesExplorerFocus && !searchViewletFocus",
     });
 
     builder.add({
-        key: "ctrl+Escape",
         command: "workbench.action.focusActiveEditorGroup",
+        key: "ctrl+Escape",
         when: "terminalFocus",
     });
 
@@ -121,6 +120,17 @@ export function getWidgetsKeybindings(): Keybinding[] {
     for (const [key, command] of hoverNavigation) {
         builder.add({ key, command, when: "editorHoverFocused" });
     }
+
+    builder.add({
+        command: "focusNextRenameSuggestion",
+        key: "ctrl+n",
+        when: "renameInputVisible",
+    });
+    builder.add({
+        command: "focusPreviousRenameSuggestion",
+        key: "ctrl+p",
+        when: "renameInputVisible",
+    });
 
     return builder.build();
 }

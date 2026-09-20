@@ -2,7 +2,13 @@ import { buildWhen, COMMON_NEGATED_OVERLAYS, EDITOR_CONTEXT, Keybinding } from "
 
 export function getCommonKeybindings(): Keybinding[] {
     const baseEditorWhen = buildWhen(...EDITOR_CONTEXT);
-    const normalModeEscapeWhen = buildWhen(baseEditorWhen, "neovim.mode == normal", ...COMMON_NEGATED_OVERLAYS);
+    const normalModeEscapeWhen = buildWhen(
+        baseEditorWhen,
+        "neovim.mode == normal",
+        "neovim.ctrlKeysNormal.c",
+        ...COMMON_NEGATED_OVERLAYS,
+    );
+    const normalModeEscapeKeyWhen = buildWhen(baseEditorWhen, "neovim.mode == normal", ...COMMON_NEGATED_OVERLAYS);
 
     return [
         {
@@ -18,7 +24,7 @@ export function getCommonKeybindings(): Keybinding[] {
         {
             command: "vscode-neovim.escape",
             key: "ctrl+c",
-            when: buildWhen(normalModeEscapeWhen, "neovim.ctrlKeysNormal.c"),
+            when: normalModeEscapeWhen,
         },
         {
             command: "vscode-neovim.escape",
@@ -28,7 +34,7 @@ export function getCommonKeybindings(): Keybinding[] {
         {
             command: "vscode-neovim.escape",
             key: "Escape",
-            when: normalModeEscapeWhen,
+            when: normalModeEscapeKeyWhen,
         },
         {
             command: "vscode-neovim.escape",
