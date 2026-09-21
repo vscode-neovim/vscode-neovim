@@ -20,7 +20,7 @@ module.exports = tseslint.config(
                 ...globals.es6,
             },
             parserOptions: {
-                project: true,
+                projectService: true,
                 tsconfigRootDir: __dirname,
             },
         },
@@ -56,7 +56,7 @@ module.exports = tseslint.config(
         },
     },
     {
-        files: ["src/**/*.ts"],
+        files: ["src/**/*.ts", "scripts/**/*.ts"],
         rules: {
             "no-unused-vars": "off",
             "@typescript-eslint/no-unused-vars": [

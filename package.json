@@ -1276,12 +1276,6 @@
             },
             {
                 "command": "vscode-neovim.send-cmdline",
-                "key": "ctrl+r shift++",
-                "when": "neovim.init && neovim.mode == cmdline",
-                "args": "<C-r>="
-            },
-            {
-                "command": "vscode-neovim.send-cmdline",
                 "key": "ctrl+r shift+-",
                 "when": "neovim.init && neovim.mode == cmdline",
                 "args": "<C-r>_"
@@ -1533,163 +1527,163 @@
                 "args": "<C-\\>e"
             },
             {
-                "key": "j",
                 "command": "list.focusDown",
+                "key": "j",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "k",
                 "command": "list.focusUp",
+                "key": "k",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "h",
                 "command": "list.collapse",
+                "key": "h",
                 "when": "listFocus && !inputFocus"
             },
             {
+                "command": "list.select",
                 "key": "l",
-                "command": "list.select",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "enter",
                 "command": "list.select",
+                "key": "enter",
                 "when": "listFocus && !inputFocus && !notebookCellListFocused"
             },
             {
-                "key": "g g",
                 "command": "list.focusFirst",
+                "key": "g g",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "shift+g",
                 "command": "list.focusLast",
+                "key": "shift+g",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "o",
                 "command": "list.toggleExpand",
+                "key": "o",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "ctrl+u",
                 "command": "list.focusPageUp",
+                "key": "ctrl+u",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "ctrl+d",
                 "command": "list.focusPageDown",
+                "key": "ctrl+d",
                 "when": "listFocus && !inputFocus"
             },
             {
-                "key": "/",
                 "command": "list.find",
+                "key": "/",
                 "when": "listFocus && listSupportsFind && !inputFocus"
             },
             {
-                "key": "enter",
                 "command": "list.closeFind",
+                "key": "enter",
                 "when": "listFocus && treeFindOpen && inputFocus"
             },
             {
-                "key": "r",
                 "command": "renameFile",
+                "key": "r",
                 "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "d",
                 "command": "deleteFile",
+                "key": "d",
                 "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "y",
                 "command": "filesExplorer.copy",
+                "key": "y",
                 "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
             },
             {
-                "key": "x",
                 "command": "filesExplorer.cut",
-                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !inputFocus"
+                "key": "x",
+                "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "p",
                 "command": "filesExplorer.paste",
+                "key": "p",
                 "when": "explorerViewletVisible && filesExplorerFocus && !explorerResourceReadonly && !inputFocus"
             },
             {
-                "key": "v",
                 "command": "explorer.openToSide",
+                "key": "v",
                 "when": "explorerViewletFocus && explorerViewletVisible && !inputFocus"
             },
             {
-                "key": "a",
                 "command": "explorer.newFile",
+                "key": "a",
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
-                "key": "shift+a",
                 "command": "explorer.newFolder",
+                "key": "shift+a",
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
-                "key": "shift+r",
                 "command": "workbench.files.action.refreshFilesExplorer",
+                "key": "shift+r",
                 "when": "filesExplorerFocus && !inputFocus"
             },
             {
+                "command": "list.expand",
                 "key": "z o",
-                "command": "list.expand",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.expand",
                 "key": "z shift+o",
-                "command": "list.expand",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
-                "key": "z c",
                 "command": "list.collapse",
+                "key": "z c",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
-                "key": "z shift+c",
                 "command": "list.collapseAllToFocus",
+                "key": "z shift+c",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.toggleExpand",
                 "key": "z a",
-                "command": "list.toggleExpand",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.toggleExpand",
                 "key": "z shift+a",
-                "command": "list.toggleExpand",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.collapseAll",
                 "key": "z m",
-                "command": "list.collapseAll",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
+                "command": "list.collapseAll",
                 "key": "z shift+m",
-                "command": "list.collapseAll",
                 "when": "!editorTextFocus && !inputFocus && listFocus"
             },
             {
-                "key": "tab",
                 "command": "togglePeekWidgetFocus",
+                "key": "tab",
                 "when": "inReferenceSearchEditor && neovim.mode == normal || referenceSearchVisible"
             },
             {
-                "key": "ctrl+n",
                 "command": "list.focusDown",
+                "key": "ctrl+n",
                 "when": "inReferenceSearchEditor && neovim.mode == normal"
             },
             {
-                "key": "ctrl+p",
                 "command": "list.focusUp",
+                "key": "ctrl+p",
                 "when": "inReferenceSearchEditor && neovim.mode == normal"
             },
             {
@@ -1713,13 +1707,13 @@
                 "when": "editorTextFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
             },
             {
-                "key": "ctrl+n",
                 "command": "selectNextSuggestion",
+                "key": "ctrl+n",
                 "when": "textInputFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
             },
             {
-                "key": "ctrl+p",
                 "command": "selectPrevSuggestion",
+                "key": "ctrl+p",
                 "when": "textInputFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
             },
             {
@@ -1733,23 +1727,23 @@
                 "when": "inQuickOpen && neovim.mode != cmdline"
             },
             {
-                "key": "ctrl+n",
                 "command": "selectNextCodeAction",
+                "key": "ctrl+n",
                 "when": "codeActionMenuVisible"
             },
             {
-                "key": "ctrl+p",
                 "command": "selectPrevCodeAction",
+                "key": "ctrl+p",
                 "when": "codeActionMenuVisible"
             },
             {
-                "key": "ctrl+w q",
                 "command": "workbench.action.closeActiveEditor",
+                "key": "ctrl+w q",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus && !filesExplorerFocus && !searchViewletFocus"
             },
             {
-                "key": "ctrl+Escape",
                 "command": "workbench.action.focusActiveEditorGroup",
+                "key": "ctrl+Escape",
                 "when": "terminalFocus"
             },
             {
@@ -1873,22 +1867,22 @@
             },
             {
                 "command": "workbench.action.toggleEditorWidths",
-                "key": "ctrl+w _",
+                "key": "ctrl+w shift+-",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.increaseViewWidth",
-                "key": "ctrl+w >",
+                "key": "ctrl+w shift+.",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.decreaseViewWidth",
-                "key": "ctrl+w <",
+                "key": "ctrl+w shift+,",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
                 "command": "workbench.action.increaseViewHeight",
-                "key": "ctrl+w +",
+                "key": "ctrl+w shift+=",
                 "when": "!editorTextFocus && neovim.mode != 'cmdline' && !terminalFocus"
             },
             {
@@ -2203,15 +2197,15 @@
         ]
     },
     "scripts": {
-        "lint": "eslint --fix src",
-        "lint:check": "eslint src",
+        "lint": "eslint --fix src scripts",
+        "lint:check": "eslint src scripts",
         "format": "npm run prettier && npm run stylua",
         "format:check": "npm run prettier:check && npm run stylua:check",
         "prettier": "prettier --ignore-path .gitignore --ignore-path .prettierignore -w .",
         "prettier:check": "prettier --ignore-path .gitignore --ignore-path .prettierignore --check .",
         "stylua": "stylua .",
         "stylua:check": "stylua --check .",
-        "keybind": "node ./scripts/keybindings/index.cjs",
+        "keybind": "tsx ./scripts/keybindings.ts",
         "test": "npm run test:unit && npm run test:integration",
         "test:unit": "mocha --exit ./out/test/unit/*.js ./out/test/unit/**/*.js",
         "test:integration": "node ./out/test/runIntegrationTest.js",
@@ -2245,6 +2239,7 @@
         "prettier": "^3.9.6",
         "source-map-support": "^0.5.19",
         "ts-loader": "^9.6.2",
+        "tsx": "^4.23.13",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.70.0",
         "webpack": "^5.110.3",
