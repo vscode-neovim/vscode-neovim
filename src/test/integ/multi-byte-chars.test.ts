@@ -327,8 +327,10 @@ describe("Multi-width characters", () => {
         await sendVSCodeKeys("v");
         await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 1)] }, client);
 
+        // the cursor sits on the astral char, whose two UTF-16 units both belong to
+        // the selection: a, the modifier letter and the pair take offsets 0 to 4
         await sendVSCodeKeys("ll");
-        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 3)] }, client);
+        await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 4)] }, client);
 
         await sendVSCodeKeys("l");
         await assertContent({ vsCodeSelections: [new vscode.Selection(0, 0, 0, 5)] }, client);
