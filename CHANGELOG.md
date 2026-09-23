@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.20.1](https://github.com/vscode-neovim/vscode-neovim/compare/v1.20.0...v1.20.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* **cursor:** keep the visual selection whole over characters outside the BMP ([#2683](https://github.com/vscode-neovim/vscode-neovim/issues/2683)) ([594cab7](https://github.com/vscode-neovim/vscode-neovim/commit/594cab76b12e4c028f65b5a9670417298bd04176))
+
+
+### Refactor
+
+* **actions:** make add() return a Disposable ([#2691](https://github.com/vscode-neovim/vscode-neovim/issues/2691)) ([c85f850](https://github.com/vscode-neovim/vscode-neovim/commit/c85f8500e2621692786d631d831ef53416ca3d03))
+* **keybindings:** rewrite generator and fix shifted keybindings ([#2690](https://github.com/vscode-neovim/vscode-neovim/issues/2690)) ([5e4cfe7](https://github.com/vscode-neovim/vscode-neovim/commit/5e4cfe799f6d0730c61ad71818ff941d821f49e2))
+
 ## [1.20.0](https://github.com/vscode-neovim/vscode-neovim/compare/v1.19.3...v1.20.0) (2026-09-18)
 
 
