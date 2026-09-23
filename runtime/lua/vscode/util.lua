@@ -63,6 +63,17 @@ function M.utf16_col(text, byte_col)
   return byte_col == 0 and 0 or str_utf16index(text, byte_col)
 end
 
+---@param text string the line the column belongs to
+---@param byte_col integer zero-indexed byte column, clamped to `text`
+---@return integer zero-indexed byte column just past the character byte_col points into
+local function byte_after_char(text, byte_col)
+  byte_col = math.max(0, math.min(byte_col, #text))
+  if byte_col == #text then
+    return byte_col
+  end
+  return byte_col + vim.str_utf_end(text, byte_col + 1) + 1
+end
+
 ---@param buf integer
 ---@param line integer one-indexed line
 ---@param byte_col integer zero-indexed byte column
@@ -84,10 +95,11 @@ end
 ---@return lsp.Range
 function M.lsp_range(buf, start_line, start_col, end_line, end_col)
   local end_text = M.get_line(buf, end_line - 1) or ""
-  local end_char = M.utf16_col(end_text, end_col)
   if vim.o.selection ~= "exclusive" then
-    end_char = math.min(end_char + 1, M.utf16_col(end_text, #end_text))
+    -- step over the whole character: adding one UTF-16 unit splits a surrogate pair
+    end_col = byte_after_char(end_text, end_col)
   end
+  local end_char = M.utf16_col(end_text, end_col)
   return {
     start = M.lsp_position(buf, start_line, start_col),
     ["end"] = { line = end_line - 1, character = end_char },
