@@ -172,13 +172,28 @@ export class DocumentChangeManager implements Disposable {
         }
     }
 
-    private onBufferInit: BufferManager["onBufferInit"] = (bufId, doc, initText, initVersion) => {
+    private onBufferInit: BufferManager["onBufferInit"] = async (bufId, doc, initText, initVersion) => {
         logger.log(
             doc.uri,
             LogLevel.Debug,
             `Init buffer content for bufId: ${bufId}, uri: ${doc.uri}, version: ${initVersion}`,
         );
         this.documentContentInNeovim.set(doc, { text: initText, version: initVersion });
+
+        // Drain any queued changes that arrived while the buffer was being initialized.
+        // This handles the case where VS Code fires onChangeTextDocument during the async
+        // initBufferForDocument flow, before documentContentInNeovim is set. Those changes
+        // get queued but never processed because the early return in onChangeTextDocument
+        // exits before reaching the lock. Without this drain, the queued changes are orphaned.
+        const queuedChanges = this.documentChangeQueue.get(doc);
+        if (queuedChanges && queuedChanges.length > 0) {
+            this.documentChangeQueue.set(doc, []);
+            await this.documentChangeLock.runExclusive(async () => {
+                for (const change of queuedChanges) {
+                    await this.processTextDocumentChange(doc, change);
+                }
+            });
+        }
     };
 
     private onNeovimChangeEvent: BufferManager["onBufferEvent"] = (
