@@ -2,6 +2,7 @@
 // Learn more: https://github.com/microsoft/vscode-extension-samples/tree/main/vim-sample
 import { commands, Disposable, TextEditor, TextEditorEdit, window, workspace } from "vscode";
 
+import actions from "./actions";
 import { CompositeKeys, config, openSettingsId } from "./config";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
@@ -302,6 +303,10 @@ export class TypingManager implements Disposable {
         if (this.isInsertMode && !(await this.client.mode).blocking) {
             logger.debug(`Syncing buffers with neovim (${key})`);
             await this.main.changeManager.documentChangeLock.waitForUnlock();
+            const cursorMoved =
+                this.isExitingInsertMode &&
+                window.activeTextEditor &&
+                this.isCursorMovedInInsertMode(window.activeTextEditor);
             if (window.activeTextEditor)
                 await this.main.cursorManager.updateNeovimCursorPosition(
                     window.activeTextEditor,
@@ -310,6 +315,7 @@ export class TypingManager implements Disposable {
                 );
             if (this.isExitingInsertMode) {
                 await this.main.changeManager.syncDotRepeatWithNeovim();
+                if (cursorMoved) await actions.lua("insert_cursor_moved");
             }
             const keys = normalizeInputString(this.pendingKeysAfterExit);
             logger.debug(`Pending keys sent with ${key}: ${keys}`);
@@ -320,6 +326,13 @@ export class TypingManager implements Disposable {
             await this.client.input(`${key}`);
         }
     };
+
+    private isCursorMovedInInsertMode(editor: TextEditor): boolean {
+        const outsideTyped = this.main.changeManager.isCursorOutsideDotRepeatChange(editor);
+        if (outsideTyped !== undefined) return outsideTyped;
+        const neovimCursor = this.main.cursorManager.getNeovimCursorPosition(editor);
+        return !!neovimCursor && !neovimCursor.isEqual(editor.selection.active);
+    }
 
     private onSendBlockingCommand = async (key: string): Promise<void> => {
         this.takeOverVSCodeInput = true;

@@ -123,6 +123,11 @@ do
 
     _curr_win = api.nvim_get_current_win()
     _temp_buf = api.nvim_create_buf(false, true)
+    -- VSCode already indented the text. Indenting it again here would make <Esc> remove whitespace in
+    -- the real buffer, as if it were unused autoindent.
+    vim.bo[_temp_buf].autoindent = false
+    vim.bo[_temp_buf].smartindent = false
+    vim.bo[_temp_buf].formatoptions = ""
     _temp_win = api.nvim_open_win(_temp_buf, true, { external = true, width = 100, height = 50 })
 
     if deletes > 0 then
@@ -150,6 +155,16 @@ do
     pcall(api.nvim_buf_delete, _temp_buf, { force = true })
 
     vim.opt.ei = ei
+  end
+
+  --- Treats a cursor move made in VSCode during insert mode like a cursor key
+  function M.insert_cursor_moved()
+    if _block_insert then
+      return
+    end
+    local row, col = unpack(api.nvim_win_get_cursor(0))
+    local keys = ("<Home><Cmd>call nvim_win_set_cursor(0, [%d, %d])<CR>"):format(row, col)
+    api.nvim_feedkeys(api.nvim_replace_termcodes(keys, true, true, true), "n", false)
   end
 end
 
