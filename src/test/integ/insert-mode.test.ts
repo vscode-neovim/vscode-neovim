@@ -246,6 +246,22 @@ describe("Insert mode and buffer synchronization", () => {
         );
     });
 
+    it("Does not delete whitespace at cursor on escape after typing only a newline", async () => {
+        await openTextDocument({ content: "a  b" });
+
+        await sendInsertKey("3o");
+        await sendVSCodeKeys("\n");
+        await setSelection(new Selection(0, 2, 0, 2));
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["a  b", "", ""],
+            },
+            client,
+        );
+    });
+
     it("Repeats counted insert ending with whitespace", async () => {
         await openTextDocument({ content: "" });
 
