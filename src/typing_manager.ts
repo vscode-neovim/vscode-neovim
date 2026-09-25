@@ -2,6 +2,7 @@
 // Learn more: https://github.com/microsoft/vscode-extension-samples/tree/main/vim-sample
 import { commands, Disposable, TextEditor, TextEditorEdit, window, workspace } from "vscode";
 
+import actions from "./actions";
 import { CompositeKeys, config, openSettingsId } from "./config";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
@@ -310,6 +311,7 @@ export class TypingManager implements Disposable {
                 );
             if (this.isExitingInsertMode) {
                 await this.main.changeManager.syncDotRepeatWithNeovim();
+                await actions.lua("prepare_escape");
             }
             const keys = normalizeInputString(this.pendingKeysAfterExit);
             logger.debug(`Pending keys sent with ${key}: ${keys}`);

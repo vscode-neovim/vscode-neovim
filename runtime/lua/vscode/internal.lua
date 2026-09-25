@@ -123,6 +123,11 @@ do
 
     _curr_win = api.nvim_get_current_win()
     _temp_buf = api.nvim_create_buf(false, true)
+    -- Without these, replaying a newline autoindents and sets Nvim's global "did_ai" flag,
+    -- so the <Esc> that follows strips whitespace at the cursor in the real buffer.
+    vim.bo[_temp_buf].autoindent = false
+    vim.bo[_temp_buf].smartindent = false
+    vim.bo[_temp_buf].formatoptions = ""
     _temp_win = api.nvim_open_win(_temp_buf, true, { external = true, width = 100, height = 50 })
 
     if deletes > 0 then
@@ -150,6 +155,33 @@ do
     pcall(api.nvim_buf_delete, _temp_buf, { force = true })
 
     vim.opt.ei = ei
+  end
+
+  --- Called right before <Esc> is sent to leave insert mode.
+  --- After autoindent (e.g. `o`), Nvim strips whitespace at the cursor on <Esc> unless the user
+  --- typed or moved the cursor since. Typing and cursor moves in vscode don't count, so the
+  --- whitespace under a cursor the user clicked somewhere else gets deleted, and that deletion
+  --- can't be undone. Leave the insert with an arrow key first, like Vim does when the cursor
+  --- moves. That drops the insert count, so skip it when there is one.
+  function M.prepare_escape()
+    if _block_insert or api.nvim_get_mode().mode ~= "i" or vim.v.count > 1 then
+      return
+    end
+    local line = api.nvim_get_current_line()
+    -- On a blank line the stripping is wanted, e.g. `o<Esc>` leaves an empty line.
+    if not line:find("%S") then
+      return
+    end
+    local row, col = unpack(api.nvim_win_get_cursor(0))
+    local char = line:sub(col + 1, col + 1)
+    if char == "" then
+      char = line:sub(col, col)
+    end
+    if not char:match("^%s$") then
+      return
+    end
+    local keys = ("<Home><Cmd>call nvim_win_set_cursor(0, [%d, %d])<CR>"):format(row, col)
+    api.nvim_feedkeys(api.nvim_replace_termcodes(keys, true, true, true), "n", false)
   end
 end
 

@@ -214,6 +214,53 @@ describe("Insert mode and buffer synchronization", () => {
         );
     });
 
+    it("Does not delete whitespace at cursor on escape after newline", async () => {
+        await openTextDocument({ content: "first line" });
+
+        await sendInsertKey("o");
+        await sendVSCodeKeys("hello  world\n");
+        await setSelection(new Selection(1, 6, 1, 6));
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["first line", "hello  world", ""],
+            },
+            client,
+        );
+    });
+
+    it("Does not delete whitespace at cursor on escape without typing", async () => {
+        await openTextDocument({ content: ["a  b", "c"].join("\n") });
+        await setSelection(new Selection(1, 0, 1, 0));
+
+        await sendInsertKey("o");
+        await setSelection(new Selection(0, 2, 0, 2));
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["a  b", "c", ""],
+            },
+            client,
+        );
+    });
+
+    it("Repeats counted insert ending with whitespace", async () => {
+        await openTextDocument({ content: "" });
+
+        await sendInsertKey("3i");
+        await sendVSCodeKeys("a ");
+        await sendEscapeKey();
+
+        await assertContent(
+            {
+                content: ["a a a "],
+            },
+            client,
+        );
+    });
+
     it("Replacing multiple lines - line num doesn't change", async () => {
         await openTextDocument({ content: ["a", "b", "blah1", "blah2"].join("\n") });
 
