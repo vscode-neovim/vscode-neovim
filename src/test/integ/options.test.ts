@@ -4,9 +4,10 @@ import path from "path";
 import { NeovimClient } from "neovim";
 import vscode from "vscode";
 
-import { wait } from "../../utils";
+import { wait, waitUntil } from "../../utils";
 
 import {
+    eval_from_nvim,
     attachTestNvimClient,
     closeAllActiveEditors,
     closeNvimClient,
@@ -69,6 +70,35 @@ describe("Synchronize editor options", () => {
         await sendEscapeKey();
         await wait(200);
         assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Relative);
+    });
+
+    it("updates the active editor options ahead of an embedded preview", async () => {
+        const editor = await openTextDocument({ content: "testing..." });
+        await client.command("setlocal nonu nornu");
+        await waitUntil(() => assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Off));
+
+        await eval_from_nvim(
+            client,
+            `
+            const visible = Object.getOwnPropertyDescriptor(vscode.window, "visibleTextEditors");
+            const editor = vscode.window.activeTextEditor;
+            const preview = { ...editor, viewColumn: undefined, options: { ...editor.options } };
+            Object.defineProperty(vscode.window, "visibleTextEditors", {
+                ...visible,
+                get: () => [preview, ...visible.get.call(vscode.window)],
+            });
+            globalThis.restoreEditorOptionsTest = () => {
+                Object.defineProperty(vscode.window, "visibleTextEditors", visible);
+                delete globalThis.restoreEditorOptionsTest;
+            };
+        `,
+        );
+        try {
+            await client.command("setlocal nu rnu");
+            await waitUntil(() => assert.equal(editor.options.lineNumbers, vscode.TextEditorLineNumbersStyle.Relative));
+        } finally {
+            await eval_from_nvim(client, "globalThis.restoreEditorOptionsTest();");
+        }
     });
 
     async function checkTab(editor: vscode.TextEditor): Promise<void> {

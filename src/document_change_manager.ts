@@ -25,6 +25,7 @@ import {
     convertCharNumToByteNum,
     disposeAll,
     getDocumentLineArray,
+    getEditorForDocument,
     isChangeSubsequentToChange,
     isCursorChange,
     normalizeDotRepeatChange,
@@ -294,7 +295,7 @@ export class DocumentChangeManager implements Disposable {
                         logger.log(doc.uri, LogLevel.Debug, `Document was closed, skippnig`);
                         continue;
                     }
-                    const editor = window.visibleTextEditors.find((e) => e.document === doc);
+                    const editor = getEditorForDocument(doc);
                     if (!editor) {
                         logger.log(doc.uri, LogLevel.Debug, `No visible text editor for document, skipping`);
                         continue;
@@ -394,7 +395,7 @@ export class DocumentChangeManager implements Disposable {
         this.documentContentInNeovim.set(doc, { text: change.text, version: change.version });
 
         logger.log(doc.uri, LogLevel.Debug, `Change text document for: ${doc.uri}`);
-        const editor = window.visibleTextEditors.find((e) => e.document === doc);
+        const editor = getEditorForDocument(doc);
         const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
         if (!bufId) {
             logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri}`);
