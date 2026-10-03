@@ -10,7 +10,6 @@ import {
     EventEmitter,
     LogLevel,
     NotebookDocument,
-    Position,
     ProgressLocation,
     Selection,
     TextDocument,
@@ -38,6 +37,7 @@ import {
     convertVimPositionToEditorPosition,
     disposeAll,
     fileExists,
+    getCurrentWinCursorInBuf,
     wait,
 } from "./utils";
 
@@ -359,7 +359,7 @@ export class BufferManager implements Disposable {
             if (window.activeTextEditor?.document !== doc) {
                 // Neovim moved to this buffer itself (e.g. a jump to a global mark), so its cursor
                 // must win over the selection vscode restores when showing the document again
-                const neovimCursor = await this.getNeovimCursorInBuffer(bufnr);
+                const neovimCursor = await getCurrentWinCursorInBuf(this.client, bufnr);
                 const editor = await window.showTextDocument(doc, {
                     // viewColumn: vscode.ViewColumn.Active,
                     // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
@@ -378,22 +378,6 @@ export class BufferManager implements Disposable {
         } catch {
             // todo: show error
         }
-    }
-
-    /**
-     * Get the (0, 0)-indexed byte cursor of the current neovim window, if it shows the given buffer
-     */
-    private async getNeovimCursorInBuffer(bufId: number): Promise<Position | undefined> {
-        const cursor = (await this.client.lua(
-            `
-            local buf = ...
-            if vim.api.nvim_get_current_buf() == buf then
-                return vim.api.nvim_win_get_cursor(0)
-            end
-            `,
-            [bufId],
-        )) as [number, number] | null;
-        return cursor ? new Position(cursor[0] - 1, cursor[1]) : undefined;
     }
 
     private handleWindowChanged = async (winId: number, token: CancellationToken): Promise<void> => {
