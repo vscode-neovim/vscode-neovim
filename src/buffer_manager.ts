@@ -30,7 +30,16 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, Progress, convertByteNumToCharNum, disposeAll, fileExists, wait } from "./utils";
+import {
+    ManualPromise,
+    Progress,
+    convertByteNumToCharNum,
+    convertVimPositionToEditorPosition,
+    disposeAll,
+    fileExists,
+    getCurrentWinCursorInBuf,
+    wait,
+} from "./utils";
 
 // NOTE: document and editors in vscode events and namespace are reference stable
 // Integration notes:
@@ -348,6 +357,9 @@ export class BufferManager implements Disposable {
                 this.textDocumentToBufferId.set(doc, bufnr);
             }
             if (window.activeTextEditor?.document !== doc) {
+                // Neovim moved to this buffer itself (e.g. a jump to a global mark), so its cursor
+                // must win over the selection vscode restores when showing the document again
+                const neovimCursor = await getCurrentWinCursorInBuf(this.client, bufnr);
                 const editor = await window.showTextDocument(doc, {
                     // viewColumn: vscode.ViewColumn.Active,
                     // !need to force editor to appear in the same column even if vscode 'revealIfOpen' setting is true
@@ -355,6 +367,11 @@ export class BufferManager implements Disposable {
                     preserveFocus: false,
                     preview: false,
                 });
+                if (neovimCursor) {
+                    const active = convertVimPositionToEditorPosition(editor, neovimCursor);
+                    editor.selections = [new Selection(active, active)];
+                    editor.revealRange(editor.selection, TextEditorRevealType.InCenterIfOutsideViewport);
+                }
                 // force resync
                 this.onDidChangeEditorOptions(editor);
             }

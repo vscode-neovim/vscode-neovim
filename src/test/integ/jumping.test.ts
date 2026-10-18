@@ -1,9 +1,10 @@
+import { strict as assert } from "assert";
 import path from "path";
 
 import { NeovimClient } from "neovim";
-import { Position } from "vscode";
+import { Position, window } from "vscode";
 
-import { wait } from "../../utils";
+import { wait, waitUntil } from "../../utils";
 
 import {
     attachTestNvimClient,
@@ -87,5 +88,22 @@ describe("Jumplist & jump actions & marks", () => {
         await sendNeovimKeys(client, "'a");
         await wait(300);
         await assertContent({ cursor: [0, 0] }, client, editor);
+    });
+
+    it("Global mark jump to another file keeps the mark position #2699", async () => {
+        const markEditor = await openTextDocument(path.join(__dirname, "../../../test_fixtures/scrolltest.txt"));
+        await sendVSCodeKeys("24G4lmA");
+        await assertContent({ cursor: [23, 4] }, client);
+        // Leave a different selection behind for VSCode to restore when the file is shown again
+        await sendVSCodeKeys("29G02l");
+        await assertContent({ cursor: [28, 2] }, client);
+
+        await openTextDocument(path.join(__dirname, "../../../test_fixtures/cursor-revealing.txt"));
+        await sendNeovimKeys(client, "`A");
+        await waitUntil(() => assert.equal(window.activeTextEditor?.document, markEditor.document));
+
+        // The restored selection would overwrite the mark position only after the editor is shown
+        await wait(1000);
+        await assertContent({ cursor: [23, 4] }, client);
     });
 });
