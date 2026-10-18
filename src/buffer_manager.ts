@@ -30,7 +30,15 @@ import { config } from "./config";
 import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
-import { ManualPromise, Progress, convertByteNumToCharNum, disposeAll, fileExists, wait } from "./utils";
+import {
+    ManualPromise,
+    Progress,
+    convertByteNumToCharNum,
+    disposeAll,
+    fileExists,
+    getEditorForDocument,
+    wait,
+} from "./utils";
 
 // NOTE: document and editors in vscode events and namespace are reference stable
 // Integration notes:
@@ -579,7 +587,7 @@ export class BufferManager implements Disposable {
     ) {
         const [doc] = [...this.textDocumentToBufferId.entries()].find(([_, id]) => id === bufId) || [];
         if (!doc) return;
-        const editor = window.visibleTextEditors.find((e) => e.document === doc);
+        const editor = getEditorForDocument(doc);
         if (!editor) return;
         const { tabSize, insertSpaces, lineNumbers: numbers } = options;
         const lineNumbers =

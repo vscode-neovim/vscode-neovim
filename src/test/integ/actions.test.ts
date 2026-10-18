@@ -8,22 +8,13 @@ import { NeovimClient } from "neovim";
 import { wait } from "../../utils";
 
 import {
+    eval_from_nvim,
     attachTestNvimClient,
     closeAllActiveEditors,
     closeNvimClient,
     openTextDocument,
     sendVSCodeCommand,
 } from "./integrationUtils";
-
-async function eval_from_nvim(client: NeovimClient, code: string): Promise<any> {
-    return JSON.parse(await client.commandOutput(`lua print(vim.fn.json_encode(require'vscode'.eval('${code}')))`));
-}
-
-async function eval_from_nvim_with_opts(client: NeovimClient, code: string, opts: string): Promise<any> {
-    return JSON.parse(
-        await client.commandOutput(`lua print(vim.fn.json_encode(require'vscode'.eval('${code}', ${opts})))`),
-    );
-}
 
 function pathsEqual(a: string, b: string) {
     if (process.platform === "win32") {
@@ -77,13 +68,13 @@ describe("Eval VSCode", () => {
         output = await eval_from_nvim(client, "async function f(v) {return 100 + v;}; return await f(2);");
         assert.equal(output, 102);
 
-        output = await eval_from_nvim_with_opts(client, "return args;", "{ args = 12 }");
+        output = await eval_from_nvim(client, "return args;", 12);
         assert.equal(output, 12);
 
-        output = await eval_from_nvim_with_opts(client, "return args.foo", "{ args = { foo = 12 } }");
+        output = await eval_from_nvim(client, "return args.foo", { foo: 12 });
         assert.equal(output, 12);
 
-        output = await eval_from_nvim_with_opts(client, "return args[0]", "{ args = { 12 } }");
+        output = await eval_from_nvim(client, "return args[0]", [12]);
         assert.equal(output, 12);
     });
 
@@ -113,11 +104,7 @@ describe("Eval VSCode", () => {
             await sendVSCodeCommand("workbench.action.unpinEditor");
         }
 
-        await eval_from_nvim_with_opts(
-            client,
-            "await vscode.env.clipboard.writeText(args.text)",
-            "{ args = { text = 'hi'} }",
-        );
+        await eval_from_nvim(client, "await vscode.env.clipboard.writeText(args.text)", { text: "hi" });
         output = await eval_from_nvim(client, "return await vscode.env.clipboard.readText()");
         assert.equal(output, "hi");
 
@@ -160,11 +147,7 @@ describe("Eval VSCode", () => {
         }, /Unexpected token '\}'/);
 
         await assert.rejects(async () => {
-            await eval_from_nvim_with_opts(
-                client,
-                "await new Promise((resolve) => setTimeout(resolve, 1000))",
-                "{}, 100",
-            );
+            await eval_from_nvim(client, "await new Promise((resolve) => setTimeout(resolve, 1000))", {}, 100);
         }, /Call 'eval' timed out/);
 
         let output = await eval_from_nvim(client, "return vscode.window.property_that_does_not_exist");
