@@ -6,7 +6,7 @@ import { strict as assert } from "assert";
 import vscode, { Selection } from "vscode";
 import { NeovimClient } from "neovim";
 
-import { wait } from "../../utils";
+import { wait, waitUntil } from "../../utils";
 
 import {
     attachTestNvimClient,
@@ -343,6 +343,22 @@ describe("VSCode integration specific stuff", () => {
             },
             client,
         );
+    });
+
+    it("Window commands typed after timeoutlen still go to vscode #2466", async () => {
+        await openTextDocument({ content: "blah" });
+        const timeoutlen = (await client.getOption("timeoutlen")) as number;
+        await client.setOption("timeoutlen", 100);
+        try {
+            await sendNeovimKeys(client, "<C-w>", 500);
+            await sendNeovimKeys(client, "v");
+            await waitUntil(() =>
+                assert.equal(vscode.window.tabGroups.all.length, 2, "<C-w>v should split the editor"),
+            );
+        } finally {
+            await client.setOption("timeoutlen", timeoutlen);
+            await vscode.commands.executeCommand("workbench.action.joinAllGroups");
+        }
     });
 
     it("Opens a file through e command", async () => {

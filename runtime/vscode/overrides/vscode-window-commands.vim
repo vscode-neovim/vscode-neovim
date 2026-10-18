@@ -34,6 +34,14 @@ function! s:manageEditorWidth(...)
     endfor
 endfunction
 
+" A lone <C-w> runs the builtin window command once 'timeoutlen' passes, and that reads the next key
+" without mappings, skipping the ones below. Read the key here instead and feed the whole command
+" again, remapped when one of them handles it.
+function! s:windowCommand(mode) abort
+    let keys = "\<C-w>" . getcharstr()
+    call feedkeys((v:count ? v:count : '') . keys, (empty(maparg(keytrans(keys), a:mode)) ? 'n' : 'm') . 'i')
+endfunction
+
 command! -complete=file -nargs=? Split call <SID>split('h', <q-args>)
 command! -complete=file -nargs=? Vsplit call <SID>split('v', <q-args>)
 command! -complete=file -nargs=? New call <SID>split('h', '__vscode_new__')
@@ -45,6 +53,9 @@ AlterCommand vs[plit] Vsplit
 AlterCommand new New
 AlterCommand vne[w] Vnew
 AlterCommand on[ly] Only
+
+nnoremap <C-w> <Cmd>call <SID>windowCommand('n')<CR>
+xnoremap <C-w> <Cmd>call <SID>windowCommand('x')<CR>
 
 " buffer management
 nnoremap <C-w>n <Cmd>call <SID>splitNew('h', '__vscode_new__')<CR>
