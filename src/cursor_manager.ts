@@ -409,6 +409,10 @@ export class CursorManager implements Disposable {
         this.applySelectionChangedPromise.delete(editor);
     };
 
+    public getNeovimCursorPosition(editor: TextEditor): Position | undefined {
+        return this.neovimCursorPosition.get(editor)?.active;
+    }
+
     /**
      * Set cursor position in neovim. Coords are [0, 0] based.
      **/
