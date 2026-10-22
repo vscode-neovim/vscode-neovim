@@ -179,6 +179,17 @@ export class DocumentChangeManager implements Disposable {
             `Init buffer content for bufId: ${bufId}, uri: ${doc.uri}, version: ${initVersion}`,
         );
         this.documentContentInNeovim.set(doc, { text: initText, version: initVersion });
+
+        // Changes fired during init were queued but not synced (no documentContentInNeovim yet).
+        // Drop the ones older than initText (same-version content changes are skipped by
+        // processTextDocumentChange), then sync the rest in the background.
+        const queuedChanges = (this.documentChangeQueue.get(doc) ?? []).filter((c) => c.version >= initVersion);
+        this.documentChangeQueue.set(doc, queuedChanges);
+        if (queuedChanges.length) {
+            this.syncQueuedChanges(doc, bufId).catch((e) =>
+                logger.log(doc.uri, LogLevel.Error, `Failed to sync queued changes: ${(e as Error).stack ?? e}`),
+            );
+        }
     };
 
     private onNeovimChangeEvent: BufferManager["onBufferEvent"] = (
@@ -376,16 +387,24 @@ export class DocumentChangeManager implements Disposable {
 
         if (!this.documentContentInNeovim.has(doc)) return;
 
+        await this.syncQueuedChanges(doc);
+    };
+
+    private async syncQueuedChanges(doc: TextDocument, bufId?: number): Promise<void> {
         await this.documentChangeLock.runExclusive(async () => {
             const queuedChanges = this.documentChangeQueue.get(doc) ?? [];
             this.documentChangeQueue.set(doc, []);
             for (const change of queuedChanges) {
-                await this.processTextDocumentChange(doc, change);
+                await this.processTextDocumentChange(doc, change, bufId);
             }
         });
-    };
+    }
 
-    private processTextDocumentChange = async (doc: TextDocument, change: DocumentChange): Promise<void> => {
+    private processTextDocumentChange = async (
+        doc: TextDocument,
+        change: DocumentChange,
+        knownBufId?: number,
+    ): Promise<void> => {
         const lastKnownContent = this.documentContentInNeovim.get(doc);
         if (!lastKnownContent) return; // won't happen
         const { contentChanges, isDirty, isDirtyStateChange, version } = change;
@@ -395,7 +414,7 @@ export class DocumentChangeManager implements Disposable {
 
         logger.log(doc.uri, LogLevel.Debug, `Change text document for: ${doc.uri}`);
         const editor = window.visibleTextEditors.find((e) => e.document === doc);
-        const bufId = this.main.bufferManager.getBufferIdForTextDocument(doc);
+        const bufId = knownBufId ?? this.main.bufferManager.getBufferIdForTextDocument(doc);
         if (!bufId) {
             logger.log(doc.uri, LogLevel.Warning, `No neovim buffer for ${doc.uri}`);
             return;
