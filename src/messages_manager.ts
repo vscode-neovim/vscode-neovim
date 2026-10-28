@@ -8,6 +8,7 @@ import { EventBusData, eventBus } from "./eventBus";
 import { createLogger } from "./logger";
 import { MainController } from "./main_controller";
 import { disposeAll } from "./utils";
+import { joinMsgChunks } from "./utils/text";
 
 const logger = createLogger("MessagesManager");
 
@@ -191,13 +192,13 @@ export class MessagesManager implements Disposable {
 
             case "msg_showcmd": {
                 const [content] = args[0];
-                this.statusLine.setStatus(content.map(([_attrId, chunk]) => chunk).join(""), StatusType.Cmd);
+                this.statusLine.setStatus(joinMsgChunks(content), StatusType.Cmd);
                 return;
             }
 
             case "msg_showmode": {
                 const [content] = args[0];
-                this.statusLine.setStatus(content.map(([_attrId, chunk]) => chunk).join(""), StatusType.Mode);
+                this.statusLine.setStatus(joinMsgChunks(content), StatusType.Mode);
                 return;
             }
 
