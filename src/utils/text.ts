@@ -59,3 +59,14 @@ export function normalizeInputString(str: string, wrapEnter = true): string {
     }
     return finalStr;
 }
+
+/**
+ * Joins Neovim message chunks (`[attrId, text]` pairs) into one string.
+ * Returns "" when there is nothing to join, so callers can clear the status bar.
+ */
+export function joinMsgChunks(content?: [attrId: number, chunk: string][]): string {
+    if (!content) {
+        return "";
+    }
+    return content.map(([_attrId, chunk]) => chunk).join("");
+}
