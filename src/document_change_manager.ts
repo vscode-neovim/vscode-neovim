@@ -7,6 +7,7 @@ import {
     Selection,
     TextDocument,
     TextDocumentChangeEvent,
+    TextEditor,
     window,
     workspace,
     LogLevel,
@@ -154,6 +155,13 @@ export class DocumentChangeManager implements Disposable {
 
     public hasDocumentChangeCompletionLock(doc: TextDocument): boolean {
         return (this.textDocumentChangePromise.get(doc)?.length || 0) > 0;
+    }
+
+    public isCursorOutsideDotRepeatChange(editor: TextEditor): boolean | undefined {
+        if (!this.dotRepeatChange) return undefined;
+        const { rangeOffset, text } = this.dotRepeatChange;
+        const offset = editor.document.offsetAt(editor.selection.active);
+        return offset < rangeOffset || offset > rangeOffset + text.length;
     }
 
     public async syncDotRepeatWithNeovim(): Promise<void> {
