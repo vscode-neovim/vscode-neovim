@@ -110,6 +110,16 @@ export function disposeAll(disposables: Disposable[]): void {
     }
 }
 
+/** Prefer the focused/main editor over an embedded preview of the same document. */
+export function getEditorForDocument(doc: TextDocument): TextEditor | undefined {
+    const activeEditor = window.activeTextEditor;
+    if (activeEditor?.document === doc) return activeEditor;
+
+    const editors = window.visibleTextEditors.filter((editor) => editor.document === doc);
+    // Preserve embedded-only editors, including notebook cells and output views.
+    return editors.find((editor) => editor.viewColumn !== undefined) ?? editors[0];
+}
+
 export function getDocumentLineArray(doc: TextDocument): string[] {
     const eol = doc.eol === EndOfLine.CRLF ? "\r\n" : "\n";
     return doc.getText().split(eol);

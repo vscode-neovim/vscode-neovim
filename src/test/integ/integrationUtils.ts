@@ -56,6 +56,19 @@ export async function closeNvimClient(client: NeovimClient): Promise<void> {
     conn.resetAndDestroy();
 }
 
+/** Evaluate JavaScript in the extension host through the public Neovim API. */
+export async function eval_from_nvim(
+    client: NeovimClient,
+    code: string,
+    args: unknown = {},
+    timeout = -1,
+): Promise<any> {
+    return client.request("nvim_exec_lua", [
+        "local code, args, timeout = ...; return require('vscode').eval(code, { args = args }, timeout)",
+        [code, args, timeout],
+    ]);
+}
+
 export async function getCurrentBufferName(client: NeovimClient): Promise<string> {
     const buf = await client.buffer;
     const name = await buf.name;
