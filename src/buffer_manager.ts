@@ -822,12 +822,12 @@ export class BufferManager implements Disposable {
         const bufId = buffer.id;
         logger.log(document.uri, LogLevel.Debug, `Init buffer for ${bufId}, doc: ${document.uri}`);
 
+        const bufname = await this.bufnameForTextDocument(document);
+
         const eol = document.eol === EndOfLine.LF ? "\n" : "\r\n";
         const text = document.getText();
         const lines = text.split(eol);
-        const { version } = document;
-        const bufname = await this.bufnameForTextDocument(document);
-
+        const { version, isDirty } = document;
         await actions.lua("init_document_buffer", {
             buf: bufId,
             bufname: bufname,
@@ -836,7 +836,7 @@ export class BufferManager implements Disposable {
             uri_data: document.uri.toJSON(),
             editor_options: makeEditorOptionsVariable(editor?.options),
             modifiable: !this.isExternalTextDocument(document),
-            modified: document.isDirty,
+            modified: isDirty,
             filetype: resolveDocumentFiletype(document),
         });
 
