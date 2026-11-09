@@ -197,7 +197,8 @@ export class MessagesManager implements Disposable {
             }
 
             case "msg_showmode": {
-                const [content] = args[0];
+                // A batch can hold several events (e.g. "-- INSERT --", then a clear): the last one is current.
+                const [content] = args[args.length - 1];
                 this.statusLine.setStatus(joinMsgChunks(content), StatusType.Mode);
                 return;
             }
